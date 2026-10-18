@@ -16,7 +16,6 @@ export function AuthScreen() {
 
   const supabase = createClient();
 
-  // Password strength logic
   const isPasswordStrong = password.length >= 8 && /[A-Z]/.test(password) && /[0-9]/.test(password);
   const passwordStrength = password.length === 0 ? 0 : password.length < 6 ? 1 : isPasswordStrong ? 3 : 2;
 
@@ -63,26 +62,53 @@ export function AuthScreen() {
   return (
     <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 relative overflow-hidden">
       
-      {/* --- 3D LOOPING CARD ANIMATION (Mobile Safe) --- */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20">
+      {/* --- NEW STACKED 3D CARD ANIMATION (Mobile Safe) --- */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        {/* Background Glow */}
+        <div className="absolute w-[300px] h-[300px] bg-gradient-to-tr from-[#8B0000] to-[#4B0082] rounded-full blur-[80px] opacity-40" />
+        
+        {/* Back Card */}
         <motion.div
-          animate={{ rotate: [0, 8, 0, -8, 0], scale: [1, 1.02, 1] }}
-          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
-          className="relative w-64 h-40 bg-gradient-to-tr from-[var(--brand)] to-[#0e5a2b] rounded-2xl shadow-2xl border border-white/20"
+          animate={{ rotate: -15, x: -20, y: 10 }}
+          transition={{ duration: 10, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
+          className="absolute w-56 h-36 bg-gradient-to-tr from-[#2a0a0a] to-[#4a0e0e] rounded-2xl border border-white/10 shadow-2xl"
         >
-          <div className="absolute top-4 left-4 text-white/50 font-bold italic">VISA</div>
-          <div className="absolute bottom-4 right-4 text-white/80 text-lg font-mono tracking-widest">•••• 4291</div>
+          <div className="absolute top-4 left-4 text-white/30 font-bold italic text-sm">VISA</div>
+          <div className="absolute top-4 right-4 w-8 h-6 bg-white/10 rounded-sm" />
+          <div className="absolute bottom-4 left-4 flex gap-1">
+            <div className="w-8 h-1 bg-white/20 rounded-full" />
+            <div className="w-8 h-1 bg-white/20 rounded-full" />
+            <div className="w-8 h-1 bg-white/20 rounded-full" />
+          </div>
+        </motion.div>
+
+        {/* Front Card */}
+        <motion.div
+          animate={{ rotate: 10, x: 20, y: -10 }}
+          transition={{ duration: 10, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
+          className="absolute w-56 h-36 bg-gradient-to-tr from-[#5a1a1a] to-[#8b1a1a] rounded-2xl border border-white/20 shadow-2xl z-10 overflow-hidden"
+        >
+          {/* Specular Highlight */}
+          <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-30" />
+          
+          <div className="absolute top-4 left-4 text-white/70 font-bold italic text-sm z-10">VISA</div>
+          <div className="absolute top-4 right-4 w-10 h-7 bg-gradient-to-br from-yellow-200/40 to-yellow-600/40 rounded-md border border-yellow-200/20 z-10" />
+          
+          <div className="absolute bottom-6 left-4 text-white/80 font-mono text-sm tracking-widest z-10">
+            •••• 4291
+          </div>
+          <div className="absolute bottom-2 left-4 text-white/50 text-[10px] z-10">MAX MUSTERMANN</div>
         </motion.div>
       </div>
 
-      <div className="relative z-10 w-full max-w-sm">
+      <div className="relative z-10 w-full max-w-sm mt-32">
         <div className="flex flex-col items-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-[var(--brand)]/20 flex items-center justify-center mb-4 border border-[var(--brand)]/30">
-            <span className="text-[var(--brand)] font-bold text-3xl">A</span>
-          </div>
           <h1 className="text-[28px] font-bold text-white tracking-tight text-center">
-            {mode === "login" ? "Welcome Back" : mode === "signup" ? "Create Acuity" : "Verify Email"}
+            {mode === "login" ? "Smarter payments." : mode === "signup" ? "Create Acuity" : "Verify Email"}
           </h1>
+          <p className="text-[15px] text-white/50 mt-2 text-center">
+            Simplify payments, streamline expenses, and enjoy better control over your financial journey.
+          </p>
         </div>
 
         <GlassSurface tier="thick" radius={28} className="p-6">
@@ -148,7 +174,7 @@ export function AuthScreen() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-4 mt-2 bg-[var(--brand)] text-black rounded-full font-semibold text-[16px] flex items-center justify-center gap-2 active:scale-[0.98] transition-transform disabled:opacity-50"
+              className="w-full py-4 mt-2 bg-white text-black rounded-full font-semibold text-[16px] flex items-center justify-center gap-2 active:scale-[0.98] transition-transform disabled:opacity-50"
             >
               {loading ? <Loader2 size={20} className="animate-spin" /> : 
                 mode === "login" ? "Sign In" : 
@@ -167,7 +193,7 @@ export function AuthScreen() {
                 onClick={handleGoogleAuth}
                 disabled={loading}
                 type="button"
-                className="w-full py-3.5 bg-white text-black rounded-full font-medium text-[15px] flex items-center justify-center gap-3 hover:bg-gray-100 transition-colors"
+                className="w-full py-3.5 bg-[#1A1A1A] border border-white/10 text-white rounded-full font-medium text-[15px] flex items-center justify-center gap-3 hover:bg-[#252525] transition-colors"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
@@ -188,7 +214,7 @@ export function AuthScreen() {
             ) : (
               <button
                 onClick={() => setMode(mode === "login" ? "signup" : "login")}
-                className="text-[14px] text-[var(--brand)] font-medium"
+                className="text-[14px] text-white/50 font-medium"
               >
                 {mode === "login" ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
               </button>

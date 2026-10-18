@@ -64,7 +64,6 @@ export function ImportSheet({
       setImportedCount(count);
     } catch (err: any) {
       console.error("Import failed:", err);
-      // THIS WILL SHOW US THE ERROR ON THE SCREEN
       setErrorMessage(err.message || "An unknown error occurred during import.");
       setIsProcessing(false); 
     }
@@ -81,7 +80,7 @@ export function ImportSheet({
           <GlassSurface 
             tier="thick" 
             radius="36px 36px 0 0" 
-            className="flex flex-col items-center pt-3 pb-12 px-6 h-[440px] w-full max-w-md mx-auto"
+            className="flex flex-col items-center pt-3 pb-32 px-6 w-full max-w-md mx-auto min-h-[520px]"
           >
             <div className="w-12 h-1.5 rounded-full bg-white/20 mb-8" />
 
@@ -178,11 +177,11 @@ export function ImportSheet({
 
                 <AnimatePresence>
                   {(isDone || errorMessage) && (
-                    <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="w-full">
+                    <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="w-full mt-auto">
                       {isDone && (
-                        <div className="text-center mb-4">
+                        <div className="text-center mb-6">
                           <p className="text-[15px] text-white/70">Successfully imported</p>
-                          <p className="text-[24px] font-bold text-[var(--brand)]">{importedCount} transactions</p>
+                          <p className="text-[28px] font-bold text-[var(--brand)]">{importedCount} transactions</p>
                         </div>
                       )}
                       <button 
