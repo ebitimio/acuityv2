@@ -125,15 +125,14 @@ export default function SandboxPage() {
       ) : (
         <div className="flex-1 overflow-y-auto pb-32">
           
-          {/* PREMIUM GRADIENT HERO (Fills safe area) */}
+          {/* COMPACT HERO */}
           <div 
-            className="relative pt-[calc(env(safe-area-inset-top)+16px)] pb-12 px-6 rounded-b-[40px] overflow-hidden"
+            className="relative pt-[calc(env(safe-area-inset-top)+16px)] pb-6 px-6 rounded-b-[40px] overflow-hidden"
             style={{ 
               background: "linear-gradient(160deg, #7a0e0e 0%, #b3391f 35%, #e87a1a 75%, #ffb347 100%)" 
             }}
           >
-            {/* Glass Top Bar Overlay */}
-            <div className="flex justify-between items-center mb-8">
+            <div className="flex justify-between items-center mb-6">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30">
                   <User size={14} className="text-white" />
@@ -150,65 +149,60 @@ export default function SandboxPage() {
               </div>
             </div>
 
-            {/* Net Worth */}
-            <div className="mt-2">
-              <p className="text-[15px] font-medium text-white/70 mb-1">Total Net Worth</p>
-              <div className="text-[56px] font-bold tracking-tight text-white flex items-start gap-1">
-                <span className="text-[32px] mt-3 opacity-80">₦</span>
-                <NumberRoll value={netWorthNGN} currency="" />
+            <div>
+              <p className="text-[14px] font-medium text-white/70 mb-1">Total Net Worth</p>
+              <div className="text-[48px] font-bold tracking-tight text-white flex items-start gap-1">
+                <NumberRoll value={netWorthNGN} currency="" showDecimals={true} />
               </div>
             </div>
 
-            {/* Quick Actions */}
-            <div className="flex gap-3 mt-8">
-              <button onClick={() => setActiveScreen("budget")} className="flex-1 py-3.5 bg-white/20 backdrop-blur-xl border border-white/30 rounded-2xl text-[14px] font-semibold text-white flex items-center justify-center gap-2 hover:bg-white/30 transition-colors">
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => setActiveScreen("budget")} className="flex-1 py-3 bg-white/20 backdrop-blur-xl border border-white/30 rounded-2xl text-[14px] font-semibold text-white flex items-center justify-center gap-2 hover:bg-white/30 transition-colors">
                 <TrendingUp size={16} /> Monitoring
               </button>
-              <button onClick={() => setIsImportOpen(true)} className="flex-1 py-3.5 bg-white/20 backdrop-blur-xl border border-white/30 rounded-2xl text-[14px] font-semibold text-white flex items-center justify-center gap-2 hover:bg-white/30 transition-colors">
+              <button onClick={() => setIsImportOpen(true)} className="flex-1 py-3 bg-white/20 backdrop-blur-xl border border-white/30 rounded-2xl text-[14px] font-semibold text-white flex items-center justify-center gap-2 hover:bg-white/30 transition-colors">
                 <ArrowLeftRight size={16} /> Add Fund
               </button>
             </div>
           </div>
 
-          {/* FEATURE TILES (With Orange Tint) */}
-          <div className="px-4 mt-6">
-            <div className="flex gap-3 overflow-x-auto pb-4 snap-x hide-scrollbar">
-              <button onClick={() => setActiveScreen("commitments")} className="snap-start shrink-0 w-[150px] h-[170px] rounded-3xl bg-gradient-to-b from-[#3a1a0a] to-[#0a0a0a] border border-white/10 p-4 flex flex-col justify-between text-left hover:border-[#e87a1a]/50 transition-colors">
-                <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center"><CalendarDays size={20} className="text-white/80" /></div>
-                <div>
-                  <p className="text-[15px] font-semibold text-white">Commitments</p>
-                  <p className="text-[11px] text-white/50 mt-1 leading-snug">Bills & sinking funds.</p>
-                </div>
-              </button>
-              
-              <button onClick={() => setActiveScreen("tax")} className="snap-start shrink-0 w-[150px] h-[170px] rounded-3xl bg-gradient-to-b from-[#3a1a0a] to-[#0a0a0a] border border-white/10 p-4 flex flex-col justify-between text-left hover:border-[#e87a1a]/50 transition-colors">
-                <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center"><FileText size={20} className="text-white/80" /></div>
-                <div>
-                  <p className="text-[15px] font-semibold text-white">Tax Estimator</p>
-                  <p className="text-[11px] text-white/50 mt-1 leading-snug">PIT & LIRS export.</p>
-                </div>
-              </button>
+          {/* FEATURE TILES (2x2 Grid, no scroll) */}
+          <div className="px-4 mt-6 grid grid-cols-2 gap-3">
+            <button onClick={() => setActiveScreen("commitments")} className="rounded-3xl bg-gradient-to-b from-[#3a1a0a] to-[#0a0a0a] border border-white/10 p-4 flex flex-col justify-between text-left hover:border-[#e87a1a]/50 transition-colors aspect-[4/3]">
+              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center"><CalendarDays size={20} className="text-white/80" /></div>
+              <div>
+                <p className="text-[15px] font-semibold text-white">Commitments</p>
+                <p className="text-[11px] text-white/50 mt-1 leading-snug">Bills & funds.</p>
+              </div>
+            </button>
+            
+            <button onClick={() => setActiveScreen("tax")} className="rounded-3xl bg-gradient-to-b from-[#3a1a0a] to-[#0a0a0a] border border-white/10 p-4 flex flex-col justify-between text-left hover:border-[#e87a1a]/50 transition-colors aspect-[4/3]">
+              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center"><FileText size={20} className="text-white/80" /></div>
+              <div>
+                <p className="text-[15px] font-semibold text-white">Tax Estimator</p>
+                <p className="text-[11px] text-white/50 mt-1 leading-snug">PIT & LIRS.</p>
+              </div>
+            </button>
 
-              <button onClick={() => setActiveScreen("ajo")} className="snap-start shrink-0 w-[150px] h-[170px] rounded-3xl bg-gradient-to-b from-[#3a1a0a] to-[#0a0a0a] border border-white/10 p-4 flex flex-col justify-between text-left hover:border-[#e87a1a]/50 transition-colors">
-                <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center"><Users size={20} className="text-white/80" /></div>
-                <div>
-                  <p className="text-[15px] font-semibold text-white">Ajo Tracker</p>
-                  <p className="text-[11px] text-white/50 mt-1 leading-snug">Thrift & cooperative groups.</p>
-                </div>
-              </button>
+            <button onClick={() => setActiveScreen("ajo")} className="rounded-3xl bg-gradient-to-b from-[#3a1a0a] to-[#0a0a0a] border border-white/10 p-4 flex flex-col justify-between text-left hover:border-[#e87a1a]/50 transition-colors aspect-[4/3]">
+              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center"><Users size={20} className="text-white/80" /></div>
+              <div>
+                <p className="text-[15px] font-semibold text-white">Ajo Tracker</p>
+                <p className="text-[11px] text-white/50 mt-1 leading-snug">Cooperative groups.</p>
+              </div>
+            </button>
 
-              <button onClick={() => setActiveScreen("bank-charge")} className="snap-start shrink-0 w-[150px] h-[170px] rounded-3xl bg-gradient-to-b from-[#3a1a0a] to-[#0a0a0a] border border-white/10 p-4 flex flex-col justify-between text-left hover:border-[#e87a1a]/50 transition-colors">
-                <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center"><ShieldAlert size={20} className="text-white/80" /></div>
-                <div>
-                  <p className="text-[15px] font-semibold text-white">Bank Charges</p>
-                  <p className="text-[11px] text-white/50 mt-1 leading-snug">Fee auditor.</p>
-                </div>
-              </button>
-            </div>
+            <button onClick={() => setActiveScreen("bank-charge")} className="rounded-3xl bg-gradient-to-b from-[#3a1a0a] to-[#0a0a0a] border border-white/10 p-4 flex flex-col justify-between text-left hover:border-[#e87a1a]/50 transition-colors aspect-[4/3]">
+              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center"><ShieldAlert size={20} className="text-white/80" /></div>
+              <div>
+                <p className="text-[15px] font-semibold text-white">Bank Charges</p>
+                <p className="text-[11px] text-white/50 mt-1 leading-snug">Fee auditor.</p>
+              </div>
+            </button>
           </div>
 
           {/* MONTHLY EXPENSES */}
-          <div className="px-4 mt-2">
+          <div className="px-4 mt-6">
             <div className="flex items-center justify-between mb-3 px-1">
               <h3 className="text-[17px] font-semibold text-white">Monthly expenses</h3>
               <span className="text-[13px] font-medium text-[var(--brand)]">↓ ₦{totalSpentNGN.toLocaleString()}</span>
