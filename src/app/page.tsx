@@ -27,6 +27,8 @@ import { TransactionDetailSheet } from "@/components/ui/transaction-detail-sheet
 import { AIDrawer } from "@/components/ui/ai-drawer";
 import { AddTransactionSheet } from "@/components/ui/add-transaction-sheet";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Modal } from "@/components/ui/modal";
+import { Field, Button } from "@/components/ui/form";
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
 import { Eye, EyeOff, Bell, TrendingUp, ArrowLeftRight, CalendarDays, FileText, Users, ShieldAlert, ChevronRight, Receipt, ChevronDown, Plus } from "lucide-react";
 
@@ -44,7 +46,7 @@ export default function SandboxPage() {
   const supabase = createClient();
   const toast = useToast();
   const { hidden, toggleHidden } = useCurrency();
-  const { workspaces, active: activeWs, setActive: setActiveWs, createWorkspace } = useWorkspace();
+  const { workspaces, active: activeWs, setActive: setActiveWs, createWorkspace, refresh: refreshWorkspaces } = useWorkspace();
 
   const [showSplash, setShowSplash] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
@@ -60,6 +62,9 @@ export default function SandboxPage() {
   const [transactions, setTransactions] = useState<Txn[]>([]);
   const [navHidden, setNavHidden] = useState(false);
   const [wsOpen, setWsOpen] = useState(false);
+  const [wsCreateOpen, setWsCreateOpen] = useState(false);
+  const [wsNewName, setWsNewName] = useState("");
+  const [wsBusy, setWsBusy] = useState(false);
 
   const { scrollY } = useScroll();
   useMotionValueEvent(scrollY, "change", (latest) => {
@@ -68,7 +73,6 @@ export default function SandboxPage() {
     else setNavHidden(false);
   });
 
-  // Always try to load. If it fails, fall back to zeros so we never stay on the skeleton.
   const refreshData = useCallback(async () => {
     try {
       clearDataCache();
@@ -93,12 +97,10 @@ export default function SandboxPage() {
     return () => subscription.unsubscribe();
   }, [supabase.auth]);
 
-  // Run once session is available. Doesn't wait for activeWs (DB handles fallback).
   useEffect(() => {
     if (session) refreshData();
   }, [session, activeWs, refreshData]);
 
-  // Splash & skeleton timing — no dependency on metrics
   useEffect(() => {
     if (!showSplash && session) {
       const timer = setTimeout(() => setIsLoading(false), 800);
@@ -136,14 +138,29 @@ export default function SandboxPage() {
   };
 
   const handleCreateWorkspace = async () => {
-    setWsOpen(false);
-    const name = prompt("New workspace name:");
+    const name = wsNewName.trim();
     if (!name) return;
+    setWsBusy(true);
     try {
-      await createWorkspace(name);
+      // Use a direct insert to avoid depending on .select() which RLS can filter
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not logged in");
+      const { error } = await supabase.from("workspaces").insert({ owner_id: user.id, name });
+      if (error) throw error;
+
+      // Refresh the list from DB
+      await refreshWorkspaces();
       clearDataCache();
-      window.location.reload();
-    } catch { toast("Could not create workspace", "err"); }
+      toast(`Workspace "${name}" created`);
+      setWsCreateOpen(false);
+      setWsNewName("");
+      setTimeout(() => window.location.reload(), 300);
+    } catch (err: any) {
+      console.error("Workspace create error:", err);
+      toast(`Could not create: ${err?.message ?? "Unknown error"}`, "err");
+    } finally {
+      setWsBusy(false);
+    }
   };
 
   if (isAuthLoading) return <div className="min-h-[100dvh] bg-black" />;
@@ -151,7 +168,6 @@ export default function SandboxPage() {
   if (showSplash) return <SplashScreen onComplete={() => setShowSplash(false)} />;
   if (isLoading) return <HomeSkeleton />;
 
-  // Use ZERO_METRICS if the fetch silently failed — never block on `null`
   const m = metrics ?? ZERO_METRICS;
   const netWorthNGN = m.net_worth_minor / 100;
   const totalSpentNGN = m.total_spent_minor / 100;
@@ -204,7 +220,7 @@ export default function SandboxPage() {
                   </button>
                 ))}
                 <div className="h-px bg-white/10 my-1" />
-                <button onClick={handleCreateWorkspace} className="w-full flex items-center gap-1.5 px-3 py-2 rounded-lg text-[14px] text-[var(--brand)] hover:bg-white/5">
+                <button onClick={() => { setWsOpen(false); setWsCreateOpen(true); }} className="w-full flex items-center gap-1.5 px-3 py-2 rounded-lg text-[14px] text-[var(--brand)] hover:bg-white/5">
                   <Plus size={14} /> Create workspace
                 </button>
               </div>
@@ -303,6 +319,22 @@ export default function SandboxPage() {
       <AIDrawer isOpen={isAdvisorOpen} onClose={() => setIsAdvisorOpen(false)} />
       <SettingsSheet isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} user={session.user} onSignOut={handleSignOut} />
       <AddTransactionSheet isOpen={isAddTxnOpen} onClose={() => setIsAddTxnOpen(false)} onSaved={refreshData} />
+
+      <Modal open={wsCreateOpen} onClose={() => { setWsCreateOpen(false); setWsNewName(""); }} title="New workspace">
+        <div className="space-y-3">
+          <Field
+            label="Workspace name"
+            value={wsNewName}
+            onChange={(e) => setWsNewName(e.target.value)}
+            placeholder="e.g. Side Business"
+            autoFocus
+          />
+          <Button loading={wsBusy} onClick={handleCreateWorkspace} disabled={!wsNewName.trim()}>
+            Create
+          </Button>
+        </div>
+      </Modal>
+
       <TransactionDetailSheet
         key={selectedTxn?.id || "empty"}
         isOpen={!!selectedTxn}
