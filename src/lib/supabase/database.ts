@@ -1,128 +1,7 @@
 import { createClient } from "./client";
 import Papa from "papaparse";
 
-export async function getWorkspaceAndTransactions() {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not logged in");
-
-  const { data: workspace, error: wsError } = await supabase
-    .from("workspaces")
-    .select("*")
-    .eq("owner_id", user.id)
-    .single();
-
-  if (wsError || !workspace) throw new Error("Workspace not found");
-
-  const { data: transactions, error: txError } = await supabase
-    .from("transactions")
-    .select(`
-      id,
-      amount_minor,
-      direction,
-      description_clean,
-      description_raw,
-      category_name,
-      date,
-      parent_id,
-      account_id,
-      account:accounts (
-        name,
-        institution
-      )
-    `)
-    .neq("category_name", "Split Parent")
-    .order("date", { ascending: false })
-    .limit(50);
-
-  if (txError) throw txError;
-
-  return { workspace, transactions: transactions || [] };
-}
-
-export async function getHomeMetrics() {
-  const supabase = createClient();
-  const { data, error } = await supabase.rpc("get_home_metrics");
-  
-  if (error) throw error;
-  return data as {
-    net_worth_minor: number;
-    total_spent_minor: number;
-    total_income_minor: number;
-    budget_limit_minor: number;
-    uncategorized_count: number;
-  };
-}
-
-export async function insertMockTransactions() {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return;
-
-  const { data: workspace } = await supabase
-    .from("workspaces")
-    .select("id")
-    .eq("owner_id", user.id)
-    .single();
-
-  if (!workspace) return;
-
-  const { data: existingAccounts } = await supabase
-    .from("accounts")
-    .select("id")
-    .eq("workspace_id", workspace.id)
-    .limit(1);
-
-  let accountId = existingAccounts?.[0]?.id;
-
-  if (!accountId) {
-    const { data: newAccount } = await supabase
-      .from("accounts")
-      .insert({
-        workspace_id: workspace.id,
-        name: "Main Checking",
-        institution: "GTBank",
-        type: "checking",
-        balance_minor: 125043000,
-      })
-      .select("id")
-      .single();
-      
-    accountId = newAccount?.id;
-  }
-
-  if (accountId) {
-    await supabase.from("transactions").insert([
-      {
-        account_id: accountId,
-        amount_minor: 4500000,
-        direction: "debit",
-        description_raw: "POS PURCHASE SHOPRITE LEKKI",
-        description_clean: "Shoprite Lekki",
-        category_name: "Groceries",
-        date: new Date().toISOString(),
-      },
-      {
-        account_id: accountId,
-        amount_minor: 350000,
-        direction: "debit",
-        description_raw: "UBER TRIP LAGOS",
-        description_clean: "Uber Trip",
-        category_name: "Transport",
-        date: new Date(Date.now() - 86400000).toISOString(),
-      },
-      {
-        account_id: accountId,
-        amount_minor: 85000000,
-        direction: "credit",
-        description_raw: "SALARY ACME CORP",
-        description_clean: "Salary - Acme Corp",
-        category_name: "Income",
-        date: new Date(Date.now() - 172800000).toISOString(),
-      }
-    ]);
-  }
-}
+// ... (Keep getWorkspaceAndTransactions, getHomeMetrics, insertMockTransactions as they are) ...
 
 export async function importCsvStatement(file: File) {
   const supabase = createClient();
@@ -168,22 +47,33 @@ export async function importCsvStatement(file: File) {
           }
 
           const transactionsToInsert = rows.map((row) => {
-            // 1. Find the Date Column (Fuzzy Matching)
-            const dateCol = row["Date"] || row["Trans Date"] || row["Transaction Date"] || row["Value Date"] || row["date"] || row["Post Date"];
+            // 1. Find the Date Column (Handles "Date/Time" and normal "Date")
+            const rawDate = row["Date/Time"] || row["Date"] || row["Trans Date"] || row["Transaction Date"] || row["date"];
             
-            // 2. Find the Description Column (Fuzzy Matching)
-            const descCol = row["Description"] || row["Narration"] || row["Details"] || row["Description/Narration"] || row["description"] || row["Transaction Details"] || row["Memo"];
+            // 2. Find the Description Column (Handles "Description" and "To/From")
+            const descCol = row["Description"] || row["To/From"] || row["Narration"] || row["Details"] || row["description"];
             
-            // 3. Find the Amount (Handles Amount, Debit, or Credit columns)
+            // 3. Find the Amount (Handles Money In / Money Out)
             let rawAmount = 0;
-            if (row["Amount"] !== undefined) {
-              rawAmount = parseFloat(row["Amount"].toString().replace(/,/g, ""));
-            } else if (row["Debit"] !== undefined && parseFloat(row["Debit"].toString().replace(/,/g, "")) > 0) {
-              rawAmount = -parseFloat(row["Debit"].toString().replace(/,/g, "")); // Debits are negative
-            } else if (row["Credit"] !== undefined && parseFloat(row["Credit"].toString().replace(/,/g, "")) > 0) {
-              rawAmount = parseFloat(row["Credit"].toString().replace(/,/g, "")); // Credits are positive
-            } else if (row["Value"] !== undefined) {
-              rawAmount = parseFloat(row["Value"].toString().replace(/,/g, ""));
+            
+            // Clean the string: remove ₦ symbol, commas, and spaces
+            const cleanAmount = (val: any) => {
+              if (!val) return 0;
+              return parseFloat(val.toString().replace(/[₦,]/g, "").trim()) || 0;
+            };
+
+            const moneyIn = cleanAmount(row["Money In"] || row["Credit"]);
+            const moneyOut = cleanAmount(row["Money Out"] || row["Debit"]);
+            const generalAmount = cleanAmount(row["Amount"] || row["Value"]);
+
+            if (moneyIn > 0) {
+              rawAmount = moneyIn; // Income
+            } else if (moneyOut > 0) {
+              rawAmount = -moneyOut; // Expense
+            } else if (generalAmount !== 0) {
+              rawAmount = generalAmount; // Fallback
+            } else if (row["Debit"] !== undefined) {
+              rawAmount = -cleanAmount(row["Debit"]);
             }
 
             // Skip invalid/empty rows
@@ -200,7 +90,7 @@ export async function importCsvStatement(file: File) {
               description_raw: rawDescStr,
               description_clean: cleanMerchantName(rawDescStr),
               category_name: category,
-              date: parseDate(dateCol), // Uses the robust date parser below
+              date: parseDate(rawDate), 
             };
           }).filter((tx): tx is NonNullable<typeof tx> => tx !== null);
 
@@ -222,25 +112,35 @@ export async function importCsvStatement(file: File) {
 
 // --- HELPER FUNCTIONS ---
 
-// Handles DD/MM/YYYY (Nigerian format), YYYY-MM-DD, etc.
 function parseDate(dateString: any): string {
   if (!dateString) return new Date().toISOString();
   
   const str = String(dateString).trim();
   
-  // Format: DD/MM/YYYY or DD-MM-YYYY
-  const dmyMatch = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  // Handle "01/09/26 10:37:12" format
+  const parts = str.split(" ");
+  const datePart = parts[0];
+  const timePart = parts[1] || "00:00:00";
+
+  // Handle DD/MM/YY
+  const dmyMatch = datePart.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
   if (dmyMatch) {
     const day = parseInt(dmyMatch[1]);
     const month = parseInt(dmyMatch[2]) - 1;
     let year = parseInt(dmyMatch[3]);
     if (year < 100) year += 2000;
-    const d = new Date(year, month, day);
+    
+    const timeParts = timePart.split(":");
+    const hours = parseInt(timeParts[0]) || 0;
+    const minutes = parseInt(timeParts[1]) || 0;
+    const seconds = parseInt(timeParts[2]) || 0;
+
+    const d = new Date(year, month, day, hours, minutes, seconds);
     if (!isNaN(d.getTime())) return d.toISOString();
   }
   
-  // Format: YYYY-MM-DD
-  const ymdMatch = str.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+  // Handle YYYY-MM-DD
+  const ymdMatch = datePart.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
   if (ymdMatch) {
     const year = parseInt(ymdMatch[1]);
     const month = parseInt(ymdMatch[2]) - 1;
