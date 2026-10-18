@@ -29,17 +29,24 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const refresh = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    let { data } = await supabase.from("workspaces").select("id,name,country").eq("owner_id", user.id).order("created_at");
-    // Self-heal: if the user has no workspace, create one
-    if (!data || data.length === 0) {
+
+    const { data } = await supabase
+      .from("workspaces")
+      .select("id,name,country")
+      .eq("owner_id", user.id)
+      .order("created_at");
+
+    let list: Workspace[] = (data ?? []).map((w: any) => ({ id: w.id, name: w.name, country: w.country ?? null }));
+
+    if (list.length === 0) {
       const { data: created } = await supabase
         .from("workspaces")
         .insert({ owner_id: user.id, name: "Personal" })
         .select("id,name,country")
         .single();
-      if (created) data = [created as Workspace];
+      if (created) list = [{ id: created.id, name: created.name, country: created.country ?? null }];
     }
-    const list = (data ?? []) as Workspace[];
+
     setWorkspaces(list);
     const stored = typeof window !== "undefined" ? localStorage.getItem(KEY) : null;
     const valid = stored && list.some((w) => w.id === stored) ? stored : list[0]?.id ?? null;
@@ -64,7 +71,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       .select("id,name,country")
       .single();
     if (error) throw error;
-    const ws = data as Workspace;
+    const ws: Workspace = { id: data.id, name: data.name, country: data.country ?? null };
     setWorkspaces((p) => [...p, ws]);
     setActive(ws.id);
     return ws;
