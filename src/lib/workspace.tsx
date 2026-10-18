@@ -16,6 +16,7 @@ interface Ctx {
   setActive: (id: string) => void;
   refresh: () => Promise<void>;
   createWorkspace: (name: string) => Promise<Workspace>;
+  deleteWorkspace: (id: string) => Promise<void>;
 }
 
 const C = createContext<Ctx | null>(null);
@@ -97,8 +98,21 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     return ws;
   }, [supabase, setActive]);
 
+  const deleteWorkspace = useCallback(async (id: string) => {
+    const { error } = await supabase.from("workspaces").delete().eq("id", id);
+    if (error) throw new Error(error.message || "Could not delete workspace");
+    setWorkspaces((p) => p.filter((w) => w.id !== id));
+    if (activeId === id) {
+      const remaining = workspaces.filter((w) => w.id !== id);
+      if (remaining[0]) {
+        try { localStorage.setItem(KEY, remaining[0].id); } catch {}
+        setActiveId(remaining[0].id);
+      }
+    }
+  }, [supabase, activeId, workspaces]);
+
   return (
-    <C.Provider value={{ workspaces, activeId, active: workspaces.find((w) => w.id === activeId) ?? null, setActive, refresh, createWorkspace }}>
+    <C.Provider value={{ workspaces, activeId, active: workspaces.find((w) => w.id === activeId) ?? null, setActive, refresh, createWorkspace, deleteWorkspace }}>
       {children}
     </C.Provider>
   );

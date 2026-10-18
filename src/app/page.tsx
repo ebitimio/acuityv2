@@ -30,7 +30,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Modal } from "@/components/ui/modal";
 import { Field, Button } from "@/components/ui/form";
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
-import { Eye, EyeOff, Bell, TrendingUp, ArrowLeftRight, CalendarDays, FileText, Users, ShieldAlert, ChevronRight, Receipt, ChevronDown, Plus } from "lucide-react";
+import { Eye, EyeOff, Bell, TrendingUp, ArrowLeftRight, CalendarDays, FileText, Users, ShieldAlert, ChevronRight, Receipt, ChevronDown, Plus, Trash2 } from "lucide-react";
 
 const ZERO_METRICS: HomeMetrics = {
   net_worth_minor: 0,
@@ -46,7 +46,7 @@ export default function SandboxPage() {
   const supabase = createClient();
   const toast = useToast();
   const { hidden, toggleHidden } = useCurrency();
-  const { workspaces, active: activeWs, setActive: setActiveWs, createWorkspace, refresh: refreshWorkspaces } = useWorkspace();
+  const { workspaces, active: activeWs, setActive: setActiveWs, createWorkspace, deleteWorkspace } = useWorkspace();
 
   const [showSplash, setShowSplash] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
@@ -131,10 +131,10 @@ export default function SandboxPage() {
 
   const handleSwitchWorkspace = (id: string) => {
     setWsOpen(false);
+    try { localStorage.setItem("acuity:activeWorkspace", id); } catch {}
     setActiveWs(id);
     clearDataCache();
-    setMetrics(null);
-    setTimeout(() => window.location.reload(), 50);
+    window.location.href = "/";
   };
 
   const handleCreateWorkspace = async () => {
@@ -142,28 +142,35 @@ export default function SandboxPage() {
     if (!name) return;
     setWsBusy(true);
     try {
-      // 1. Create workspace via the hook (sets localStorage for the new workspace)
       const ws = await createWorkspace(name);
-
-      // 2. Refresh workspace list (picks up the new one)
-      await refreshWorkspaces();
-
-      // 3. Ensure active is the new workspace
-      setActiveWs(ws.id);
-
-      // 4. Clear caches
+      try { localStorage.setItem("acuity:activeWorkspace", ws.id); } catch {}
       clearDataCache();
-
-      // 5. Close and reload into the new workspace
       toast(`Workspace "${name}" created`);
       setWsCreateOpen(false);
       setWsNewName("");
-      setTimeout(() => window.location.reload(), 200);
+      window.location.href = "/";
     } catch (err: any) {
       console.error("Workspace create error:", err);
       toast(`Could not create: ${err?.message ?? "Unknown error"}`, "err");
     } finally {
       setWsBusy(false);
+    }
+  };
+
+  const handleDeleteWorkspace = async (w: { id: string; name: string }) => {
+    if (workspaces.length <= 1) {
+      toast("You need at least one workspace", "err");
+      return;
+    }
+    if (!confirm(`Delete "${w.name}" and all its data? This cannot be undone.`)) return;
+    try {
+      await deleteWorkspace(w.id);
+      toast(`Deleted "${w.name}"`);
+      if (w.id === activeWs?.id) {
+        window.location.href = "/";
+      }
+    } catch (err: any) {
+      toast(`Could not delete: ${err?.message ?? "Unknown error"}`, "err");
     }
   };
 
@@ -217,12 +224,27 @@ export default function SandboxPage() {
             </div>
 
             {wsOpen && (
-              <div className="absolute top-14 left-4 z-50 bg-[var(--surface-2)] border border-[var(--line-strong)] rounded-2xl shadow-2xl p-2 w-56">
-                {workspaces.map((w) => (
-                  <button key={w.id} onClick={() => handleSwitchWorkspace(w.id)} className={`w-full text-left px-3 py-2 rounded-lg text-[14px] ${w.id === activeWs?.id ? "bg-[var(--brand)]/20 text-[var(--brand)]" : "hover:bg-white/5 text-white"}`}>
-                    {w.name}
-                  </button>
-                ))}
+              <div className="absolute top-14 left-4 z-50 bg-[var(--surface-2)] border border-[var(--line-strong)] rounded-2xl shadow-2xl p-2 w-64">
+                {workspaces.map((w) => {
+                  const isActive = w.id === activeWs?.id;
+                  const canDelete = workspaces.length > 1;
+                  return (
+                    <div key={w.id} className={`flex items-center justify-between px-3 py-2 rounded-lg text-[14px] ${isActive ? "bg-[var(--brand)]/20 text-[var(--brand)]" : "hover:bg-white/5 text-white"}`}>
+                      <button onClick={() => handleSwitchWorkspace(w.id)} className="flex-1 text-left truncate">
+                        {w.name}
+                      </button>
+                      {canDelete && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDeleteWorkspace(w); }}
+                          className="p-1 text-[var(--danger)] hover:bg-[var(--danger)]/20 rounded ml-2"
+                          aria-label={`Delete ${w.name}`}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
                 <div className="h-px bg-white/10 my-1" />
                 <button onClick={() => { setWsOpen(false); setWsCreateOpen(true); }} className="w-full flex items-center gap-1.5 px-3 py-2 rounded-lg text-[14px] text-[var(--brand)] hover:bg-white/5">
                   <Plus size={14} /> Create workspace
