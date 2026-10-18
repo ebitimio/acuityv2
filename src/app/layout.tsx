@@ -1,29 +1,34 @@
 import type { Metadata, Viewport } from "next";
+import { Manrope } from "next/font/google";
 import "./globals.css";
+import { Providers } from "@/components/providers";
+
+const manrope = Manrope({
+  subsets: ["latin"],
+  variable: "--font-ui",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Acuity",
   description: "AI-driven personal wealth command center",
   manifest: "/manifest.json",
+  icons: { icon: "/icon.svg" },
+  appleWebApp: { capable: true, title: "Acuity", statusBarStyle: "black-translucent" },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#7a0e0e", // Sets the top status bar to match the hero
+  themeColor: "#7a0e0e", // matches top of orange gradient
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  viewportFit: "cover", 
+  viewportFit: "cover",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark">
-      <body className="bg-black text-white antialiased overflow-x-hidden">
-        {children}
+    <html lang="en" className={`dark ${manrope.variable}`}>
+      <body className="overflow-x-hidden bg-black text-white antialiased">
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
