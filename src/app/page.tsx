@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getHomeMetrics, getRecentTransactions, deleteTransaction, clearDataCache } from "@/lib/supabase/database";
+import { useWorkspace } from "@/lib/workspace";
 import type { Txn, HomeMetrics } from "@/lib/types";
 import { AuthScreen } from "@/components/screens/auth-screen";
 import { SplashScreen } from "@/components/ui/splash-screen";
@@ -26,9 +27,8 @@ import { TransactionDetailSheet } from "@/components/ui/transaction-detail-sheet
 import { AIDrawer } from "@/components/ui/ai-drawer";
 import { AddTransactionSheet } from "@/components/ui/add-transaction-sheet";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Modal } from "@/components/ui/modal";
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
-import { User, Eye, EyeOff, Bell, TrendingUp, ArrowLeftRight, CalendarDays, FileText, Users, ShieldAlert, ChevronRight, Plus, Download, Receipt } from "lucide-react";
+import { User, Eye, EyeOff, Bell, TrendingUp, ArrowLeftRight, CalendarDays, FileText, Users, ShieldAlert, ChevronRight, Receipt, ChevronDown, Plus } from "lucide-react";
 
 export default function SandboxPage() {
   const [session, setSession] = useState<any>(null);
@@ -36,6 +36,7 @@ export default function SandboxPage() {
   const supabase = createClient();
   const toast = useToast();
   const { hidden, toggleHidden } = useCurrency();
+  const { workspaces, active: activeWs, setActive: setActiveWs, createWorkspace } = useWorkspace();
 
   const [showSplash, setShowSplash] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
@@ -50,6 +51,7 @@ export default function SandboxPage() {
   const [metrics, setMetrics] = useState<HomeMetrics | null>(null);
   const [transactions, setTransactions] = useState<Txn[]>([]);
   const [navHidden, setNavHidden] = useState(false);
+  const [wsOpen, setWsOpen] = useState(false);
 
   const { scrollY } = useScroll();
   useMotionValueEvent(scrollY, "change", (latest) => {
@@ -80,8 +82,8 @@ export default function SandboxPage() {
   }, [supabase.auth]);
 
   useEffect(() => {
-    if (session) refreshData();
-  }, [session, refreshData]);
+    if (session && activeWs) refreshData();
+  }, [session, activeWs, refreshData]);
 
   useEffect(() => {
     if (!showSplash && session) {
@@ -109,6 +111,25 @@ export default function SandboxPage() {
     clearDataCache();
     await supabase.auth.signOut();
     window.location.reload();
+  };
+
+  const handleSwitchWorkspace = (id: string) => {
+    setWsOpen(false);
+    setActiveWs(id);
+    clearDataCache();
+    setMetrics(null);
+    setTimeout(() => window.location.reload(), 50);
+  };
+
+  const handleCreateWorkspace = async () => {
+    setWsOpen(false);
+    const name = prompt("New workspace name:");
+    if (!name) return;
+    try {
+      await createWorkspace(name);
+      clearDataCache();
+      window.location.reload();
+    } catch { toast("Could not create workspace", "err"); }
   };
 
   if (isAuthLoading) return <div className="min-h-[100dvh] bg-black" />;
@@ -143,12 +164,16 @@ export default function SandboxPage() {
           {/* HERO */}
           <div className="relative pt-[calc(env(safe-area-inset-top)+16px)] pb-6 px-6 rounded-b-[40px] overflow-hidden" style={{ background: "linear-gradient(160deg, #7a0e0e 0%, #b3391f 35%, #e87a1a 75%, #ffb347 100%)" }}>
             <div className="flex justify-between items-center mb-6">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30">
-                  <User size={14} className="text-white" />
+              <button
+                onClick={() => setWsOpen((v) => !v)}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-md border border-white/30"
+              >
+                <div className="w-6 h-6 rounded-full bg-white/30 flex items-center justify-center text-[10px] font-bold text-white">
+                  {(activeWs?.name ?? "P").charAt(0).toUpperCase()}
                 </div>
-                <span className="text-[13px] font-medium text-white/90">Welcome, {session.user?.user_metadata?.full_name?.split(" ")[0] || "User"}</span>
-              </div>
+                <span className="text-[13px] font-medium text-white max-w-[120px] truncate">{activeWs?.name ?? "Personal"}</span>
+                <ChevronDown size={14} className="text-white/70" />
+              </button>
               <div className="flex gap-2">
                 <button onClick={toggleHidden} className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30">
                   {hidden ? <EyeOff size={14} className="text-white" /> : <Eye size={14} className="text-white" />}
@@ -158,6 +183,28 @@ export default function SandboxPage() {
                 </button>
               </div>
             </div>
+
+            {wsOpen && (
+              <div className="absolute top-14 left-4 z-50 bg-[var(--surface-2)] border border-[var(--line-strong)] rounded-2xl shadow-2xl p-2 w-56">
+                {workspaces.map((w) => (
+                  <button
+                    key={w.id}
+                    onClick={() => handleSwitchWorkspace(w.id)}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-[14px] ${w.id === activeWs?.id ? "bg-[var(--brand)]/20 text-[var(--brand)]" : "hover:bg-white/5 text-white"}`}
+                  >
+                    {w.name}
+                  </button>
+                ))}
+                <div className="h-px bg-white/10 my-1" />
+                <button
+                  onClick={handleCreateWorkspace}
+                  className="w-full flex items-center gap-1.5 px-3 py-2 rounded-lg text-[14px] text-[var(--brand)] hover:bg-white/5"
+                >
+                  <Plus size={14} /> Create workspace
+                </button>
+              </div>
+            )}
+
             <div>
               <p className="text-[14px] font-medium text-white/70 mb-1">Total Net Worth</p>
               <div className="text-[48px] font-bold tracking-tight text-white flex items-start gap-1">

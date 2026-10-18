@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { CurrencyProvider } from "@/lib/currency";
+import { WorkspaceProvider } from "@/lib/workspace";
 import { ToastProvider } from "@/components/ui/toast";
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -13,7 +14,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <CurrencyProvider>
-      <ToastProvider>{children}</ToastProvider>
+      <WorkspaceProvider>
+        <ToastProvider>{children}</ToastProvider>
+      </WorkspaceProvider>
     </CurrencyProvider>
   );
 }

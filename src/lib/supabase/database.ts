@@ -8,6 +8,7 @@ const toMinor = (n: number) => Math.round(n * 100);
 const TX_SELECT = "id,amount_minor,direction,description_clean,description_raw,category_name,date,parent_id,account_id,account:accounts(name,institution)";
 const TX_FLAT = "id,amount_minor,direction,description_clean,description_raw,category_name,date,account_id";
 const NOT_SPLIT = 'category_name.is.null,category_name.neq."Split Parent"';
+const KEY = "acuity:activeWorkspace";
 
 let cache: { userId: string; workspaceId: string } | null = null;
 export function clearDataCache() { cache = null; }
@@ -17,10 +18,23 @@ async function ctx() {
   const { data: { session } } = await sb.auth.getSession();
   const user = session?.user;
   if (!user) { cache = null; throw new Error("Not logged in"); }
-  if (cache?.userId === user.id) return { sb, user, workspaceId: cache.workspaceId };
-  const { data: ws, error } = await sb.from("workspaces").select("id").eq("owner_id", user.id).single();
+
+  // Read active workspace from localStorage so switching works
+  let stored: string | null = null;
+  try { stored = typeof window !== "undefined" ? localStorage.getItem(KEY) : null; } catch {}
+  const cacheKey = `${user.id}|${stored ?? ""}`;
+  if (cache && `${cache.userId}|${cache.workspaceId}` === cacheKey) return { sb, user, workspaceId: cache.workspaceId };
+
+  // Validate stored workspace belongs to user
+  if (stored) {
+    const { data } = await sb.from("workspaces").select("id").eq("id", stored).eq("owner_id", user.id).maybeSingle();
+    if (data) { cache = { userId: user.id, workspaceId: data.id }; return { sb, user, workspaceId: data.id }; }
+  }
+
+  const { data: ws, error } = await sb.from("workspaces").select("id").eq("owner_id", user.id).order("created_at").limit(1).single();
   if (error || !ws) throw new Error("Workspace not found");
   cache = { userId: user.id, workspaceId: ws.id };
+  try { if (typeof window !== "undefined") localStorage.setItem(KEY, ws.id); } catch {}
   return { sb, user, workspaceId: ws.id };
 }
 
@@ -242,7 +256,6 @@ export async function importStatement(file: File, accountId?: string): Promise<{
   return { inserted: fresh.length, skipped: parsed.length - fresh.length };
 }
 
-// Backward-compatible alias
 export const importCsvStatement = importStatement;
 
 function rowToTxn(row: Record<string, any>, accountId: string) {
