@@ -32,22 +32,22 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 
     const { data } = await supabase
       .from("workspaces")
-      .select("id,name,country")
+      .select("id,name")
       .eq("owner_id", user.id)
       .order("created_at");
 
-    let list: Workspace[] = (data ?? []).map((w: any) => ({ id: w.id, name: w.name, country: w.country ?? null }));
+    let list: Workspace[] = (data ?? []).map((w: any) => ({ id: w.id, name: w.name, country: null }));
 
     if (list.length === 0) {
       const { data: created, error } = await supabase
         .from("workspaces")
         .insert({ owner_id: user.id, name: "Personal" })
-        .select("id,name,country")
+        .select("id,name")
         .single();
       if (error) {
         console.error("Auto-create workspace failed:", error);
       } else if (created) {
-        list = [{ id: created.id, name: created.name, country: created.country ?? null }];
+        list = [{ id: created.id, name: created.name, country: null }];
       }
     }
 
@@ -72,19 +72,26 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Not logged in");
 
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from("workspaces")
-      .insert({ owner_id: user.id, name: trimmed })
-      .select("id,name,country")
-      .single();
+      .insert({ owner_id: user.id, name: trimmed });
 
     if (error) {
-      console.error("createWorkspace failed:", error);
+      console.error("createWorkspace insert failed:", error);
       throw new Error(error.message || "Could not create workspace");
     }
-    if (!data) throw new Error("No data returned from workspace insert");
 
-    const ws: Workspace = { id: data.id, name: data.name, country: data.country ?? null };
+    const { data: list } = await supabase
+      .from("workspaces")
+      .select("id,name")
+      .eq("owner_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    const newest = list?.[0];
+    if (!newest) throw new Error("Workspace created but could not be loaded");
+
+    const ws: Workspace = { id: newest.id, name: newest.name, country: null };
     setWorkspaces((p) => [...p, ws]);
     setActive(ws.id);
     return ws;
