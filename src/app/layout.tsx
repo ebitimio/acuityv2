@@ -4,6 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Acuity",
   description: "AI-driven personal wealth command center",
+  manifest: "/manifest.json",
 };
 
 export const viewport: Viewport = {

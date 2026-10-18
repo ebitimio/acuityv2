@@ -14,7 +14,6 @@ export async function getWorkspaceAndTransactions() {
 
   if (wsError || !workspace) throw new Error("Workspace not found");
 
-  // Filter out "Split Parent" transactions
   const { data: transactions, error: txError } = await supabase
     .from("transactions")
     .select(`
@@ -163,6 +162,12 @@ export async function importCsvStatement(file: File) {
       complete: async (results) => {
         try {
           const rows = results.data as any[];
+
+          // === CSV DEBUG LOGGING ===
+          console.log("=== CSV DEBUG ===");
+          console.log("Detected columns:", Object.keys(rows[0] || {}));
+          console.log("First row data:", rows[0]);
+          console.log("Total rows parsed:", rows.length);
           
           const transactionsToInsert = rows.map((row) => {
             const dateCol = row["Date"] || row["Trans Date"] || row["Transaction Date"] || row["Value Date"] || row["date"];
@@ -179,6 +184,12 @@ export async function importCsvStatement(file: File) {
               rawAmount = parseFloat(row["Value"].toString().replace(/,/g, ""));
             }
 
+            // Skip invalid/empty rows
+            if (rawAmount === 0 || isNaN(rawAmount)) {
+              console.log("Skipping row with invalid amount:", row);
+              return null;
+            }
+
             const isIncome = rawAmount > 0;
             const rawDescStr = descCol ? String(descCol) : "Unknown Transaction";
             const category = autoCategorize(rawDescStr);
@@ -192,7 +203,13 @@ export async function importCsvStatement(file: File) {
               category_name: category,
               date: new Date(dateCol || Date.now()).toISOString(),
             };
-          }).filter(tx => tx.amount_minor > 0);
+          }).filter((tx): tx is NonNullable<typeof tx> => tx !== null);
+
+          console.log("Transactions ready to insert:", transactionsToInsert.length);
+
+          if (transactionsToInsert.length === 0) {
+            throw new Error("No valid transactions found. Check column names in your CSV.");
+          }
 
           const { error } = await supabase.from("transactions").insert(transactionsToInsert);
           if (error) throw error;
