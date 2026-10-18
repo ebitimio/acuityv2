@@ -142,19 +142,23 @@ export default function SandboxPage() {
     if (!name) return;
     setWsBusy(true);
     try {
-      // Use a direct insert to avoid depending on .select() which RLS can filter
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not logged in");
-      const { error } = await supabase.from("workspaces").insert({ owner_id: user.id, name });
-      if (error) throw error;
+      // 1. Create workspace via the hook (sets localStorage for the new workspace)
+      const ws = await createWorkspace(name);
 
-      // Refresh the list from DB
+      // 2. Refresh workspace list (picks up the new one)
       await refreshWorkspaces();
+
+      // 3. Ensure active is the new workspace
+      setActiveWs(ws.id);
+
+      // 4. Clear caches
       clearDataCache();
+
+      // 5. Close and reload into the new workspace
       toast(`Workspace "${name}" created`);
       setWsCreateOpen(false);
       setWsNewName("");
-      setTimeout(() => window.location.reload(), 300);
+      setTimeout(() => window.location.reload(), 200);
     } catch (err: any) {
       console.error("Workspace create error:", err);
       toast(`Could not create: ${err?.message ?? "Unknown error"}`, "err");
