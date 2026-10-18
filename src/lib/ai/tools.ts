@@ -81,7 +81,9 @@ export function buildTools(supabase: Awaited<ReturnType<typeof createClient>>): 
           supabase.from("accounts").select("id,name,institution"),
           supabase.rpc("get_account_balances"),
         ]);
-        const map = new Map((balances ?? []).map((b: { account_id: string; current_minor: number }) => [b.account_id, b.current_minor]));
+        const map = new Map<string, number>(
+          (balances ?? []).map((b: { account_id: string; current_minor: number }) => [b.account_id, Number(b.current_minor)])
+        );
         return (accounts ?? []).map((a) => ({ name: a.name, institution: a.institution, balance: naira(Number(map.get(a.id) ?? 0)) }));
       },
     },
@@ -141,10 +143,12 @@ export function buildTools(supabase: Awaited<ReturnType<typeof createClient>>): 
           supabase.from("accounts").select("id,name,type"),
           supabase.rpc("get_account_balances"),
         ]);
-        const map = new Map((balances ?? []).map((b: { account_id: string; current_minor: number }) => [b.account_id, Number(b.current_minor)]));
+        const map = new Map<string, number>(
+          (balances ?? []).map((b: { account_id: string; current_minor: number }) => [b.account_id, Number(b.current_minor)])
+        );
         const idle = (accounts ?? [])
           .filter((a) => a.type === "checking" || a.type === "wallet")
-          .map((a) => ({ name: a.name, type: a.type, balance: map.get(a.id) ?? 0 }))
+          .map((a) => ({ name: a.name, type: a.type, balance: Number(map.get(a.id) ?? 0) }))
           .filter((a) => a.balance >= threshold);
         return idle.map((a) => ({ account: a.name, balance: naira(a.balance), suggestion: "Move to a Money Market Fund earning ~15–18% p.a." }));
       },

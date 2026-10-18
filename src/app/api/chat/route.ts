@@ -46,11 +46,15 @@ Do not give regulated investment or legal advice.`;
       const choice = completion.choices[0];
       messages.push(choice.message);
 
-      if (!choice.message.tool_calls || choice.message.tool_calls.length === 0) {
+      const functionCalls = (choice.message.tool_calls ?? []).filter(
+        (c): c is OpenAI.Chat.Completions.ChatCompletionMessageFunctionToolCall => c.type === "function"
+      );
+
+      if (functionCalls.length === 0) {
         return NextResponse.json({ response: choice.message.content || "" });
       }
 
-      for (const call of choice.message.tool_calls) {
+      for (const call of functionCalls) {
         const tool = tools.find((t) => t.name === call.function.name);
         let result: unknown;
         try {
