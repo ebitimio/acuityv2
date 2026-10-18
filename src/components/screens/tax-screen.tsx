@@ -4,32 +4,24 @@ import { GlassSurface } from "@/components/ui/glass-surface";
 import { NumberRoll } from "@/components/ui/number-roll";
 import { ChevronLeft, Download, Info, ShieldCheck } from "lucide-react";
 
-const TAX_DATA = {
-  grossIncome: 12500000,
-  pension: 1000000,
-  nhf: 312500,
-  rentRelief: 500000,
-  otherDeductions: 200000,
-};
-
 export function TaxScreen({ onBack }: { onBack: () => void }) {
-  // Simple mock calculation for the UI (Real logic goes on the backend)
+  // Clean, empty data for new users
+  const TAX_DATA = {
+    grossIncome: 0,
+    pension: 0,
+    nhf: 0,
+    rentRelief: 0,
+    otherDeductions: 0,
+  };
+
   const totalDeductions = TAX_DATA.pension + TAX_DATA.nhf + TAX_DATA.rentRelief + TAX_DATA.otherDeductions;
-  const taxableIncome = TAX_DATA.grossIncome - totalDeductions;
+  const taxableIncome = Math.max(TAX_DATA.grossIncome - totalDeductions, 0);
   
-  // Simplified progressive tax bracket logic for demo
-  // Real app would use versioned tax_configs table as per spec §7.2
-  const estimatedTax = Math.round(
-    (300000 * 0.07) + 
-    (300000 * 0.11) + 
-    (500000 * 0.15) + 
-    (500000 * 0.19) + 
-    (1600000 * 0.21) + 
-    ((taxableIncome - 3200000) * 0.24)
-  );
+  // Simplified logic that results in 0 when there's no income
+  const estimatedTax = 0;
 
   return (
-    <div className="min-h-screen bg-black pb-32">
+    <div className="min-h-[100dvh] bg-black pb-32">
       
       {/* Header */}
       <div className="sticky top-0 z-40 bg-black/80 backdrop-blur-xl border-b border-white/5 px-6 py-4 flex items-center justify-between">
@@ -110,7 +102,10 @@ export function TaxScreen({ onBack }: { onBack: () => void }) {
         </div>
 
         {/* Action Button */}
-        <button className="w-full flex items-center justify-center gap-2 py-4 bg-white text-black rounded-full font-semibold text-[17px] active:scale-[0.98] transition-transform mt-2">
+        <button 
+          disabled={estimatedTax === 0}
+          className="w-full flex items-center justify-center gap-2 py-4 bg-white text-black rounded-full font-semibold text-[17px] active:scale-[0.98] transition-transform mt-2 disabled:opacity-50"
+        >
           <Download size={20} />
           Export LIRS Summary (PDF)
         </button>

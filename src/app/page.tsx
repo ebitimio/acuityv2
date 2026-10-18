@@ -28,7 +28,6 @@ import { BankChargeScreen } from "@/components/screens/bank-charge-screen";
 import { motion } from "framer-motion";
 import { RefreshCw, ChevronRight, CalendarDays, FileText, Users, ShieldAlert, LayoutGrid, ArrowLeftRight } from "lucide-react";
 
-// The Hover Motion Component from your snippet
 const HoverCard = ({ children, onClick }: { children: React.ReactNode, onClick: () => void }) => (
   <motion.button
     whileHover={{ y: -5 }}
@@ -118,7 +117,7 @@ export default function SandboxPage() {
   const remaining = Math.max(budgetLimitNGN - totalSpentNGN, 0);
 
   return (
-    <main className="min-h-[100dvh] bg-black relative overflow-x-hidden">
+    <main className="min-h-[100dvh] bg-black relative overflow-x-hidden flex flex-col">
       
       <TopBar 
         baseCurrency="NGN"
@@ -128,169 +127,165 @@ export default function SandboxPage() {
         onSettingsClick={() => setIsSettingsOpen(true)}
       />
 
-      {activeScreen === "analytics" ? (
-        <AnalyticsScreen />
-      ) : activeScreen === "budget" ? (
-        <BudgetScreen onBack={() => setActiveScreen("home")} />
-      ) : activeScreen === "accounts" ? (
-        <AccountsScreen onBack={() => setActiveScreen("home")} />
-      ) : activeScreen === "commitments" ? (
-        <CommitmentsScreen onBack={() => setActiveScreen("home")} />
-      ) : activeScreen === "tax" ? (
-        <TaxScreen onBack={() => setActiveScreen("home")} />
-      ) : activeScreen === "needs-review" ? (
-        <NeedsReviewScreen onBack={() => setActiveScreen("home")} onResolved={refreshData}/>
-      ) : activeScreen === "ajo" ? (
-        <AjoScreen onBack={() => setActiveScreen("home")} />
-      ) : activeScreen === "bank-charge" ? (
-        <BankChargeScreen onBack={() => setActiveScreen("home")} />
-      ) : (
-        // --- HOME DASHBOARD ---
-        <div className="pt-24 pb-32 px-4 flex flex-col gap-6">
-          
-          {/* HERO CARD */}
-          <GlassSurface tier="thick" radius={28} className="p-6 relative overflow-hidden">
-             <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--brand)]/10 blur-[50px] rounded-full pointer-events-none" />
-             <div className="flex justify-between items-start mb-4">
-                <div>
-                  <p className="text-[13px] text-white/60 mb-1">Total Net Worth</p>
-                  <div className="text-[40px] font-bold text-white tracking-tight">
-                    <NumberRoll value={netWorthNGN} currency="₦" />
-                  </div>
-                </div>
-                <button onClick={refreshData} className="p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors">
-                  <RefreshCw size={16} className="text-white/80" />
-                </button>
-             </div>
-          </GlassSurface>
-
-          {/* PACING CARD */}
-          <GlassSurface tier="thick" radius={28} className="p-6">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <p className="text-[15px] font-medium text-white mb-1">Pacing</p>
-                <p className="text-[13px] text-white/60">
-                  {spentPercentage === 0 ? "No budget set yet." : spentPercentage < 50 ? "Well under pace. Strong cushion." : "On pace. Keep it steady."}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full border-4 border-white/10 border-t-[var(--brand)] flex items-center justify-center relative overflow-hidden">
-                <span className="text-[13px] font-semibold">{spentPercentage}%</span>
-              </div>
-              <div>
-                <p className="text-[17px] font-semibold text-white">
-                  <NumberRoll value={remaining} currency="₦" /> remaining
-                </p>
-                <p className="text-[13px] text-white/60">
-                  of <NumberRoll value={budgetLimitNGN} currency="₦" /> budget
-                </p>
-              </div>
-            </div>
-          </GlassSurface>
-
-          {/* GRID CARDS WITH HOVER MOTION */}
-          <div className="grid grid-cols-2 gap-3">
-            <HoverCard onClick={() => setActiveScreen("commitments")}>
-              <div className="w-10 h-10 rounded-full bg-[var(--info)]/20 flex items-center justify-center mb-3">
-                <CalendarDays size={20} className="text-[var(--info)]" />
-              </div>
-              <span className="text-[15px] font-medium text-white block mb-1">Commitments</span>
-              <span className="text-[12px] text-white/50 text-left">Bills & sinking funds</span>
-            </HoverCard>
-
-            <HoverCard onClick={() => setActiveScreen("tax")}>
-              <div className="w-10 h-10 rounded-full bg-[#AF52DE]/20 flex items-center justify-center mb-3">
-                <FileText size={20} className="text-[#AF52DE]" />
-              </div>
-              <span className="text-[15px] font-medium text-white block mb-1">Tax Estimator</span>
-              <span className="text-[12px] text-white/50 text-left">PIT & LIRS export</span>
-            </HoverCard>
-
-            <HoverCard onClick={() => setActiveScreen("ajo")}>
-              <div className="w-10 h-10 rounded-full bg-[#FF9500]/20 flex items-center justify-center mb-3">
-                <Users size={20} className="text-[#FF9500]" />
-              </div>
-              <span className="text-[15px] font-medium text-white block mb-1">Ajo Tracker</span>
-              <span className="text-[12px] text-white/50 text-left">Thrift & cooperative groups</span>
-            </HoverCard>
-
-            <HoverCard onClick={() => setActiveScreen("bank-charge")}>
-              <div className="w-10 h-10 rounded-full bg-[#FF453A]/20 flex items-center justify-center mb-3">
-                <ShieldAlert size={20} className="text-[#FF453A]" />
-              </div>
-              <span className="text-[15px] font-medium text-white block mb-1">Bank Charges</span>
-              <span className="text-[12px] text-white/50 text-left">Fee auditor</span>
-            </HoverCard>
-          </div>
-
-          {/* NEEDS REVIEW BANNER */}
-          {metrics.uncategorized_count > 0 && (
-            <motion.button 
-              whileHover={{ y: -3 }}
-              onClick={() => setActiveScreen("needs-review")} 
-              className="w-full flex items-center justify-between p-4 bg-[var(--warn)]/10 border border-[var(--warn)]/20 rounded-2xl group transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-[var(--warn)]/20 flex items-center justify-center">
-                  <span className="text-[var(--warn)] font-semibold text-[14px]">{metrics.uncategorized_count}</span>
-                </div>
-                <span className="text-[15px] font-medium text-white">Transactions need review</span>
-              </div>
-              <ChevronRight size={20} className="text-[var(--warn)] group-hover:translate-x-1 transition-transform" />
-            </motion.button>
-          )}
-
-          {/* RECENT TRANSACTIONS (CLEAN EMPTY STATE) */}
-          <div>
-            <div className="flex items-center justify-between mb-3 px-1">
-              <h3 className="text-[17px] font-semibold text-white">Recent Transactions</h3>
-              <button className="text-[13px] text-[var(--brand)] font-medium">See all</button>
-            </div>
+      <div className="flex-1 overflow-y-auto pb-32">
+        {activeScreen === "analytics" ? (
+          <AnalyticsScreen />
+        ) : activeScreen === "budget" ? (
+          <BudgetScreen onBack={() => setActiveScreen("home")} />
+        ) : activeScreen === "accounts" ? (
+          <AccountsScreen onBack={() => setActiveScreen("home")} />
+        ) : activeScreen === "commitments" ? (
+          <CommitmentsScreen onBack={() => setActiveScreen("home")} />
+        ) : activeScreen === "tax" ? (
+          <TaxScreen onBack={() => setActiveScreen("home")} />
+        ) : activeScreen === "needs-review" ? (
+          <NeedsReviewScreen onBack={() => setActiveScreen("home")} onResolved={refreshData}/>
+        ) : activeScreen === "ajo" ? (
+          <AjoScreen onBack={() => setActiveScreen("home")} />
+        ) : activeScreen === "bank-charge" ? (
+          <BankChargeScreen onBack={() => setActiveScreen("home")} />
+        ) : (
+          // HOME DASHBOARD
+          <div className="px-4 pt-4 flex flex-col gap-6">
             
-            <GlassSurface tier="thin" radius={24} className="overflow-hidden">
-              {transactions.length === 0 ? (
-                <div className="p-8 text-center flex flex-col items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center">
-                    <ArrowLeftRight size={20} className="text-white/40" />
+            <GlassSurface tier="thick" radius={28} className="p-6 relative overflow-hidden">
+               <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--brand)]/10 blur-[50px] rounded-full pointer-events-none" />
+               <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <p className="text-[13px] text-white/60 mb-1">Total Net Worth</p>
+                    <div className="text-[40px] font-bold text-white tracking-tight">
+                      <NumberRoll value={netWorthNGN} currency="₦" />
+                    </div>
                   </div>
-                  <p className="text-[15px] text-white/60">No transactions yet.</p>
-                  <button 
-                    onClick={() => setIsImportOpen(true)}
-                    className="text-[13px] font-medium text-[var(--brand)] bg-[var(--brand)]/10 px-4 py-2 rounded-full"
-                  >
-                    Import your first statement
+                  <button onClick={refreshData} className="p-2 bg-white/5 rounded-full hover:bg-white/10 transition-colors">
+                    <RefreshCw size={16} className="text-white/80" />
                   </button>
-                </div>
-              ) : (
-                transactions
-                  .filter((txn: any) => txn.category_name !== "Split Parent")
-                  .slice(0, 5)
-                  .map((txn: any) => (
-                    <TransactionRow 
-                      key={txn.id}
-                      id={txn.id}
-                      merchant={txn.description_clean || txn.description_raw}
-                      categoryIcon={
-                        txn.category_name === "Groceries" ? "🛒" : 
-                        txn.category_name === "Transport" ? "🚗" : 
-                        txn.category_name === "Income" ? "💼" : 
-                        txn.category_name === "Subscriptions" ? "🍿" :
-                        txn.category_name === "Fuel" ? "⛽" : "💳"
-                      }
-                      categoryName={txn.category_name || "Uncategorized"}
-                      accountName={txn.account?.name || "Account"}
-                      amount={txn.amount_minor / 100}
-                      isIncome={txn.direction === "credit"}
-                      onRowClick={() => setSelectedTxn(txn)}
-                    />
-                  ))
-              )}
+               </div>
             </GlassSurface>
-          </div>
 
-        </div>
-      )}
+            <GlassSurface tier="thick" radius={28} className="p-6">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <p className="text-[15px] font-medium text-white mb-1">Pacing</p>
+                  <p className="text-[13px] text-white/60">
+                    {spentPercentage === 0 ? "No budget set yet." : spentPercentage < 50 ? "Well under pace. Strong cushion." : "On pace. Keep it steady."}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-full border-4 border-white/10 border-t-[var(--brand)] flex items-center justify-center relative overflow-hidden">
+                  <span className="text-[13px] font-semibold">{spentPercentage}%</span>
+                </div>
+                <div>
+                  <p className="text-[17px] font-semibold text-white">
+                    <NumberRoll value={remaining} currency="₦" /> remaining
+                  </p>
+                  <p className="text-[13px] text-white/60">
+                    of <NumberRoll value={budgetLimitNGN} currency="₦" /> budget
+                  </p>
+                </div>
+              </div>
+            </GlassSurface>
+
+            <div className="grid grid-cols-2 gap-3">
+              <HoverCard onClick={() => setActiveScreen("commitments")}>
+                <div className="w-10 h-10 rounded-full bg-[var(--info)]/20 flex items-center justify-center mb-3">
+                  <CalendarDays size={20} className="text-[var(--info)]" />
+                </div>
+                <span className="text-[15px] font-medium text-white block mb-1">Commitments</span>
+                <span className="text-[12px] text-white/50 text-left">Bills & sinking funds</span>
+              </HoverCard>
+
+              <HoverCard onClick={() => setActiveScreen("tax")}>
+                <div className="w-10 h-10 rounded-full bg-[#AF52DE]/20 flex items-center justify-center mb-3">
+                  <FileText size={20} className="text-[#AF52DE]" />
+                </div>
+                <span className="text-[15px] font-medium text-white block mb-1">Tax Estimator</span>
+                <span className="text-[12px] text-white/50 text-left">PIT & LIRS export</span>
+              </HoverCard>
+
+              <HoverCard onClick={() => setActiveScreen("ajo")}>
+                <div className="w-10 h-10 rounded-full bg-[#FF9500]/20 flex items-center justify-center mb-3">
+                  <Users size={20} className="text-[#FF9500]" />
+                </div>
+                <span className="text-[15px] font-medium text-white block mb-1">Ajo Tracker</span>
+                <span className="text-[12px] text-white/50 text-left">Thrift & cooperative groups</span>
+              </HoverCard>
+
+              <HoverCard onClick={() => setActiveScreen("bank-charge")}>
+                <div className="w-10 h-10 rounded-full bg-[#FF453A]/20 flex items-center justify-center mb-3">
+                  <ShieldAlert size={20} className="text-[#FF453A]" />
+                </div>
+                <span className="text-[15px] font-medium text-white block mb-1">Bank Charges</span>
+                <span className="text-[12px] text-white/50 text-left">Fee auditor</span>
+              </HoverCard>
+            </div>
+
+            {metrics.uncategorized_count > 0 && (
+              <motion.button 
+                whileHover={{ y: -3 }}
+                onClick={() => setActiveScreen("needs-review")} 
+                className="w-full flex items-center justify-between p-4 bg-[var(--warn)]/10 border border-[var(--warn)]/20 rounded-2xl group transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-[var(--warn)]/20 flex items-center justify-center">
+                    <span className="text-[var(--warn)] font-semibold text-[14px]">{metrics.uncategorized_count}</span>
+                  </div>
+                  <span className="text-[15px] font-medium text-white">Transactions need review</span>
+                </div>
+                <ChevronRight size={20} className="text-[var(--warn)] group-hover:translate-x-1 transition-transform" />
+              </motion.button>
+            )}
+
+            <div>
+              <div className="flex items-center justify-between mb-3 px-1">
+                <h3 className="text-[17px] font-semibold text-white">Recent Transactions</h3>
+                <button className="text-[13px] text-[var(--brand)] font-medium">See all</button>
+              </div>
+              
+              <GlassSurface tier="thin" radius={24} className="overflow-hidden">
+                {transactions.length === 0 ? (
+                  <div className="p-8 text-center flex flex-col items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center">
+                      <ArrowLeftRight size={20} className="text-white/40" />
+                    </div>
+                    <p className="text-[15px] text-white/60">No transactions yet.</p>
+                    <button 
+                      onClick={() => setIsImportOpen(true)}
+                      className="text-[13px] font-medium text-[var(--brand)] bg-[var(--brand)]/10 px-4 py-2 rounded-full"
+                    >
+                      Import your first statement
+                    </button>
+                  </div>
+                ) : (
+                  transactions
+                    .filter((txn: any) => txn.category_name !== "Split Parent")
+                    .slice(0, 5)
+                    .map((txn: any) => (
+                      <TransactionRow 
+                        key={txn.id}
+                        id={txn.id}
+                        merchant={txn.description_clean || txn.description_raw}
+                        categoryIcon={
+                          txn.category_name === "Groceries" ? "ShoppingBag" : 
+                          txn.category_name === "Transport" ? "Car" : 
+                          txn.category_name === "Income" ? "Briefcase" : 
+                          txn.category_name === "Subscriptions" ? "Tv" :
+                          txn.category_name === "Fuel" ? "Fuel" : "CreditCard"
+                        }
+                        categoryName={txn.category_name || "Uncategorized"}
+                        accountName={txn.account?.name || "Account"}
+                        amount={txn.amount_minor / 100}
+                        isIncome={txn.direction === "credit"}
+                        onRowClick={() => setSelectedTxn(txn)}
+                      />
+                    ))
+                )}
+              </GlassSurface>
+            </div>
+          </div>
+        )}
+      </div>
 
       <FloatingTabBar 
         activeTab={activeScreen === "budget" ? "home" : activeScreen}
@@ -299,20 +294,10 @@ export default function SandboxPage() {
         onAdvisorClick={() => setIsAdvisorOpen(true)}
       />
       
-      <ImportSheet 
-        isOpen={isImportOpen} 
-        onClose={() => setIsImportOpen(false)} 
-        onImportSuccess={refreshData}
-      />
+      <ImportSheet isOpen={isImportOpen} onClose={() => setIsImportOpen(false)} onImportSuccess={refreshData}/>
       <AIDrawer isOpen={isAdvisorOpen} onClose={() => setIsAdvisorOpen(false)} />
       
-      <SettingsSheet 
-        isOpen={isSettingsOpen} 
-        onClose={() => setIsSettingsOpen(false)}
-        user={session.user}
-        baseCurrency="NGN"
-        onCurrencyChange={() => {}}
-      />
+      <SettingsSheet isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} user={session.user} baseCurrency="NGN" onCurrencyChange={() => {}} />
       
       <TransactionDetailSheet 
         key={selectedTxn?.id || "empty"}
@@ -325,12 +310,7 @@ export default function SandboxPage() {
             merchant: selectedTxn.description_clean || selectedTxn.description_raw,
             amount: selectedTxn.amount_minor / 100,
             categoryName: selectedTxn.category_name || "Uncategorized",
-            categoryIcon: 
-              selectedTxn.category_name === "Groceries" ? "🛒" : 
-              selectedTxn.category_name === "Transport" ? "🚗" : 
-              selectedTxn.category_name === "Income" ? "💼" : 
-              selectedTxn.category_name === "Subscriptions" ? "🍿" :
-              selectedTxn.category_name === "Fuel" ? "⛽" : "💳",
+            categoryIcon: "CreditCard", // fallback
             accountName: selectedTxn.account?.name || "Account",
             date: new Date(selectedTxn.date).toLocaleDateString(),
             accountId: selectedTxn.account_id,

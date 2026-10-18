@@ -2,7 +2,7 @@
 
 import { motion, useAnimation, PanInfo } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { Check, Trash2 } from "lucide-react";
+import { Check, Trash2, ShoppingBag, Car, Briefcase, Tv, Fuel, CreditCard } from "lucide-react";
 
 interface TransactionRowProps {
   id: string;
@@ -12,7 +12,7 @@ interface TransactionRowProps {
   accountName: string;
   amount: number;
   isIncome?: boolean;
-  onRowClick?: () => void; // Renamed for clarity
+  onRowClick?: () => void;
 }
 
 export function TransactionRow({
@@ -40,6 +40,18 @@ export function TransactionRow({
     }
   };
 
+  // Helper to render the correct icon based on the passed string
+  const renderIcon = () => {
+    switch (categoryIcon) {
+      case "ShoppingBag": return <ShoppingBag size={20} className="text-[var(--brand)]" />;
+      case "Car": return <Car size={20} className="text-[var(--info)]" />;
+      case "Briefcase": return <Briefcase size={20} className="text-[#AF52DE]" />;
+      case "Tv": return <Tv size={20} className="text-[#FF9F0A]" />;
+      case "Fuel": return <Fuel size={20} className="text-[var(--danger)]" />;
+      default: return <CreditCard size={20} className="text-white/60" />;
+    }
+  };
+
   return (
     <div className="relative w-full overflow-hidden border-b border-white/[0.05] last:border-0">
       <div className="absolute inset-0 flex items-center justify-between px-6 bg-[#0E0F10]">
@@ -59,14 +71,12 @@ export function TransactionRow({
         dragElastic={0.2}
         onDragEnd={handleDragEnd}
         animate={controls}
-        onTap={() => {
-          if (onRowClick) onRowClick();
-        }}
+        onTap={onRowClick}
         className="relative flex items-center justify-between p-4 bg-[#0E0F10] z-10 cursor-pointer select-none"
       >
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-[14px] bg-white/5 border border-white/10 flex items-center justify-center text-[20px]">
-            {categoryIcon}
+          <div className="w-12 h-12 rounded-[14px] bg-white/5 border border-white/10 flex items-center justify-center">
+            {renderIcon()}
           </div>
           <div className="flex flex-col">
             <span className="text-[16px] font-medium text-white">{merchant}</span>

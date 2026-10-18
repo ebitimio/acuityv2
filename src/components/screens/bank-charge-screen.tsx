@@ -1,23 +1,14 @@
 "use client";
 
 import { GlassSurface } from "@/components/ui/glass-surface";
-import { ChevronLeft, ShieldAlert, CheckCircle, Search } from "lucide-react";
-
-const AUDIT_RESULTS = [
-  { id: "1", date: "May 3", description: "Electronic Transfer Levy (ETL)", amount: 50, expected: 50, status: "correct" },
-  { id: "2", date: "May 3", description: "Stamp Duty", amount: 50, expected: 0, status: "overcharge", note: "Stamp duty should not be charged on credits below ₦10,000" },
-  { id: "3", date: "May 5", description: "SMS Alert Fee", amount: 4, expected: 4, status: "correct" },
-  { id: "4", date: "May 8", description: "Card Maintenance Fee", amount: 500, expected: 500, status: "correct" },
-  { id: "5", date: "May 12", description: "Duplicate ETL Charge", amount: 50, expected: 0, status: "overcharge", note: "You were charged ETL twice on the same transaction" },
-];
+import { ChevronLeft, ShieldCheck, Search } from "lucide-react";
 
 export function BankChargeScreen({ onBack }: { onBack: () => void }) {
-  const totalOvercharged = AUDIT_RESULTS
-    .filter(r => r.status === "overcharge")
-    .reduce((sum, r) => sum + (r.amount - r.expected), 0);
+  const totalOvercharged = 0;
+  const auditResults: any[] = [];
 
   return (
-    <div className="min-h-screen bg-black pb-32">
+    <div className="min-h-[100dvh] bg-black pb-32">
       
       {/* Header */}
       <div className="sticky top-0 z-40 bg-black/80 backdrop-blur-xl border-b border-white/5 px-6 py-4 flex items-center justify-between">
@@ -34,10 +25,10 @@ export function BankChargeScreen({ onBack }: { onBack: () => void }) {
         
         {/* Hero Stat */}
         <GlassSurface tier="thick" radius={28} className="p-6 relative overflow-hidden text-center">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-48 bg-[var(--danger)]/10 blur-[60px] rounded-full pointer-events-none" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-48 bg-[var(--brand)]/10 blur-[60px] rounded-full pointer-events-none" />
           
           <p className="text-[13px] text-white/60 mb-2">Potential Overcharges Found</p>
-          <p className="text-[40px] font-bold text-[var(--danger)] tracking-tight tabular">₦{totalOvercharged.toLocaleString()}</p>
+          <p className="text-[40px] font-bold text-[var(--brand)] tracking-tight tabular">₦0</p>
           <p className="text-[13px] text-white/50 mt-2">Based on CBN fee rules for May 2026</p>
         </GlassSurface>
 
@@ -45,48 +36,22 @@ export function BankChargeScreen({ onBack }: { onBack: () => void }) {
         <div>
           <h3 className="text-[15px] font-semibold text-white mb-3 px-1">Audit Results</h3>
           
-          <GlassSurface tier="thin" radius={24} className="flex flex-col p-2">
-            {AUDIT_RESULTS.map((result) => (
-              <div key={result.id} className="flex flex-col p-4 border-b border-white/5 last:border-0 gap-2">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-3">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
-                      result.status === "overcharge" ? "bg-[var(--danger)]/20" : "bg-[var(--brand)]/20"
-                    }`}>
-                      {result.status === "overcharge" ? (
-                        <ShieldAlert size={16} className="text-[var(--danger)]" />
-                      ) : (
-                        <CheckCircle size={16} className="text-[var(--brand)]" />
-                      )}
-                    </div>
-                    <div>
-                      <p className="text-[15px] font-medium text-white">{result.description}</p>
-                      <p className="text-[12px] text-white/50">{result.date}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[15px] font-semibold text-white tabular">₦{result.amount}</p>
-                    {result.status === "overcharge" && (
-                      <p className="text-[11px] text-[var(--danger)] font-medium">Overcharge</p>
-                    )}
-                  </div>
-                </div>
-                {result.note && (
-                  <p className="text-[12px] text-[var(--danger)]/80 ml-11 bg-[var(--danger)]/5 p-2 rounded-lg">
-                    {result.note}
-                  </p>
-                )}
+          {auditResults.length === 0 ? (
+            <GlassSurface tier="thin" radius={24} className="p-10 flex flex-col items-center text-center">
+              <div className="w-12 h-12 rounded-full bg-[var(--brand)]/20 flex items-center justify-center mb-3">
+                <ShieldCheck size={24} className="text-[var(--brand)]" />
               </div>
-            ))}
-          </GlassSurface>
+              <p className="text-[15px] font-medium text-white mb-1">All Clear!</p>
+              <p className="text-[13px] text-white/50">
+                No overcharges detected. Your bank is complying with CBN fee regulations.
+              </p>
+            </GlassSurface>
+          ) : (
+            <GlassSurface tier="thin" radius={24} className="flex flex-col p-2">
+              {/* Render results here if you add them later */}
+            </GlassSurface>
+          )}
         </div>
-
-        {/* Action Button */}
-        {totalOvercharged > 0 && (
-          <button className="w-full flex items-center justify-center gap-2 py-4 bg-white text-black rounded-full font-semibold text-[17px] active:scale-[0.98] transition-transform">
-            Generate Dispute Letter
-          </button>
-        )}
 
       </div>
     </div>
