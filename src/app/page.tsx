@@ -25,7 +25,7 @@ import { AjoScreen } from "@/components/screens/ajo-screen";
 import { BankChargeScreen } from "@/components/screens/bank-charge-screen";
 
 import { motion } from "framer-motion";
-import { RefreshCw, ChevronRight, CalendarDays, FileText, Users, ShieldAlert, LayoutGrid, ArrowLeftRight, Eye, Bell, TrendingUp, TrendingDown, Wallet } from "lucide-react";
+import { RefreshCw, ChevronRight, CalendarDays, FileText, Users, ShieldAlert, ArrowLeftRight, Eye, Bell, TrendingUp, Wallet, Shield, User } from "lucide-react";
 
 export default function SandboxPage() {
   const [session, setSession] = useState<any>(null);
@@ -128,73 +128,87 @@ export default function SandboxPage() {
           
           {/* PREMIUM GRADIENT HERO */}
           <div 
-            className="relative pt-14 pb-10 px-5 rounded-b-[40px] overflow-hidden"
+            className="relative pt-14 pb-12 px-6 rounded-b-[40px] overflow-hidden"
             style={{ 
-              background: "linear-gradient(160deg, #6a0d0d 0%, #b3391f 40%, #e87a1a 80%, #f9b13a 100%)" 
+              background: "linear-gradient(160deg, #7a0e0e 0%, #b3391f 35%, #e87a1a 75%, #ffb347 100%)" 
             }}
           >
             {/* Glass Top Bar Overlay */}
-            <div className="absolute top-4 left-0 right-0 px-5 flex justify-between items-center">
+            <div className="absolute top-4 left-0 right-0 px-6 flex justify-between items-center">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/20">
-                  <Users size={14} className="text-white" />
+                <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30">
+                  <User size={14} className="text-white" />
                 </div>
-                <span className="text-[13px] font-medium text-white">Welcome, {session.user?.user_metadata?.full_name?.split(" ")[0] || "User"}</span>
+                <span className="text-[13px] font-medium text-white/90">Welcome, {session.user?.user_metadata?.full_name?.split(" ")[0] || "User"}</span>
               </div>
               <div className="flex gap-2">
-                <button onClick={() => setActiveScreen("analytics")} className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/20">
+                <button onClick={() => setActiveScreen("analytics")} className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30">
                   <Eye size={14} className="text-white" />
                 </button>
-                <button onClick={() => setIsSettingsOpen(true)} className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/20">
+                <button onClick={() => setIsSettingsOpen(true)} className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30">
                   <Bell size={14} className="text-white" />
                 </button>
               </div>
             </div>
 
-            {/* Net Worth */}
+            {/* Net Worth (Large Bold Font from Reference) */}
             <div className="mt-12">
-              <p className="text-[14px] font-medium text-white/80 mb-1">Total Net Worth</p>
-              <div className="text-[52px] font-bold tracking-tight text-white flex items-start">
-                <span className="text-[32px] mt-2 mr-1">₦</span>
+              <p className="text-[15px] font-medium text-white/70 mb-1">Total Net Worth</p>
+              <div className="text-[56px] font-bold tracking-tight text-white flex items-start gap-1">
+                <span className="text-[32px] mt-3 opacity-80">₦</span>
                 <NumberRoll value={netWorthNGN} currency="" />
               </div>
             </div>
 
-            {/* Quick Actions (Glass Pills) */}
-            <div className="flex gap-2 mt-8">
-              <button onClick={() => setActiveScreen("budget")} className="flex-1 py-3 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl text-[13px] font-semibold text-white flex items-center justify-center gap-1.5 hover:bg-white/20 transition-colors">
-                <TrendingUp size={14} /> Monitoring
+            {/* Quick Actions (Frosted Glass Pills) */}
+            <div className="flex gap-3 mt-8">
+              <button onClick={() => setActiveScreen("budget")} className="flex-1 py-3.5 bg-white/20 backdrop-blur-xl border border-white/30 rounded-2xl text-[14px] font-semibold text-white flex items-center justify-center gap-2 hover:bg-white/30 transition-colors">
+                <TrendingUp size={16} /> Monitoring
               </button>
-              <button onClick={() => setIsImportOpen(true)} className="flex-1 py-3 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl text-[13px] font-semibold text-white flex items-center justify-center gap-1.5 hover:bg-white/20 transition-colors">
-                <ArrowLeftRight size={14} /> Add Fund
+              <button onClick={() => setIsImportOpen(true)} className="flex-1 py-3.5 bg-white/20 backdrop-blur-xl border border-white/30 rounded-2xl text-[14px] font-semibold text-white flex items-center justify-center gap-2 hover:bg-white/30 transition-colors">
+                <ArrowLeftRight size={16} /> Add Fund
               </button>
             </div>
           </div>
 
-          {/* HORIZONTAL CARDS */}
+          {/* FEATURE TILES (Your Features, Reference Style) */}
           <div className="px-4 -mt-6">
             <div className="flex gap-3 overflow-x-auto pb-4 snap-x hide-scrollbar">
-              <div className="snap-start shrink-0 w-[160px] h-[180px] rounded-3xl bg-gradient-to-b from-[#3a0d0d] to-[#1a0505] border border-white/10 p-4 flex flex-col justify-between">
-                <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center"><LayoutGrid size={20} className="text-white/80" /></div>
+              {/* Commitments */}
+              <button onClick={() => setActiveScreen("commitments")} className="snap-start shrink-0 w-[150px] h-[170px] rounded-3xl bg-gradient-to-b from-[#2a0a0a] to-[#0a0a0a] border border-white/10 p-4 flex flex-col justify-between text-left hover:border-white/30 transition-colors">
+                <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center"><CalendarDays size={20} className="text-white/80" /></div>
                 <div>
-                  <p className="text-[15px] font-semibold text-white">Cards</p>
-                  <p className="text-[11px] text-white/50 mt-1">All your cards in one place.</p>
+                  <p className="text-[15px] font-semibold text-white">Commitments</p>
+                  <p className="text-[11px] text-white/50 mt-1 leading-snug">Bills & sinking funds.</p>
                 </div>
-              </div>
-              <div className="snap-start shrink-0 w-[160px] h-[180px] rounded-3xl bg-gradient-to-b from-[#0d1a3a] to-[#050a1a] border border-white/10 p-4 flex flex-col justify-between">
-                <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center"><Wallet size={20} className="text-white/80" /></div>
+              </button>
+              
+              {/* Tax Estimator */}
+              <button onClick={() => setActiveScreen("tax")} className="snap-start shrink-0 w-[150px] h-[170px] rounded-3xl bg-gradient-to-b from-[#1a0a2a] to-[#0a0a0a] border border-white/10 p-4 flex flex-col justify-between text-left hover:border-white/30 transition-colors">
+                <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center"><FileText size={20} className="text-white/80" /></div>
                 <div>
-                  <p className="text-[15px] font-semibold text-white">Savings</p>
-                  <p className="text-[11px] text-white/50 mt-1">Money set aside for later.</p>
+                  <p className="text-[15px] font-semibold text-white">Tax Estimator</p>
+                  <p className="text-[11px] text-white/50 mt-1 leading-snug">PIT & LIRS export.</p>
                 </div>
-              </div>
-              <div className="snap-start shrink-0 w-[160px] h-[180px] rounded-3xl bg-gradient-to-b from-[#0d3a1a] to-[#051a0a] border border-white/10 p-4 flex flex-col justify-between">
-                <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center"><TrendingDown size={20} className="text-white/80" /></div>
+              </button>
+
+              {/* Ajo Tracker */}
+              <button onClick={() => setActiveScreen("ajo")} className="snap-start shrink-0 w-[150px] h-[170px] rounded-3xl bg-gradient-to-b from-[#2a1a0a] to-[#0a0a0a] border border-white/10 p-4 flex flex-col justify-between text-left hover:border-white/30 transition-colors">
+                <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center"><Users size={20} className="text-white/80" /></div>
                 <div>
-                  <p className="text-[15px] font-semibold text-white">Investments</p>
-                  <p className="text-[11px] text-white/50 mt-1">Grow your wealth.</p>
+                  <p className="text-[15px] font-semibold text-white">Ajo Tracker</p>
+                  <p className="text-[11px] text-white/50 mt-1 leading-snug">Thrift & cooperative groups.</p>
                 </div>
-              </div>
+              </button>
+
+              {/* Bank Charges */}
+              <button onClick={() => setActiveScreen("bank-charge")} className="snap-start shrink-0 w-[150px] h-[170px] rounded-3xl bg-gradient-to-b from-[#0a1a2a] to-[#0a0a0a] border border-white/10 p-4 flex flex-col justify-between text-left hover:border-white/30 transition-colors">
+                <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center"><ShieldAlert size={20} className="text-white/80" /></div>
+                <div>
+                  <p className="text-[15px] font-semibold text-white">Bank Charges</p>
+                  <p className="text-[11px] text-white/50 mt-1 leading-snug">Fee auditor.</p>
+                </div>
+              </button>
             </div>
           </div>
 
