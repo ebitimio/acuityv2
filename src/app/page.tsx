@@ -298,7 +298,13 @@ export default function SandboxPage() {
       <ImportSheet isOpen={isImportOpen} onClose={() => setIsImportOpen(false)} onImportSuccess={refreshData}/>
       <AIDrawer isOpen={isAdvisorOpen} onClose={() => setIsAdvisorOpen(false)} />
       
-      <SettingsSheet isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} user={session.user} />
+      <SettingsSheet 
+        isOpen={isSettingsOpen} 
+        onClose={() => setIsSettingsOpen(false)} 
+        user={session.user} 
+        baseCurrency="NGN" 
+        onCurrencyChange={() => {}} 
+      />
       
       <TransactionDetailSheet 
         key={selectedTxn?.id || "empty"}
