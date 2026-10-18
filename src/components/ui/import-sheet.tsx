@@ -82,7 +82,16 @@ export function ImportSheet({
             radius="36px 36px 0 0" 
             className="flex flex-col items-center pt-3 pb-32 px-6 w-full max-w-md mx-auto min-h-[520px]"
           >
-            <div className="w-12 h-1.5 rounded-full bg-white/20 mb-8" />
+            {/* Header with grabber and close button aligned */}
+            <div className="w-full flex items-center justify-between mb-8">
+              <div className="w-12 h-1.5 rounded-full bg-white/20" />
+              <button 
+                onClick={onClose} 
+                className="p-2 rounded-full bg-white/10 text-white/60 hover:text-white transition-colors -mr-2"
+              >
+                <X size={20} />
+              </button>
+            </div>
 
             {/* STATE 1: UPLOAD */}
             {!isProcessing && (
@@ -205,10 +214,6 @@ export function ImportSheet({
                 </AnimatePresence>
               </>
             )}
-            
-            <button onClick={onClose} className="absolute top-6 right-6 p-2 rounded-full bg-white/10 text-white/60 hover:text-white">
-              <X size={20} />
-            </button>
           </GlassSurface>
         </Drawer.Content>
       </Drawer.Portal>

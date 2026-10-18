@@ -60,54 +60,53 @@ export function AuthScreen() {
   };
 
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 relative overflow-hidden">
+    <div className="min-h-screen bg-black flex flex-col items-center justify-start pt-24 px-6 relative overflow-hidden">
       
-      {/* --- NEW STACKED 3D CARD ANIMATION (Mobile Safe) --- */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+      {/* --- STACKED 3D CARD ANIMATION --- */}
+      <div className="absolute top-0 left-0 right-0 h-[400px] flex items-center justify-center pointer-events-none">
         {/* Background Glow */}
-        <div className="absolute w-[300px] h-[300px] bg-gradient-to-tr from-[#8B0000] to-[#4B0082] rounded-full blur-[80px] opacity-40" />
+        <div className="absolute w-[350px] h-[350px] bg-gradient-to-tr from-[#6a0d0d] to-[#3b0a3b] rounded-full blur-[90px] opacity-60 top-10" />
         
         {/* Back Card */}
         <motion.div
-          animate={{ rotate: -15, x: -20, y: 10 }}
-          transition={{ duration: 10, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-          className="absolute w-56 h-36 bg-gradient-to-tr from-[#2a0a0a] to-[#4a0e0e] rounded-2xl border border-white/10 shadow-2xl"
+          animate={{ rotate: -12, x: -30, y: 20 }}
+          transition={{ duration: 8, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
+          className="absolute top-24 w-72 h-44 bg-gradient-to-tr from-[#2a0a0a] to-[#4a0e0e] rounded-3xl border border-white/10 shadow-2xl"
         >
-          <div className="absolute top-4 left-4 text-white/30 font-bold italic text-sm">VISA</div>
-          <div className="absolute top-4 right-4 w-8 h-6 bg-white/10 rounded-sm" />
-          <div className="absolute bottom-4 left-4 flex gap-1">
-            <div className="w-8 h-1 bg-white/20 rounded-full" />
-            <div className="w-8 h-1 bg-white/20 rounded-full" />
-            <div className="w-8 h-1 bg-white/20 rounded-full" />
+          <div className="absolute top-6 left-6 text-white/30 font-bold italic text-base">VISA</div>
+          <div className="absolute bottom-6 left-6 flex gap-2">
+            <div className="w-10 h-1 bg-white/20 rounded-full" />
+            <div className="w-10 h-1 bg-white/20 rounded-full" />
+            <div className="w-10 h-1 bg-white/20 rounded-full" />
           </div>
         </motion.div>
 
         {/* Front Card */}
         <motion.div
-          animate={{ rotate: 10, x: 20, y: -10 }}
-          transition={{ duration: 10, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-          className="absolute w-56 h-36 bg-gradient-to-tr from-[#5a1a1a] to-[#8b1a1a] rounded-2xl border border-white/20 shadow-2xl z-10 overflow-hidden"
+          animate={{ rotate: 8, x: 30, y: -10 }}
+          transition={{ duration: 8, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
+          className="absolute top-20 w-72 h-44 bg-gradient-to-tr from-[#5a1a1a] to-[#8b1a1a] rounded-3xl border border-white/20 shadow-2xl z-10 overflow-hidden"
         >
           {/* Specular Highlight */}
           <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-30" />
           
-          <div className="absolute top-4 left-4 text-white/70 font-bold italic text-sm z-10">VISA</div>
-          <div className="absolute top-4 right-4 w-10 h-7 bg-gradient-to-br from-yellow-200/40 to-yellow-600/40 rounded-md border border-yellow-200/20 z-10" />
+          <div className="absolute top-6 left-6 text-white/80 font-bold italic text-base z-10">VISA</div>
+          <div className="absolute top-6 right-6 w-12 h-8 bg-gradient-to-br from-yellow-200/40 to-yellow-600/40 rounded-md border border-yellow-200/20 z-10" />
           
-          <div className="absolute bottom-6 left-4 text-white/80 font-mono text-sm tracking-widest z-10">
+          <div className="absolute bottom-10 left-6 text-white/90 font-mono text-lg tracking-widest z-10">
             •••• 4291
           </div>
-          <div className="absolute bottom-2 left-4 text-white/50 text-[10px] z-10">MAX MUSTERMANN</div>
+          <div className="absolute bottom-4 left-6 text-white/60 text-xs z-10">MAX MUSTERMANN</div>
         </motion.div>
       </div>
 
-      <div className="relative z-10 w-full max-w-sm mt-32">
+      <div className="relative z-20 w-full max-w-sm mt-64">
         <div className="flex flex-col items-center mb-8">
           <h1 className="text-[28px] font-bold text-white tracking-tight text-center">
-            {mode === "login" ? "Smarter payments." : mode === "signup" ? "Create Acuity" : "Verify Email"}
+            {mode === "login" ? "Welcome back." : mode === "signup" ? "Create Acuity." : "Verify Email."}
           </h1>
-          <p className="text-[15px] text-white/50 mt-2 text-center">
-            Simplify payments, streamline expenses, and enjoy better control over your financial journey.
+          <p className="text-[15px] text-white/50 mt-2 text-center px-4">
+            {mode === "login" ? "Sign in to access your AI wealth manager." : "Start tracking your finances today."}
           </p>
         </div>
 
