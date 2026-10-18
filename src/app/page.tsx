@@ -28,7 +28,15 @@ import { AIDrawer } from "@/components/ui/ai-drawer";
 import { AddTransactionSheet } from "@/components/ui/add-transaction-sheet";
 import { EmptyState } from "@/components/ui/empty-state";
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
-import { User, Eye, EyeOff, Bell, TrendingUp, ArrowLeftRight, CalendarDays, FileText, Users, ShieldAlert, ChevronRight, Receipt, ChevronDown, Plus } from "lucide-react";
+import { Eye, EyeOff, Bell, TrendingUp, ArrowLeftRight, CalendarDays, FileText, Users, ShieldAlert, ChevronRight, Receipt, ChevronDown, Plus } from "lucide-react";
+
+const ZERO_METRICS: HomeMetrics = {
+  net_worth_minor: 0,
+  total_spent_minor: 0,
+  total_income_minor: 0,
+  budget_limit_minor: 0,
+  uncategorized_count: 0,
+};
 
 export default function SandboxPage() {
   const [session, setSession] = useState<any>(null);
@@ -60,13 +68,17 @@ export default function SandboxPage() {
     else setNavHidden(false);
   });
 
+  // Always try to load. If it fails, fall back to zeros so we never stay on the skeleton.
   const refreshData = useCallback(async () => {
     try {
+      clearDataCache();
       const [m, t] = await Promise.all([getHomeMetrics(), getRecentTransactions(8)]);
-      setMetrics(m);
-      setTransactions(t);
+      setMetrics(m ?? ZERO_METRICS);
+      setTransactions(t ?? []);
     } catch (e) {
-      console.error(e);
+      console.error("refreshData failed:", e);
+      setMetrics(ZERO_METRICS);
+      setTransactions([]);
     }
   }, []);
 
@@ -81,10 +93,12 @@ export default function SandboxPage() {
     return () => subscription.unsubscribe();
   }, [supabase.auth]);
 
+  // Run once session is available. Doesn't wait for activeWs (DB handles fallback).
   useEffect(() => {
-    if (session && activeWs) refreshData();
+    if (session) refreshData();
   }, [session, activeWs, refreshData]);
 
+  // Splash & skeleton timing — no dependency on metrics
   useEffect(() => {
     if (!showSplash && session) {
       const timer = setTimeout(() => setIsLoading(false), 800);
@@ -135,11 +149,13 @@ export default function SandboxPage() {
   if (isAuthLoading) return <div className="min-h-[100dvh] bg-black" />;
   if (!session) return <AuthScreen />;
   if (showSplash) return <SplashScreen onComplete={() => setShowSplash(false)} />;
-  if (isLoading || !metrics) return <HomeSkeleton />;
+  if (isLoading) return <HomeSkeleton />;
 
-  const netWorthNGN = metrics.net_worth_minor / 100;
-  const totalSpentNGN = metrics.total_spent_minor / 100;
-  const totalIncomeNGN = metrics.total_income_minor / 100;
+  // Use ZERO_METRICS if the fetch silently failed — never block on `null`
+  const m = metrics ?? ZERO_METRICS;
+  const netWorthNGN = m.net_worth_minor / 100;
+  const totalSpentNGN = m.total_spent_minor / 100;
+  const totalIncomeNGN = m.total_income_minor / 100;
 
   return (
     <main className="min-h-[100dvh] bg-black relative overflow-x-hidden flex flex-col">
@@ -161,13 +177,9 @@ export default function SandboxPage() {
         <BankChargeScreen onBack={() => setActiveScreen("home")} />
       ) : (
         <div className="flex-1 overflow-y-auto pb-32">
-          {/* HERO */}
           <div className="relative pt-[calc(env(safe-area-inset-top)+16px)] pb-6 px-6 rounded-b-[40px] overflow-hidden" style={{ background: "linear-gradient(160deg, #7a0e0e 0%, #b3391f 35%, #e87a1a 75%, #ffb347 100%)" }}>
             <div className="flex justify-between items-center mb-6">
-              <button
-                onClick={() => setWsOpen((v) => !v)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-md border border-white/30"
-              >
+              <button onClick={() => setWsOpen((v) => !v)} className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-md border border-white/30">
                 <div className="w-6 h-6 rounded-full bg-white/30 flex items-center justify-center text-[10px] font-bold text-white">
                   {(activeWs?.name ?? "P").charAt(0).toUpperCase()}
                 </div>
@@ -187,19 +199,12 @@ export default function SandboxPage() {
             {wsOpen && (
               <div className="absolute top-14 left-4 z-50 bg-[var(--surface-2)] border border-[var(--line-strong)] rounded-2xl shadow-2xl p-2 w-56">
                 {workspaces.map((w) => (
-                  <button
-                    key={w.id}
-                    onClick={() => handleSwitchWorkspace(w.id)}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-[14px] ${w.id === activeWs?.id ? "bg-[var(--brand)]/20 text-[var(--brand)]" : "hover:bg-white/5 text-white"}`}
-                  >
+                  <button key={w.id} onClick={() => handleSwitchWorkspace(w.id)} className={`w-full text-left px-3 py-2 rounded-lg text-[14px] ${w.id === activeWs?.id ? "bg-[var(--brand)]/20 text-[var(--brand)]" : "hover:bg-white/5 text-white"}`}>
                     {w.name}
                   </button>
                 ))}
                 <div className="h-px bg-white/10 my-1" />
-                <button
-                  onClick={handleCreateWorkspace}
-                  className="w-full flex items-center gap-1.5 px-3 py-2 rounded-lg text-[14px] text-[var(--brand)] hover:bg-white/5"
-                >
+                <button onClick={handleCreateWorkspace} className="w-full flex items-center gap-1.5 px-3 py-2 rounded-lg text-[14px] text-[var(--brand)] hover:bg-white/5">
                   <Plus size={14} /> Create workspace
                 </button>
               </div>
@@ -221,7 +226,6 @@ export default function SandboxPage() {
             </div>
           </div>
 
-          {/* FEATURE TILES 2x2 */}
           <div className="px-4 mt-6 grid grid-cols-2 gap-3">
             <button onClick={() => setActiveScreen("commitments")} className="rounded-3xl bg-gradient-to-b from-[#3a1a0a] to-[#0a0a0a] border border-white/10 p-4 flex flex-col justify-between text-left hover:border-[#e87a1a]/50 transition-colors aspect-[4/3]">
               <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center"><CalendarDays size={20} className="text-white/80" /></div>
@@ -241,7 +245,6 @@ export default function SandboxPage() {
             </button>
           </div>
 
-          {/* MONTHLY EXPENSES */}
           <div className="px-4 mt-6">
             <div className="flex items-center justify-between mb-3 px-1">
               <h3 className="text-[17px] font-semibold text-white">Monthly expenses</h3>
@@ -256,13 +259,12 @@ export default function SandboxPage() {
             </div>
           </div>
 
-          {/* NEEDS REVIEW */}
-          {metrics.uncategorized_count > 0 && (
+          {m.uncategorized_count > 0 && (
             <div className="px-4 mt-4">
               <motion.button whileHover={{ y: -3 }} onClick={() => setActiveScreen("needs-review")} className="w-full flex items-center justify-between p-4 bg-[var(--warn)]/10 border border-[var(--warn)]/20 rounded-2xl group transition-colors">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-[var(--warn)]/20 flex items-center justify-center">
-                    <span className="text-[var(--warn)] font-semibold text-[14px]">{metrics.uncategorized_count}</span>
+                    <span className="text-[var(--warn)] font-semibold text-[14px]">{m.uncategorized_count}</span>
                   </div>
                   <span className="text-[15px] font-medium text-white">Transactions need review</span>
                 </div>
@@ -271,7 +273,6 @@ export default function SandboxPage() {
             </div>
           )}
 
-          {/* RECENT TRANSACTIONS */}
           <div className="px-4 mt-6">
             <div className="flex items-center justify-between mb-3 px-1">
               <h3 className="text-[17px] font-semibold text-white">Recent</h3>

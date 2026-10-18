@@ -29,7 +29,12 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const refresh = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    const { data } = await supabase.from("workspaces").select("id,name,country").eq("owner_id", user.id).order("created_at");
+    let { data } = await supabase.from("workspaces").select("id,name,country").eq("owner_id", user.id).order("created_at");
+    // Self-heal: if the user has no workspace, create one
+    if (!data || data.length === 0) {
+      const { data: created } = await supabase.from("workspaces").insert({ owner_id: user.id, name: "Personal" }).select("id,name,country").single();
+      if (created) data = [created as Workspace];
+    }
     const list = (data ?? []) as Workspace[];
     setWorkspaces(list);
     const stored = typeof window !== "undefined" ? localStorage.getItem(KEY) : null;
@@ -43,7 +48,6 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const setActive = useCallback((id: string) => {
     setActiveId(id);
     try { localStorage.setItem(KEY, id); } catch {}
-    // Force dependent data to reload by clearing cache
     import("@/lib/supabase/database").then((m) => m.clearDataCache());
   }, []);
 
