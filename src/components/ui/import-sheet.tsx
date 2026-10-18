@@ -18,7 +18,7 @@ const STEPS = [
 export function ImportSheet({ 
   isOpen, 
   onClose,
-  onImportSuccess // Callback to refresh data in the main page
+  onImportSuccess 
 }: { 
   isOpen: boolean; 
   onClose: () => void;
@@ -27,20 +27,20 @@ export function ImportSheet({
   const [currentStep, setCurrentStep] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const [importedCount, setImportedCount] = useState(0);
+  const [errorMessage, setErrorMessage] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!isOpen) {
-      // Reset state when closed
       setTimeout(() => {
         setCurrentStep(0);
         setIsProcessing(false);
         setImportedCount(0);
+        setErrorMessage("");
       }, 300);
     }
   }, [isOpen]);
 
-  // Handle the simulated processing steps
   useEffect(() => {
     if (isProcessing && currentStep < STEPS.length - 1) {
       const timer = setTimeout(() => {
@@ -56,19 +56,17 @@ export function ImportSheet({
 
     setIsProcessing(true);
     setCurrentStep(0);
+    setErrorMessage("");
 
     try {
-      // Start parsing
       const count = await importCsvStatement(file);
-      
-      // Simulate the animation finishing
       setCurrentStep(STEPS.length - 1);
       setImportedCount(count);
-      
-    } catch (err) {
+    } catch (err: any) {
       console.error("Import failed:", err);
-      // Handle error (show error state)
-      onClose();
+      // THIS WILL SHOW US THE ERROR ON THE SCREEN
+      setErrorMessage(err.message || "An unknown error occurred during import.");
+      setIsProcessing(false); 
     }
   };
 
@@ -83,11 +81,11 @@ export function ImportSheet({
           <GlassSurface 
             tier="thick" 
             radius="36px 36px 0 0" 
-            className="flex flex-col items-center pt-3 pb-12 px-6 h-[420px] w-full max-w-md mx-auto"
+            className="flex flex-col items-center pt-3 pb-12 px-6 h-[440px] w-full max-w-md mx-auto"
           >
             <div className="w-12 h-1.5 rounded-full bg-white/20 mb-8" />
 
-            {/* --- STATE 1: UPLOAD --- */}
+            {/* STATE 1: UPLOAD */}
             {!isProcessing && (
               <div className="flex flex-col items-center w-full h-full justify-center">
                 <button 
@@ -99,9 +97,16 @@ export function ImportSheet({
                   </div>
                   <div className="text-center">
                     <p className="text-[17px] font-medium text-white">Upload Statement</p>
-                    <p className="text-[13px] text-white/50 mt-1">CSV or Excel file</p>
+                    <p className="text-[13px] text-white/50 mt-1">CSV file</p>
                   </div>
                 </button>
+
+                {errorMessage && (
+                  <p className="text-[13px] text-[var(--danger)] text-center mt-4 px-4">
+                    {errorMessage}
+                  </p>
+                )}
+
                 <input 
                   type="file" 
                   accept=".csv" 
@@ -112,11 +117,11 @@ export function ImportSheet({
               </div>
             )}
 
-            {/* --- STATE 2: PROCESSING / DONE --- */}
+            {/* STATE 2: PROCESSING / ERROR / DONE */}
             {isProcessing && (
               <>
                 <div className="relative mb-8">
-                  {!isDone && (
+                  {!isDone && !errorMessage && (
                     <motion.div
                       animate={{ rotate: 360 }}
                       transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
@@ -125,11 +130,17 @@ export function ImportSheet({
                     />
                   )}
                   
-                  <div className="relative w-24 h-24 bg-[#17191A] rounded-[28px] border border-white/10 flex items-center justify-center z-10 overflow-hidden">
+                  <div className={`relative w-24 h-24 bg-[#17191A] rounded-[28px] border flex items-center justify-center z-10 overflow-hidden ${
+                    errorMessage ? "border-[var(--danger)]/50" : "border-white/10"
+                  }`}>
                     <AnimatePresence mode="wait">
                       {isDone ? (
                         <motion.div key="check" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-[var(--brand)]">
                           <Check size={40} strokeWidth={3} />
+                        </motion.div>
+                      ) : errorMessage ? (
+                        <motion.div key="error" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-[var(--danger)]">
+                          <X size={40} strokeWidth={3} />
                         </motion.div>
                       ) : (
                         <motion.div key="file" animate={{ scale: [1, 1.05, 1] }} transition={{ duration: 2, repeat: Infinity }} className="text-white/80">
@@ -140,38 +151,55 @@ export function ImportSheet({
                   </div>
                 </div>
 
-                <div className="h-8 flex items-center justify-center mb-2">
+                <div className="h-8 flex items-center justify-center mb-2 px-4">
                   <AnimatePresence mode="wait">
-                    <motion.p key={currentStep} initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -10, opacity: 0 }} className="text-[17px] font-medium text-white">
-                      {STEPS[currentStep]}
+                    <motion.p key={errorMessage || currentStep} initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -10, opacity: 0 }} className={`text-[17px] font-medium text-center ${errorMessage ? "text-[var(--danger)]" : "text-white"}`}>
+                      {errorMessage ? "Import Failed" : STEPS[currentStep]}
                     </motion.p>
                   </AnimatePresence>
                 </div>
 
-                <div className="w-full max-w-[200px] h-1 bg-white/10 rounded-full overflow-hidden mb-8">
-                  <motion.div 
-                    className="h-full bg-[var(--brand)]"
-                    initial={{ width: "0%" }}
-                    animate={{ width: `${((currentStep + 1) / STEPS.length) * 100}%` }}
-                    transition={{ duration: 0.5 }}
-                  />
-                </div>
+                {errorMessage && (
+                  <p className="text-[13px] text-white/60 text-center mb-6 px-4">
+                    {errorMessage}
+                  </p>
+                )}
+
+                {!errorMessage && (
+                  <div className="w-full max-w-[200px] h-1 bg-white/10 rounded-full overflow-hidden mb-8">
+                    <motion.div 
+                      className="h-full bg-[var(--brand)]"
+                      initial={{ width: "0%" }}
+                      animate={{ width: `${((currentStep + 1) / STEPS.length) * 100}%` }}
+                      transition={{ duration: 0.5 }}
+                    />
+                  </div>
+                )}
 
                 <AnimatePresence>
-                  {isDone && (
+                  {(isDone || errorMessage) && (
                     <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="w-full">
-                      <div className="text-center mb-4">
-                        <p className="text-[15px] text-white/70">Successfully imported</p>
-                        <p className="text-[24px] font-bold text-[var(--brand)]">{importedCount} transactions</p>
-                      </div>
+                      {isDone && (
+                        <div className="text-center mb-4">
+                          <p className="text-[15px] text-white/70">Successfully imported</p>
+                          <p className="text-[24px] font-bold text-[var(--brand)]">{importedCount} transactions</p>
+                        </div>
+                      )}
                       <button 
                         onClick={() => {
-                          onImportSuccess();
-                          onClose();
+                          if (isDone) onImportSuccess();
+                          if (errorMessage) {
+                            setIsProcessing(false);
+                            setErrorMessage("");
+                          } else {
+                            onClose();
+                          }
                         }}
-                        className="w-full bg-white text-black font-semibold text-[17px] py-4 rounded-full active:scale-[0.98] transition-transform"
+                        className={`w-full font-semibold text-[17px] py-4 rounded-full active:scale-[0.98] transition-transform ${
+                          errorMessage ? "bg-white/10 text-white" : "bg-white text-black"
+                        }`}
                       >
-                        View Transactions
+                        {errorMessage ? "Try Again" : "View Transactions"}
                       </button>
                     </motion.div>
                   )}
