@@ -1,20 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { getWorkspaceAndTransactions, getHomeMetrics } from "@/lib/supabase/database";
+import { getHomeMetrics, getRecentTransactions, deleteTransaction, clearDataCache } from "@/lib/supabase/database";
+import type { Txn, HomeMetrics } from "@/lib/types";
 import { AuthScreen } from "@/components/screens/auth-screen";
-
-import { FloatingTabBar } from "@/components/ui/floating-tab-bar";
-import { GlassSurface } from "@/components/ui/glass-surface";
-import { NumberRoll } from "@/components/ui/number-roll";
-import { ImportSheet } from "@/components/ui/import-sheet";
-import { AIDrawer } from "@/components/ui/ai-drawer";
-import { TransactionRow } from "@/components/ui/transaction-row";
-import { TransactionDetailSheet } from "@/components/ui/transaction-detail-sheet";
-import { SettingsSheet } from "@/components/ui/settings-sheet";
 import { SplashScreen } from "@/components/ui/splash-screen";
 import { HomeSkeleton } from "@/components/ui/skeleton-loader";
+import { FloatingTabBar } from "@/components/ui/floating-tab-bar";
+import { NumberRoll } from "@/components/ui/number-roll";
+import { TransactionRow } from "@/components/ui/transaction-row";
+import { useCurrency } from "@/lib/currency";
+import { useToast } from "@/components/ui/toast";
 import { AnalyticsScreen } from "@/components/screens/analytics-screen";
 import { BudgetScreen } from "@/components/screens/budget-screen";
 import { AccountsScreen } from "@/components/screens/accounts-screen";
@@ -23,14 +20,22 @@ import { TaxScreen } from "@/components/screens/tax-screen";
 import { NeedsReviewScreen } from "@/components/screens/needs-review-screen";
 import { AjoScreen } from "@/components/screens/ajo-screen";
 import { BankChargeScreen } from "@/components/screens/bank-charge-screen";
-
+import { SettingsSheet } from "@/components/ui/settings-sheet";
+import { ImportSheet } from "@/components/ui/import-sheet";
+import { TransactionDetailSheet } from "@/components/ui/transaction-detail-sheet";
+import { AIDrawer } from "@/components/ui/ai-drawer";
+import { AddTransactionSheet } from "@/components/ui/add-transaction-sheet";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Modal } from "@/components/ui/modal";
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
-import { ChevronRight, ArrowLeftRight, Eye, Bell, TrendingUp, User, CalendarDays, FileText, Users, ShieldAlert } from "lucide-react";
+import { User, Eye, EyeOff, Bell, TrendingUp, ArrowLeftRight, CalendarDays, FileText, Users, ShieldAlert, ChevronRight, Plus, Download, Receipt } from "lucide-react";
 
 export default function SandboxPage() {
   const [session, setSession] = useState<any>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const supabase = createClient();
+  const toast = useToast();
+  const { hidden, toggleHidden } = useCurrency();
 
   const [showSplash, setShowSplash] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
@@ -39,41 +44,29 @@ export default function SandboxPage() {
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isAdvisorOpen, setIsAdvisorOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [selectedTxn, setSelectedTxn] = useState<any>(null);
+  const [isAddTxnOpen, setIsAddTxnOpen] = useState(false);
+  const [selectedTxn, setSelectedTxn] = useState<Txn | null>(null);
 
-  const [metrics, setMetrics] = useState({
-    net_worth_minor: 0,
-    total_spent_minor: 0,
-    total_income_minor: 0,
-    budget_limit_minor: 0,
-    uncategorized_count: 0,
-  });
-
-  const [transactions, setTransactions] = useState<any[]>([]);
+  const [metrics, setMetrics] = useState<HomeMetrics | null>(null);
+  const [transactions, setTransactions] = useState<Txn[]>([]);
   const [navHidden, setNavHidden] = useState(false);
 
   const { scrollY } = useScroll();
   useMotionValueEvent(scrollY, "change", (latest) => {
     const previous = scrollY.getPrevious() || 0;
-    if (latest > previous && latest > 100) {
-      setNavHidden(true);
-    } else {
-      setNavHidden(false);
-    }
+    if (latest > previous && latest > 100) setNavHidden(true);
+    else setNavHidden(false);
   });
 
-  const refreshData = async () => {
+  const refreshData = useCallback(async () => {
     try {
-      const [metricsData, txData] = await Promise.all([
-        getHomeMetrics(),
-        getWorkspaceAndTransactions()
-      ]);
-      setMetrics(metricsData);
-      setTransactions(txData.transactions);
+      const [m, t] = await Promise.all([getHomeMetrics(), getRecentTransactions(8)]);
+      setMetrics(m);
+      setTransactions(t);
     } catch (e) {
-      console.error("Failed to fetch data", e);
+      console.error(e);
     }
-  };
+  }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -88,7 +81,7 @@ export default function SandboxPage() {
 
   useEffect(() => {
     if (session) refreshData();
-  }, [session]);
+  }, [session, refreshData]);
 
   useEffect(() => {
     if (!showSplash && session) {
@@ -98,17 +91,30 @@ export default function SandboxPage() {
   }, [showSplash, session]);
 
   const handleTabChange = (tabId: string) => {
-    if (tabId === "advisor") {
-      setIsAdvisorOpen(true);
-      return;
-    }
+    if (tabId === "advisor") { setIsAdvisorOpen(true); return; }
     setActiveScreen(tabId);
+  };
+
+  const handleAddClick = () => setIsAddTxnOpen(true);
+
+  const handleDeleteTxn = async (t: Txn) => {
+    try {
+      await deleteTransaction(t.id);
+      toast("Transaction deleted");
+      refreshData();
+    } catch { toast("Could not delete", "err"); }
+  };
+
+  const handleSignOut = async () => {
+    clearDataCache();
+    await supabase.auth.signOut();
+    window.location.reload();
   };
 
   if (isAuthLoading) return <div className="min-h-[100dvh] bg-black" />;
   if (!session) return <AuthScreen />;
   if (showSplash) return <SplashScreen onComplete={() => setShowSplash(false)} />;
-  if (isLoading) return <HomeSkeleton />;
+  if (isLoading || !metrics) return <HomeSkeleton />;
 
   const netWorthNGN = metrics.net_worth_minor / 100;
   const totalSpentNGN = metrics.total_spent_minor / 100;
@@ -116,9 +122,8 @@ export default function SandboxPage() {
 
   return (
     <main className="min-h-[100dvh] bg-black relative overflow-x-hidden flex flex-col">
-      
       {activeScreen === "analytics" ? (
-        <AnalyticsScreen />
+        <AnalyticsScreen onBack={() => setActiveScreen("home")} />
       ) : activeScreen === "budget" ? (
         <BudgetScreen onBack={() => setActiveScreen("home")} />
       ) : activeScreen === "accounts" ? (
@@ -128,21 +133,15 @@ export default function SandboxPage() {
       ) : activeScreen === "tax" ? (
         <TaxScreen onBack={() => setActiveScreen("home")} />
       ) : activeScreen === "needs-review" ? (
-        <NeedsReviewScreen onBack={() => setActiveScreen("home")} onResolved={refreshData}/>
+        <NeedsReviewScreen onBack={() => setActiveScreen("home")} onResolved={refreshData} />
       ) : activeScreen === "ajo" ? (
         <AjoScreen onBack={() => setActiveScreen("home")} />
       ) : activeScreen === "bank-charge" ? (
         <BankChargeScreen onBack={() => setActiveScreen("home")} />
       ) : (
         <div className="flex-1 overflow-y-auto pb-32">
-          
           {/* HERO */}
-          <div 
-            className="relative pt-[calc(env(safe-area-inset-top)+16px)] pb-6 px-6 rounded-b-[40px] overflow-hidden"
-            style={{ 
-              background: "linear-gradient(160deg, #7a0e0e 0%, #b3391f 35%, #e87a1a 75%, #ffb347 100%)" 
-            }}
-          >
+          <div className="relative pt-[calc(env(safe-area-inset-top)+16px)] pb-6 px-6 rounded-b-[40px] overflow-hidden" style={{ background: "linear-gradient(160deg, #7a0e0e 0%, #b3391f 35%, #e87a1a 75%, #ffb347 100%)" }}>
             <div className="flex justify-between items-center mb-6">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30">
@@ -151,64 +150,47 @@ export default function SandboxPage() {
                 <span className="text-[13px] font-medium text-white/90">Welcome, {session.user?.user_metadata?.full_name?.split(" ")[0] || "User"}</span>
               </div>
               <div className="flex gap-2">
-                <button onClick={() => setActiveScreen("analytics")} className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30">
-                  <Eye size={14} className="text-white" />
+                <button onClick={toggleHidden} className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30">
+                  {hidden ? <EyeOff size={14} className="text-white" /> : <Eye size={14} className="text-white" />}
                 </button>
                 <button onClick={() => setIsSettingsOpen(true)} className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30">
                   <Bell size={14} className="text-white" />
                 </button>
               </div>
             </div>
-
             <div>
               <p className="text-[14px] font-medium text-white/70 mb-1">Total Net Worth</p>
               <div className="text-[48px] font-bold tracking-tight text-white flex items-start gap-1">
-                <NumberRoll value={netWorthNGN} currency="₦" showDecimals={true} />
+                <NumberRoll value={netWorthNGN} />
               </div>
             </div>
-
             <div className="flex gap-3 mt-6">
               <button onClick={() => setActiveScreen("budget")} className="flex-1 py-3 bg-white/20 backdrop-blur-xl border border-white/30 rounded-2xl text-[14px] font-semibold text-white flex items-center justify-center gap-2 hover:bg-white/30 transition-colors">
                 <TrendingUp size={16} /> Monitoring
               </button>
               <button onClick={() => setIsImportOpen(true)} className="flex-1 py-3 bg-white/20 backdrop-blur-xl border border-white/30 rounded-2xl text-[14px] font-semibold text-white flex items-center justify-center gap-2 hover:bg-white/30 transition-colors">
-                <ArrowLeftRight size={16} /> Add Fund
+                <ArrowLeftRight size={16} /> Import
               </button>
             </div>
           </div>
 
-          {/* 2x2 GRID TILES */}
+          {/* FEATURE TILES 2x2 */}
           <div className="px-4 mt-6 grid grid-cols-2 gap-3">
             <button onClick={() => setActiveScreen("commitments")} className="rounded-3xl bg-gradient-to-b from-[#3a1a0a] to-[#0a0a0a] border border-white/10 p-4 flex flex-col justify-between text-left hover:border-[#e87a1a]/50 transition-colors aspect-[4/3]">
               <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center"><CalendarDays size={20} className="text-white/80" /></div>
-              <div>
-                <p className="text-[15px] font-semibold text-white">Commitments</p>
-                <p className="text-[11px] text-white/50 mt-1 leading-snug">Bills & funds.</p>
-              </div>
+              <div><p className="text-[15px] font-semibold text-white">Commitments</p><p className="text-[11px] text-white/50 mt-1 leading-snug">Bills & funds.</p></div>
             </button>
-            
             <button onClick={() => setActiveScreen("tax")} className="rounded-3xl bg-gradient-to-b from-[#3a1a0a] to-[#0a0a0a] border border-white/10 p-4 flex flex-col justify-between text-left hover:border-[#e87a1a]/50 transition-colors aspect-[4/3]">
               <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center"><FileText size={20} className="text-white/80" /></div>
-              <div>
-                <p className="text-[15px] font-semibold text-white">Tax Estimator</p>
-                <p className="text-[11px] text-white/50 mt-1 leading-snug">PIT & LIRS.</p>
-              </div>
+              <div><p className="text-[15px] font-semibold text-white">Tax Estimator</p><p className="text-[11px] text-white/50 mt-1 leading-snug">PIT & LIRS.</p></div>
             </button>
-
             <button onClick={() => setActiveScreen("ajo")} className="rounded-3xl bg-gradient-to-b from-[#3a1a0a] to-[#0a0a0a] border border-white/10 p-4 flex flex-col justify-between text-left hover:border-[#e87a1a]/50 transition-colors aspect-[4/3]">
               <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center"><Users size={20} className="text-white/80" /></div>
-              <div>
-                <p className="text-[15px] font-semibold text-white">Ajo Tracker</p>
-                <p className="text-[11px] text-white/50 mt-1 leading-snug">Cooperative groups.</p>
-              </div>
+              <div><p className="text-[15px] font-semibold text-white">Ajo Tracker</p><p className="text-[11px] text-white/50 mt-1 leading-snug">Cooperative groups.</p></div>
             </button>
-
             <button onClick={() => setActiveScreen("bank-charge")} className="rounded-3xl bg-gradient-to-b from-[#3a1a0a] to-[#0a0a0a] border border-white/10 p-4 flex flex-col justify-between text-left hover:border-[#e87a1a]/50 transition-colors aspect-[4/3]">
               <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center"><ShieldAlert size={20} className="text-white/80" /></div>
-              <div>
-                <p className="text-[15px] font-semibold text-white">Bank Charges</p>
-                <p className="text-[11px] text-white/50 mt-1 leading-snug">Fee auditor.</p>
-              </div>
+              <div><p className="text-[15px] font-semibold text-white">Bank Charges</p><p className="text-[11px] text-white/50 mt-1 leading-snug">Fee auditor.</p></div>
             </button>
           </div>
 
@@ -218,33 +200,19 @@ export default function SandboxPage() {
               <h3 className="text-[17px] font-semibold text-white">Monthly expenses</h3>
               <span className="text-[13px] font-medium text-[var(--brand)]">↓ ₦{totalSpentNGN.toLocaleString()}</span>
             </div>
-            
             <div className="flex justify-between items-center bg-[#17191A] rounded-3xl p-5 border border-white/5">
-              <div className="text-center">
-                <p className="text-[11px] text-white/50 mb-1">Transactions</p>
-                <p className="text-[15px] font-semibold text-white">₦{totalSpentNGN.toLocaleString()}</p>
-              </div>
+              <div className="text-center"><p className="text-[11px] text-white/50 mb-1">Spent</p><p className="text-[15px] font-semibold text-white">₦{totalSpentNGN.toLocaleString()}</p></div>
               <div className="w-px h-8 bg-white/10" />
-              <div className="text-center">
-                <p className="text-[11px] text-white/50 mb-1">Income</p>
-                <p className="text-[15px] font-semibold text-white">₦{totalIncomeNGN.toLocaleString()}</p>
-              </div>
+              <div className="text-center"><p className="text-[11px] text-white/50 mb-1">Income</p><p className="text-[15px] font-semibold text-white">₦{totalIncomeNGN.toLocaleString()}</p></div>
               <div className="w-px h-8 bg-white/10" />
-              <div className="text-center">
-                <p className="text-[11px] text-white/50 mb-1">Other</p>
-                <p className="text-[15px] font-semibold text-white">₦0</p>
-              </div>
+              <div className="text-center"><p className="text-[11px] text-white/50 mb-1">Net</p><p className={`text-[15px] font-semibold ${totalIncomeNGN - totalSpentNGN >= 0 ? "text-[var(--gain)]" : "text-[var(--danger)]"}`}>₦{(totalIncomeNGN - totalSpentNGN).toLocaleString()}</p></div>
             </div>
           </div>
 
           {/* NEEDS REVIEW */}
           {metrics.uncategorized_count > 0 && (
             <div className="px-4 mt-4">
-              <motion.button 
-                whileHover={{ y: -3 }}
-                onClick={() => setActiveScreen("needs-review")} 
-                className="w-full flex items-center justify-between p-4 bg-[var(--warn)]/10 border border-[var(--warn)]/20 rounded-2xl group transition-colors"
-              >
+              <motion.button whileHover={{ y: -3 }} onClick={() => setActiveScreen("needs-review")} className="w-full flex items-center justify-between p-4 bg-[var(--warn)]/10 border border-[var(--warn)]/20 rounded-2xl group transition-colors">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-[var(--warn)]/20 flex items-center justify-center">
                     <span className="text-[var(--warn)] font-semibold text-[14px]">{metrics.uncategorized_count}</span>
@@ -260,87 +228,39 @@ export default function SandboxPage() {
           <div className="px-4 mt-6">
             <div className="flex items-center justify-between mb-3 px-1">
               <h3 className="text-[17px] font-semibold text-white">Recent</h3>
-              <button className="text-[13px] text-[var(--brand)] font-medium">See all</button>
+              <button onClick={() => setActiveScreen("analytics")} className="text-[13px] text-[var(--brand)] font-medium">See all</button>
             </div>
-            
-            <GlassSurface tier="thin" radius={24} className="overflow-hidden">
+            <div className="group-list">
               {transactions.length === 0 ? (
-                <div className="p-8 text-center flex flex-col items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center">
-                    <ArrowLeftRight size={20} className="text-white/40" />
-                  </div>
-                  <p className="text-[15px] text-white/60">No transactions yet.</p>
-                  <button onClick={() => setIsImportOpen(true)} className="text-[13px] font-medium text-[var(--brand)] bg-[var(--brand)]/10 px-4 py-2 rounded-full">
-                    Import statement
-                  </button>
-                </div>
+                <EmptyState
+                  icon={Receipt}
+                  title="No transactions yet"
+                  body="Import your bank statement to start tracking your finances."
+                  action="Import statement"
+                  onAction={() => setIsImportOpen(true)}
+                />
               ) : (
-                transactions
-                  .filter((txn: any) => txn.category_name !== "Split Parent")
-                  .slice(0, 5)
-                  .map((txn: any) => (
-                    <TransactionRow 
-                      key={txn.id}
-                      id={txn.id}
-                      merchant={txn.description_clean || txn.description_raw}
-                      categoryIcon={
-                        txn.category_name === "Groceries" ? "ShoppingBag" : 
-                        txn.category_name === "Transport" ? "Car" : 
-                        txn.category_name === "Income" ? "Briefcase" : 
-                        txn.category_name === "Subscriptions" ? "Tv" :
-                        txn.category_name === "Fuel" ? "Fuel" : "CreditCard"
-                      }
-                      categoryName={txn.category_name || "Uncategorized"}
-                      accountName={txn.account?.name || "Account"}
-                      amount={txn.amount_minor / 100}
-                      isIncome={txn.direction === "credit"}
-                      onRowClick={() => setSelectedTxn(txn)}
-                    />
-                  ))
+                transactions.map((t) => (
+                  <TransactionRow key={t.id} txn={t} onOpen={setSelectedTxn} onDelete={handleDeleteTxn} />
+                ))
               )}
-            </GlassSurface>
+            </div>
           </div>
         </div>
       )}
 
-      <FloatingTabBar 
-        activeTab={activeScreen === "budget" ? "home" : activeScreen}
-        onTabChange={handleTabChange}
-        onAddClick={() => setIsImportOpen(true)} 
-        onAdvisorClick={() => setIsAdvisorOpen(true)}
-        isHidden={navHidden}
-      />
-      
-      <ImportSheet isOpen={isImportOpen} onClose={() => setIsImportOpen(false)} onImportSuccess={refreshData}/>
+      <FloatingTabBar activeTab={activeScreen === "budget" ? "home" : activeScreen} onTabChange={handleTabChange} onAddClick={handleAddClick} isHidden={navHidden} />
+
+      <ImportSheet isOpen={isImportOpen} onClose={() => setIsImportOpen(false)} onImportSuccess={() => { refreshData(); toast("Statement imported"); }} />
       <AIDrawer isOpen={isAdvisorOpen} onClose={() => setIsAdvisorOpen(false)} />
-      
-      <SettingsSheet 
-        isOpen={isSettingsOpen} 
-        onClose={() => setIsSettingsOpen(false)} 
-        user={session.user} 
-        baseCurrency="NGN" 
-        onCurrencyChange={() => {}} 
-      />
-      
-      <TransactionDetailSheet 
+      <SettingsSheet isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} user={session.user} onSignOut={handleSignOut} />
+      <AddTransactionSheet isOpen={isAddTxnOpen} onClose={() => setIsAddTxnOpen(false)} onSaved={refreshData} />
+      <TransactionDetailSheet
         key={selectedTxn?.id || "empty"}
-        isOpen={!!selectedTxn} 
-        onClose={() => setSelectedTxn(null)} 
+        isOpen={!!selectedTxn}
+        onClose={() => setSelectedTxn(null)}
         onSaved={refreshData}
-        transaction={
-          selectedTxn ? {
-            id: selectedTxn.id,
-            merchant: selectedTxn.description_clean || selectedTxn.description_raw,
-            amount: selectedTxn.amount_minor / 100,
-            categoryName: selectedTxn.category_name || "Uncategorized",
-            categoryIcon: "CreditCard",
-            accountName: selectedTxn.account?.name || "Account",
-            date: new Date(selectedTxn.date).toLocaleDateString(),
-            accountId: selectedTxn.account_id,
-            direction: selectedTxn.direction,
-            descriptionRaw: selectedTxn.description_raw,
-          } : null
-        }
+        transaction={selectedTxn}
       />
     </main>
   );
