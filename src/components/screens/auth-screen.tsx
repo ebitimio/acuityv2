@@ -60,14 +60,14 @@ export function AuthScreen() {
   };
 
   return (
-    <div className="h-[100dvh] w-full bg-black flex flex-col items-center justify-center px-6 relative overflow-hidden">
-      
+    <div 
+      className="h-[100dvh] w-full flex flex-col items-center justify-center px-6 relative overflow-hidden"
+      style={{ 
+        background: "linear-gradient(160deg, #7a0e0e 0%, #b3391f 35%, #e87a1a 75%, #ffb347 100%)" 
+      }}
+    >
       {/* --- STACKED 3D CARD ANIMATION --- */}
       <div className="absolute top-0 left-0 right-0 h-[45%] flex items-center justify-center pointer-events-none">
-        {/* Background Glow */}
-        <div className="absolute w-[300px] h-[300px] bg-gradient-to-tr from-[#6a0d0d] to-[#3b0a3b] rounded-full blur-[80px] opacity-60 top-0" />
-        
-        {/* Back Card */}
         <motion.div
           animate={{ rotate: -12, x: -25, y: 15 }}
           transition={{ duration: 4, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
@@ -81,7 +81,6 @@ export function AuthScreen() {
           </div>
         </motion.div>
 
-        {/* Front Card */}
         <motion.div
           animate={{ rotate: 8, x: 25, y: -10 }}
           transition={{ duration: 4, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
@@ -103,7 +102,7 @@ export function AuthScreen() {
           <h1 className="text-[24px] font-bold text-white tracking-tight text-center">
             {mode === "login" ? "Welcome back." : mode === "signup" ? "Create Acuity." : "Verify Email."}
           </h1>
-          <p className="text-[14px] text-white/50 mt-1 text-center px-4">
+          <p className="text-[14px] text-white/70 mt-1 text-center px-4">
             {mode === "login" ? "Sign in to access your AI wealth manager." : "Start tracking your finances today."}
           </p>
         </div>

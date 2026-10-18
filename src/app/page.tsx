@@ -25,7 +25,7 @@ import { AjoScreen } from "@/components/screens/ajo-screen";
 import { BankChargeScreen } from "@/components/screens/bank-charge-screen";
 
 import { motion } from "framer-motion";
-import { RefreshCw, ChevronRight, CalendarDays, FileText, Users, ShieldAlert, ArrowLeftRight, Eye, Bell, TrendingUp, Wallet, Shield, User } from "lucide-react";
+import { ChevronRight, ArrowLeftRight, Eye, Bell, TrendingUp, User, CalendarDays, FileText, Users, ShieldAlert } from "lucide-react";
 
 export default function SandboxPage() {
   const [session, setSession] = useState<any>(null);
@@ -123,18 +123,17 @@ export default function SandboxPage() {
       ) : activeScreen === "bank-charge" ? (
         <BankChargeScreen onBack={() => setActiveScreen("home")} />
       ) : (
-        // --- HOME DASHBOARD ---
         <div className="flex-1 overflow-y-auto pb-32">
           
-          {/* PREMIUM GRADIENT HERO */}
+          {/* PREMIUM GRADIENT HERO (Fills safe area) */}
           <div 
-            className="relative pt-14 pb-12 px-6 rounded-b-[40px] overflow-hidden"
+            className="relative pt-[calc(env(safe-area-inset-top)+16px)] pb-12 px-6 rounded-b-[40px] overflow-hidden"
             style={{ 
               background: "linear-gradient(160deg, #7a0e0e 0%, #b3391f 35%, #e87a1a 75%, #ffb347 100%)" 
             }}
           >
             {/* Glass Top Bar Overlay */}
-            <div className="absolute top-4 left-0 right-0 px-6 flex justify-between items-center">
+            <div className="flex justify-between items-center mb-8">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30">
                   <User size={14} className="text-white" />
@@ -151,8 +150,8 @@ export default function SandboxPage() {
               </div>
             </div>
 
-            {/* Net Worth (Large Bold Font from Reference) */}
-            <div className="mt-12">
+            {/* Net Worth */}
+            <div className="mt-2">
               <p className="text-[15px] font-medium text-white/70 mb-1">Total Net Worth</p>
               <div className="text-[56px] font-bold tracking-tight text-white flex items-start gap-1">
                 <span className="text-[32px] mt-3 opacity-80">₦</span>
@@ -160,7 +159,7 @@ export default function SandboxPage() {
               </div>
             </div>
 
-            {/* Quick Actions (Frosted Glass Pills) */}
+            {/* Quick Actions */}
             <div className="flex gap-3 mt-8">
               <button onClick={() => setActiveScreen("budget")} className="flex-1 py-3.5 bg-white/20 backdrop-blur-xl border border-white/30 rounded-2xl text-[14px] font-semibold text-white flex items-center justify-center gap-2 hover:bg-white/30 transition-colors">
                 <TrendingUp size={16} /> Monitoring
@@ -171,11 +170,10 @@ export default function SandboxPage() {
             </div>
           </div>
 
-          {/* FEATURE TILES (Your Features, Reference Style) */}
-          <div className="px-4 -mt-6">
+          {/* FEATURE TILES (With Orange Tint) */}
+          <div className="px-4 mt-6">
             <div className="flex gap-3 overflow-x-auto pb-4 snap-x hide-scrollbar">
-              {/* Commitments */}
-              <button onClick={() => setActiveScreen("commitments")} className="snap-start shrink-0 w-[150px] h-[170px] rounded-3xl bg-gradient-to-b from-[#2a0a0a] to-[#0a0a0a] border border-white/10 p-4 flex flex-col justify-between text-left hover:border-white/30 transition-colors">
+              <button onClick={() => setActiveScreen("commitments")} className="snap-start shrink-0 w-[150px] h-[170px] rounded-3xl bg-gradient-to-b from-[#3a1a0a] to-[#0a0a0a] border border-white/10 p-4 flex flex-col justify-between text-left hover:border-[#e87a1a]/50 transition-colors">
                 <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center"><CalendarDays size={20} className="text-white/80" /></div>
                 <div>
                   <p className="text-[15px] font-semibold text-white">Commitments</p>
@@ -183,8 +181,7 @@ export default function SandboxPage() {
                 </div>
               </button>
               
-              {/* Tax Estimator */}
-              <button onClick={() => setActiveScreen("tax")} className="snap-start shrink-0 w-[150px] h-[170px] rounded-3xl bg-gradient-to-b from-[#1a0a2a] to-[#0a0a0a] border border-white/10 p-4 flex flex-col justify-between text-left hover:border-white/30 transition-colors">
+              <button onClick={() => setActiveScreen("tax")} className="snap-start shrink-0 w-[150px] h-[170px] rounded-3xl bg-gradient-to-b from-[#3a1a0a] to-[#0a0a0a] border border-white/10 p-4 flex flex-col justify-between text-left hover:border-[#e87a1a]/50 transition-colors">
                 <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center"><FileText size={20} className="text-white/80" /></div>
                 <div>
                   <p className="text-[15px] font-semibold text-white">Tax Estimator</p>
@@ -192,8 +189,7 @@ export default function SandboxPage() {
                 </div>
               </button>
 
-              {/* Ajo Tracker */}
-              <button onClick={() => setActiveScreen("ajo")} className="snap-start shrink-0 w-[150px] h-[170px] rounded-3xl bg-gradient-to-b from-[#2a1a0a] to-[#0a0a0a] border border-white/10 p-4 flex flex-col justify-between text-left hover:border-white/30 transition-colors">
+              <button onClick={() => setActiveScreen("ajo")} className="snap-start shrink-0 w-[150px] h-[170px] rounded-3xl bg-gradient-to-b from-[#3a1a0a] to-[#0a0a0a] border border-white/10 p-4 flex flex-col justify-between text-left hover:border-[#e87a1a]/50 transition-colors">
                 <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center"><Users size={20} className="text-white/80" /></div>
                 <div>
                   <p className="text-[15px] font-semibold text-white">Ajo Tracker</p>
@@ -201,8 +197,7 @@ export default function SandboxPage() {
                 </div>
               </button>
 
-              {/* Bank Charges */}
-              <button onClick={() => setActiveScreen("bank-charge")} className="snap-start shrink-0 w-[150px] h-[170px] rounded-3xl bg-gradient-to-b from-[#0a1a2a] to-[#0a0a0a] border border-white/10 p-4 flex flex-col justify-between text-left hover:border-white/30 transition-colors">
+              <button onClick={() => setActiveScreen("bank-charge")} className="snap-start shrink-0 w-[150px] h-[170px] rounded-3xl bg-gradient-to-b from-[#3a1a0a] to-[#0a0a0a] border border-white/10 p-4 flex flex-col justify-between text-left hover:border-[#e87a1a]/50 transition-colors">
                 <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center"><ShieldAlert size={20} className="text-white/80" /></div>
                 <div>
                   <p className="text-[15px] font-semibold text-white">Bank Charges</p>

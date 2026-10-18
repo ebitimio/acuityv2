@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { motion } from "framer-motion";
 import { Home, PieChart, Wallet, Sparkles, Plus } from "lucide-react";
 import { GlassSurface } from "./glass-surface";
@@ -10,7 +9,7 @@ const TABS = [
   { id: "home", label: "Home", icon: Home },
   { id: "analytics", label: "Analytics", icon: PieChart },
   { id: "accounts", label: "Accounts", icon: Wallet },
-  { id: "advisor", label: "", icon: Sparkles }, // No label for advisor
+  { id: "advisor", label: "", icon: Sparkles },
 ];
 
 interface FloatingTabBarProps {
@@ -57,13 +56,12 @@ export function FloatingTabBar({ activeTab, onTabChange, onAddClick, onAdvisorCl
                   />
                 )}
                 
-                {/* GLOWING ADVISOR ICON */}
                 {tab.id === "advisor" ? (
                   <motion.div 
                     animate={{ 
                       background: [
-                        "conic-gradient(from 0deg, #30D158, #64D2FF, #AF52DE, #30D158)",
-                        "conic-gradient(from 360deg, #30D158, #64D2FF, #AF52DE, #30D158)"
+                        "conic-gradient(from 0deg, #7a0e0e, #e87a1a, #ffb347, #7a0e0e)",
+                        "conic-gradient(from 360deg, #7a0e0e, #e87a1a, #ffb347, #7a0e0e)"
                       ] 
                     }}
                     transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
