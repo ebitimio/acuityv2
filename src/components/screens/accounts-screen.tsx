@@ -1,18 +1,54 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { GlassSurface } from "@/components/ui/glass-surface";
 import { NumberRoll } from "@/components/ui/number-roll";
 import { AccountCard } from "@/components/ui/account-card";
-import { ChevronLeft, Plus, Shield } from "lucide-react";
-
-const MOCK_ACCOUNTS = [
-  { id: "1", name: "Main Checking", institution: "GTBank", balance: 1250430, lastImported: "May 2", color: "#FF9F0A", icon: "🏦" },
-  { id: "2", name: "Savings Vault", institution: "Kuda", balance: 450000, lastImported: "May 1", color: "#30D158", icon: "🛡️" },
-  { id: "3", name: "USD Domiciliary", institution: "Stanbic IBTC", balance: 12050, lastImported: "Apr 28", color: "#64D2FF", icon: "💵", currency: "$" },
-  { id: "4", name: "OPay Wallet", institution: "OPay", balance: 45200, lastImported: "May 3", color: "#AF52DE", icon: "📱" },
-];
+import { ChevronLeft, Plus, X } from "lucide-react";
+import { getAccounts, createAccount } from "@/lib/supabase/database";
+import { motion, AnimatePresence } from "framer-motion";
 
 export function AccountsScreen({ onBack }: { onBack: () => void }) {
+  const [accounts, setAccounts] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
+  // Form state
+  const [newName, setNewName] = useState("");
+  const [newInstitution, setNewInstitution] = useState("");
+  const [newBalance, setNewBalance] = useState("");
+
+  const fetchAccounts = async () => {
+    try {
+      const data = await getAccounts();
+      setAccounts(data);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAccounts();
+  }, []);
+
+  const handleAddAccount = async () => {
+    if (!newName || !newInstitution) return;
+    try {
+      await createAccount(newName, newInstitution, "checking", parseFloat(newBalance) || 0);
+      await fetchAccounts();
+      setIsAddModalOpen(false);
+      setNewName("");
+      setNewInstitution("");
+      setNewBalance("");
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const totalBalance = accounts.reduce((sum, acc) => sum + acc.balance_minor, 0) / 100;
+
   return (
     <div className="min-h-screen bg-black pb-32">
       
@@ -24,7 +60,7 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
           </button>
           <h1 className="text-[17px] font-semibold text-white">Accounts</h1>
         </div>
-        <button className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors">
+        <button onClick={() => setIsAddModalOpen(true)} className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors">
           <Plus size={20} className="text-white" />
         </button>
       </div>
@@ -33,55 +69,121 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
         
         {/* Total Wealth Summary Card */}
         <GlassSurface tier="thick" radius={28} className="p-6 text-center relative overflow-hidden">
-           {/* Subtle glow behind the number */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-[var(--brand)]/20 blur-[60px] rounded-full pointer-events-none" />
-          
           <p className="text-[13px] text-white/60 mb-2">Total Liquid Assets</p>
           <div className="text-[34px] font-bold text-white tracking-tight">
-            <NumberRoll value={1745680} currency="₦" />
+            <NumberRoll value={totalBalance} currency="₦" />
           </div>
-          <p className="text-[13px] text-[var(--brand)] mt-2 font-medium">↑ 2.4% this month</p>
+          <p className="text-[13px] text-[var(--brand)] mt-2 font-medium">Across {accounts.length} accounts</p>
         </GlassSurface>
 
         {/* Account List */}
         <div>
           <div className="flex items-center justify-between mb-3 px-1">
             <h3 className="text-[15px] font-semibold text-white">Connected Accounts</h3>
-            <span className="text-[13px] text-white/50">{MOCK_ACCOUNTS.length} total</span>
+            <span className="text-[13px] text-white/50">{accounts.length} total</span>
           </div>
 
-          <div className="flex flex-col gap-3">
-            {MOCK_ACCOUNTS.map((account) => (
-              <AccountCard 
-                key={account.id}
-                name={account.name}
-                institution={account.institution}
-                balance={account.balance}
-                currency={account.currency}
-                lastImported={account.lastImported}
-                color={account.color}
-                icon={account.icon}
-              />
-            ))}
-          </div>
+          {isLoading ? (
+            <div className="text-center text-white/50 py-10">Loading accounts...</div>
+          ) : accounts.length === 0 ? (
+            <div className="text-center text-white/50 py-10">
+              No accounts yet. Click the + to add one.
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {accounts.map((account) => (
+                <AccountCard 
+                  key={account.id}
+                  name={account.name}
+                  institution={account.institution}
+                  balance={account.balance_minor / 100}
+                  currency="₦"
+                  lastImported="Just now"
+                  color={account.type === "savings" ? "#30D158" : "#FF9F0A"}
+                  icon={account.type === "savings" ? "🛡️" : "🏦"}
+                />
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Offline Assets & Liabilities (Mini Cards) */}
         <div className="grid grid-cols-2 gap-3 mt-2">
           <GlassSurface tier="thin" radius={20} className="p-4 flex flex-col gap-2">
             <span className="text-[13px] text-white/60">Offline Assets</span>
-            <span className="text-[17px] font-semibold text-white tabular">₦12,500,000</span>
+            <span className="text-[17px] font-semibold text-white tabular">₦0.00</span>
             <span className="text-[12px] text-white/40">Land, Vehicles</span>
           </GlassSurface>
           
           <GlassSurface tier="thin" radius={20} className="p-4 flex flex-col gap-2">
             <span className="text-[13px] text-white/60">Liabilities</span>
-            <span className="text-[17px] font-semibold text-[var(--danger)] tabular">-₦1,200,000</span>
-            <span className="text-[12px] text-white/40">Car Loan</span>
+            <span className="text-[17px] font-semibold text-[var(--danger)] tabular">-₦0.00</span>
+            <span className="text-[12px] text-white/40">Loans</span>
           </GlassSurface>
         </div>
 
       </div>
+
+      {/* Add Account Modal */}
+      <AnimatePresence>
+        {isAddModalOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-6 backdrop-blur-sm"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              className="w-full max-w-sm"
+            >
+              <GlassSurface tier="thick" radius={28} className="p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-[18px] font-semibold text-white">Add Account</h2>
+                  <button onClick={() => setIsAddModalOpen(false)} className="text-white/50 hover:text-white">
+                    <X size={20} />
+                  </button>
+                </div>
+                
+                <div className="flex flex-col gap-3">
+                  <input 
+                    type="text" 
+                    placeholder="Account Name (e.g. Main Checking)" 
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-[var(--brand)]" 
+                  />
+                  <input 
+                    type="text" 
+                    placeholder="Institution (e.g. GTBank)" 
+                    value={newInstitution}
+                    onChange={(e) => setNewInstitution(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-[var(--brand)]" 
+                  />
+                  <input 
+                    type="number" 
+                    placeholder="Starting Balance" 
+                    value={newBalance}
+                    onChange={(e) => setNewBalance(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-[var(--brand)] tabular" 
+                  />
+                  
+                  <button 
+                    onClick={handleAddAccount}
+                    className="w-full py-3 mt-2 bg-[var(--brand)] text-black font-semibold rounded-xl"
+                  >
+                    Create Account
+                  </button>
+                </div>
+              </GlassSurface>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 }

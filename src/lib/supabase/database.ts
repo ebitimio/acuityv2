@@ -298,3 +298,73 @@ function autoCategorize(description: string): string {
   
   return "Uncategorized";
 }
+// --- NEW FUNCTIONS ---
+
+export async function getAccounts() {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not logged in");
+
+  const { data: workspace } = await supabase
+    .from("workspaces")
+    .select("id")
+    .eq("owner_id", user.id)
+    .single();
+
+  if (!workspace) throw new Error("Workspace not found");
+
+  const { data: accounts, error } = await supabase
+    .from("accounts")
+    .select("*")
+    .eq("workspace_id", workspace.id)
+    .order("created_at", { ascending: true });
+
+  if (error) throw error;
+  return accounts || [];
+}
+
+export async function createAccount(name: string, institution: string, type: string, initialBalance: number) {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not logged in");
+
+  const { data: workspace } = await supabase
+    .from("workspaces")
+    .select("id")
+    .eq("owner_id", user.id)
+    .single();
+
+  if (!workspace) throw new Error("Workspace not found");
+
+  const { error } = await supabase.from("accounts").insert({
+    workspace_id: workspace.id,
+    name,
+    institution,
+    type,
+    balance_minor: Math.round(initialBalance * 100),
+  });
+
+  if (error) throw error;
+}
+
+export async function updateBudgetLimit(newLimit: number) {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not logged in");
+
+  const { data: workspace } = await supabase
+    .from("workspaces")
+    .select("id")
+    .eq("owner_id", user.id)
+    .single();
+
+  if (!workspace) throw new Error("Workspace not found");
+
+  // For now, we'll store the budget in the workspace table
+  const { error } = await supabase
+    .from("workspaces")
+    .update({ budget_limit_minor: Math.round(newLimit * 100) })
+    .eq("id", workspace.id);
+
+  if (error) throw error;
+}
