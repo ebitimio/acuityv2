@@ -120,8 +120,6 @@ export default function SandboxPage() {
     <main className="min-h-[100dvh] bg-black relative overflow-x-hidden flex flex-col">
       
       <TopBar 
-        baseCurrency="NGN"
-        onCurrencyToggle={() => {}}
         onBudgetClick={() => setActiveScreen("budget")}
         onAnalyticsClick={() => setActiveScreen("analytics")}
         onSettingsClick={() => setIsSettingsOpen(true)}
