@@ -24,7 +24,7 @@ import { NeedsReviewScreen } from "@/components/screens/needs-review-screen";
 import { AjoScreen } from "@/components/screens/ajo-screen";
 import { BankChargeScreen } from "@/components/screens/bank-charge-screen";
 
-import { motion } from "framer-motion";
+import { motion, useScroll, useMotionValueEvent } from "framer-motion";
 import { ChevronRight, ArrowLeftRight, Eye, Bell, TrendingUp, User, CalendarDays, FileText, Users, ShieldAlert } from "lucide-react";
 
 export default function SandboxPage() {
@@ -50,6 +50,17 @@ export default function SandboxPage() {
   });
 
   const [transactions, setTransactions] = useState<any[]>([]);
+  const [navHidden, setNavHidden] = useState(false);
+
+  const { scrollY } = useScroll();
+  useMotionValueEvent(scrollY, "change", (latest) => {
+    const previous = scrollY.getPrevious() || 0;
+    if (latest > previous && latest > 100) {
+      setNavHidden(true);
+    } else {
+      setNavHidden(false);
+    }
+  });
 
   const refreshData = async () => {
     try {
@@ -125,7 +136,7 @@ export default function SandboxPage() {
       ) : (
         <div className="flex-1 overflow-y-auto pb-32">
           
-          {/* COMPACT HERO */}
+          {/* HERO */}
           <div 
             className="relative pt-[calc(env(safe-area-inset-top)+16px)] pb-6 px-6 rounded-b-[40px] overflow-hidden"
             style={{ 
@@ -152,7 +163,7 @@ export default function SandboxPage() {
             <div>
               <p className="text-[14px] font-medium text-white/70 mb-1">Total Net Worth</p>
               <div className="text-[48px] font-bold tracking-tight text-white flex items-start gap-1">
-                <NumberRoll value={netWorthNGN} currency="" showDecimals={true} />
+                <NumberRoll value={netWorthNGN} currency="₦" showDecimals={true} />
               </div>
             </div>
 
@@ -166,7 +177,7 @@ export default function SandboxPage() {
             </div>
           </div>
 
-          {/* FEATURE TILES (2x2 Grid, no scroll) */}
+          {/* 2x2 GRID TILES */}
           <div className="px-4 mt-6 grid grid-cols-2 gap-3">
             <button onClick={() => setActiveScreen("commitments")} className="rounded-3xl bg-gradient-to-b from-[#3a1a0a] to-[#0a0a0a] border border-white/10 p-4 flex flex-col justify-between text-left hover:border-[#e87a1a]/50 transition-colors aspect-[4/3]">
               <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center"><CalendarDays size={20} className="text-white/80" /></div>
@@ -297,6 +308,7 @@ export default function SandboxPage() {
         onTabChange={handleTabChange}
         onAddClick={() => setIsImportOpen(true)} 
         onAdvisorClick={() => setIsAdvisorOpen(true)}
+        isHidden={navHidden}
       />
       
       <ImportSheet isOpen={isImportOpen} onClose={() => setIsImportOpen(false)} onImportSuccess={refreshData}/>

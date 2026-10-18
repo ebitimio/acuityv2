@@ -17,16 +17,22 @@ interface FloatingTabBarProps {
   onTabChange: (tabId: string) => void;
   onAddClick: () => void;
   onAdvisorClick: () => void;
+  isHidden: boolean;
 }
 
-export function FloatingTabBar({ activeTab, onTabChange, onAddClick, onAdvisorClick }: FloatingTabBarProps) {
+export function FloatingTabBar({ activeTab, onTabChange, onAddClick, onAdvisorClick, isHidden }: FloatingTabBarProps) {
   const handleTabClick = (tabId: string) => {
     onTabChange(tabId);
     if (tabId === "advisor") onAdvisorClick();
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-[60] flex justify-center px-4 pb-6 pt-2 bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none">
+    <motion.div 
+      initial={{ y: 0 }}
+      animate={{ y: isHidden ? 120 : 0 }}
+      transition={{ duration: 0.3, ease: "easeInOut" }}
+      className="fixed bottom-0 left-0 right-0 z-[60] flex justify-center px-4 pb-6 pt-2 pointer-events-none"
+    >
       <div className="flex items-center justify-between gap-3 w-full max-w-[420px] pointer-events-auto">
         
         <GlassSurface
@@ -99,6 +105,6 @@ export function FloatingTabBar({ activeTab, onTabChange, onAddClick, onAdvisorCl
         </button>
 
       </div>
-    </div>
+    </motion.div>
   );
 }
