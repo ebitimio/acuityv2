@@ -1,370 +1,273 @@
-import { createClient } from "./client";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import Papa from "papaparse";
+import { createClient } from "./client";
+import type { Account, AjoGroup, Asset, Bill, Fund, HomeMetrics, Txn } from "@/lib/types";
 
-export async function getWorkspaceAndTransactions() {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not logged in");
+const toMinor = (n: number) => Math.round(n * 100);
+const TX_SELECT = "id,amount_minor,direction,description_clean,description_raw,category_name,date,parent_id,account_id,account:accounts(name,institution)";
+const TX_FLAT = "id,amount_minor,direction,description_clean,description_raw,category_name,date,account_id";
+const NOT_SPLIT = 'category_name.is.null,category_name.neq."Split Parent"';
 
-  const { data: workspace, error: wsError } = await supabase
-    .from("workspaces")
-    .select("*")
-    .eq("owner_id", user.id)
-    .single();
+let cache: { userId: string; workspaceId: string } | null = null;
+export function clearDataCache() { cache = null; }
 
-  if (wsError || !workspace) throw new Error("Workspace not found");
-
-  const { data: transactions, error: txError } = await supabase
-    .from("transactions")
-    .select(`
-      id,
-      amount_minor,
-      direction,
-      description_clean,
-      description_raw,
-      category_name,
-      date,
-      parent_id,
-      account_id,
-      account:accounts (
-        name,
-        institution
-      )
-    `)
-    .neq("category_name", "Split Parent")
-    .order("date", { ascending: false })
-    .limit(50);
-
-  if (txError) throw txError;
-
-  return { workspace, transactions: transactions || [] };
+async function ctx() {
+  const sb = createClient();
+  const { data: { session } } = await sb.auth.getSession();
+  const user = session?.user;
+  if (!user) { cache = null; throw new Error("Not logged in"); }
+  if (cache?.userId === user.id) return { sb, user, workspaceId: cache.workspaceId };
+  const { data: ws, error } = await sb.from("workspaces").select("id").eq("owner_id", user.id).single();
+  if (error || !ws) throw new Error("Workspace not found");
+  cache = { userId: user.id, workspaceId: ws.id };
+  return { sb, user, workspaceId: ws.id };
 }
 
-export async function getHomeMetrics() {
-  const supabase = createClient();
-  const { data, error } = await supabase.rpc("get_home_metrics");
-  
+async function fetchAll<T>(build: (from: number, to: number) => PromiseLike<{ data: any[] | null; error: any }>): Promise<T[]> {
+  const out: T[] = [];
+  for (let i = 0; i < 30; i++) {
+    const { data, error } = await build(i * 1000, i * 1000 + 999);
+    if (error) throw error;
+    out.push(...((data ?? []) as T[]));
+    if (!data || data.length < 1000) break;
+  }
+  return out;
+}
+
+async function list<T>(table: string, order = "created_at", asc = true): Promise<T[]> {
+  const { sb, workspaceId } = await ctx();
+  const { data, error } = await sb.from(table).select("*").eq("workspace_id", workspaceId).order(order, { ascending: asc });
   if (error) throw error;
-  return data as {
-    net_worth_minor: number;
-    total_spent_minor: number;
-    total_income_minor: number;
-    budget_limit_minor: number;
-    uncategorized_count: number;
-  };
+  return (data ?? []) as T[];
 }
 
-export async function insertMockTransactions() {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return;
-
-  const { data: workspace } = await supabase
-    .from("workspaces")
-    .select("id")
-    .eq("owner_id", user.id)
-    .single();
-
-  if (!workspace) return;
-
-  const { data: existingAccounts } = await supabase
-    .from("accounts")
-    .select("id")
-    .eq("workspace_id", workspace.id)
-    .limit(1);
-
-  let accountId = existingAccounts?.[0]?.id;
-
-  if (!accountId) {
-    const { data: newAccount } = await supabase
-      .from("accounts")
-      .insert({
-        workspace_id: workspace.id,
-        name: "Main Checking",
-        institution: "GTBank",
-        type: "checking",
-        balance_minor: 125043000,
-      })
-      .select("id")
-      .single();
-      
-    accountId = newAccount?.id;
-  }
-
-  if (accountId) {
-    await supabase.from("transactions").insert([
-      {
-        account_id: accountId,
-        amount_minor: 4500000,
-        direction: "debit",
-        description_raw: "POS PURCHASE SHOPRITE LEKKI",
-        description_clean: "Shoprite Lekki",
-        category_name: "Groceries",
-        date: new Date().toISOString(),
-      },
-      {
-        account_id: accountId,
-        amount_minor: 350000,
-        direction: "debit",
-        description_raw: "UBER TRIP LAGOS",
-        description_clean: "Uber Trip",
-        category_name: "Transport",
-        date: new Date(Date.now() - 86400000).toISOString(),
-      },
-      {
-        account_id: accountId,
-        amount_minor: 85000000,
-        direction: "credit",
-        description_raw: "SALARY ACME CORP",
-        description_clean: "Salary - Acme Corp",
-        category_name: "Income",
-        date: new Date(Date.now() - 172800000).toISOString(),
-      }
-    ]);
-  }
+async function insertRow(table: string, row: Record<string, unknown>) {
+  const { sb, workspaceId } = await ctx();
+  const { error } = await sb.from(table).insert({ ...row, workspace_id: workspaceId });
+  if (error) throw error;
 }
 
-export async function importCsvStatement(file: File) {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not logged in");
-
-  const { data: workspace } = await supabase
-    .from("workspaces")
-    .select("id")
-    .eq("owner_id", user.id)
-    .single();
-
-  if (!workspace) throw new Error("Workspace not found");
-
-  const { data: accounts } = await supabase
-    .from("accounts")
-    .select("id")
-    .eq("workspace_id", workspace.id)
-    .limit(1);
-
-  let accountId = accounts?.[0]?.id;
-  
-  if (!accountId) {
-    const { data: newAcc } = await supabase.from("accounts").insert({
-      workspace_id: workspace.id,
-      name: "Imported Account",
-      institution: "Bank Statement",
-      type: "checking",
-    }).select("id").single();
-    accountId = newAcc?.id;
-  }
-
-  return new Promise<number>((resolve, reject) => {
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: async (results) => {
-        try {
-          const rows = results.data as any[];
-          
-          if (rows.length === 0) {
-            throw new Error("The CSV file is empty or unreadable.");
-          }
-
-          const transactionsToInsert = rows.map((row) => {
-            // 1. Find the Date Column
-            const rawDate = row["Date/Time"] || row["Date"] || row["Trans Date"] || row["Transaction Date"] || row["date"];
-            
-            // 2. Find the Description Column
-            const descCol = row["Description"] || row["To/From"] || row["Narration"] || row["Details"] || row["description"];
-            
-            // 3. Find the Amount (Handles Money In / Money Out)
-            let rawAmount = 0;
-            
-            const cleanAmount = (val: any) => {
-              if (!val) return 0;
-              return parseFloat(val.toString().replace(/[₦,]/g, "").trim()) || 0;
-            };
-
-            const moneyIn = cleanAmount(row["Money In"] || row["Credit"]);
-            const moneyOut = cleanAmount(row["Money Out"] || row["Debit"]);
-            const generalAmount = cleanAmount(row["Amount"] || row["Value"]);
-
-            if (moneyIn > 0) {
-              rawAmount = moneyIn;
-            } else if (moneyOut > 0) {
-              rawAmount = -moneyOut;
-            } else if (generalAmount !== 0) {
-              rawAmount = generalAmount;
-            }
-
-            if (isNaN(rawAmount) || rawAmount === 0) return null;
-
-            const isIncome = rawAmount > 0;
-            const rawDescStr = descCol ? String(descCol) : "Unknown Transaction";
-            const category = autoCategorize(rawDescStr);
-
-            return {
-              account_id: accountId,
-              amount_minor: Math.abs(Math.round(rawAmount * 100)),
-              direction: isIncome ? "credit" : "debit",
-              description_raw: rawDescStr,
-              description_clean: cleanMerchantName(rawDescStr),
-              category_name: category,
-              date: parseDate(rawDate),
-            };
-          }).filter((tx): tx is NonNullable<typeof tx> => tx !== null);
-
-          if (transactionsToInsert.length === 0) {
-            throw new Error("No valid transactions found. Check column names.");
-          }
-
-          const { error } = await supabase.from("transactions").insert(transactionsToInsert);
-          if (error) throw error;
-          resolve(transactionsToInsert.length);
-        } catch (err: any) {
-          reject(err);
-        }
-      },
-      error: (error) => reject(error),
-    });
-  });
+async function patchRow(table: string, id: string, row: Record<string, unknown>) {
+  const { sb } = await ctx();
+  const { error } = await sb.from(table).update(row).eq("id", id);
+  if (error) throw error;
 }
 
-// --- HELPER FUNCTIONS ---
+async function removeRow(table: string, id: string) {
+  const { sb } = await ctx();
+  const { error } = await sb.from(table).delete().eq("id", id);
+  if (error) throw error;
+}
+
+export async function getHomeMetrics(): Promise<HomeMetrics> {
+  const { sb } = await ctx();
+  const { data, error } = await sb.rpc("get_home_metrics");
+  if (error) throw error;
+  return data as HomeMetrics;
+}
+
+export async function getRecentTransactions(limit = 20): Promise<Txn[]> {
+  const { sb } = await ctx();
+  const { data, error } = await sb.from("transactions").select(TX_SELECT).or(NOT_SPLIT).order("date", { ascending: false }).limit(limit);
+  if (error) throw error;
+  return (data ?? []) as unknown as Txn[];
+}
+
+export async function getTransactions(o: { search?: string; category?: string; direction?: "debit" | "credit"; limit?: number; offset?: number } = {}): Promise<{ rows: Txn[]; count: number }> {
+  const { sb } = await ctx();
+  const limit = o.limit ?? 30;
+  const offset = o.offset ?? 0;
+  let q = sb.from("transactions").select(TX_SELECT, { count: "exact" }).or(NOT_SPLIT);
+  if (o.category) q = q.eq("category_name", o.category);
+  if (o.direction) q = q.eq("direction", o.direction);
+  const s = o.search?.replace(/[,()%*]/g, " ").trim();
+  if (s) q = q.or(`description_clean.ilike.%${s}%,description_raw.ilike.%${s}%`);
+  const { data, error, count } = await q.order("date", { ascending: false }).range(offset, offset + limit - 1);
+  if (error) throw error;
+  return { rows: (data ?? []) as unknown as Txn[], count: count ?? 0 };
+}
+
+export async function getTransactionsSince(sinceISO: string): Promise<Txn[]> {
+  const { sb } = await ctx();
+  return fetchAll<Txn>((f, t) => sb.from("transactions").select(TX_FLAT).or(NOT_SPLIT).gte("date", sinceISO).order("date", { ascending: false }).range(f, t));
+}
+
+export async function getAllTransactions(): Promise<Txn[]> {
+  const { sb } = await ctx();
+  return fetchAll<Txn>((f, t) => sb.from("transactions").select(TX_SELECT).or(NOT_SPLIT).order("date", { ascending: false }).range(f, t));
+}
+
+export async function createTransaction(i: { account_id: string; amount: number; direction: "debit" | "credit"; description: string; category: string; date: string }) {
+  const { sb } = await ctx();
+  const { error } = await sb.from("transactions").insert({ account_id: i.account_id, amount_minor: toMinor(i.amount), direction: i.direction, description_raw: i.description, description_clean: i.description, category_name: i.category, date: i.date });
+  if (error) throw error;
+}
+
+export async function updateTransaction(id: string, patch: { description_clean?: string; category_name?: string }) { await patchRow("transactions", id, patch); }
+
+export async function bulkSetCategory(ids: string[], category: string) {
+  if (!ids.length) return;
+  const { sb } = await ctx();
+  const { error } = await sb.from("transactions").update({ category_name: category }).in("id", ids);
+  if (error) throw error;
+}
+
+export async function deleteTransaction(id: string) { await removeRow("transactions", id); }
+
+export async function splitTransaction(parent: Pick<Txn, "id" | "account_id" | "direction" | "description_raw" | "description_clean" | "date">, parts: { category: string; amount: number }[]) {
+  const { sb } = await ctx();
+  const { error: e1 } = await sb.from("transactions").insert(parts.map((p) => ({ account_id: parent.account_id, amount_minor: toMinor(p.amount), direction: parent.direction, description_raw: parent.description_raw, description_clean: `${parent.description_clean ?? "Transaction"} (split)`, category_name: p.category, date: parent.date, parent_id: parent.id })));
+  if (e1) throw e1;
+  const { error: e2 } = await sb.from("transactions").update({ category_name: "Split Parent" }).eq("id", parent.id);
+  if (e2) throw e2;
+}
+
+export async function getAccounts(): Promise<Account[]> {
+  const { sb, workspaceId } = await ctx();
+  const [{ data: accs, error }, { data: bal }] = await Promise.all([sb.from("accounts").select("*").eq("workspace_id", workspaceId).order("created_at", { ascending: true }), sb.rpc("get_account_balances")]);
+  if (error) throw error;
+  const map = new Map<string, number>(((bal ?? []) as { account_id: string; current_minor: number }[]).map((b) => [b.account_id, Number(b.current_minor)]));
+  return ((accs ?? []) as Account[]).map((a) => ({ ...a, current_minor: map.get(a.id) ?? a.balance_minor }));
+}
+
+export async function createAccount(name: string, institution: string, type: string, openingBalance: number) { await insertRow("accounts", { name, institution, type, balance_minor: toMinor(openingBalance) }); }
+export async function updateAccount(id: string, p: { name: string; institution: string; type: string; openingBalance: number }) { await patchRow("accounts", id, { name: p.name, institution: p.institution, type: p.type, balance_minor: toMinor(p.openingBalance) }); }
+export async function deleteAccount(id: string) { await removeRow("accounts", id); }
+
+export const getAssets = () => list<Asset>("assets");
+export const addAsset = (name: string, type: "asset" | "liability", value: number) => insertRow("assets", { name, type, value_minor: toMinor(value) });
+export const deleteAsset = (id: string) => removeRow("assets", id);
+
+export async function updateBudgetLimit(newLimit: number) {
+  const { sb, workspaceId } = await ctx();
+  const { error } = await sb.from("workspaces").update({ budget_limit_minor: toMinor(newLimit) }).eq("id", workspaceId);
+  if (error) throw error;
+}
+
+export async function getCategoryBudgets(): Promise<Record<string, number>> {
+  const { sb, workspaceId } = await ctx();
+  const { data, error } = await sb.from("workspaces").select("category_budgets").eq("id", workspaceId).single();
+  if (error) throw error;
+  return ((data?.category_budgets ?? {}) as Record<string, number>) || {};
+}
+
+export async function setCategoryBudgets(b: Record<string, number>) {
+  const { sb, workspaceId } = await ctx();
+  const { error } = await sb.from("workspaces").update({ category_budgets: b }).eq("id", workspaceId);
+  if (error) throw error;
+}
+
+export const getBills = async () => (await list<Bill>("bills", "due_day")) as Bill[];
+export const addBill = (name: string, amount: number, dueDay: number) => insertRow("bills", { name, amount_minor: toMinor(amount), due_day: dueDay });
+export const setBillPaid = (id: string, paid: boolean) => patchRow("bills", id, { last_paid_at: paid ? new Date().toISOString() : null });
+export const deleteBill = (id: string) => removeRow("bills", id);
+
+export const getFunds = () => list<Fund>("sinking_funds");
+export const addFund = (name: string, target: number, saved: number, targetDate: string | null) => insertRow("sinking_funds", { name, target_minor: toMinor(target), saved_minor: toMinor(saved), target_date: targetDate || null });
+export const addToFund = (fund: Fund, amount: number) => patchRow("sinking_funds", fund.id, { saved_minor: fund.saved_minor + toMinor(amount) });
+export const deleteFund = (id: string) => removeRow("sinking_funds", id);
+
+export async function getFamilySupport() {
+  const { sb, workspaceId } = await ctx();
+  const { data, error } = await sb.from("workspaces").select("family_support_minor,family_support_label").eq("id", workspaceId).single();
+  if (error) throw error;
+  return { amount_minor: Number(data?.family_support_minor ?? 0), label: (data?.family_support_label as string) ?? "" };
+}
+
+export async function setFamilySupport(amount: number, label: string) {
+  const { sb, workspaceId } = await ctx();
+  const { error } = await sb.from("workspaces").update({ family_support_minor: toMinor(amount), family_support_label: label }).eq("id", workspaceId);
+  if (error) throw error;
+}
+
+export const getAjoGroups = () => list<AjoGroup>("ajo_groups");
+export const addAjoGroup = (g: { name: string; contribution: number; frequency: "weekly" | "monthly"; members: number; position: number }) => insertRow("ajo_groups", { name: g.name, contribution_minor: toMinor(g.contribution), frequency: g.frequency, members: g.members, my_position: g.position });
+export const recordAjoPayment = (g: AjoGroup) => patchRow("ajo_groups", g.id, { paid_cycles: Math.min(g.paid_cycles + 1, g.members) });
+export const deleteAjoGroup = (id: string) => removeRow("ajo_groups", id);
+
+export async function importCsvStatement(file: File, accountId?: string): Promise<{ inserted: number; skipped: number }> {
+  const { sb, workspaceId } = await ctx();
+  let accId = accountId;
+  if (!accId) {
+    const { data: accs } = await sb.from("accounts").select("id").eq("workspace_id", workspaceId).order("created_at").limit(1);
+    accId = accs?.[0]?.id;
+    if (!accId) {
+      const { data: created, error } = await sb.from("accounts").insert({ workspace_id: workspaceId, name: "Imported Account", institution: "Bank Statement", type: "checking" }).select("id").single();
+      if (error) throw error;
+      accId = created.id;
+    }
+  }
+  const targetAccount = accId as string;
+
+  const rows = await new Promise<Record<string, any>[]>((resolve, reject) =>
+    Papa.parse<Record<string, any>>(file, { header: true, skipEmptyLines: true, transformHeader: (h) => h.trim(), complete: (r) => resolve(r.data), error: (e) => reject(e) })
+  );
+  if (rows.length === 0) throw new Error("The CSV file is empty or unreadable.");
+
+  const parsed = rows.map((r) => rowToTxn(r, targetAccount)).filter((t): t is NonNullable<typeof t> => t !== null);
+  if (parsed.length === 0) throw new Error("No valid transactions found. Check the column names in your statement.");
+
+  const times = parsed.map((p) => p.date).sort();
+  const existing = await fetchAll<{ date: string; amount_minor: number; direction: string; description_raw: string | null }>((f, t) =>
+    sb.from("transactions").select("date,amount_minor,direction,description_raw").eq("account_id", targetAccount).gte("date", times[0]).lte("date", times[times.length - 1]).range(f, t)
+  );
+  const key = (d: string, a: number, dir: string, raw: string | null) => `${new Date(d).getTime()}|${a}|${dir}|${(raw ?? "").trim()}`;
+  const seen = new Set(existing.map((e) => key(e.date, e.amount_minor, e.direction, e.description_raw)));
+  const fresh = parsed.filter((p) => !seen.has(key(p.date, p.amount_minor, p.direction, p.description_raw)));
+
+  for (let i = 0; i < fresh.length; i += 500) {
+    const { error } = await sb.from("transactions").insert(fresh.slice(i, i + 500));
+    if (error) throw error;
+  }
+  return { inserted: fresh.length, skipped: parsed.length - fresh.length };
+}
+
+function rowToTxn(row: Record<string, any>, accountId: string) {
+  const pick = (...keys: string[]) => { for (const k of keys) if (row[k] !== undefined && row[k] !== "") return row[k]; return undefined; };
+  const rawDate = pick("Date/Time", "Date", "Trans Date", "Transaction Date", "Value Date", "Posted Date", "date");
+  const desc = pick("Description", "To/From", "Narration", "Narrative", "Details", "Transaction Details", "Remarks", "Particulars", "description");
+  const clean = (v: any) => (v ? parseFloat(v.toString().replace(/[₦,\s]/g, "")) || 0 : 0);
+  const moneyIn = clean(pick("Money In", "Credit", "Credits"));
+  const moneyOut = clean(pick("Money Out", "Debit", "Debits"));
+  const general = clean(pick("Amount", "Value"));
+  let amount = 0;
+  if (moneyIn > 0) amount = moneyIn;
+  else if (moneyOut > 0) amount = -moneyOut;
+  else if (general !== 0) amount = general;
+  if (!amount || isNaN(amount)) return null;
+  const raw = desc ? String(desc) : "Unknown Transaction";
+  return { account_id: accountId, amount_minor: Math.abs(Math.round(amount * 100)), direction: amount > 0 ? "credit" : "debit", description_raw: raw, description_clean: cleanMerchantName(raw), category_name: autoCategorize(raw), date: parseDate(rawDate) };
+}
 
 function parseDate(dateString: any): string {
   if (!dateString) return new Date().toISOString();
-  
   const str = String(dateString).trim();
-  
-  // Handle "01/09/26 10:37:12" format
-  const parts = str.split(" ");
-  const datePart = parts[0];
-  const timePart = parts[1] || "00:00:00";
-
-  // Handle DD/MM/YY
-  const dmyMatch = datePart.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
-  if (dmyMatch) {
-    const day = parseInt(dmyMatch[1]);
-    const month = parseInt(dmyMatch[2]) - 1;
-    let year = parseInt(dmyMatch[3]);
-    if (year < 100) year += 2000;
-    
-    const timeParts = timePart.split(":");
-    const hours = parseInt(timeParts[0]) || 0;
-    const minutes = parseInt(timeParts[1]) || 0;
-    const seconds = parseInt(timeParts[2]) || 0;
-
-    const d = new Date(year, month, day, hours, minutes, seconds);
-    if (!isNaN(d.getTime())) return d.toISOString();
-  }
-  
-  // Handle YYYY-MM-DD
-  const ymdMatch = datePart.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
-  if (ymdMatch) {
-    const year = parseInt(ymdMatch[1]);
-    const month = parseInt(ymdMatch[2]) - 1;
-    const day = parseInt(ymdMatch[3]);
-    const d = new Date(year, month, day);
-    if (!isNaN(d.getTime())) return d.toISOString();
-  }
-
-  // Fallback
+  const [datePart, timePart = "00:00:00"] = str.split(" ");
+  const [h = 0, m = 0, s = 0] = timePart.split(":").map((x) => parseInt(x) || 0);
+  const dmy = datePart.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  if (dmy) { let year = parseInt(dmy[3]); if (year < 100) year += 2000; const d = new Date(year, parseInt(dmy[2]) - 1, parseInt(dmy[1]), h, m, s); if (!isNaN(d.getTime())) return d.toISOString(); }
+  const ymd = datePart.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+  if (ymd) { const d = new Date(parseInt(ymd[1]), parseInt(ymd[2]) - 1, parseInt(ymd[3]), h, m, s); if (!isNaN(d.getTime())) return d.toISOString(); }
   const fallback = new Date(str);
-  if (!isNaN(fallback.getTime())) return fallback.toISOString();
-  return new Date().toISOString();
+  return !isNaN(fallback.getTime()) ? fallback.toISOString() : new Date().toISOString();
 }
 
 function cleanMerchantName(raw: string) {
-  let clean = raw
-    .replace(/NIP\/FRM\//g, "")
-    .replace(/\/[A-Z0-9]{10,}\//g, " ") 
-    .replace(/POS PURCHASE/g, "")
-    .replace(/TRF\//g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  return clean.split(" ")
-    .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-    .join(" ");
+  const clean = raw.replace(/NIP\/FRM\//g, "").replace(/\/[A-Z0-9]{10,}\//g, " ").replace(/POS PURCHASE/g, "").replace(/TRF\//g, "").replace(/\s+/g, " ").trim();
+  return (clean || raw).split(" ").map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
 }
 
 function autoCategorize(description: string): string {
-  const desc = description.toUpperCase();
-  
-  if (desc.includes("SHOPRITE") || desc.includes("MARKET") || desc.includes("GROCERY")) return "Groceries";
-  if (desc.includes("UBER") || desc.includes("BOLT") || desc.includes("TAXIFY")) return "Transport";
-  if (desc.includes("NETFLIX") || desc.includes("SPOTIFY") || desc.includes("APPLE")) return "Subscriptions";
-  if (desc.includes("NNPC") || desc.includes("FUEL") || desc.includes("GAS")) return "Fuel";
-  if (desc.includes("SALARY") || desc.includes("PAYROLL")) return "Income";
-  if (desc.includes("TRANSFER") || desc.includes("TRF")) return "Transfers";
-  
+  const d = description.toUpperCase();
+  const has = (...k: string[]) => k.some((x) => d.includes(x));
+  if (has("STAMP DUTY", "SMS ALERT", "SMS CHARGE", "COMMISSION", "MAINTENANCE FEE", "VAT ", "BANK CHARGE", "TRANSFER FEE")) return "Bank Charges";
+  if (has("SALARY", "PAYROLL")) return "Income";
+  if (has("SHOPRITE", "MARKET", "GROCERY", "SPAR ", "JUSTRITE")) return "Groceries";
+  if (has("UBER", "BOLT", "TAXIFY", "INDRIVE")) return "Transport";
+  if (has("NETFLIX", "SPOTIFY", "APPLE", "YOUTUBE", "SHOWMAX", "DSTV", "GOTV")) return "Subscriptions";
+  if (has("NNPC", "FUEL", "TOTAL ENERGIES", "OANDO", "MRS ")) return "Fuel";
+  if (has("KFC", "DOMINO", "CHICKEN REPUBLIC", "RESTAURANT", "MR BIGGS", "EATERY", "FOODCO")) return "Food & Dining";
+  if (has("MTN", "AIRTEL", "GLO ", "9MOBILE", "AIRTIME", "DATA ", "IKEDC", "EKEDC", "ELECTRIC", "PHCN", "PREPAID")) return "Bills & Utilities";
+  if (has("TRANSFER", "TRF")) return "Transfers";
   return "Uncategorized";
-}
-// --- NEW FUNCTIONS ---
-
-export async function getAccounts() {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not logged in");
-
-  const { data: workspace } = await supabase
-    .from("workspaces")
-    .select("id")
-    .eq("owner_id", user.id)
-    .single();
-
-  if (!workspace) throw new Error("Workspace not found");
-
-  const { data: accounts, error } = await supabase
-    .from("accounts")
-    .select("*")
-    .eq("workspace_id", workspace.id)
-    .order("created_at", { ascending: true });
-
-  if (error) throw error;
-  return accounts || [];
-}
-
-export async function createAccount(name: string, institution: string, type: string, initialBalance: number) {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not logged in");
-
-  const { data: workspace } = await supabase
-    .from("workspaces")
-    .select("id")
-    .eq("owner_id", user.id)
-    .single();
-
-  if (!workspace) throw new Error("Workspace not found");
-
-  const { error } = await supabase.from("accounts").insert({
-    workspace_id: workspace.id,
-    name,
-    institution,
-    type,
-    balance_minor: Math.round(initialBalance * 100),
-  });
-
-  if (error) throw error;
-}
-
-export async function updateBudgetLimit(newLimit: number) {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not logged in");
-
-  const { data: workspace } = await supabase
-    .from("workspaces")
-    .select("id")
-    .eq("owner_id", user.id)
-    .single();
-
-  if (!workspace) throw new Error("Workspace not found");
-
-  // For now, we'll store the budget in the workspace table
-  const { error } = await supabase
-    .from("workspaces")
-    .update({ budget_limit_minor: Math.round(newLimit * 100) })
-    .eq("id", workspace.id);
-
-  if (error) throw error;
 }
