@@ -19,16 +19,22 @@ async function ctx() {
   const user = session?.user;
   if (!user) { cache = null; throw new Error("Not logged in"); }
 
-  // Read active workspace from localStorage so switching works
+  // localStorage is the source of truth for active workspace
   let stored: string | null = null;
   try { stored = typeof window !== "undefined" ? localStorage.getItem(KEY) : null; } catch {}
-  const cacheKey = `${user.id}|${stored ?? ""}`;
-  if (cache && `${cache.userId}|${cache.workspaceId}` === cacheKey) return { sb, user, workspaceId: cache.workspaceId };
 
-  // Validate stored workspace belongs to user
+  const cacheKey = `${user.id}|${stored ?? ""}`;
+  if (cache && `${cache.userId}|${cache.workspaceId}` === cacheKey) {
+    return { sb, user, workspaceId: cache.workspaceId };
+  }
+
   if (stored) {
     const { data } = await sb.from("workspaces").select("id").eq("id", stored).eq("owner_id", user.id).maybeSingle();
-    if (data) { cache = { userId: user.id, workspaceId: data.id }; return { sb, user, workspaceId: data.id }; }
+    if (data) {
+      cache = { userId: user.id, workspaceId: data.id };
+      return { sb, user, workspaceId: data.id };
+    }
+    try { localStorage.removeItem(KEY); } catch {}
   }
 
   const { data: ws, error } = await sb.from("workspaces").select("id").eq("owner_id", user.id).order("created_at").limit(1).single();

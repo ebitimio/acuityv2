@@ -97,9 +97,15 @@ export default function SandboxPage() {
     return () => subscription.unsubscribe();
   }, [supabase.auth]);
 
+  // First load — do NOT wait for activeWs
   useEffect(() => {
     if (session) refreshData();
-  }, [session, activeWs, refreshData]);
+  }, [session, refreshData]);
+
+  // Reload when active workspace ID changes
+  useEffect(() => {
+    if (session && activeWs?.id) refreshData();
+  }, [activeWs?.id]);
 
   useEffect(() => {
     if (!showSplash && session) {
