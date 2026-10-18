@@ -60,83 +60,81 @@ export function AuthScreen() {
   };
 
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-start pt-24 px-6 relative overflow-hidden">
+    <div className="h-[100dvh] w-full bg-black flex flex-col items-center justify-center px-6 relative overflow-hidden">
       
       {/* --- STACKED 3D CARD ANIMATION --- */}
-      <div className="absolute top-0 left-0 right-0 h-[400px] flex items-center justify-center pointer-events-none">
+      <div className="absolute top-0 left-0 right-0 h-[45%] flex items-center justify-center pointer-events-none">
         {/* Background Glow */}
-        <div className="absolute w-[350px] h-[350px] bg-gradient-to-tr from-[#6a0d0d] to-[#3b0a3b] rounded-full blur-[90px] opacity-60 top-10" />
+        <div className="absolute w-[300px] h-[300px] bg-gradient-to-tr from-[#6a0d0d] to-[#3b0a3b] rounded-full blur-[80px] opacity-60 top-0" />
         
         {/* Back Card */}
         <motion.div
-          animate={{ rotate: -12, x: -30, y: 20 }}
-          transition={{ duration: 8, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-          className="absolute top-24 w-72 h-44 bg-gradient-to-tr from-[#2a0a0a] to-[#4a0e0e] rounded-3xl border border-white/10 shadow-2xl"
+          animate={{ rotate: -12, x: -25, y: 15 }}
+          transition={{ duration: 4, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
+          className="absolute top-16 w-64 h-40 bg-gradient-to-tr from-[#2a0a0a] to-[#4a0e0e] rounded-3xl border border-white/10 shadow-2xl"
         >
-          <div className="absolute top-6 left-6 text-white/30 font-bold italic text-base">VISA</div>
-          <div className="absolute bottom-6 left-6 flex gap-2">
-            <div className="w-10 h-1 bg-white/20 rounded-full" />
-            <div className="w-10 h-1 bg-white/20 rounded-full" />
-            <div className="w-10 h-1 bg-white/20 rounded-full" />
+          <div className="absolute top-5 left-5 text-white/30 font-bold italic text-sm">VISA</div>
+          <div className="absolute bottom-5 left-5 flex gap-2">
+            <div className="w-8 h-1 bg-white/20 rounded-full" />
+            <div className="w-8 h-1 bg-white/20 rounded-full" />
+            <div className="w-8 h-1 bg-white/20 rounded-full" />
           </div>
         </motion.div>
 
         {/* Front Card */}
         <motion.div
-          animate={{ rotate: 8, x: 30, y: -10 }}
-          transition={{ duration: 8, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-          className="absolute top-20 w-72 h-44 bg-gradient-to-tr from-[#5a1a1a] to-[#8b1a1a] rounded-3xl border border-white/20 shadow-2xl z-10 overflow-hidden"
+          animate={{ rotate: 8, x: 25, y: -10 }}
+          transition={{ duration: 4, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
+          className="absolute top-12 w-64 h-40 bg-gradient-to-tr from-[#5a1a1a] to-[#8b1a1a] rounded-3xl border border-white/20 shadow-2xl z-10 overflow-hidden"
         >
-          {/* Specular Highlight */}
           <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-30" />
-          
-          <div className="absolute top-6 left-6 text-white/80 font-bold italic text-base z-10">VISA</div>
-          <div className="absolute top-6 right-6 w-12 h-8 bg-gradient-to-br from-yellow-200/40 to-yellow-600/40 rounded-md border border-yellow-200/20 z-10" />
-          
-          <div className="absolute bottom-10 left-6 text-white/90 font-mono text-lg tracking-widest z-10">
+          <div className="absolute top-5 left-5 text-white/80 font-bold italic text-sm z-10">VISA</div>
+          <div className="absolute top-5 right-5 w-10 h-7 bg-gradient-to-br from-yellow-200/40 to-yellow-600/40 rounded-md border border-yellow-200/20 z-10" />
+          <div className="absolute bottom-8 left-5 text-white/90 font-mono text-base tracking-widest z-10">
             •••• 4291
           </div>
-          <div className="absolute bottom-4 left-6 text-white/60 text-xs z-10">MAX MUSTERMANN</div>
+          <div className="absolute bottom-3 left-5 text-white/60 text-xs z-10">MAX MUSTERMANN</div>
         </motion.div>
       </div>
 
-      <div className="relative z-20 w-full max-w-sm mt-64">
-        <div className="flex flex-col items-center mb-8">
-          <h1 className="text-[28px] font-bold text-white tracking-tight text-center">
+      {/* --- FORM CONTAINER --- */}
+      <div className="relative z-20 w-full max-w-[340px] mt-32">
+        <div className="flex flex-col items-center mb-6">
+          <h1 className="text-[24px] font-bold text-white tracking-tight text-center">
             {mode === "login" ? "Welcome back." : mode === "signup" ? "Create Acuity." : "Verify Email."}
           </h1>
-          <p className="text-[15px] text-white/50 mt-2 text-center px-4">
+          <p className="text-[14px] text-white/50 mt-1 text-center px-4">
             {mode === "login" ? "Sign in to access your AI wealth manager." : "Start tracking your finances today."}
           </p>
         </div>
 
-        <GlassSurface tier="thick" radius={28} className="p-6">
-          <form onSubmit={handleEmailAuth} className="flex flex-col gap-4">
+        <GlassSurface tier="thick" radius={24} className="p-5">
+          <form onSubmit={handleEmailAuth} className="flex flex-col gap-3">
             
             {mode !== "otp" ? (
               <>
                 <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-2xl px-4 py-3 focus-within:border-[var(--brand)] transition-colors">
-                  <Mail size={20} className="text-white/40" />
+                  <Mail size={18} className="text-white/40" />
                   <input
                     type="email"
                     placeholder="Email address"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="flex-1 bg-transparent text-white outline-none placeholder:text-white/30 text-[15px]"
+                    className="flex-1 bg-transparent text-white outline-none placeholder:text-white/30 text-[14px]"
                   />
                 </div>
 
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-2xl px-4 py-3 focus-within:border-[var(--brand)] transition-colors">
-                    <Lock size={20} className="text-white/40" />
+                    <Lock size={18} className="text-white/40" />
                     <input
                       type="password"
                       placeholder="Password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
-                      className="flex-1 bg-transparent text-white outline-none placeholder:text-white/30 text-[15px]"
+                      className="flex-1 bg-transparent text-white outline-none placeholder:text-white/30 text-[14px]"
                     />
                   </div>
                   
@@ -151,7 +149,7 @@ export function AuthScreen() {
               </>
             ) : (
               <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-2xl px-4 py-3 focus-within:border-[var(--brand)] transition-colors">
-                <Lock size={20} className="text-white/40" />
+                <Lock size={18} className="text-white/40" />
                 <input
                   type="text"
                   placeholder="6-digit code"
@@ -159,13 +157,13 @@ export function AuthScreen() {
                   onChange={(e) => setOtp(e.target.value)}
                   required
                   maxLength={6}
-                  className="flex-1 bg-transparent text-white outline-none placeholder:text-white/30 text-[20px] tracking-[0.5em] text-center font-mono"
+                  className="flex-1 bg-transparent text-white outline-none placeholder:text-white/30 text-[18px] tracking-[0.5em] text-center font-mono"
                 />
               </div>
             )}
 
             {message && (
-              <p className={`text-[13px] text-center px-2 ${message.includes("sent") ? "text-[var(--brand)]" : "text-[var(--warn)]"}`}>
+              <p className={`text-[12px] text-center px-2 ${message.includes("sent") ? "text-[var(--brand)]" : "text-[var(--warn)]"}`}>
                 {message}
               </p>
             )}
@@ -173,9 +171,9 @@ export function AuthScreen() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-4 mt-2 bg-white text-black rounded-full font-semibold text-[16px] flex items-center justify-center gap-2 active:scale-[0.98] transition-transform disabled:opacity-50"
+              className="w-full py-3.5 mt-1 bg-white text-black rounded-full font-semibold text-[15px] flex items-center justify-center gap-2 active:scale-[0.98] transition-transform disabled:opacity-50"
             >
-              {loading ? <Loader2 size={20} className="animate-spin" /> : 
+              {loading ? <Loader2 size={18} className="animate-spin" /> : 
                 mode === "login" ? "Sign In" : 
                 mode === "signup" ? "Create Account" : "Verify Code"}
             </button>
@@ -183,18 +181,18 @@ export function AuthScreen() {
 
           {mode !== "otp" && (
             <>
-              <div className="flex items-center gap-4 my-6">
+              <div className="flex items-center gap-4 my-4">
                 <div className="h-px bg-white/10 flex-1" />
-                <span className="text-[13px] text-white/40">or</span>
+                <span className="text-[12px] text-white/40">or</span>
                 <div className="h-px bg-white/10 flex-1" />
               </div>
               <button
                 onClick={handleGoogleAuth}
                 disabled={loading}
                 type="button"
-                className="w-full py-3.5 bg-[#1A1A1A] border border-white/10 text-white rounded-full font-medium text-[15px] flex items-center justify-center gap-3 hover:bg-[#252525] transition-colors"
+                className="w-full py-3 bg-[#1A1A1A] border border-white/10 text-white rounded-full font-medium text-[14px] flex items-center justify-center gap-2 hover:bg-[#252525] transition-colors"
               >
-                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                <svg className="w-4 h-4" viewBox="0 0 24 24">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
                   <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
                   <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
@@ -205,15 +203,15 @@ export function AuthScreen() {
             </>
           )}
 
-          <div className="text-center mt-6 flex flex-col gap-2">
+          <div className="text-center mt-4 flex flex-col gap-2">
             {mode === "otp" ? (
-              <button onClick={() => setMode("signup")} className="text-[14px] text-white/50 flex items-center justify-center gap-1">
-                <ArrowLeft size={14} /> Back
+              <button onClick={() => setMode("signup")} className="text-[13px] text-white/50 flex items-center justify-center gap-1">
+                <ArrowLeft size={12} /> Back
               </button>
             ) : (
               <button
                 onClick={() => setMode(mode === "login" ? "signup" : "login")}
-                className="text-[14px] text-white/50 font-medium"
+                className="text-[13px] text-white/50 font-medium"
               >
                 {mode === "login" ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
               </button>

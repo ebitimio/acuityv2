@@ -80,14 +80,15 @@ export function ImportSheet({
           <GlassSurface 
             tier="thick" 
             radius="36px 36px 0 0" 
-            className="flex flex-col items-center pt-3 pb-32 px-6 w-full max-w-md mx-auto min-h-[520px]"
+            className="flex flex-col items-center pt-4 pb-32 px-6 w-full max-w-md mx-auto min-h-[520px] overflow-hidden"
           >
-            {/* Header with grabber and close button aligned */}
-            <div className="w-full flex items-center justify-between mb-8">
+            
+            {/* HEADER: Grabber and X button */}
+            <div className="w-full flex items-center justify-between mb-6">
               <div className="w-12 h-1.5 rounded-full bg-white/20" />
               <button 
                 onClick={onClose} 
-                className="p-2 rounded-full bg-white/10 text-white/60 hover:text-white transition-colors -mr-2"
+                className="p-2 rounded-full bg-white/10 text-white/60 hover:text-white transition-colors"
               >
                 <X size={20} />
               </button>
@@ -128,7 +129,7 @@ export function ImportSheet({
             {/* STATE 2: PROCESSING / ERROR / DONE */}
             {isProcessing && (
               <>
-                <div className="relative mb-8">
+                <div className="relative mb-8 mt-4">
                   {!isDone && !errorMessage && (
                     <motion.div
                       animate={{ rotate: 360 }}
