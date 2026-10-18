@@ -8,10 +8,8 @@ interface NumberRollProps {
   value: number;
   currency?: string;
   className?: string;
-  /** Duration in seconds (default 0.8s per spec) */
   duration?: number;
-  /** Whether to show decimals (kobo/cents) */
-  decimals?: boolean;
+  showDecimals?: boolean;
 }
 
 export function NumberRoll({
@@ -19,36 +17,39 @@ export function NumberRoll({
   currency = "₦",
   className,
   duration = 0.8,
-  decimals = false,
+  showDecimals = true, 
 }: NumberRollProps) {
   const count = useMotionValue(0);
   const [displayValue, setDisplayValue] = useState("0");
 
   useEffect(() => {
-    // We create the formatter inside the effect so it's not a dependency
     const formatter = new Intl.NumberFormat("en-NG", {
-      minimumFractionDigits: decimals ? 2 : 0,
-      maximumFractionDigits: decimals ? 2 : 0,
+      minimumFractionDigits: showDecimals ? 2 : 0,
+      maximumFractionDigits: showDecimals ? 2 : 0,
     });
 
     const controls = animate(count, value, {
       duration: duration,
-      ease: [0.2, 0.8, 0.2, 1], // ease.emphasized from spec
+      ease: [0.2, 0.8, 0.2, 1],
       onUpdate: (latest) => {
         setDisplayValue(formatter.format(latest));
       },
     });
 
     return controls.stop;
-  }, [value, duration, decimals, count]); 
+  }, [value, duration, showDecimals, count]);
+
+  const [main, decimals] = displayValue.split(".");
 
   return (
     <span className={cn("inline-flex items-baseline tabular", className)}>
-      {/* Currency symbol is scaled down and slightly raised per spec §2.2 */}
-      <span className="mr-1 text-[0.7em] opacity-70 relative -top-[0.05em]">
+      <span className="mr-1 text-[0.7em] opacity-80 relative -top-[0.05em]">
         {currency}
       </span>
-      <motion.span>{displayValue}</motion.span>
+      <motion.span>{main}</motion.span>
+      {showDecimals && decimals && (
+        <span className="text-[0.5em] opacity-70 ml-0.5">.{decimals}</span>
+      )}
     </span>
   );
 }
