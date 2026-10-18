@@ -1,72 +1,37 @@
 "use client";
 
-import { GlassSurface } from "./glass-surface";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Landmark, PiggyBank, Smartphone, Globe2 } from "lucide-react";
+import { useCurrency } from "@/lib/currency";
+import type { Account } from "@/lib/types";
 
-interface AccountCardProps {
-  name: string;
-  institution: string;
-  balance: number;
-  currency?: string;
-  lastImported: string;
-  color: string; // For the sparkline and icon
-  icon: string;  // Emoji for now
+const TYPES = {
+  checking: { icon: Landmark, label: "Current", color: "#f97316" },
+  savings: { icon: PiggyBank, label: "Savings", color: "#5bdc8c" },
+  wallet: { icon: Smartphone, label: "Wallet", color: "#7cc8ff" },
+  dom: { icon: Globe2, label: "Domiciliary", color: "#bf8cf2" },
+} as const;
+
+export function accountTypeLabel(t: string) {
+  return (TYPES[t as keyof typeof TYPES] ?? TYPES.checking).label;
 }
 
-export function AccountCard({ 
-  name, 
-  institution, 
-  balance, 
-  currency = "₦", 
-  lastImported,
-  color,
-  icon 
-}: AccountCardProps) {
-  return (
-    <GlassSurface 
-      tier="thin" 
-      radius={20} 
-      className="p-4 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors group"
-    >
-      <div className="flex items-center gap-4">
-        {/* Institution Icon */}
-        <div 
-          className="w-12 h-12 rounded-full flex items-center justify-center text-[20px] border border-white/10"
-          style={{ backgroundColor: `${color}20` }} // 20% opacity of the color
-        >
-          {icon}
-        </div>
-        
-        {/* Account Details */}
-        <div>
-          <p className="text-[15px] font-medium text-white">{name}</p>
-          <p className="text-[12px] text-white/50">{institution}</p>
-        </div>
-      </div>
+export function AccountCard({ account, onClick }: { account: Account; onClick: () => void }) {
+  const { fmt } = useCurrency();
+  const t = TYPES[account.type] ?? TYPES.checking;
+  const Icon = t.icon;
+  const balance = (account.current_minor ?? account.balance_minor) / 100;
 
-      <div className="flex items-center gap-4">
-        {/* Balance & Sparkline */}
-        <div className="text-right flex flex-col items-end">
-          <p className="text-[15px] font-semibold text-white tabular">
-            {currency}{balance.toLocaleString()}
-          </p>
-          <div className="flex items-center gap-2 mt-1">
-             {/* Mini Sparkline SVG */}
-             <svg width="40" height="12" viewBox="0 0 40 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path 
-                  d="M0 10 Q 10 2, 20 8 T 40 4" 
-                  stroke={color} 
-                  strokeWidth="1.5" 
-                  strokeLinecap="round" 
-                  fill="none"
-                />
-             </svg>
-             <span className="text-[10px] text-white/40">Imported {lastImported}</span>
-          </div>
-        </div>
-        
-        <ChevronRight size={16} className="text-white/20 group-hover:text-white/60 transition-colors" />
+  return (
+    <button onClick={onClick} className="press flex w-full items-center gap-3 px-4 py-4 text-left hover:bg-white/[0.03]">
+      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full" style={{ background: `${t.color}22`, color: t.color }}>
+        <Icon size={20} />
       </div>
-    </GlassSurface>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[16px] font-semibold">{account.name}</p>
+        <p className="truncate text-[13px] text-[var(--text-2)]">{account.institution} ({t.label})</p>
+      </div>
+      <p className={`tabular text-[16px] font-bold ${balance < 0 ? "text-[var(--danger)]" : ""}`}>{fmt(balance)}</p>
+      <ChevronRight size={16} className="text-[var(--text-3)]" />
+    </button>
   );
 }

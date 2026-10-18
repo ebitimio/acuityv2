@@ -1,64 +1,60 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
+import { useCurrency } from "@/lib/currency";
 
-interface BarData {
+export interface BarData {
   label: string;
   income: number;
   expense: number;
 }
 
 export function BarPairChart({ data }: { data: BarData[] }) {
-  // Find the maximum value to scale the bars correctly
-  const maxValue = Math.max(
-    ...data.map((d) => Math.max(d.income, d.expense)),
-    1 // Prevent division by zero
-  );
+  const { fmt } = useCurrency();
+  const [active, setActive] = useState<number | null>(null);
+  const max = Math.max(...data.flatMap((d) => [d.income, d.expense]), 1);
+  const h = (v: number) => (v > 0 ? `${Math.max((v / max) * 100, 3)}%` : "0%");
 
   return (
-    <div className="flex items-end justify-between h-32 w-full mt-6 gap-2">
-      {data.map((item, index) => {
-        const incomeHeight = `${(item.income / maxValue) * 100}%`;
-        const expenseHeight = `${(item.expense / maxValue) * 100}%`;
-
-        return (
-          <div key={index} className="flex flex-col items-center flex-1 gap-2 h-full justify-end group">
-            
-            {/* The Bars Container */}
-            <div className="flex items-end justify-center w-full gap-1 h-full">
-              
-              {/* Income Bar (Green) */}
+    <div>
+      <div className="mb-3 h-5 text-center text-[13px] font-semibold tabular text-[var(--text-2)]">
+        {active !== null && (
+          <>
+            <span className="text-[var(--gain)]">{fmt(data[active].income, { force: true })} in</span>
+            <span className="mx-2 text-[var(--text-3)]">/</span>
+            <span>{fmt(data[active].expense, { force: true })} out</span>
+          </>
+        )}
+      </div>
+      <div className="flex h-32 w-full items-end gap-2">
+        {data.map((d, i) => (
+          <button
+            key={d.label + i}
+            onClick={() => setActive(active === i ? null : i)}
+            className="flex h-full flex-1 flex-col items-center justify-end gap-2"
+            aria-label={`${d.label}: ${fmt(d.income, { force: true })} in, ${fmt(d.expense, { force: true })} out`}
+          >
+            <div className="flex h-full w-full items-end justify-center gap-1">
               <motion.div
                 initial={{ height: 0 }}
-                animate={{ height: incomeHeight }}
-                transition={{ type: "spring", stiffness: 300, damping: 30, delay: index * 0.05 }}
-                className="w-1/2 max-w-[12px] bg-[var(--brand)] rounded-t-sm relative group-hover:opacity-80 transition-opacity"
-              >
-                {/* Tooltip (Optional) */}
-                <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-black border border-white/10 px-2 py-1 rounded text-[10px] text-white whitespace-nowrap z-10 pointer-events-none">
-                  ₦{item.income.toLocaleString()}
-                </div>
-              </motion.div>
-
-              {/* Expense Bar (White/Grey) */}
+                animate={{ height: h(d.income) }}
+                transition={{ type: "spring", stiffness: 260, damping: 28, delay: i * 0.04 }}
+                className="w-1/2 max-w-[14px] rounded-t-md bg-[var(--gain)]"
+                style={{ opacity: active === null || active === i ? 1 : 0.35 }}
+              />
               <motion.div
                 initial={{ height: 0 }}
-                animate={{ height: expenseHeight }}
-                transition={{ type: "spring", stiffness: 300, damping: 30, delay: index * 0.05 + 0.05 }}
-                className="w-1/2 max-w-[12px] bg-white/20 rounded-t-sm relative group-hover:bg-white/30 transition-colors"
-              >
-                <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-black border border-white/10 px-2 py-1 rounded text-[10px] text-white whitespace-nowrap z-10 pointer-events-none">
-                  ₦{item.expense.toLocaleString()}
-                </div>
-              </motion.div>
-              
+                animate={{ height: h(d.expense) }}
+                transition={{ type: "spring", stiffness: 260, damping: 28, delay: i * 0.04 + 0.04 }}
+                className="w-1/2 max-w-[14px] rounded-t-md bg-white/35"
+                style={{ opacity: active === null || active === i ? 1 : 0.35 }}
+              />
             </div>
-
-            {/* X-Axis Label */}
-            <span className="text-[11px] text-white/50">{item.label}</span>
-          </div>
-        );
-      })}
+            <span className="text-[12px] text-[var(--text-3)]">{d.label}</span>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

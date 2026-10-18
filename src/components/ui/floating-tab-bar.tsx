@@ -9,102 +9,60 @@ const TABS = [
   { id: "home", label: "Home", icon: Home },
   { id: "analytics", label: "Analytics", icon: PieChart },
   { id: "accounts", label: "Accounts", icon: Wallet },
-  { id: "advisor", label: "", icon: Sparkles },
-];
+  { id: "advisor", label: "Advisor", icon: Sparkles },
+] as const;
 
-interface FloatingTabBarProps {
+interface Props {
   activeTab: string;
-  onTabChange: (tabId: string) => void;
+  onTabChange: (id: string) => void;
   onAddClick: () => void;
-  onAdvisorClick: () => void;
   isHidden: boolean;
 }
 
-export function FloatingTabBar({ activeTab, onTabChange, onAddClick, onAdvisorClick, isHidden }: FloatingTabBarProps) {
-  const handleTabClick = (tabId: string) => {
-    onTabChange(tabId);
-    if (tabId === "advisor") onAdvisorClick();
-  };
-
+export function FloatingTabBar({ activeTab, onTabChange, onAddClick, isHidden }: Props) {
   return (
-    <motion.div 
-      initial={{ y: 0 }}
-      animate={{ y: isHidden ? 120 : 0 }}
-      transition={{ duration: 0.3, ease: "easeInOut" }}
-      className="fixed bottom-0 left-0 right-0 z-[60] flex justify-center px-4 pb-6 pt-2 pointer-events-none"
+    <motion.nav
+      aria-label="Main"
+      initial={false}
+      animate={{ y: isHidden ? 140 : 0 }}
+      transition={{ duration: 0.28, ease: "easeInOut" }}
+      className="pointer-events-none fixed bottom-0 left-0 right-0 z-[60] flex justify-center px-4 pb-[calc(12px+env(safe-area-inset-bottom))] pt-6"
     >
-      <div className="flex items-center justify-between gap-3 w-full max-w-[420px] pointer-events-auto">
-        
-        <GlassSurface
-          tier="regular"
-          className="flex flex-1 items-center justify-between p-1.5 h-[64px]"
-          rim={true}
-        >
-          {TABS.map((tab) => {
-            const isActive = activeTab === tab.id;
-            const Icon = tab.icon;
+      <div className="absolute inset-x-0 bottom-0 -z-10 h-36 bg-gradient-to-t from-black via-black/85 to-transparent" />
 
+      <div className="pointer-events-auto flex w-full max-w-[420px] items-center gap-3">
+        <GlassSurface tier="thick" rim className="flex h-[66px] flex-1 items-center p-1.5">
+          {TABS.map((tab) => {
+            const active = activeTab === tab.id;
+            const Icon = tab.icon;
             return (
               <button
                 key={tab.id}
-                type="button"
-                onClick={() => handleTabClick(tab.id)}
+                onClick={() => onTabChange(tab.id)}
+                aria-current={active ? "page" : undefined}
                 className={cn(
-                  "relative flex flex-1 flex-col items-center justify-center h-full rounded-full transition-colors cursor-pointer",
-                  isActive ? "text-white" : "text-white/50 hover:text-white/80"
+                  "relative flex h-full flex-1 flex-col items-center justify-center gap-0.5 rounded-full transition-colors",
+                  active ? "text-[var(--brand)]" : "text-white/50 hover:text-white"
                 )}
               >
-                {isActive && (
-                  <motion.div
-                    layoutId="active-tab-lens"
-                    className="absolute inset-0 bg-white/10 rounded-full"
+                {active && (
+                  <motion.span
+                    layoutId="tab-lens"
+                    className="absolute inset-0 rounded-full bg-white/[0.09]"
                     transition={{ type: "spring", stiffness: 520, damping: 38 }}
                   />
                 )}
-                
-                {tab.id === "advisor" ? (
-                  <motion.div 
-                    animate={{ 
-                      background: [
-                        "conic-gradient(from 0deg, #7a0e0e, #e87a1a, #ffb347, #7a0e0e)",
-                        "conic-gradient(from 360deg, #7a0e0e, #e87a1a, #ffb347, #7a0e0e)"
-                      ] 
-                    }}
-                    transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                    className="w-10 h-10 rounded-full p-[1.5px] flex items-center justify-center relative z-10"
-                  >
-                    <div className="w-full h-full rounded-full bg-[#0E0F10] flex items-center justify-center">
-                      <Icon size={20} strokeWidth={2.5} className="text-white" />
-                    </div>
-                  </motion.div>
-                ) : (
-                  <>
-                    <Icon size={20} strokeWidth={isActive ? 2.5 : 2} className="relative z-10 mb-1" />
-                    <span className="text-[11px] font-medium relative z-10">
-                      {tab.label}
-                    </span>
-                  </>
-                )}
+                <Icon size={21} strokeWidth={active ? 2.5 : 2} className="relative" />
+                <span className="relative text-[11px] font-semibold">{tab.label}</span>
               </button>
             );
           })}
         </GlassSurface>
 
-        <button 
-          type="button"
-          onClick={onAddClick}
-          className="h-[64px] w-[64px] shrink-0 active:scale-95 transition-transform cursor-pointer"
-        >
-          <GlassSurface
-            tier="regular"
-            className="flex h-full w-full items-center justify-center text-white hover:bg-white/10"
-            rim={true}
-          >
-            <Plus size={28} strokeWidth={2} />
-          </GlassSurface>
+        <button aria-label="Add" onClick={onAddClick} className="press h-[66px] w-[66px] shrink-0 rounded-full bg-[var(--brand)] text-white shadow-[0_8px_30px_rgba(249,115,22,0.35)]">
+          <Plus size={30} strokeWidth={2.5} className="mx-auto" />
         </button>
-
       </div>
-    </motion.div>
+    </motion.nav>
   );
 }
