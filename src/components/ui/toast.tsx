@@ -7,7 +7,8 @@ import { AlertCircle, Check } from "lucide-react";
 type Kind = "ok" | "err";
 interface Item { id: number; msg: string; kind: Kind }
 
-const Ctx = createContext<{ toast: (msg: string, kind?: Kind) => void }>({ toast: () => {} });
+// Return the function directly so `const toast = useToast()` works
+const Ctx = createContext<(msg: string, kind?: Kind) => void>(() => {});
 export const useToast = () => useContext(Ctx);
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
@@ -20,7 +21,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <Ctx.Provider value={{ toast }}>
+    <Ctx.Provider value={toast}>
       {children}
       <div className="pointer-events-none fixed left-0 right-0 z-[400] flex flex-col items-center gap-2 px-4" style={{ top: "calc(max(env(safe-area-inset-top), 0px) + 12px)" }} aria-live="polite">
         <AnimatePresence>

@@ -1,98 +1,63 @@
 "use client";
 
-import { motion, useAnimation, PanInfo } from "framer-motion";
-import { cn } from "@/lib/utils";
-import { Check, Trash2, ShoppingBag, Car, Briefcase, Tv, Fuel, CreditCard } from "lucide-react";
+import { motion, useAnimation, type PanInfo } from "framer-motion";
+import { Pencil, Trash2 } from "lucide-react";
+import { getCategory } from "@/lib/categories";
+import { useCurrency } from "@/lib/currency";
+import { shortDate } from "@/lib/dates";
+import type { Txn } from "@/lib/types";
 
-interface TransactionRowProps {
-  id: string;
-  merchant: string;
-  categoryIcon: string;
-  categoryName: string;
-  accountName: string;
-  amount: number;
-  isIncome?: boolean;
-  onRowClick?: () => void;
+interface Props {
+  txn: Txn;
+  onOpen: (t: Txn) => void;
+  onDelete: (t: Txn) => void;
 }
 
-export function TransactionRow({
-  merchant,
-  categoryIcon,
-  categoryName,
-  accountName,
-  amount,
-  isIncome = false,
-  onRowClick,
-}: TransactionRowProps) {
+export function TransactionRow({ txn, onOpen, onDelete }: Props) {
   const controls = useAnimation();
+  const { fmt } = useCurrency();
+  const cat = getCategory(txn.category_name);
+  const Icon = cat.icon;
+  const income = txn.direction === "credit";
 
-  const handleDragEnd = async (event: any, info: PanInfo) => {
-    const threshold = 80;
-    
-    if (info.offset.x > threshold) {
-      await controls.start({ x: 100, opacity: 0, transition: { duration: 0.2 } });
-      controls.set({ x: 0, opacity: 1 });
-    }
-    
-    if (info.offset.x < -threshold) {
-      await controls.start({ x: -100, opacity: 0, transition: { duration: 0.2 } });
-      controls.set({ x: 0, opacity: 1 });
-    }
-  };
-
-  // Helper to render the correct icon based on the passed string
-  const renderIcon = () => {
-    switch (categoryIcon) {
-      case "ShoppingBag": return <ShoppingBag size={20} className="text-[var(--brand)]" />;
-      case "Car": return <Car size={20} className="text-[var(--info)]" />;
-      case "Briefcase": return <Briefcase size={20} className="text-[#AF52DE]" />;
-      case "Tv": return <Tv size={20} className="text-[#FF9F0A]" />;
-      case "Fuel": return <Fuel size={20} className="text-[var(--danger)]" />;
-      default: return <CreditCard size={20} className="text-white/60" />;
-    }
+  const onDragEnd = async (_: unknown, info: PanInfo) => {
+    const dx = info.offset.x;
+    await controls.start({ x: 0, transition: { type: "spring", stiffness: 500, damping: 40 } });
+    if (dx > 80) onOpen(txn);
+    else if (dx < -80) onDelete(txn);
   };
 
   return (
-    <div className="relative w-full overflow-hidden border-b border-white/[0.05] last:border-0">
-      <div className="absolute inset-0 flex items-center justify-between px-6 bg-[#0E0F10]">
-        <div className="flex items-center gap-2 text-[var(--brand)]">
-          <Check size={20} />
-          <span className="text-[13px] font-medium">Review</span>
-        </div>
-        <div className="flex items-center gap-2 text-[var(--danger)]">
-          <span className="text-[13px] font-medium">Delete</span>
-          <Trash2 size={20} />
-        </div>
+    <div className="relative overflow-hidden">
+      <div className="absolute inset-0 flex items-center justify-between px-5 text-[14px] font-bold">
+        <span className="flex items-center gap-2 text-[var(--brand)]"><Pencil size={18} /> Edit</span>
+        <span className="flex items-center gap-2 text-[var(--danger)]">Delete <Trash2 size={18} /></span>
       </div>
 
       <motion.div
         drag="x"
+        dragDirectionLock
         dragConstraints={{ left: 0, right: 0 }}
-        dragElastic={0.2}
-        onDragEnd={handleDragEnd}
+        dragElastic={0.35}
+        onDragEnd={onDragEnd}
         animate={controls}
-        onTap={onRowClick}
-        className="relative flex items-center justify-between p-4 bg-[#0E0F10] z-10 cursor-pointer select-none"
+        onTap={() => onOpen(txn)}
+        style={{ touchAction: "pan-y" }}
+        className="relative flex cursor-pointer select-none items-center gap-3 bg-[var(--surface-2)] px-4 py-3.5"
       >
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-[14px] bg-white/5 border border-white/10 flex items-center justify-center">
-            {renderIcon()}
-          </div>
-          <div className="flex flex-col">
-            <span className="text-[16px] font-medium text-white">{merchant}</span>
-            <div className="flex items-center gap-2 mt-0.5">
-              <span className="text-[13px] text-white/50">{categoryName}</span>
-              <span className="w-1 h-1 rounded-full bg-white/20" />
-              <span className="text-[13px] text-white/50">{accountName}</span>
-            </div>
-          </div>
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full" style={{ background: `${cat.color}22`, color: cat.color }}>
+          <Icon size={20} />
         </div>
-        <span className={cn(
-          "text-[16px] font-semibold tabular",
-          isIncome ? "text-[var(--brand)]" : "text-white"
-        )}>
-          {isIncome ? "+" : "-"}₦{amount.toLocaleString()}
-        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[16px] font-semibold">{txn.description_clean || txn.description_raw}</p>
+          <p className="truncate text-[13px] text-[var(--text-2)]">{txn.category_name || "Uncategorized"}</p>
+        </div>
+        <div className="shrink-0 text-right">
+          <p className={`tabular text-[16px] font-bold ${income ? "text-[var(--gain)]" : ""}`}>
+            {income ? "+" : "−"}{fmt(txn.amount_minor / 100)}
+          </p>
+          <p className="text-[12px] text-[var(--text-3)]">{shortDate(txn.date)}</p>
+        </div>
       </motion.div>
     </div>
   );

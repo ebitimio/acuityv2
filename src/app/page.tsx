@@ -241,7 +241,7 @@ export default function SandboxPage() {
                 />
               ) : (
                 transactions.map((t) => (
-                  <TransactionRow key={t.id} txn={t} onOpen={setSelectedTxn} onDelete={handleDeleteTxn} />
+                  <TransactionRow key={t.id} transaction={t} onOpen={setSelectedTxn} onDelete={handleDeleteTxn} />
                 ))
               )}
             </div>
