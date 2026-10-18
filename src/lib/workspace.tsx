@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 interface Workspace {
   id: string;
   name: string;
-  country?: string;
+  country?: string | null;
 }
 
 interface Ctx {
@@ -32,7 +32,11 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     let { data } = await supabase.from("workspaces").select("id,name,country").eq("owner_id", user.id).order("created_at");
     // Self-heal: if the user has no workspace, create one
     if (!data || data.length === 0) {
-      const { data: created } = await supabase.from("workspaces").insert({ owner_id: user.id, name: "Personal" }).select("id,name,country").single();
+      const { data: created } = await supabase
+        .from("workspaces")
+        .insert({ owner_id: user.id, name: "Personal" })
+        .select("id,name,country")
+        .single();
       if (created) data = [created as Workspace];
     }
     const list = (data ?? []) as Workspace[];
@@ -54,7 +58,11 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const createWorkspace = useCallback(async (name: string): Promise<Workspace> => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Not logged in");
-    const { data, error } = await supabase.from("workspaces").insert({ owner_id: user.id, name }).select("id,name,country").single();
+    const { data, error } = await supabase
+      .from("workspaces")
+      .insert({ owner_id: user.id, name })
+      .select("id,name,country")
+      .single();
     if (error) throw error;
     const ws = data as Workspace;
     setWorkspaces((p) => [...p, ws]);
@@ -62,7 +70,11 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     return ws;
   }, [supabase, setActive]);
 
-  return <C.Provider value={{ workspaces, activeId, active: workspaces.find((w) => w.id === activeId) ?? null, setActive, refresh, createWorkspace }}>{children}</C.Provider>;
+  return (
+    <C.Provider value={{ workspaces, activeId, active: workspaces.find((w) => w.id === activeId) ?? null, setActive, refresh, createWorkspace }}>
+      {children}
+    </C.Provider>
+  );
 }
 
 export function useWorkspace() {
