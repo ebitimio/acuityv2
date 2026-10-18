@@ -1,7 +1,128 @@
 import { createClient } from "./client";
 import Papa from "papaparse";
 
-// ... (Keep getWorkspaceAndTransactions, getHomeMetrics, insertMockTransactions as they are) ...
+export async function getWorkspaceAndTransactions() {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not logged in");
+
+  const { data: workspace, error: wsError } = await supabase
+    .from("workspaces")
+    .select("*")
+    .eq("owner_id", user.id)
+    .single();
+
+  if (wsError || !workspace) throw new Error("Workspace not found");
+
+  const { data: transactions, error: txError } = await supabase
+    .from("transactions")
+    .select(`
+      id,
+      amount_minor,
+      direction,
+      description_clean,
+      description_raw,
+      category_name,
+      date,
+      parent_id,
+      account_id,
+      account:accounts (
+        name,
+        institution
+      )
+    `)
+    .neq("category_name", "Split Parent")
+    .order("date", { ascending: false })
+    .limit(50);
+
+  if (txError) throw txError;
+
+  return { workspace, transactions: transactions || [] };
+}
+
+export async function getHomeMetrics() {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("get_home_metrics");
+  
+  if (error) throw error;
+  return data as {
+    net_worth_minor: number;
+    total_spent_minor: number;
+    total_income_minor: number;
+    budget_limit_minor: number;
+    uncategorized_count: number;
+  };
+}
+
+export async function insertMockTransactions() {
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const { data: workspace } = await supabase
+    .from("workspaces")
+    .select("id")
+    .eq("owner_id", user.id)
+    .single();
+
+  if (!workspace) return;
+
+  const { data: existingAccounts } = await supabase
+    .from("accounts")
+    .select("id")
+    .eq("workspace_id", workspace.id)
+    .limit(1);
+
+  let accountId = existingAccounts?.[0]?.id;
+
+  if (!accountId) {
+    const { data: newAccount } = await supabase
+      .from("accounts")
+      .insert({
+        workspace_id: workspace.id,
+        name: "Main Checking",
+        institution: "GTBank",
+        type: "checking",
+        balance_minor: 125043000,
+      })
+      .select("id")
+      .single();
+      
+    accountId = newAccount?.id;
+  }
+
+  if (accountId) {
+    await supabase.from("transactions").insert([
+      {
+        account_id: accountId,
+        amount_minor: 4500000,
+        direction: "debit",
+        description_raw: "POS PURCHASE SHOPRITE LEKKI",
+        description_clean: "Shoprite Lekki",
+        category_name: "Groceries",
+        date: new Date().toISOString(),
+      },
+      {
+        account_id: accountId,
+        amount_minor: 350000,
+        direction: "debit",
+        description_raw: "UBER TRIP LAGOS",
+        description_clean: "Uber Trip",
+        category_name: "Transport",
+        date: new Date(Date.now() - 86400000).toISOString(),
+      },
+      {
+        account_id: accountId,
+        amount_minor: 85000000,
+        direction: "credit",
+        description_raw: "SALARY ACME CORP",
+        description_clean: "Salary - Acme Corp",
+        category_name: "Income",
+        date: new Date(Date.now() - 172800000).toISOString(),
+      }
+    ]);
+  }
+}
 
 export async function importCsvStatement(file: File) {
   const supabase = createClient();
@@ -47,16 +168,15 @@ export async function importCsvStatement(file: File) {
           }
 
           const transactionsToInsert = rows.map((row) => {
-            // 1. Find the Date Column (Handles "Date/Time" and normal "Date")
+            // 1. Find the Date Column
             const rawDate = row["Date/Time"] || row["Date"] || row["Trans Date"] || row["Transaction Date"] || row["date"];
             
-            // 2. Find the Description Column (Handles "Description" and "To/From")
+            // 2. Find the Description Column
             const descCol = row["Description"] || row["To/From"] || row["Narration"] || row["Details"] || row["description"];
             
             // 3. Find the Amount (Handles Money In / Money Out)
             let rawAmount = 0;
             
-            // Clean the string: remove ₦ symbol, commas, and spaces
             const cleanAmount = (val: any) => {
               if (!val) return 0;
               return parseFloat(val.toString().replace(/[₦,]/g, "").trim()) || 0;
@@ -67,16 +187,13 @@ export async function importCsvStatement(file: File) {
             const generalAmount = cleanAmount(row["Amount"] || row["Value"]);
 
             if (moneyIn > 0) {
-              rawAmount = moneyIn; // Income
+              rawAmount = moneyIn;
             } else if (moneyOut > 0) {
-              rawAmount = -moneyOut; // Expense
+              rawAmount = -moneyOut;
             } else if (generalAmount !== 0) {
-              rawAmount = generalAmount; // Fallback
-            } else if (row["Debit"] !== undefined) {
-              rawAmount = -cleanAmount(row["Debit"]);
+              rawAmount = generalAmount;
             }
 
-            // Skip invalid/empty rows
             if (isNaN(rawAmount) || rawAmount === 0) return null;
 
             const isIncome = rawAmount > 0;
@@ -90,7 +207,7 @@ export async function importCsvStatement(file: File) {
               description_raw: rawDescStr,
               description_clean: cleanMerchantName(rawDescStr),
               category_name: category,
-              date: parseDate(rawDate), 
+              date: parseDate(rawDate),
             };
           }).filter((tx): tx is NonNullable<typeof tx> => tx !== null);
 
