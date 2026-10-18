@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion, useScroll, useMotionValueEvent } from "framer-motion";
+import { useState } from "react";
+import { motion } from "framer-motion";
 import { Home, PieChart, Wallet, Sparkles, Plus } from "lucide-react";
 import { GlassSurface } from "./glass-surface";
 import { cn } from "@/lib/utils";
@@ -15,45 +15,24 @@ const TABS = [
 
 interface FloatingTabBarProps {
   activeTab: string;
-  onTabChange: (id: string) => void;
+  onTabChange: (tabId: string) => void;
   onAddClick: () => void;
   onAdvisorClick: () => void;
 }
 
 export function FloatingTabBar({ activeTab, onTabChange, onAddClick, onAdvisorClick }: FloatingTabBarProps) {
-  const [hidden, setHidden] = useState(false);
-  const { scrollY } = useScroll();
-
-  // Hide on scroll down, show on scroll up
-  useMotionValueEvent(scrollY, "change", (latest) => {
-    const previous = scrollY.getPrevious() || 0;
-    if (latest > previous && latest > 150) {
-      setHidden(true);
-    } else {
-      setHidden(false);
-    }
-  });
-
   const handleTabClick = (tabId: string) => {
     onTabChange(tabId);
     if (tabId === "advisor") onAdvisorClick();
   };
 
   return (
-    <motion.div 
-      variants={{
-        visible: { y: 0, opacity: 1 },
-        hidden: { y: 100, opacity: 0 }
-      }}
-      animate={hidden ? "hidden" : "visible"}
-      transition={{ duration: 0.3, ease: "easeInOut" }}
-      className="fixed bottom-6 left-0 right-0 z-[60] flex justify-center px-4 pointer-events-none"
-    >
-      <div className="flex items-center gap-3 w-full max-w-[420px] pointer-events-auto">
+    <div className="fixed bottom-0 left-0 right-0 z-[60] flex justify-center px-4 pb-6 pt-2 bg-gradient-to-t from-black via-black/80 to-transparent pointer-events-none">
+      <div className="flex items-center justify-between gap-3 w-full max-w-[420px] pointer-events-auto">
         
         <GlassSurface
           tier="regular"
-          className="flex flex-1 items-center justify-between p-1.5 h-[64px] relative"
+          className="flex flex-1 items-center justify-between p-1.5 h-[64px]"
           rim={true}
         >
           {TABS.map((tab) => {
@@ -70,33 +49,16 @@ export function FloatingTabBar({ activeTab, onTabChange, onAddClick, onAdvisorCl
                   isActive ? "text-white" : "text-white/50 hover:text-white/80"
                 )}
               >
-                {/* LIQUID DROP INDICATOR */}
                 {isActive && (
                   <motion.div
-                    layoutId="liquid-drop"
+                    layoutId="active-tab-lens"
                     className="absolute inset-0 bg-white/10 rounded-full"
-                    transition={{ 
-                      type: "spring", 
-                      stiffness: 400, 
-                      damping: 25,
-                      mass: 0.8
-                    }}
-                  >
-                    {/* Micro bubble effect inside the drop */}
-                    <motion.div 
-                      initial={{ scale: 0, opacity: 1 }}
-                      animate={{ scale: 2, opacity: 0 }}
-                      transition={{ duration: 0.5 }}
-                      className="absolute inset-0 bg-white/20 rounded-full blur-sm"
-                    />
-                  </motion.div>
+                    transition={{ type: "spring", stiffness: 520, damping: 38 }}
+                  />
                 )}
                 
                 <Icon size={20} strokeWidth={isActive ? 2.5 : 2} className="relative z-10" />
-                <span className={cn(
-                  "text-[11px] font-medium relative z-10 transition-all duration-300",
-                  isActive ? "opacity-100" : "opacity-70"
-                )}>
+                <span className="text-[11px] font-medium relative z-10">
                   {tab.label}
                 </span>
               </button>
@@ -104,6 +66,7 @@ export function FloatingTabBar({ activeTab, onTabChange, onAddClick, onAdvisorCl
           })}
         </GlassSurface>
 
+        {/* The Detached Action Button - Fixed spacing */}
         <button 
           type="button"
           onClick={onAddClick}
@@ -119,6 +82,6 @@ export function FloatingTabBar({ activeTab, onTabChange, onAddClick, onAdvisorCl
         </button>
 
       </div>
-    </motion.div>
+    </div>
   );
 }
