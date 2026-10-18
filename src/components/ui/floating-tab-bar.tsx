@@ -10,7 +10,7 @@ const TABS = [
   { id: "home", label: "Home", icon: Home },
   { id: "analytics", label: "Analytics", icon: PieChart },
   { id: "accounts", label: "Accounts", icon: Wallet },
-  { id: "advisor", label: "Advisor", icon: Sparkles },
+  { id: "advisor", label: "", icon: Sparkles }, // No label for advisor
 ];
 
 interface FloatingTabBarProps {
@@ -45,7 +45,7 @@ export function FloatingTabBar({ activeTab, onTabChange, onAddClick, onAdvisorCl
                 type="button"
                 onClick={() => handleTabClick(tab.id)}
                 className={cn(
-                  "relative flex flex-1 flex-col items-center justify-center h-full gap-1 rounded-full transition-colors cursor-pointer",
+                  "relative flex flex-1 flex-col items-center justify-center h-full rounded-full transition-colors cursor-pointer",
                   isActive ? "text-white" : "text-white/50 hover:text-white/80"
                 )}
               >
@@ -57,7 +57,7 @@ export function FloatingTabBar({ activeTab, onTabChange, onAddClick, onAdvisorCl
                   />
                 )}
                 
-                {/* SPECIAL GLOW FOR ADVISOR */}
+                {/* GLOWING ADVISOR ICON */}
                 {tab.id === "advisor" ? (
                   <motion.div 
                     animate={{ 
@@ -67,19 +67,20 @@ export function FloatingTabBar({ activeTab, onTabChange, onAddClick, onAdvisorCl
                       ] 
                     }}
                     transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                    className="w-8 h-8 rounded-full p-[1px] flex items-center justify-center mb-0.5 relative z-10"
+                    className="w-10 h-10 rounded-full p-[1.5px] flex items-center justify-center relative z-10"
                   >
-                    <div className="w-full h-full rounded-full bg-[#17191A] flex items-center justify-center">
-                      <Icon size={18} strokeWidth={2.5} className="text-white" />
+                    <div className="w-full h-full rounded-full bg-[#0E0F10] flex items-center justify-center">
+                      <Icon size={20} strokeWidth={2.5} className="text-white" />
                     </div>
                   </motion.div>
                 ) : (
-                  <Icon size={20} strokeWidth={isActive ? 2.5 : 2} className="relative z-10" />
+                  <>
+                    <Icon size={20} strokeWidth={isActive ? 2.5 : 2} className="relative z-10 mb-1" />
+                    <span className="text-[11px] font-medium relative z-10">
+                      {tab.label}
+                    </span>
+                  </>
                 )}
-                
-                <span className="text-[11px] font-medium relative z-10">
-                  {tab.label}
-                </span>
               </button>
             );
           })}

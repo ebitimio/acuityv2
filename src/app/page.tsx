@@ -6,7 +6,6 @@ import { getWorkspaceAndTransactions, getHomeMetrics } from "@/lib/supabase/data
 import { AuthScreen } from "@/components/screens/auth-screen";
 
 import { FloatingTabBar } from "@/components/ui/floating-tab-bar";
-import { TopBar } from "@/components/ui/top-bar";
 import { GlassSurface } from "@/components/ui/glass-surface";
 import { NumberRoll } from "@/components/ui/number-roll";
 import { ImportSheet } from "@/components/ui/import-sheet";
@@ -26,7 +25,7 @@ import { AjoScreen } from "@/components/screens/ajo-screen";
 import { BankChargeScreen } from "@/components/screens/bank-charge-screen";
 
 import { motion } from "framer-motion";
-import { RefreshCw, ChevronRight, CalendarDays, FileText, Users, ShieldAlert, LayoutGrid, ArrowLeftRight, Eye, Bell, Plus, TrendingUp, TrendingDown } from "lucide-react";
+import { RefreshCw, ChevronRight, CalendarDays, FileText, Users, ShieldAlert, LayoutGrid, ArrowLeftRight, Eye, Bell, TrendingUp, TrendingDown, Wallet } from "lucide-react";
 
 export default function SandboxPage() {
   const [session, setSession] = useState<any>(null);
@@ -103,7 +102,6 @@ export default function SandboxPage() {
   const netWorthNGN = metrics.net_worth_minor / 100;
   const totalSpentNGN = metrics.total_spent_minor / 100;
   const totalIncomeNGN = metrics.total_income_minor / 100;
-  const budgetLimitNGN = metrics.budget_limit_minor / 100;
 
   return (
     <main className="min-h-[100dvh] bg-black relative overflow-x-hidden flex flex-col">
@@ -125,46 +123,49 @@ export default function SandboxPage() {
       ) : activeScreen === "bank-charge" ? (
         <BankChargeScreen onBack={() => setActiveScreen("home")} />
       ) : (
-        // --- NEW HOME DASHBOARD ---
+        // --- HOME DASHBOARD ---
         <div className="flex-1 overflow-y-auto pb-32">
           
-          {/* VIBRANT HERO SECTION */}
-          <div className="relative pt-14 pb-8 px-4 rounded-b-[40px] overflow-hidden" style={{ background: "linear-gradient(160deg, #FF6B00 0%, #FF9F0A 50%, #FFD60A 100%)" }}>
-            
-            {/* Top Bar Overlay */}
-            <div className="absolute top-4 left-0 right-0 px-6 flex justify-between items-center text-black/80">
+          {/* PREMIUM GRADIENT HERO */}
+          <div 
+            className="relative pt-14 pb-10 px-5 rounded-b-[40px] overflow-hidden"
+            style={{ 
+              background: "linear-gradient(160deg, #6a0d0d 0%, #b3391f 40%, #e87a1a 80%, #f9b13a 100%)" 
+            }}
+          >
+            {/* Glass Top Bar Overlay */}
+            <div className="absolute top-4 left-0 right-0 px-5 flex justify-between items-center">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center border border-white/30 backdrop-blur-md">
-                  <Users size={16} className="text-black/70" />
+                <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/20">
+                  <Users size={14} className="text-white" />
                 </div>
-                <span className="text-[13px] font-medium">Welcome, {session.user?.user_metadata?.full_name?.split(" ")[0] || "User"}</span>
+                <span className="text-[13px] font-medium text-white">Welcome, {session.user?.user_metadata?.full_name?.split(" ")[0] || "User"}</span>
               </div>
               <div className="flex gap-2">
-                <button onClick={() => setActiveScreen("analytics")} className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center border border-white/30 backdrop-blur-md">
-                  <Eye size={16} className="text-black/70" />
+                <button onClick={() => setActiveScreen("analytics")} className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/20">
+                  <Eye size={14} className="text-white" />
                 </button>
-                <button onClick={() => setIsSettingsOpen(true)} className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center border border-white/30 backdrop-blur-md">
-                  <Bell size={16} className="text-black/70" />
+                <button onClick={() => setIsSettingsOpen(true)} className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/20">
+                  <Bell size={14} className="text-white" />
                 </button>
               </div>
             </div>
 
             {/* Net Worth */}
-            <div className="mt-8 px-2 text-black">
-              <p className="text-[13px] opacity-70 mb-1">Total Balance</p>
-              <div className="text-[48px] font-bold tracking-tight flex items-start gap-1">
-                <span className="text-[28px] mt-2">₦</span>
+            <div className="mt-12">
+              <p className="text-[14px] font-medium text-white/80 mb-1">Total Net Worth</p>
+              <div className="text-[52px] font-bold tracking-tight text-white flex items-start">
+                <span className="text-[32px] mt-2 mr-1">₦</span>
                 <NumberRoll value={netWorthNGN} currency="" />
               </div>
-              <p className="text-[13px] opacity-70 mt-1">Primary account •••• 4291</p>
             </div>
 
-            {/* Quick Action Pills */}
-            <div className="flex gap-2 mt-6 px-2">
-              <button onClick={() => setActiveScreen("budget")} className="flex-1 py-2.5 bg-white/30 backdrop-blur-md rounded-xl text-[13px] font-semibold text-black flex items-center justify-center gap-1.5 hover:bg-white/40 transition-colors">
+            {/* Quick Actions (Glass Pills) */}
+            <div className="flex gap-2 mt-8">
+              <button onClick={() => setActiveScreen("budget")} className="flex-1 py-3 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl text-[13px] font-semibold text-white flex items-center justify-center gap-1.5 hover:bg-white/20 transition-colors">
                 <TrendingUp size={14} /> Monitoring
               </button>
-              <button onClick={() => setIsImportOpen(true)} className="flex-1 py-2.5 bg-black/20 backdrop-blur-md rounded-xl text-[13px] font-semibold text-white flex items-center justify-center gap-1.5 hover:bg-black/30 transition-colors">
+              <button onClick={() => setIsImportOpen(true)} className="flex-1 py-3 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl text-[13px] font-semibold text-white flex items-center justify-center gap-1.5 hover:bg-white/20 transition-colors">
                 <ArrowLeftRight size={14} /> Add Fund
               </button>
             </div>
@@ -181,7 +182,7 @@ export default function SandboxPage() {
                 </div>
               </div>
               <div className="snap-start shrink-0 w-[160px] h-[180px] rounded-3xl bg-gradient-to-b from-[#0d1a3a] to-[#050a1a] border border-white/10 p-4 flex flex-col justify-between">
-                <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center"><ShieldAlert size={20} className="text-white/80" /></div>
+                <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center"><Wallet size={20} className="text-white/80" /></div>
                 <div>
                   <p className="text-[15px] font-semibold text-white">Savings</p>
                   <p className="text-[11px] text-white/50 mt-1">Money set aside for later.</p>
