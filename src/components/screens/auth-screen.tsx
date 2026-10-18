@@ -42,7 +42,6 @@ export function AuthScreen() {
       } else if (mode === "otp") {
         const { error } = await supabase.auth.verifyOtp({ email, token: otp, type: 'signup' });
         if (error) throw error;
-        // Success! Supabase onAuthStateChange will handle the redirect
       }
     } catch (error: any) {
       setMessage(error.message);
@@ -64,13 +63,12 @@ export function AuthScreen() {
   return (
     <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 relative overflow-hidden">
       
-      {/* --- 3D LOOPING CARD ANIMATION --- */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-30">
+      {/* --- 3D LOOPING CARD ANIMATION (Mobile Safe) --- */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20">
         <motion.div
-          animate={{ rotateX: [0, 20, 0, -20, 0], rotateY: [0, 0, 30, 0, -30, 0] }}
-          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+          animate={{ rotate: [0, 8, 0, -8, 0], scale: [1, 1.02, 1] }}
+          transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
           className="relative w-64 h-40 bg-gradient-to-tr from-[var(--brand)] to-[#0e5a2b] rounded-2xl shadow-2xl border border-white/20"
-          style={{ transformStyle: "preserve-3d", perspective: 1000 }}
         >
           <div className="absolute top-4 left-4 text-white/50 font-bold italic">VISA</div>
           <div className="absolute bottom-4 right-4 text-white/80 text-lg font-mono tracking-widest">•••• 4291</div>
@@ -117,7 +115,6 @@ export function AuthScreen() {
                     />
                   </div>
                   
-                  {/* Password Strength Bar */}
                   {mode === "signup" && password.length > 0 && (
                     <div className="flex gap-1 px-1">
                       <div className={`h-1 flex-1 rounded-full ${passwordStrength >= 1 ? "bg-[var(--danger)]" : "bg-white/10"}`} />

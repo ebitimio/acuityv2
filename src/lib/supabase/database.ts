@@ -162,33 +162,32 @@ export async function importCsvStatement(file: File) {
       complete: async (results) => {
         try {
           const rows = results.data as any[];
-
-          // === CSV DEBUG LOGGING ===
-          console.log("=== CSV DEBUG ===");
-          console.log("Detected columns:", Object.keys(rows[0] || {}));
-          console.log("First row data:", rows[0]);
-          console.log("Total rows parsed:", rows.length);
           
+          if (rows.length === 0) {
+            throw new Error("The CSV file is empty or unreadable.");
+          }
+
           const transactionsToInsert = rows.map((row) => {
-            const dateCol = row["Date"] || row["Trans Date"] || row["Transaction Date"] || row["Value Date"] || row["date"];
-            const descCol = row["Description"] || row["Narration"] || row["Details"] || row["Description/Narration"] || row["description"];
+            // 1. Find the Date Column (Fuzzy Matching)
+            const dateCol = row["Date"] || row["Trans Date"] || row["Transaction Date"] || row["Value Date"] || row["date"] || row["Post Date"];
             
+            // 2. Find the Description Column (Fuzzy Matching)
+            const descCol = row["Description"] || row["Narration"] || row["Details"] || row["Description/Narration"] || row["description"] || row["Transaction Details"] || row["Memo"];
+            
+            // 3. Find the Amount (Handles Amount, Debit, or Credit columns)
             let rawAmount = 0;
             if (row["Amount"] !== undefined) {
               rawAmount = parseFloat(row["Amount"].toString().replace(/,/g, ""));
-            } else if (row["Debit"] !== undefined && parseFloat(row["Debit"].toString()) > 0) {
-              rawAmount = -parseFloat(row["Debit"].toString().replace(/,/g, ""));
-            } else if (row["Credit"] !== undefined && parseFloat(row["Credit"].toString()) > 0) {
-              rawAmount = parseFloat(row["Credit"].toString().replace(/,/g, ""));
+            } else if (row["Debit"] !== undefined && parseFloat(row["Debit"].toString().replace(/,/g, "")) > 0) {
+              rawAmount = -parseFloat(row["Debit"].toString().replace(/,/g, "")); // Debits are negative
+            } else if (row["Credit"] !== undefined && parseFloat(row["Credit"].toString().replace(/,/g, "")) > 0) {
+              rawAmount = parseFloat(row["Credit"].toString().replace(/,/g, "")); // Credits are positive
             } else if (row["Value"] !== undefined) {
               rawAmount = parseFloat(row["Value"].toString().replace(/,/g, ""));
             }
 
             // Skip invalid/empty rows
-            if (rawAmount === 0 || isNaN(rawAmount)) {
-              console.log("Skipping row with invalid amount:", row);
-              return null;
-            }
+            if (isNaN(rawAmount) || rawAmount === 0) return null;
 
             const isIncome = rawAmount > 0;
             const rawDescStr = descCol ? String(descCol) : "Unknown Transaction";
@@ -201,26 +200,59 @@ export async function importCsvStatement(file: File) {
               description_raw: rawDescStr,
               description_clean: cleanMerchantName(rawDescStr),
               category_name: category,
-              date: new Date(dateCol || Date.now()).toISOString(),
+              date: parseDate(dateCol), // Uses the robust date parser below
             };
           }).filter((tx): tx is NonNullable<typeof tx> => tx !== null);
 
-          console.log("Transactions ready to insert:", transactionsToInsert.length);
-
           if (transactionsToInsert.length === 0) {
-            throw new Error("No valid transactions found. Check column names in your CSV.");
+            throw new Error("No valid transactions found. Check column names.");
           }
 
           const { error } = await supabase.from("transactions").insert(transactionsToInsert);
           if (error) throw error;
           resolve(transactionsToInsert.length);
-        } catch (err) {
+        } catch (err: any) {
           reject(err);
         }
       },
       error: (error) => reject(error),
     });
   });
+}
+
+// --- HELPER FUNCTIONS ---
+
+// Handles DD/MM/YYYY (Nigerian format), YYYY-MM-DD, etc.
+function parseDate(dateString: any): string {
+  if (!dateString) return new Date().toISOString();
+  
+  const str = String(dateString).trim();
+  
+  // Format: DD/MM/YYYY or DD-MM-YYYY
+  const dmyMatch = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  if (dmyMatch) {
+    const day = parseInt(dmyMatch[1]);
+    const month = parseInt(dmyMatch[2]) - 1;
+    let year = parseInt(dmyMatch[3]);
+    if (year < 100) year += 2000;
+    const d = new Date(year, month, day);
+    if (!isNaN(d.getTime())) return d.toISOString();
+  }
+  
+  // Format: YYYY-MM-DD
+  const ymdMatch = str.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+  if (ymdMatch) {
+    const year = parseInt(ymdMatch[1]);
+    const month = parseInt(ymdMatch[2]) - 1;
+    const day = parseInt(ymdMatch[3]);
+    const d = new Date(year, month, day);
+    if (!isNaN(d.getTime())) return d.toISOString();
+  }
+
+  // Fallback
+  const fallback = new Date(str);
+  if (!isNaN(fallback.getTime())) return fallback.toISOString();
+  return new Date().toISOString();
 }
 
 function cleanMerchantName(raw: string) {
