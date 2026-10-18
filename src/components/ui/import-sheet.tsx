@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { Modal } from "./modal";
 import { Button } from "./form";
 import { UploadCloud } from "lucide-react";
-import { importCsvStatement } from "@/lib/supabase/database";
+import { importStatement } from "@/lib/supabase/database";
 import { useToast } from "./toast";
 
 export function ImportSheet({ isOpen, onClose, onImportSuccess }: { isOpen: boolean; onClose: () => void; onImportSuccess: () => void }) {
@@ -17,7 +17,7 @@ export function ImportSheet({ isOpen, onClose, onImportSuccess }: { isOpen: bool
     if (!file) return;
     setBusy(true);
     try {
-      const result = await importCsvStatement(file);
+      const result = await importStatement(file);
       const summary = result.skipped
         ? `Imported ${result.inserted}, skipped ${result.skipped} duplicates`
         : `Imported ${result.inserted} transactions`;
@@ -36,10 +36,10 @@ export function ImportSheet({ isOpen, onClose, onImportSuccess }: { isOpen: bool
           <div className="w-16 h-16 rounded-full bg-[var(--brand)]/20 flex items-center justify-center text-[var(--brand)]"><UploadCloud size={32} /></div>
           <div className="text-center">
             <p className="text-[17px] font-medium">{busy ? "Reading..." : "Upload Statement"}</p>
-            <p className="text-[13px] text-[var(--text-3)] mt-1">CSV from any Nigerian bank</p>
+            <p className="text-[13px] text-[var(--text-3)] mt-1">CSV, XLSX, or XLS from any Nigerian bank</p>
           </div>
         </button>
-        <input type="file" accept=".csv" ref={fileRef} onChange={handleFile} className="hidden" />
+        <input type="file" accept=".csv,.xlsx,.xls" ref={fileRef} onChange={handleFile} className="hidden" />
         <Button variant="ghost" onClick={onClose}>Cancel</Button>
       </div>
     </Modal>

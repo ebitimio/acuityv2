@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import Papa from "papaparse";
+import * as XLSX from "xlsx";
 import { createClient } from "./client";
 import type { Account, AjoGroup, Asset, Bill, Fund, HomeMetrics, Txn } from "@/lib/types";
 
@@ -185,7 +186,7 @@ export const addAjoGroup = (g: { name: string; contribution: number; frequency: 
 export const recordAjoPayment = (g: AjoGroup) => patchRow("ajo_groups", g.id, { paid_cycles: Math.min(g.paid_cycles + 1, g.members) });
 export const deleteAjoGroup = (id: string) => removeRow("ajo_groups", id);
 
-export async function importCsvStatement(file: File, accountId?: string): Promise<{ inserted: number; skipped: number }> {
+export async function importStatement(file: File, accountId?: string): Promise<{ inserted: number; skipped: number }> {
   const { sb, workspaceId } = await ctx();
   let accId = accountId;
   if (!accId) {
@@ -199,10 +200,29 @@ export async function importCsvStatement(file: File, accountId?: string): Promis
   }
   const targetAccount = accId as string;
 
-  const rows = await new Promise<Record<string, any>[]>((resolve, reject) =>
-    Papa.parse<Record<string, any>>(file, { header: true, skipEmptyLines: true, transformHeader: (h) => h.trim(), complete: (r) => resolve(r.data), error: (e) => reject(e) })
-  );
-  if (rows.length === 0) throw new Error("The CSV file is empty or unreadable.");
+  const name = file.name.toLowerCase();
+  let rows: Record<string, any>[];
+
+  if (name.endsWith(".csv")) {
+    rows = await new Promise<Record<string, any>[]>((resolve, reject) =>
+      Papa.parse<Record<string, any>>(file, { header: true, skipEmptyLines: true, transformHeader: (h) => h.trim(), complete: (r) => resolve(r.data), error: (e) => reject(e) })
+    );
+  } else if (name.endsWith(".xlsx") || name.endsWith(".xls")) {
+    const buffer = await file.arrayBuffer();
+    const wb = XLSX.read(buffer, { type: "array" });
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+    if (!sheet) throw new Error("The Excel file has no sheets.");
+    const raw = XLSX.utils.sheet_to_json<Record<string, any>>(sheet, { defval: "" });
+    rows = raw.map((r) => {
+      const out: Record<string, any> = {};
+      for (const k of Object.keys(r)) out[k.trim()] = r[k];
+      return out;
+    });
+  } else {
+    throw new Error("Please upload a .csv, .xlsx, or .xls file.");
+  }
+
+  if (!rows || rows.length === 0) throw new Error("The file is empty or unreadable.");
 
   const parsed = rows.map((r) => rowToTxn(r, targetAccount)).filter((t): t is NonNullable<typeof t> => t !== null);
   if (parsed.length === 0) throw new Error("No valid transactions found. Check the column names in your statement.");
@@ -221,6 +241,9 @@ export async function importCsvStatement(file: File, accountId?: string): Promis
   }
   return { inserted: fresh.length, skipped: parsed.length - fresh.length };
 }
+
+// Backward-compatible alias
+export const importCsvStatement = importStatement;
 
 function rowToTxn(row: Record<string, any>, accountId: string) {
   const pick = (...keys: string[]) => { for (const k of keys) if (row[k] !== undefined && row[k] !== "") return row[k]; return undefined; };
