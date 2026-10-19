@@ -102,17 +102,29 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
         <div>
           <h3 className="text-[15px] font-semibold mb-3 px-1">Accounts</h3>
           <div className="group-list">
-            {accounts.map((a) => (
-              <div key={a.id} className="relative">
-                <AccountCard account={a} onClick={() => {}} />
-                <div className="absolute top-1/2 right-2 -translate-y-1/2 flex items-center gap-1 text-[11px] text-[var(--text-3)]">
-                  <span>Checked {a.balance_as_of}</span>
-                  <button onClick={() => delAcc(a)} className="ml-2 text-[var(--danger)] p-1">
-                    <Trash2 size={14} />
-                  </button>
+            {accounts.map((a) => {
+              const balance = (a.current_minor ?? a.balance_minor) / 100;
+              return (
+                <div key={a.id} className="flex items-start gap-3 px-4 py-4">
+                  <AccountCard account={a} onClick={() => {}} compact />
+                  <div className="flex flex-col items-end gap-1 shrink-0 pt-1">
+                    <p className={`tabular font-semibold text-[15px] ${balance < 0 ? "text-[var(--danger)]" : ""}`}>
+                      {fmt(balance)}
+                    </p>
+                    <p className="text-[10px] text-[var(--text-3)] whitespace-nowrap">
+                      Checked {a.balance_as_of}
+                    </p>
+                    <button
+                      onClick={() => delAcc(a)}
+                      className="mt-1 text-[var(--danger)] p-1"
+                      aria-label={`Delete ${a.name}`}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             {accounts.length === 0 && (
               <p className="px-4 py-6 text-center text-[14px] text-[var(--text-3)]">No accounts. Tap + to add one.</p>
             )}
@@ -164,11 +176,7 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
             <option value="wallet">Wallet</option>
             <option value="dom">Domiciliary</option>
           </SelectField>
-          <CurrencyField
-            label="How much is in it right now?"
-            value={balance}
-            onChange={setBalance}
-          />
+          <CurrencyField label="How much is in it right now?" value={balance} onChange={setBalance} />
           <Field label="As of date" type="date" value={balanceAsOf} onChange={(e) => setBalanceAsOf(e.target.value)} />
           <Button onClick={addAcc} disabled={!name || !institution || !balance}>Create account</Button>
         </div>

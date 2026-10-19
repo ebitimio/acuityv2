@@ -5,11 +5,14 @@ import { X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
 export function Modal({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: ReactNode }) {
-  const [viewportHeight, setViewportHeight] = useState<number | null>(null);
+  const [vv, setVv] = useState<{ height: number; offsetTop: number } | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined" || !window.visualViewport) return;
-    const update = () => setViewportHeight(window.visualViewport!.height);
+    const update = () => {
+      const v = window.visualViewport!;
+      setVv({ height: v.height, offsetTop: v.offsetTop });
+    };
     update();
     window.visualViewport.addEventListener("resize", update);
     window.visualViewport.addEventListener("scroll", update);
@@ -19,11 +22,22 @@ export function Modal({ open, onClose, title, children }: { open: boolean; onClo
     };
   }, []);
 
+  // iOS: pin the overlay to the *visible* region so the sheet sits at the bottom of the keyboard
+  const overlayStyle: React.CSSProperties = vv
+    ? {
+        top: vv.offsetTop,
+        left: 0,
+        right: 0,
+        height: vv.height,
+        position: "fixed",
+      }
+    : { position: "fixed", inset: 0 };
+
   return (
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-[200] flex items-end justify-center bg-black/70 backdrop-blur-sm sm:items-center sm:p-6"
+          className="z-[200] flex items-end justify-center bg-black/70 backdrop-blur-sm sm:items-center sm:p-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -31,12 +45,7 @@ export function Modal({ open, onClose, title, children }: { open: boolean; onClo
           role="dialog"
           aria-modal="true"
           aria-label={title}
-          style={{
-            height: viewportHeight ? `${viewportHeight}px` : undefined,
-            top: 0,
-            left: 0,
-            right: 0,
-          }}
+          style={overlayStyle}
         >
           <motion.div
             onClick={(e) => e.stopPropagation()}
@@ -44,7 +53,7 @@ export function Modal({ open, onClose, title, children }: { open: boolean; onClo
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 48, opacity: 0 }}
             transition={{ type: "spring", stiffness: 420, damping: 34 }}
-            className="max-h-[88dvh] w-full max-w-md overflow-y-auto rounded-t-[32px] border border-[var(--line-strong)] bg-[var(--surface-2)] p-5 pb-[calc(20px+env(safe-area-inset-bottom))] sm:rounded-[32px]"
+            className="max-h-full w-full max-w-md overflow-y-auto rounded-t-[32px] border border-[var(--line-strong)] bg-[var(--surface-2)] p-5 pb-[calc(20px+env(safe-area-inset-bottom))] sm:max-h-[88dvh] sm:rounded-[32px]"
           >
             <div className="mb-5 flex items-center justify-between">
               <h2 className="text-[19px] font-bold">{title}</h2>
