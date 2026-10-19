@@ -163,3 +163,28 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+/* Prevent black flash / black bar at the bottom on iOS */
+html, body {
+  min-height: 100%;
+  background-color: #000000;
+}
+
+/* Force gradient edge-to-edge on iOS Safari and PWA */
+#__next,
+main {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* Override iOS safe area black bars on full-bleed screens */
+body::after {
+  content: "";
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: env(safe-area-inset-bottom);
+  background: inherit;
+  pointer-events: none;
+  z-index: -1;
+}
