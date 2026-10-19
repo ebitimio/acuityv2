@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ScreenHeader, IconButton } from "@/components/ui/screen-header";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, RefreshCw } from "lucide-react";
 import {
   getAccounts, createAccount, deleteAccount, getAssets, addAsset, deleteAsset,
 } from "@/lib/supabase/database";
@@ -10,6 +10,7 @@ import { AccountCard } from "@/components/ui/account-card";
 import { Modal } from "@/components/ui/modal";
 import { Field, SelectField, Button } from "@/components/ui/form";
 import { CurrencyField } from "@/components/ui/currency-field";
+import { BalanceCheckinSheet } from "@/components/ui/balance-checkin-sheet";
 import { useCurrency } from "@/lib/currency";
 import { useToast } from "@/components/ui/toast";
 import type { Account, Asset } from "@/lib/types";
@@ -20,6 +21,7 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [modal, setModal] = useState<"account" | "asset" | null>(null);
+  const [checkinAccount, setCheckinAccount] = useState<Account | null>(null);
 
   const [name, setName] = useState("");
   const [institution, setInstitution] = useState("");
@@ -35,6 +37,11 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
     const [a, s] = await Promise.all([getAccounts(), getAssets()]);
     setAccounts(a);
     setAssets(s);
+    // Refresh the check-in account with the latest balance
+    if (checkinAccount) {
+      const refreshed = a.find((x) => x.id === checkinAccount.id);
+      if (refreshed) setCheckinAccount(refreshed);
+    }
   };
   useEffect(() => { load(); }, []);
 
@@ -114,13 +121,23 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
                     <p className="text-[10px] text-[var(--text-3)] whitespace-nowrap">
                       Checked {a.balance_as_of}
                     </p>
-                    <button
-                      onClick={() => delAcc(a)}
-                      className="mt-1 text-[var(--danger)] p-1"
-                      aria-label={`Delete ${a.name}`}
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                    <div className="flex items-center gap-1 mt-1">
+                      <button
+                        onClick={() => setCheckinAccount(a)}
+                        className="text-[var(--brand)] p-1"
+                        aria-label={`Check ${a.name} balance`}
+                        title="Check balance"
+                      >
+                        <RefreshCw size={14} />
+                      </button>
+                      <button
+                        onClick={() => delAcc(a)}
+                        className="text-[var(--danger)] p-1"
+                        aria-label={`Delete ${a.name}`}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
@@ -193,6 +210,21 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
           <Button onClick={addA}>Save</Button>
         </div>
       </Modal>
+
+      <BalanceCheckinSheet
+        isOpen={!!checkinAccount}
+        onClose={() => setCheckinAccount(null)}
+        onSaved={load}
+        account={
+          checkinAccount
+            ? {
+                id: checkinAccount.id,
+                name: checkinAccount.name,
+                current_minor: checkinAccount.current_minor ?? checkinAccount.balance_minor,
+              }
+            : null
+        }
+      />
     </div>
   );
 }

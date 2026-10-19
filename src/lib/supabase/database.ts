@@ -425,3 +425,107 @@ export async function importStatement(): Promise<{ inserted: number; skipped: nu
 }
 
 export const importCsvStatement = importStatement;
+/* ---------- balance check-ins ---------- */
+
+export interface BalanceCheckinResult {
+  account_id: string;
+  account_name: string;
+  expected_minor: number;
+  reported_minor: number;
+  difference_minor: number;
+  checkin_id: string;
+}
+
+export async function submitBalanceCheckin(
+  accountId: string,
+  reportedAmount: number,
+  options: { logAdjustment: boolean }
+): Promise<BalanceCheckinResult> {
+  const { sb, workspaceId } = await ctx();
+
+  // Get current balance for the account
+  const { data: bal } = await sb.rpc("get_account_balances");
+  const map = new Map<string, number>(
+    ((bal ?? []) as { account_id: string; current_minor: number }[]).map((b) => [
+      b.account_id,
+      Number(b.current_minor),
+    ])
+  );
+  const expected = map.get(accountId) ?? 0;
+  const reported = toMinor(reportedAmount);
+  const diff = reported - expected;
+
+  // Get account name for the result
+  const { data: acc } = await sb.from("accounts").select("name").eq("id", accountId).single();
+  const accountName = acc?.name ?? "Account";
+
+  // Optional: log an adjustment transaction to make the balance match
+  let adjustment_txn_id: string | null = null;
+  if (options.logAdjustment && diff !== 0) {
+    const { data: inserted, error: txnErr } = await sb
+      .from("transactions")
+      .insert({
+        account_id: accountId,
+        amount_minor: Math.abs(diff),
+        direction: diff > 0 ? "credit" : "debit",
+        description_raw: "Balance check-in adjustment",
+        description_clean: "Balance check-in adjustment",
+        category_name: "Adjustment",
+        date: new Date().toISOString(),
+        source: "adjustment",
+        status: "posted",
+      })
+      .select("id")
+      .single();
+    if (txnErr) throw txnErr;
+    adjustment_txn_id = inserted?.id ?? null;
+  }
+
+  // Record the checkin
+  const resolution: BalanceCheckinResult["difference_minor"] extends never ? never : "reanchor_only" | "reanchor_and_log" | "dismissed" =
+    options.logAdjustment ? "reanchor_and_log" : "reanchor_only";
+
+  const { data: chk, error: chkErr } = await sb
+    .from("balance_checkins")
+    .insert({
+      workspace_id: workspaceId,
+      account_id: accountId,
+      expected_minor: expected,
+      reported_minor: reported,
+      difference_minor: diff,
+      resolution,
+      adjustment_txn_id,
+    })
+    .select("id")
+    .single();
+  if (chkErr) throw chkErr;
+
+  // Re-anchor the account so future transactions are relative to the reported balance
+  const { error: reanchorErr } = await sb.rpc("reanchor_account", {
+    p_account_id: accountId,
+    p_new_balance_minor: reported,
+  });
+  if (reanchorErr) throw reanchorErr;
+
+  return {
+    account_id: accountId,
+    account_name: accountName,
+    expected_minor: expected,
+    reported_minor: reported,
+    difference_minor: diff,
+    checkin_id: chk?.id ?? "",
+  };
+}
+
+export async function getLastCheckin(accountId: string): Promise<{ created_at: string } | null> {
+  const { sb } = await ctx();
+  const { data, error } = await sb
+    .from("balance_checkins")
+    .select("created_at")
+    .eq("account_id", accountId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data as { created_at: string } | null;
+}

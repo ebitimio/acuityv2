@@ -123,3 +123,13 @@ export interface CycleBounds {
   cycle_start: string;
   cycle_end: string;
 }
+export interface BalanceCheckin {
+  id: string;
+  account_id: string;
+  expected_minor: number;
+  reported_minor: number;
+  difference_minor: number;
+  resolution: "reanchor_only" | "reanchor_and_log" | "dismissed";
+  adjustment_txn_id: string | null;
+  created_at: string;
+}
