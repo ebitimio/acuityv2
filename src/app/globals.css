@@ -5,7 +5,6 @@
 :root {
   color-scheme: dark;
 
-  /* Base */
   --bg: #000000;
   --surface-1: #0a0a0a;
   --surface-2: #17191A;
@@ -13,13 +12,11 @@
   --line: rgba(255, 255, 255, 0.06);
   --line-strong: rgba(255, 255, 255, 0.14);
 
-  /* Text */
   --text-1: #ffffff;
   --text-2: rgba(255, 255, 255, 0.62);
   --text-3: rgba(255, 255, 255, 0.38);
 
-  /* Brand: KEEPING ORANGE */
-  --brand: #f97316; /* Deep Orange */
+  --brand: #f97316;
   --brand-ink: #1a0a00;
   --brand-soft: rgba(249, 115, 22, 0.14);
   --gain: #30D158;
@@ -27,7 +24,6 @@
   --danger: #ff453a;
   --info: #64d2ff;
 
-  /* The Orange Hero */
   --hero: linear-gradient(160deg, #7a0e0e 0%, #b3391f 35%, #e87a1a 75%, #ffb347 100%);
   --engrave: repeating-radial-gradient(
     circle at 92% -8%,
@@ -42,7 +38,13 @@
   box-sizing: border-box;
 }
 
-html,
+html {
+  background: linear-gradient(160deg, #7a0e0e 0%, #b3391f 35%, #e87a1a 75%, #ffb347 100%);
+  background-attachment: fixed;
+  background-color: #7a0e0e;
+  min-height: 100%;
+}
+
 body {
   margin: 0;
   padding: 0;
@@ -54,6 +56,34 @@ body {
   text-rendering: optimizeLegibility;
   overscroll-behavior-y: none;
   -webkit-tap-highlight-color: transparent;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* Paint the safe-area strips (status bar top, home indicator bottom) with the
+   splash gradient, so no black shows through during the splash or the auth page. */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: env(safe-area-inset-top);
+  background: linear-gradient(180deg, #7a0e0e, #b3391f);
+  z-index: 9999;
+  pointer-events: none;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: env(safe-area-inset-bottom);
+  background: linear-gradient(0deg, #ffb347, #e87a1a);
+  z-index: 9999;
+  pointer-events: none;
 }
 
 .tabular {
@@ -96,7 +126,8 @@ body {
   .field:focus-within {
     border-color: var(--brand);
   }
-  .field input, .field select {
+  .field input,
+  .field select {
     flex: 1;
     min-width: 0;
     height: 100%;
@@ -133,7 +164,11 @@ body {
   .btn-white { background: var(--text-1); color: var(--bg); }
   .btn-ghost { background: rgba(255, 255, 255, 0.08); color: var(--text-1); }
   .btn-ghost:hover { background: rgba(255, 255, 255, 0.14); }
-  .btn-danger { background: rgba(255, 69, 58, 0.14); color: var(--danger); border: 1px solid rgba(255, 69, 58, 0.28); }
+  .btn-danger {
+    background: rgba(255, 69, 58, 0.14);
+    color: var(--danger);
+    border: 1px solid rgba(255, 69, 58, 0.28);
+  }
 
   .t-label {
     font-size: 13px;
@@ -162,38 +197,4 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
-}
-/* Prevent black flash / black bar at the bottom on iOS */
-html, body {
-  min-height: 100%;
-  background-color: #000000;
-}
-
-/* Force gradient edge-to-edge on iOS Safari and PWA */
-#__next,
-main {
-  min-height: 100vh;
-  min-height: 100dvh;
-}
-
-/* Override iOS safe area black bars on full-bleed screens */
-body::after {
-  content: "";
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: env(safe-area-inset-bottom);
-  background: inherit;
-  pointer-events: none;
-  z-index: -1;
-}
-/* Splash/onboarding pages paint the gradient on html+body too,
-   so the iOS safe-area strip is never black. */
-html.splash-bg,
-html.splash-bg body {
-  background: linear-gradient(160deg, #7a0e0e 0%, #b3391f 35%, #e87a1a 75%, #ffb347 100%);
-  background-attachment: fixed;
-  min-height: 100vh;
-  min-height: 100dvh;
 }

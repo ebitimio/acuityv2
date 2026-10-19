@@ -27,7 +27,7 @@ export function FloatingTabBar({ activeTab, onTabChange, onAddClick, isHidden }:
       animate={{ y: isHidden ? 160 : 0 }}
       transition={{ duration: 0.28, ease: "easeInOut" }}
       className="pointer-events-none fixed bottom-0 left-0 right-0 z-[60] flex justify-center px-4 pt-6"
-      style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 10px)" }}
+      style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 4px)" }}
     >
       <div className="absolute inset-x-0 bottom-0 -z-10 h-32 bg-gradient-to-t from-black via-black/80 to-transparent" />
 
@@ -47,13 +47,18 @@ export function FloatingTabBar({ activeTab, onTabChange, onAddClick, isHidden }:
                 aria-current={active ? "page" : undefined}
                 className={cn(
                   "relative flex h-full flex-1 flex-col items-center justify-center gap-0.5 rounded-full transition-colors",
-                  active ? "text-white" : "text-white/55 hover:text-white"
+                  active ? "text-[var(--brand)]" : "text-white/55 hover:text-white"
                 )}
               >
                 {active && (
                   <motion.span
                     layoutId="tab-lens"
-                    className="absolute inset-0 rounded-full bg-white/15"
+                    className="absolute inset-0 rounded-full border border-[var(--brand)]/70"
+                    style={{
+                      background:
+                        "radial-gradient(circle at 50% 100%, rgba(249,115,22,0.35) 0%, rgba(249,115,22,0.08) 70%, transparent 100%)",
+                      boxShadow: "0 0 16px rgba(249,115,22,0.35), inset 0 0 12px rgba(249,115,22,0.15)",
+                    }}
                     transition={{ type: "spring", stiffness: 520, damping: 38 }}
                   />
                 )}
