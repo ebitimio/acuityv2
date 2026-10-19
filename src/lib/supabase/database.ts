@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createClient } from "./client";
 import type {
-  Account, AjoGroup, Asset, Budget, Fund, HomeMetrics, RecurringItem, Txn,
+  Account, AjoGroup, Asset, Budget, CustomCategory, CategoryRule, Fund,
+  HomeMetrics, RecurringItem, Txn,
 } from "@/lib/types";
 
 const toMinor = (n: number) => Math.round(n * 100);
@@ -46,9 +47,7 @@ async function ctx() {
   return { sb, user, workspaceId: ws.id };
 }
 
-async function fetchAll<T>(
-  build: (from: number, to: number) => PromiseLike<{ data: any[] | null; error: any }>
-): Promise<T[]> {
+async function fetchAll<T>(build: (from: number, to: number) => PromiseLike<{ data: any[] | null; error: any }>): Promise<T[]> {
   const out: T[] = [];
   for (let i = 0; i < 30; i++) {
     const { data, error } = await build(i * 1000, i * 1000 + 999);
@@ -97,20 +96,12 @@ export async function getHomeMetrics(): Promise<HomeMetrics> {
 
 export async function getRecentTransactions(limit = 20): Promise<Txn[]> {
   const { sb } = await ctx();
-  const { data, error } = await sb
-    .from("transactions")
-    .select(TX_SELECT)
-    .or(NOT_SPLIT)
-    .eq("status", "posted")
-    .order("date", { ascending: false })
-    .limit(limit);
+  const { data, error } = await sb.from("transactions").select(TX_SELECT).or(NOT_SPLIT).eq("status", "posted").order("date", { ascending: false }).limit(limit);
   if (error) throw error;
   return (data ?? []) as unknown as Txn[];
 }
 
-export async function getTransactions(
-  o: { search?: string; category?: string; direction?: "debit" | "credit"; limit?: number; offset?: number } = {}
-): Promise<{ rows: Txn[]; count: number }> {
+export async function getTransactions(o: { search?: string; category?: string; direction?: "debit" | "credit"; limit?: number; offset?: number } = {}): Promise<{ rows: Txn[]; count: number }> {
   const { sb } = await ctx();
   const limit = o.limit ?? 30;
   const offset = o.offset ?? 0;
@@ -221,33 +212,12 @@ export async function getAccounts(): Promise<Account[]> {
   return ((accs ?? []) as Account[]).map((a) => ({ ...a, current_minor: map.get(a.id) ?? a.balance_minor }));
 }
 
-export async function createAccount(
-  name: string,
-  institution: string,
-  type: string,
-  currentBalance: number,
-  balanceAsOf: string
-) {
-  await insertRow("accounts", {
-    name,
-    institution,
-    type,
-    balance_minor: toMinor(currentBalance),
-    balance_as_of: balanceAsOf,
-  });
+export async function createAccount(name: string, institution: string, type: string, currentBalance: number, balanceAsOf: string) {
+  await insertRow("accounts", { name, institution, type, balance_minor: toMinor(currentBalance), balance_as_of: balanceAsOf });
 }
 
-export async function updateAccount(
-  id: string,
-  p: { name: string; institution: string; type: string; currentBalance: number; balanceAsOf: string }
-) {
-  await patchRow("accounts", id, {
-    name: p.name,
-    institution: p.institution,
-    type: p.type,
-    balance_minor: toMinor(p.currentBalance),
-    balance_as_of: p.balanceAsOf,
-  });
+export async function updateAccount(id: string, p: { name: string; institution: string; type: string; currentBalance: number; balanceAsOf: string }) {
+  await patchRow("accounts", id, { name: p.name, institution: p.institution, type: p.type, balance_minor: toMinor(p.currentBalance), balance_as_of: p.balanceAsOf });
 }
 
 export async function deleteAccount(id: string) {
@@ -257,8 +227,7 @@ export async function deleteAccount(id: string) {
 /* ---------- assets & liabilities ---------- */
 
 export const getAssets = () => list<Asset>("assets");
-export const addAsset = (name: string, type: "asset" | "liability", value: number) =>
-  insertRow("assets", { name, type, value_minor: toMinor(value) });
+export const addAsset = (name: string, type: "asset" | "liability", value: number) => insertRow("assets", { name, type, value_minor: toMinor(value) });
 export const deleteAsset = (id: string) => removeRow("assets", id);
 
 /* ---------- workspace budget ---------- */
@@ -269,11 +238,44 @@ export async function updateBudgetLimit(newLimit: number) {
   if (error) throw error;
 }
 
-/* ---------- budgets (per account + category) ---------- */
-
-export async function getBudgets(): Promise<Budget[]> {
+export async function updateWorkspaceBudget(newLimitMinor: number) {
   const { sb, workspaceId } = await ctx();
-  const { data, error } = await sb.from("budgets").select("*").eq("workspace_id", workspaceId);
+  const { error } = await sb.from("workspaces").update({ budget_limit_minor: newLimitMinor }).eq("id", workspaceId);
+  if (error) throw error;
+}
+
+/* ---------- payday cycle ---------- */
+
+export async function getCurrentCycle(): Promise<{ cycle_start: string; cycle_end: string }> {
+  const { sb } = await ctx();
+  const { data, error } = await sb.rpc("get_current_cycle");
+  if (error) throw error;
+  return data as { cycle_start: string; cycle_end: string };
+}
+
+export async function updateCycleStartDay(day: number): Promise<void> {
+  const { sb, workspaceId } = await ctx();
+  const safe = Math.max(1, Math.min(day, 28));
+  const { error } = await sb.from("workspaces").update({ cycle_start_day: safe }).eq("id", workspaceId);
+  if (error) throw error;
+}
+
+/* ---------- budgets (per-account) ---------- */
+
+/**
+ * Get budgets filtered by account.
+ * - `null` (or `"all"`) returns master budgets (account_id is null) — "All accounts" view
+ * - a UUID returns only that account's budgets
+ */
+export async function getBudgets(accountId?: string | null): Promise<Budget[]> {
+  const { sb, workspaceId } = await ctx();
+  let q = sb.from("budgets").select("*").eq("workspace_id", workspaceId);
+  if (accountId === null || accountId === "all") {
+    q = q.is("account_id", null);
+  } else if (accountId) {
+    q = q.eq("account_id", accountId);
+  }
+  const { data, error } = await q;
   if (error) throw error;
   return (data ?? []) as Budget[];
 }
@@ -291,98 +293,84 @@ export async function deleteBudget(id: string) {
   await removeRow("budgets", id);
 }
 
+/* ---------- custom categories ---------- */
+
+export async function getCustomCategories(): Promise<CustomCategory[]> {
+  const { sb, workspaceId } = await ctx();
+  const { data, error } = await sb.from("custom_categories").select("id,name,icon,color,kind").eq("workspace_id", workspaceId).order("created_at");
+  if (error) throw error;
+  return (data ?? []) as any;
+}
+
+export async function addCustomCategory(name: string, icon = "Tag", color = "#8fb3a3", kind: "expense" | "income" | "both" = "expense"): Promise<void> {
+  const { sb, workspaceId } = await ctx();
+  const { error } = await sb.from("custom_categories").insert({ workspace_id: workspaceId, name: name.trim(), icon, color, kind });
+  if (error) throw error;
+}
+
+export async function deleteCustomCategory(id: string): Promise<void> {
+  await removeRow("custom_categories", id);
+}
+
+/* ---------- category rules ---------- */
+
+export async function getCategoryRules(): Promise<CategoryRule[]> {
+  const { sb, workspaceId } = await ctx();
+  const { data, error } = await sb.from("category_rules").select("id,merchant_pattern,category").eq("workspace_id", workspaceId);
+  if (error) throw error;
+  return (data ?? []) as any;
+}
+
+export async function addCategoryRule(merchantPattern: string, category: string): Promise<void> {
+  const { sb, workspaceId } = await ctx();
+  const { error } = await sb.from("category_rules").upsert(
+    { workspace_id: workspaceId, merchant_pattern: merchantPattern.toLowerCase().trim(), category },
+    { onConflict: "workspace_id,merchant_pattern" }
+  );
+  if (error) throw error;
+}
+
+export async function deleteCategoryRule(id: string): Promise<void> {
+  await removeRow("category_rules", id);
+}
+
 /* ---------- recurring items ---------- */
 
 export const getRecurringItems = () => list<RecurringItem>("recurring_items", "created_at");
-
-export const addRecurringItem = (i: {
-  account_id: string | null;
-  name: string;
-  kind: "income" | "bill";
-  amount: number;
-  frequency: "weekly" | "monthly";
-  day: number;
-  category?: string | null;
-  auto_post?: boolean;
-}) =>
-  insertRow("recurring_items", {
-    account_id: i.account_id,
-    name: i.name,
-    kind: i.kind,
-    amount_minor: toMinor(i.amount),
-    frequency: i.frequency,
-    day: i.day,
-    category: i.category ?? null,
-    auto_post: i.auto_post ?? false,
-    active: true,
-  });
-
-export const updateRecurringItem = (id: string, patch: Partial<Pick<RecurringItem, "name" | "amount_minor" | "day" | "category" | "auto_post" | "active">>) =>
-  patchRow("recurring_items", id, patch);
-
+export const addRecurringItem = (i: { account_id: string | null; name: string; kind: "income" | "bill"; amount: number; frequency: "weekly" | "monthly"; day: number; category?: string | null; auto_post?: boolean }) =>
+  insertRow("recurring_items", { account_id: i.account_id, name: i.name, kind: i.kind, amount_minor: toMinor(i.amount), frequency: i.frequency, day: i.day, category: i.category ?? null, auto_post: i.auto_post ?? false, active: true });
+export const updateRecurringItem = (id: string, patch: Partial<Pick<RecurringItem, "name" | "amount_minor" | "day" | "category" | "auto_post" | "active">>) => patchRow("recurring_items", id, patch);
 export const deleteRecurringItem = (id: string) => removeRow("recurring_items", id);
 
 /* ---------- sinking funds ---------- */
 
 export const getFunds = () => list<Fund>("sinking_funds");
-export const addFund = (name: string, target: number, saved: number, targetDate: string | null) =>
-  insertRow("sinking_funds", {
-    name,
-    target_minor: toMinor(target),
-    saved_minor: toMinor(saved),
-    target_date: targetDate || null,
-  });
-export const addToFund = (fund: Fund, amount: number) =>
-  patchRow("sinking_funds", fund.id, { saved_minor: fund.saved_minor + toMinor(amount) });
+export const addFund = (name: string, target: number, saved: number, targetDate: string | null) => insertRow("sinking_funds", { name, target_minor: toMinor(target), saved_minor: toMinor(saved), target_date: targetDate || null });
+export const addToFund = (fund: Fund, amount: number) => patchRow("sinking_funds", fund.id, { saved_minor: fund.saved_minor + toMinor(amount) });
 export const deleteFund = (id: string) => removeRow("sinking_funds", id);
 
 /* ---------- family support ---------- */
 
 export async function getFamilySupport() {
   const { sb, workspaceId } = await ctx();
-  const { data, error } = await sb
-    .from("workspaces")
-    .select("family_support_minor,family_support_label")
-    .eq("id", workspaceId)
-    .single();
+  const { data, error } = await sb.from("workspaces").select("family_support_minor,family_support_label").eq("id", workspaceId).single();
   if (error) throw error;
   return { amount_minor: Number(data?.family_support_minor ?? 0), label: (data?.family_support_label as string) ?? "" };
 }
 
 export async function setFamilySupport(amount: number, label: string) {
   const { sb, workspaceId } = await ctx();
-  const { error } = await sb
-    .from("workspaces")
-    .update({ family_support_minor: toMinor(amount), family_support_label: label })
-    .eq("id", workspaceId);
+  const { error } = await sb.from("workspaces").update({ family_support_minor: toMinor(amount), family_support_label: label }).eq("id", workspaceId);
   if (error) throw error;
 }
 
 /* ---------- ajo ---------- */
 
 export const getAjoGroups = () => list<AjoGroup>("ajo_groups");
-export const addAjoGroup = (g: {
-  name: string; contribution: number; frequency: "weekly" | "monthly"; members: number; position: number;
-}) =>
-  insertRow("ajo_groups", {
-    name: g.name,
-    contribution_minor: toMinor(g.contribution),
-    frequency: g.frequency,
-    members: g.members,
-    my_position: g.position,
-  });
-export const recordAjoPayment = (g: AjoGroup) =>
-  patchRow("ajo_groups", g.id, { paid_cycles: Math.min(g.paid_cycles + 1, g.members) });
+export const addAjoGroup = (g: { name: string; contribution: number; frequency: "weekly" | "monthly"; members: number; position: number }) => insertRow("ajo_groups", { name: g.name, contribution_minor: toMinor(g.contribution), frequency: g.frequency, members: g.members, my_position: g.position });
+export const recordAjoPayment = (g: AjoGroup) => patchRow("ajo_groups", g.id, { paid_cycles: Math.min(g.paid_cycles + 1, g.members) });
 export const deleteAjoGroup = (id: string) => removeRow("ajo_groups", id);
 
-/* ---------- statement scan (Step 5) ---------- */
-
-export async function importStatement(): Promise<{ inserted: number; skipped: number }> {
-  throw new Error("Statement Scan is coming in Step 5. Use Account > Statements when it's ready.");
-}
-
-// Backward-compatible alias so no other file breaks
-export const importCsvStatement = importStatement;
 /* ---------- setup status / onboarding ---------- */
 
 export interface SetupStatus {
@@ -408,11 +396,6 @@ export async function completeOnboarding(): Promise<void> {
   if (error) throw error;
 }
 
-export async function updateWorkspaceBudget(newLimitMinor: number): Promise<void> {
-  const { sb, workspaceId } = await ctx();
-  const { error } = await sb.from("workspaces").update({ budget_limit_minor: newLimitMinor }).eq("id", workspaceId);
-  if (error) throw error;
-}
 /* ---------- safe to spend ---------- */
 
 export interface SafeToSpend {
@@ -434,79 +417,11 @@ export async function getSafeToSpend(): Promise<SafeToSpend> {
   if (error) throw error;
   return data as SafeToSpend;
 }
-/* ---------- payday cycle ---------- */
 
-export async function getCurrentCycle(): Promise<{ cycle_start: string; cycle_end: string }> {
-  const { sb } = await ctx();
-  const { data, error } = await sb.rpc("get_current_cycle");
-  if (error) throw error;
-  return data as { cycle_start: string; cycle_end: string };
+/* ---------- statement scan (Step 5) ---------- */
+
+export async function importStatement(): Promise<{ inserted: number; skipped: number }> {
+  throw new Error("Statement Scan is coming in Step 5. Use Account > Statements when it's ready.");
 }
 
-export async function updateCycleStartDay(day: number): Promise<void> {
-  const { sb, workspaceId } = await ctx();
-  const safe = Math.max(1, Math.min(day, 28));
-  const { error } = await sb.from("workspaces").update({ cycle_start_day: safe }).eq("id", workspaceId);
-  if (error) throw error;
-}
-
-/* ---------- custom categories ---------- */
-
-export async function getCustomCategories(): Promise<import("@/lib/types").CustomCategory[]> {
-  const { sb, workspaceId } = await ctx();
-  const { data, error } = await sb
-    .from("custom_categories")
-    .select("id,name,icon,color,kind")
-    .eq("workspace_id", workspaceId)
-    .order("created_at");
-  if (error) throw error;
-  return (data ?? []) as any;
-}
-
-export async function addCustomCategory(
-  name: string,
-  icon = "Tag",
-  color = "#8fb3a3",
-  kind: "expense" | "income" | "both" = "expense"
-): Promise<void> {
-  const { sb, workspaceId } = await ctx();
-  const { error } = await sb.from("custom_categories").insert({
-    workspace_id: workspaceId,
-    name: name.trim(),
-    icon,
-    color,
-    kind,
-  });
-  if (error) throw error;
-}
-
-export async function deleteCustomCategory(id: string): Promise<void> {
-  await removeRow("custom_categories", id);
-}
-
-/* ---------- category rules (memory) ---------- */
-
-export async function getCategoryRules(): Promise<import("@/lib/types").CategoryRule[]> {
-  const { sb, workspaceId } = await ctx();
-  const { data, error } = await sb
-    .from("category_rules")
-    .select("id,merchant_pattern,category")
-    .eq("workspace_id", workspaceId);
-  if (error) throw error;
-  return (data ?? []) as any;
-}
-
-export async function addCategoryRule(merchantPattern: string, category: string): Promise<void> {
-  const { sb, workspaceId } = await ctx();
-  const { error } = await sb
-    .from("category_rules")
-    .upsert(
-      { workspace_id: workspaceId, merchant_pattern: merchantPattern.toLowerCase().trim(), category },
-      { onConflict: "workspace_id,merchant_pattern" }
-    );
-  if (error) throw error;
-}
-
-export async function deleteCategoryRule(id: string): Promise<void> {
-  await removeRow("category_rules", id);
-}
+export const importCsvStatement = importStatement;

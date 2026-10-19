@@ -41,55 +41,14 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
   const [newCatName, setNewCatName] = useState("");
   const [isBudgetEditorOpen, setIsBudgetEditorOpen] = useState(false);
 
-  // Per-category budget amounts (in naira, not minor units)
   const [categoryLimits, setCategoryLimits] = useState<Record<string, number>>({});
 
   const { fmt } = useCurrency();
   const toast = useToast();
 
-  const load = async () => {
+  const loadBudgetsForAccount = async (accountKey: string) => {
     try {
-      const m = await getHomeMetrics();
-      setMetrics(m ?? ZERO_METRICS);
-    } catch (e: any) {
-      console.error("getHomeMetrics failed:", e);
-      setMetrics(ZERO_METRICS);
-    }
-
-    try {
-      const t = await getTransactionsSince(startOfMonthISO());
-      setTxns(t ?? []);
-    } catch (e: any) {
-      console.error("getTransactionsSince failed:", e);
-      setTxns([]);
-    }
-
-    try {
-      const accs = await getAccounts();
-      setAccounts(accs ?? []);
-    } catch (e: any) {
-      console.error("getAccounts failed:", e);
-      setAccounts([]);
-    }
-
-    try {
-      const cats = await getCustomCategories();
-      setCategories(cats ?? []);
-    } catch (e: any) {
-      console.error("getCustomCategories failed:", e);
-      setCategories([]);
-    }
-
-    try {
-      const cyc = await getCurrentCycle();
-      setCycle(cyc);
-    } catch (e: any) {
-      console.error("getCurrentCycle failed:", e);
-      setCycle(null);
-    }
-
-    try {
-      const bs = await getBudgets();
+      const bs = await getBudgets(accountKey === "all" ? null : accountKey);
       setBudgets(bs ?? []);
       const map: Record<string, number> = {};
       for (const b of bs ?? []) {
@@ -103,14 +62,55 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  const loadStatic = async () => {
+    try {
+      const m = await getHomeMetrics();
+      setMetrics(m ?? ZERO_METRICS);
+    } catch (e: any) {
+      console.error("getHomeMetrics failed:", e);
+      setMetrics(ZERO_METRICS);
+    }
+    try {
+      const t = await getTransactionsSince(startOfMonthISO());
+      setTxns(t ?? []);
+    } catch (e: any) {
+      console.error("getTransactionsSince failed:", e);
+      setTxns([]);
+    }
+    try {
+      const accs = await getAccounts();
+      setAccounts(accs ?? []);
+    } catch (e: any) {
+      console.error("getAccounts failed:", e);
+      setAccounts([]);
+    }
+    try {
+      const cats = await getCustomCategories();
+      setCategories(cats ?? []);
+    } catch (e: any) {
+      console.error("getCustomCategories failed:", e);
+      setCategories([]);
+    }
+    try {
+      const cyc = await getCurrentCycle();
+      setCycle(cyc);
+    } catch (e: any) {
+      console.error("getCurrentCycle failed:", e);
+      setCycle(null);
+    }
+  };
+
+  // Load static once
+  useEffect(() => { loadStatic(); }, []);
+  // Reload budgets whenever the account changes
+  useEffect(() => { loadBudgetsForAccount(selectedAccount); }, [selectedAccount]);
 
   const saveCycle = async () => {
     try {
       await updateCycleStartDay(parseInt(cycleDay));
       toast("Payday cycle saved");
       setIsCycleOpen(false);
-      load();
+      loadStatic();
     } catch (e: any) {
       toast(e.message ?? "Could not save", "err");
     }
@@ -121,7 +121,7 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
     try {
       await addCustomCategory(newCatName.trim());
       setNewCatName("");
-      load();
+      loadStatic();
     } catch (e: any) {
       toast(e.message ?? "Could not add", "err");
     }
@@ -130,18 +130,22 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
   const removeCat = async (id: string, name: string) => {
     if (!confirm(`Delete category "${name}"? Existing transactions keep their label.`)) return;
     await deleteCustomCategory(id);
-    load();
+    loadStatic();
   };
 
   const setCategoryAmount = async (category: string, amount: number) => {
-    // Update local state immediately
     setCategoryLimits((prev) => ({ ...prev, [category]: amount }));
     try {
       if (amount <= 0) {
         const existing = budgets.find((b) => b.category === category);
-        if (existing) await deleteBudget(existing.id);
+        if (existing) {
+          await deleteBudget(existing.id);
+          setBudgets((prev) => prev.filter((b) => b.id !== existing.id));
+        }
       } else {
         await setBudget(selectedAccount === "all" ? null : selectedAccount, category, Math.round(amount * 100));
+        // Refresh list for this account
+        await loadBudgetsForAccount(selectedAccount);
       }
     } catch (e: any) {
       toast(e.message ?? "Could not save category budget", "err");
@@ -153,8 +157,6 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
     : txns.filter((t) => t.account_id === selectedAccount);
 
   const spent = filteredTxns.filter((t) => t.direction === "debit").reduce((s, t) => s + t.amount_minor, 0) / 100;
-
-  // Total budget = sum of category limits (for the selected account)
   const totalBudget = Object.values(categoryLimits).reduce((s, v) => s + v, 0);
   const pct = totalBudget > 0 ? Math.min((spent / totalBudget) * 100, 100) : 0;
 
@@ -166,7 +168,6 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
     }
   }
 
-  // Merge built-in categories + custom ones
   const allCategoryNames = Array.from(new Set([
     ...byCat.keys(),
     ...Object.keys(categoryLimits),
@@ -192,12 +193,8 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
         onBack={onBack}
         right={
           <div className="flex gap-2">
-            <IconButton label="Cycle" onClick={() => setIsCycleOpen(true)}>
-              <CalendarRange size={16} />
-            </IconButton>
-            <IconButton label="Manage categories" onClick={() => setIsCatsOpen(true)}>
-              <Settings2 size={16} />
-            </IconButton>
+            <IconButton label="Cycle" onClick={() => setIsCycleOpen(true)}><CalendarRange size={16} /></IconButton>
+            <IconButton label="Manage categories" onClick={() => setIsCatsOpen(true)}><Settings2 size={16} /></IconButton>
           </div>
         }
       />
@@ -261,10 +258,7 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
               const Icon = cat.icon;
               return (
                 <div key={row.name} className="flex items-center gap-3 px-4 py-3">
-                  <div
-                    className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                    style={{ background: `${cat.color}22`, color: cat.color }}
-                  >
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${cat.color}22`, color: cat.color }}>
                     <Icon size={16} />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -286,26 +280,20 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
               );
             })}
             {categoryRows.length === 0 && (
-              <p className="px-4 py-6 text-center text-[14px] text-[var(--text-3)]">
-                No categories yet. Add amounts to start your budget.
-              </p>
+              <p className="px-4 py-6 text-center text-[14px] text-[var(--text-3)]">No categories yet. Add amounts to start your budget.</p>
             )}
           </div>
         </div>
       </div>
 
-      {/* Payday cycle */}
       <Modal open={isCycleOpen} onClose={() => setIsCycleOpen(false)} title="Payday cycle">
         <div className="space-y-3">
-          <p className="text-[13px] text-[var(--text-2)]">
-            Which day do you get paid? This becomes the start of your budget cycle.
-          </p>
+          <p className="text-[13px] text-[var(--text-2)]">Which day do you get paid? This becomes the start of your budget cycle.</p>
           <Field label="Day of month (1-28)" type="number" value={cycleDay} onChange={(e) => setCycleDay(e.target.value)} />
           <Button onClick={saveCycle}>Save</Button>
         </div>
       </Modal>
 
-      {/* Custom categories */}
       <Modal open={isCatsOpen} onClose={() => setIsCatsOpen(false)} title="Custom categories">
         <div className="space-y-4">
           <div className="flex gap-2">
@@ -313,8 +301,8 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
               value={newCatName}
               onChange={(e) => setNewCatName(e.target.value)}
               placeholder="e.g. Church, Black tax"
-              style={{ fontSize: 16 }}
               className="flex-1 h-11 px-3 rounded-xl bg-[var(--surface-1)] border border-[var(--line-strong)] text-[14px]"
+              style={{ fontSize: 16 }}
             />
             <Button onClick={addCat} className="!w-auto px-4 !h-11">Add</Button>
           </div>
@@ -322,25 +310,18 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
             {categories.map((c) => (
               <div key={c.id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-[var(--surface-1)]">
                 <span className="text-[14px]">{c.name}</span>
-                <button onClick={() => removeCat(c.id, c.name)} className="text-[var(--danger)]">
-                  <Trash2 size={14} />
-                </button>
+                <button onClick={() => removeCat(c.id, c.name)} className="text-[var(--danger)]"><Trash2 size={14} /></button>
               </div>
             ))}
-            {categories.length === 0 && (
-              <p className="text-[13px] text-[var(--text-3)] text-center py-4">
-                No custom categories yet.
-              </p>
-            )}
+            {categories.length === 0 && <p className="text-[13px] text-[var(--text-3)] text-center py-4">No custom categories yet.</p>}
           </div>
         </div>
       </Modal>
 
-      {/* Budget editor */}
       <Modal open={isBudgetEditorOpen} onClose={() => setIsBudgetEditorOpen(false)} title="Set category budgets">
         <div className="space-y-3">
           <p className="text-[12px] text-[var(--text-3)] px-1">
-            Enter the amount you plan to spend on each category this cycle. The total is your monthly budget.
+            Enter the amount you plan to spend on each category this cycle. The total becomes your monthly budget for {selectedAccount === "all" ? "all accounts" : accounts.find(a => a.id === selectedAccount)?.name ?? "this account"}.
           </p>
           <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
             {allCategoryNames.map((name) => (

@@ -48,17 +48,28 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  overscroll-behavior-y: none;
+  overscroll-behavior-y: contain;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* iOS auto-zooms on inputs with font-size < 16px. Force 16px everywhere. */
+input,
+textarea,
+select {
+  font-size: 16px !important;
+}
+
+/* No more boxy focus outlines anywhere */
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: none;
 }
 
 .tabular {
   font-variant-numeric: tabular-nums;
-}
-
-:focus-visible {
-  outline: 2px solid var(--brand);
-  outline-offset: 2px;
 }
 
 @layer components {
@@ -78,6 +89,7 @@ body {
     border-radius: 22px;
   }
 
+  /* Fields: smooth border + soft orange glow on focus, no boxy outline */
   .field {
     display: flex;
     align-items: center;
@@ -87,20 +99,35 @@ body {
     background: var(--surface-1);
     border: 1px solid var(--line-strong);
     border-radius: 16px;
-    transition: border-color 0.15s;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    position: relative;
   }
   .field:focus-within {
     border-color: var(--brand);
+    box-shadow:
+      0 0 0 3px rgba(249, 115, 22, 0.18),
+      0 0 12px rgba(249, 115, 22, 0.35),
+      inset 0 0 6px rgba(249, 115, 22, 0.08);
   }
   .field input,
-  .field select {
+  .field select,
+  .field textarea {
     flex: 1;
     min-width: 0;
     height: 100%;
     background: transparent;
     color: var(--text-1);
-    outline: none;
-    font-size: 16px;
+    outline: none !important;
+    box-shadow: none !important;
+    border: none;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .field input:focus,
+  .field select:focus,
+  .field textarea:focus {
+    outline: none !important;
+    box-shadow: none !important;
   }
   .field input::placeholder {
     color: var(--text-3);
@@ -163,18 +190,4 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
-}
-/* Prevent iOS Safari from auto-zooming when an input is focused.
-   iOS zooms whenever font-size < 16px on any input/textarea/select. */
-input,
-textarea,
-select {
-  font-size: 16px !important;
-}
-
-/* Except where we intentionally want smaller in a designed context */
-.field input,
-.field select,
-.field textarea {
-  font-size: 16px !important;
 }
