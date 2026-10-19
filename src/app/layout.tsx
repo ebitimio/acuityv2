@@ -14,20 +14,28 @@ export const metadata: Metadata = {
   description: "AI-driven personal wealth command center",
   manifest: "/manifest.json",
   icons: { icon: "/icon.svg" },
-  appleWebApp: { capable: true, title: "Acuity", statusBarStyle: "black-translucent" },
+  appleWebApp: {
+    capable: true,
+    title: "Acuity",
+    statusBarStyle: "black-translucent",
+  },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#7a0e0e", // matches top of orange gradient
+  themeColor: "#7a0e0e",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en" className={`dark ${manrope.variable}`}>
-      <body className="overflow-x-hidden bg-black text-white antialiased">
+      <body className="overflow-x-hidden text-[var(--text-1)] antialiased">
         <Providers>{children}</Providers>
       </body>
     </html>

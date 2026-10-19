@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "../lib/glass.css";
 
 @source "../../";
 
@@ -38,11 +39,15 @@
   box-sizing: border-box;
 }
 
-html,
+/* html paints the base black; body is transparent so the AmbientBackground shows through */
+html {
+  background: var(--bg);
+}
+
 body {
   margin: 0;
   padding: 0;
-  background: var(--bg);
+  background: transparent;
   color: var(--text-1);
   font-family: var(--font-ui), -apple-system, "SF Pro Text", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -50,6 +55,8 @@ body {
   text-rendering: optimizeLegibility;
   overscroll-behavior-y: contain;
   -webkit-tap-highlight-color: transparent;
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 /* iOS auto-zooms on inputs with font-size < 16px. Force 16px everywhere. */
@@ -59,11 +66,8 @@ select {
   font-size: 16px !important;
 }
 
-/* No more boxy focus outlines anywhere */
-:focus {
-  outline: none;
-}
-
+/* Kill the boxy orange focus outline */
+:focus,
 :focus-visible {
   outline: none;
 }
@@ -89,7 +93,7 @@ select {
     border-radius: 22px;
   }
 
-  /* Fields: smooth border + soft orange glow on focus, no boxy outline */
+  /* Fields: soft orange glow on focus, no boxy outline */
   .field {
     display: flex;
     align-items: center;
@@ -185,9 +189,14 @@ select {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+  .ambient-orb {
+    animation: none !important;
   }
 }

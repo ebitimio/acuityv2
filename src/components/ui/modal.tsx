@@ -1,74 +1,85 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useDragControls } from "framer-motion";
 import { X } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
+import { spring } from "@/lib/motion";
+
+const stack: string[] = [];
+let locks = 0;
 
 export function Modal({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: ReactNode }) {
+  const id = useId();
+  const controls = useDragControls();
+  const closeRef = useRef(onClose);
+  const [mounted, setMounted] = useState(false);
   const [vv, setVv] = useState<{ height: number; offsetTop: number } | null>(null);
 
+  useEffect(() => { closeRef.current = onClose; });
+  useEffect(() => { setMounted(true); }, []);
+
   useEffect(() => {
-    if (typeof window === "undefined" || !window.visualViewport) return;
-    const update = () => {
-      const v = window.visualViewport!;
-      setVv({ height: v.height, offsetTop: v.offsetTop });
+    if (!open) return;
+    stack.push(id);
+    if (locks++ === 0) document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && stack[stack.length - 1] === id) closeRef.current();
     };
-    update();
-    window.visualViewport.addEventListener("resize", update);
-    window.visualViewport.addEventListener("scroll", update);
+    window.addEventListener("keydown", onKey);
     return () => {
-      window.visualViewport?.removeEventListener("resize", update);
-      window.visualViewport?.removeEventListener("scroll", update);
+      window.removeEventListener("keydown", onKey);
+      stack.splice(stack.indexOf(id), 1);
+      if (--locks === 0) document.body.style.overflow = "";
     };
+  }, [open, id]);
+
+  useEffect(() => {
+    const v = window.visualViewport;
+    if (!v) return;
+    const update = () => setVv({ height: v.height, offsetTop: v.offsetTop });
+    update();
+    v.addEventListener("resize", update);
+    v.addEventListener("scroll", update);
+    return () => { v.removeEventListener("resize", update); v.removeEventListener("scroll", update); };
   }, []);
 
-  // iOS: pin the overlay to the *visible* region so the sheet sits at the bottom of the keyboard
-  const overlayStyle: React.CSSProperties = vv
-    ? {
-        top: vv.offsetTop,
-        left: 0,
-        right: 0,
-        height: vv.height,
-        position: "fixed",
-      }
+  if (!mounted) return null;
+
+  const frame: React.CSSProperties = vv
+    ? { position: "fixed", top: vv.offsetTop, left: 0, right: 0, height: vv.height }
     : { position: "fixed", inset: 0 };
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {open && (
-        <motion.div
-          className="z-[200] flex items-end justify-center bg-black/70 backdrop-blur-sm sm:items-center sm:p-6"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onClose}
-          role="dialog"
-          aria-modal="true"
-          aria-label={title}
-          style={overlayStyle}
-        >
+        <div key={id} className="z-[200] flex items-end justify-center sm:items-center sm:p-6" style={frame} role="dialog" aria-modal="true" aria-label={title}>
           <motion.div
-            onClick={(e) => e.stopPropagation()}
-            initial={{ y: 48, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 48, opacity: 0 }}
-            transition={{ type: "spring", stiffness: 420, damping: 34 }}
-            className="max-h-full w-full max-w-md overflow-y-auto rounded-t-[32px] border border-[var(--line-strong)] bg-[var(--surface-2)] p-5 pb-[calc(20px+env(safe-area-inset-bottom))] sm:max-h-[88dvh] sm:rounded-[32px]"
+            className="absolute inset-0 bg-black/45 backdrop-blur-sm"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            onClick={onClose}
+          />
+          <motion.div
+            className="glass glass-thick relative flex max-h-full w-full max-w-md flex-col overflow-hidden rounded-t-[32px] sm:max-h-[88dvh] sm:rounded-[32px]"
+            initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={spring.sheet}
+            drag="y" dragControls={controls} dragListener={false}
+            dragConstraints={{ top: 0, bottom: 0 }} dragElastic={{ top: 0, bottom: 0.5 }}
+            onDragEnd={(_, info) => { if (info.offset.y > 110 || info.velocity.y > 700) onClose(); }}
           >
-            <div className="mb-5 flex items-center justify-between">
-              <h2 className="text-[19px] font-bold">{title}</h2>
-              <button
-                aria-label="Close"
-                onClick={onClose}
-                className="press flex h-9 w-9 items-center justify-center rounded-full bg-white/[0.08] text-[var(--text-2)] hover:text-white"
-              >
-                <X size={18} />
-              </button>
+            <div className="px-5 pb-2 pt-3" style={{ touchAction: "none" }} onPointerDown={(e) => controls.start(e)}>
+              <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-white/25" />
+              <div className="flex items-center justify-between">
+                <h2 className="text-[19px] font-bold">{title}</h2>
+                <button aria-label="Close" onClick={onClose} className="press flex h-9 w-9 items-center justify-center rounded-full bg-white/[0.1] text-[var(--text-2)] hover:text-white">
+                  <X size={18} />
+                </button>
+              </div>
             </div>
-            {children}
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-[calc(20px+env(safe-area-inset-bottom))] pt-2">{children}</div>
           </motion.div>
-        </motion.div>
+        </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

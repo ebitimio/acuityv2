@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect } from "react";
+import { MotionConfig } from "framer-motion";
 import { CurrencyProvider } from "@/lib/currency";
 import { WorkspaceProvider } from "@/lib/workspace";
 import { ToastProvider } from "@/components/ui/toast";
+import { AmbientBackground } from "@/components/ui/ambient-background";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
@@ -13,10 +15,15 @@ export function Providers({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <CurrencyProvider>
-      <WorkspaceProvider>
-        <ToastProvider>{children}</ToastProvider>
-      </WorkspaceProvider>
-    </CurrencyProvider>
+    <MotionConfig reducedMotion="user">
+      <CurrencyProvider>
+        <WorkspaceProvider>
+          <ToastProvider>
+            <AmbientBackground />
+            {children}
+          </ToastProvider>
+        </WorkspaceProvider>
+      </CurrencyProvider>
+    </MotionConfig>
   );
 }
