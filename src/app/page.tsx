@@ -229,9 +229,10 @@ export default function SandboxPage() {
     }
   };
 
+  // Splash runs FIRST, before auth check completes
+  if (showSplash) return <SplashScreen onComplete={() => setShowSplash(false)} />;
   if (isAuthLoading) return <div className="min-h-[100dvh] bg-black" />;
   if (!session) return <AuthScreen />;
-  if (showSplash) return <SplashScreen onComplete={() => setShowSplash(false)} />;
   if (isLoading) return <HomeSkeleton />;
 
   const m = metrics ?? ZERO_METRICS;
@@ -259,7 +260,6 @@ export default function SandboxPage() {
         <BankChargeScreen onBack={() => setActiveScreen("home")} />
       ) : (
         <div className="flex-1 overflow-y-auto pb-32">
-          {/* COMPACT HERO */}
           <div
             className="relative pt-[calc(env(safe-area-inset-top)+12px)] pb-5 px-5 rounded-b-[36px] overflow-hidden"
             style={{
@@ -350,7 +350,6 @@ export default function SandboxPage() {
             </div>
           </div>
 
-          {/* RUNWAY CARDS — moved out of the hero */}
           <div className="px-4 mt-4">
             <RunwayCards
               safe={safeToSpend}
