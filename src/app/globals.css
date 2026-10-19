@@ -38,13 +38,7 @@
   box-sizing: border-box;
 }
 
-html {
-  background: linear-gradient(160deg, #7a0e0e 0%, #b3391f 35%, #e87a1a 75%, #ffb347 100%);
-  background-attachment: fixed;
-  background-color: #7a0e0e;
-  min-height: 100%;
-}
-
+html,
 body {
   margin: 0;
   padding: 0;
@@ -56,34 +50,6 @@ body {
   text-rendering: optimizeLegibility;
   overscroll-behavior-y: none;
   -webkit-tap-highlight-color: transparent;
-  min-height: 100vh;
-  min-height: 100dvh;
-}
-
-/* Paint the safe-area strips (status bar top, home indicator bottom) with the
-   splash gradient, so no black shows through during the splash or the auth page. */
-body::before {
-  content: "";
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: env(safe-area-inset-top);
-  background: linear-gradient(180deg, #7a0e0e, #b3391f);
-  z-index: 9999;
-  pointer-events: none;
-}
-
-body::after {
-  content: "";
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: env(safe-area-inset-bottom);
-  background: linear-gradient(0deg, #ffb347, #e87a1a);
-  z-index: 9999;
-  pointer-events: none;
 }
 
 .tabular {

@@ -6,15 +6,6 @@ import { useEffect, useState } from "react";
 export function SplashScreen({ onComplete }: { onComplete: () => void }) {
   const [isVisible, setIsVisible] = useState(true);
 
-  // Paint the html element with the gradient so the iOS home indicator strip
-  // and the status-bar strip are never black.
-  useEffect(() => {
-    document.documentElement.classList.add("splash-bg");
-    return () => {
-      document.documentElement.classList.remove("splash-bg");
-    };
-  }, []);
-
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsVisible(false);
@@ -32,11 +23,29 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
           transition={{ duration: 0.4, ease: "easeInOut" }}
           className="fixed inset-0 z-[999] flex items-center justify-center"
           style={{
-            background: "linear-gradient(160deg, #7a0e0e 0%, #b3391f 35%, #e87a1a 75%, #ffb347 100%)",
+            background:
+              "linear-gradient(160deg, #7a0e0e 0%, #b3391f 35%, #e87a1a 75%, #ffb347 100%)",
             paddingTop: "env(safe-area-inset-top)",
             paddingBottom: "env(safe-area-inset-bottom)",
           }}
         >
+          {/* Top safe-area strip */}
+          <div
+            className="absolute top-0 left-0 right-0 pointer-events-none"
+            style={{
+              height: "env(safe-area-inset-top)",
+              background: "linear-gradient(180deg, #7a0e0e, #b3391f)",
+            }}
+          />
+          {/* Bottom safe-area strip */}
+          <div
+            className="absolute bottom-0 left-0 right-0 pointer-events-none"
+            style={{
+              height: "env(safe-area-inset-bottom)",
+              background: "linear-gradient(0deg, #ffb347, #e87a1a)",
+            }}
+          />
+
           <motion.div
             initial={{ opacity: 0, scale: 0.92 }}
             animate={{ opacity: 1, scale: 1 }}
