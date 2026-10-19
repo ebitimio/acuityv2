@@ -14,9 +14,9 @@ interface GlassSurfaceProps extends HTMLAttributes<HTMLElement> {
 }
 
 const TIER_TOKENS: Record<GlassTier, { blur: number; fill: string }> = {
-  thin: { blur: 16, fill: "rgba(28,30,32,0.40)" },
-  regular: { blur: 24, fill: "rgba(28,30,32,0.55)" },
-  thick: { blur: 40, fill: "rgba(28,30,32,0.70)" },
+  thin: { blur: 16, fill: "rgba(10,24,18,0.45)" },
+  regular: { blur: 24, fill: "rgba(10,24,18,0.62)" },
+  thick: { blur: 40, fill: "rgba(10,24,18,0.78)" },
 };
 
 export const GlassSurface = forwardRef<any, GlassSurfaceProps>(

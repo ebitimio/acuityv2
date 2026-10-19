@@ -413,3 +413,24 @@ export async function updateWorkspaceBudget(newLimitMinor: number): Promise<void
   const { error } = await sb.from("workspaces").update({ budget_limit_minor: newLimitMinor }).eq("id", workspaceId);
   if (error) throw error;
 }
+/* ---------- safe to spend ---------- */
+
+export interface SafeToSpend {
+  liquid_minor: number;
+  bills_due_minor: number;
+  total_safe_minor: number;
+  daily_safe_minor: number;
+  days_until_next_income: number;
+  next_income_date: string;
+  has_income: boolean;
+  has_accounts: boolean;
+  upcoming_bills: { name: string; amount_minor: number; day: number }[];
+  error?: string;
+}
+
+export async function getSafeToSpend(): Promise<SafeToSpend> {
+  const { sb } = await ctx();
+  const { data, error } = await sb.rpc("get_safe_to_spend");
+  if (error) throw error;
+  return data as SafeToSpend;
+}
