@@ -6,9 +6,9 @@ import { useEffect, useState } from "react";
 export function SplashScreen({ onComplete }: { onComplete: () => void }) {
   const [isVisible, setIsVisible] = useState(true);
 
+  // Set html + body to the *bottom* colour of the gradient so any safe-area
+  // strip blends seamlessly with the splash.
   useEffect(() => {
-    // Paint html + body with the splash gradient while mounted so any safe-area
-    // gap that's still visible shows orange, not black. Restore after.
     const htmlEl = document.documentElement;
     const bodyEl = document.body;
     const prevHtmlBg = htmlEl.style.background;
@@ -38,25 +38,26 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.4, ease: "easeInOut" }}
+          className="fixed inset-0 z-[999] overflow-visible"
         >
-          {/* PAINT LAYER — overscans 120px past every edge so no black gap can show.
-              z-index sits underneath the content layer but still above the page. */}
+          {/* PAINT LAYER — extends 240px past every edge so no safe-area strip
+              can ever show through, on any device, in any orientation. */}
           <div
-            className="fixed z-[999]"
+            aria-hidden
+            className="absolute"
             style={{
-              left: 0,
-              right: 0,
-              top: "-120px",
-              bottom: "-120px",
+              left: "-1px",
+              right: "-1px",
+              top: "-240px",
+              bottom: "-240px",
               background:
                 "linear-gradient(160deg, #7a0e0e 0%, #b3391f 35%, #e87a1a 75%, #ffb347 100%)",
             }}
-            aria-hidden
           />
 
-          {/* CONTENT LAYER — safe-area-aware, holds the wordmark and loader. */}
+          {/* CONTENT LAYER — safe-area padded, centered. */}
           <div
-            className="fixed inset-0 z-[1000] flex items-center justify-center"
+            className="relative flex h-full w-full items-center justify-center"
             style={{
               paddingTop: "env(safe-area-inset-top)",
               paddingBottom: "env(safe-area-inset-bottom)",
