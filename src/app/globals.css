@@ -164,3 +164,17 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+/* Prevent iOS Safari from auto-zooming when an input is focused.
+   iOS zooms whenever font-size < 16px on any input/textarea/select. */
+input,
+textarea,
+select {
+  font-size: 16px !important;
+}
+
+/* Except where we intentionally want smaller in a designed context */
+.field input,
+.field select,
+.field textarea {
+  font-size: 16px !important;
+}

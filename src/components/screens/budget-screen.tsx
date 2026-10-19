@@ -2,18 +2,22 @@
 
 import { useEffect, useState } from "react";
 import { ScreenHeader, IconButton } from "@/components/ui/screen-header";
-import { Pencil, Settings2, CalendarRange } from "lucide-react";
+import { Pencil, Plus, Trash2, CalendarRange, Settings2 } from "lucide-react";
 import {
-  getHomeMetrics, updateBudgetLimit, getTransactionsSince, getAccounts,
-  getCurrentCycle, updateCycleStartDay, getCustomCategories, addCustomCategory, deleteCustomCategory,
+  getHomeMetrics, getTransactionsSince, getAccounts,
+  getCurrentCycle, updateCycleStartDay,
+  getCustomCategories, addCustomCategory, deleteCustomCategory,
+  getBudgets, setBudget, deleteBudget,
 } from "@/lib/supabase/database";
 import { startOfMonthISO } from "@/lib/dates";
 import { useCurrency } from "@/lib/currency";
 import { GaugeArc } from "@/components/ui/gauge-arc";
 import { Modal } from "@/components/ui/modal";
 import { Field, Button } from "@/components/ui/form";
+import { CurrencyField } from "@/components/ui/currency-field";
 import { useToast } from "@/components/ui/toast";
-import type { Txn, HomeMetrics, Account, CustomCategory } from "@/lib/types";
+import type { Txn, HomeMetrics, Account, CustomCategory, Budget } from "@/lib/types";
+import { getCategory } from "@/lib/categories";
 
 const ZERO_METRICS: HomeMetrics = {
   net_worth_minor: 0,
@@ -28,23 +32,25 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
   const [txns, setTxns] = useState<Txn[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<CustomCategory[]>([]);
+  const [budgets, setBudgets] = useState<Budget[]>([]);
   const [cycle, setCycle] = useState<{ cycle_start: string; cycle_end: string } | null>(null);
   const [selectedAccount, setSelectedAccount] = useState<string>("all");
-  const [isEditOpen, setIsEditOpen] = useState(false);
-  const [limit, setLimit] = useState("");
   const [isCycleOpen, setIsCycleOpen] = useState(false);
   const [cycleDay, setCycleDay] = useState("1");
   const [isCatsOpen, setIsCatsOpen] = useState(false);
   const [newCatName, setNewCatName] = useState("");
+  const [isBudgetEditorOpen, setIsBudgetEditorOpen] = useState(false);
+
+  // Per-category budget amounts (in naira, not minor units)
+  const [categoryLimits, setCategoryLimits] = useState<Record<string, number>>({});
+
   const { fmt } = useCurrency();
   const toast = useToast();
 
   const load = async () => {
-    // Each piece is independently safe — one failure can't blank the screen
     try {
       const m = await getHomeMetrics();
       setMetrics(m ?? ZERO_METRICS);
-      setLimit(String((m?.budget_limit_minor ?? 0) / 100));
     } catch (e: any) {
       console.error("getHomeMetrics failed:", e);
       setMetrics(ZERO_METRICS);
@@ -81,20 +87,23 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
       console.error("getCurrentCycle failed:", e);
       setCycle(null);
     }
+
+    try {
+      const bs = await getBudgets();
+      setBudgets(bs ?? []);
+      const map: Record<string, number> = {};
+      for (const b of bs ?? []) {
+        map[b.category] = b.limit_minor / 100;
+      }
+      setCategoryLimits(map);
+    } catch (e: any) {
+      console.error("getBudgets failed:", e);
+      setBudgets([]);
+      setCategoryLimits({});
+    }
   };
 
   useEffect(() => { load(); }, []);
-
-  const saveLimit = async () => {
-    try {
-      await updateBudgetLimit(parseFloat(limit) || 0);
-      toast("Budget saved");
-      setIsEditOpen(false);
-      load();
-    } catch (e: any) {
-      toast(e.message ?? "Could not save", "err");
-    }
-  };
 
   const saveCycle = async () => {
     try {
@@ -118,10 +127,25 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
     }
   };
 
-  const removeCat = async (id: string) => {
-    if (!confirm("Delete this category? Existing transactions keep their label.")) return;
+  const removeCat = async (id: string, name: string) => {
+    if (!confirm(`Delete category "${name}"? Existing transactions keep their label.`)) return;
     await deleteCustomCategory(id);
     load();
+  };
+
+  const setCategoryAmount = async (category: string, amount: number) => {
+    // Update local state immediately
+    setCategoryLimits((prev) => ({ ...prev, [category]: amount }));
+    try {
+      if (amount <= 0) {
+        const existing = budgets.find((b) => b.category === category);
+        if (existing) await deleteBudget(existing.id);
+      } else {
+        await setBudget(selectedAccount === "all" ? null : selectedAccount, category, Math.round(amount * 100));
+      }
+    } catch (e: any) {
+      toast(e.message ?? "Could not save category budget", "err");
+    }
   };
 
   const filteredTxns = selectedAccount === "all"
@@ -129,8 +153,10 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
     : txns.filter((t) => t.account_id === selectedAccount);
 
   const spent = filteredTxns.filter((t) => t.direction === "debit").reduce((s, t) => s + t.amount_minor, 0) / 100;
-  const budget = metrics.budget_limit_minor / 100;
-  const pct = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0;
+
+  // Total budget = sum of category limits (for the selected account)
+  const totalBudget = Object.values(categoryLimits).reduce((s, v) => s + v, 0);
+  const pct = totalBudget > 0 ? Math.min((spent / totalBudget) * 100, 100) : 0;
 
   const byCat = new Map<string, number>();
   for (const t of filteredTxns) {
@@ -139,7 +165,21 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
       byCat.set(k, (byCat.get(k) ?? 0) + t.amount_minor / 100);
     }
   }
-  const top = [...byCat.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12);
+
+  // Merge built-in categories + custom ones
+  const allCategoryNames = Array.from(new Set([
+    ...byCat.keys(),
+    ...Object.keys(categoryLimits),
+    ...categories.map((c) => c.name),
+  ])).filter((c) => c !== "Split Parent");
+
+  const categoryRows = allCategoryNames
+    .map((name) => ({
+      name,
+      spent: byCat.get(name) ?? 0,
+      limit: categoryLimits[name] ?? 0,
+    }))
+    .sort((a, b) => b.spent - a.spent || b.limit - a.limit);
 
   const cycleLabel = cycle
     ? `${new Date(cycle.cycle_start).toLocaleDateString("en-NG", { day: "numeric", month: "short" })} → ${new Date(cycle.cycle_end).toLocaleDateString("en-NG", { day: "numeric", month: "short" })}`
@@ -154,9 +194,6 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
           <div className="flex gap-2">
             <IconButton label="Cycle" onClick={() => setIsCycleOpen(true)}>
               <CalendarRange size={16} />
-            </IconButton>
-            <IconButton label="Edit budget" onClick={() => setIsEditOpen(true)}>
-              <Pencil size={16} />
             </IconButton>
             <IconButton label="Manage categories" onClick={() => setIsCatsOpen(true)}>
               <Settings2 size={16} />
@@ -195,11 +232,11 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
         <div className="rounded-3xl bg-[var(--surface-2)] border border-[var(--line)] p-6 flex flex-col items-center">
           <GaugeArc percentage={pct} />
           <p className="text-[13px] text-[var(--text-2)] mt-4">Left to spend</p>
-          <p className="text-[28px] font-bold tabular">{fmt(Math.max(budget - spent, 0))}</p>
+          <p className="text-[28px] font-bold tabular">{fmt(Math.max(totalBudget - spent, 0))}</p>
           <div className="w-full flex justify-between mt-4 pt-4 border-t border-[var(--line)] text-[13px]">
             <div>
-              <p className="text-[var(--text-3)]">Budget</p>
-              <p className="font-semibold">{fmt(budget)}</p>
+              <p className="text-[var(--text-3)]">Total budget</p>
+              <p className="font-semibold">{fmt(totalBudget)}</p>
             </div>
             <div className="text-right">
               <p className="text-[var(--text-3)]">Spent</p>
@@ -209,40 +246,66 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
         </div>
 
         <div>
-          <h3 className="text-[15px] font-semibold mb-3 px-1">By category</h3>
+          <div className="flex items-center justify-between mb-3 px-1">
+            <h3 className="text-[15px] font-semibold">Category budgets</h3>
+            <button
+              onClick={() => setIsBudgetEditorOpen(true)}
+              className="text-[13px] text-[var(--brand)] font-semibold flex items-center gap-1"
+            >
+              <Plus size={14} /> Edit amounts
+            </button>
+          </div>
           <div className="group-list">
-            {top.map(([name, amt]) => (
-              <div key={name} className="flex items-center justify-between px-4 py-3">
-                <span className="text-[15px]">{name}</span>
-                <span className="tabular font-semibold">{fmt(amt)}</span>
-              </div>
-            ))}
-            {top.length === 0 && (
+            {categoryRows.map((row) => {
+              const cat = getCategory(row.name);
+              const Icon = cat.icon;
+              return (
+                <div key={row.name} className="flex items-center gap-3 px-4 py-3">
+                  <div
+                    className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ background: `${cat.color}22`, color: cat.color }}
+                  >
+                    <Icon size={16} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[14px] font-medium truncate">{row.name}</p>
+                    <p className="text-[11px] text-[var(--text-3)] tabular">
+                      {fmt(row.spent)} {row.limit > 0 ? `of ${fmt(row.limit)}` : "· no limit set"}
+                    </p>
+                  </div>
+                  <p className="tabular font-semibold text-[14px]">
+                    {row.limit > 0 && row.spent > row.limit ? (
+                      <span className="text-[var(--danger)]">over</span>
+                    ) : row.limit > 0 ? (
+                      <span className="text-[var(--gain)]">{fmt(row.limit - row.spent)} left</span>
+                    ) : (
+                      <span className="text-[var(--text-3)]">—</span>
+                    )}
+                  </p>
+                </div>
+              );
+            })}
+            {categoryRows.length === 0 && (
               <p className="px-4 py-6 text-center text-[14px] text-[var(--text-3)]">
-                No spending this cycle yet.
+                No categories yet. Add amounts to start your budget.
               </p>
             )}
           </div>
         </div>
       </div>
 
-      <Modal open={isEditOpen} onClose={() => setIsEditOpen(false)} title="Monthly budget">
-        <div className="space-y-3">
-          <Field label="Amount (₦)" type="number" value={limit} onChange={(e) => setLimit(e.target.value)} />
-          <Button onClick={saveLimit}>Save</Button>
-        </div>
-      </Modal>
-
+      {/* Payday cycle */}
       <Modal open={isCycleOpen} onClose={() => setIsCycleOpen(false)} title="Payday cycle">
         <div className="space-y-3">
           <p className="text-[13px] text-[var(--text-2)]">
-            Which day do you get paid? We'll use this as the start of your budget cycle.
+            Which day do you get paid? This becomes the start of your budget cycle.
           </p>
           <Field label="Day of month (1-28)" type="number" value={cycleDay} onChange={(e) => setCycleDay(e.target.value)} />
           <Button onClick={saveCycle}>Save</Button>
         </div>
       </Modal>
 
+      {/* Custom categories */}
       <Modal open={isCatsOpen} onClose={() => setIsCatsOpen(false)} title="Custom categories">
         <div className="space-y-4">
           <div className="flex gap-2">
@@ -250,6 +313,7 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
               value={newCatName}
               onChange={(e) => setNewCatName(e.target.value)}
               placeholder="e.g. Church, Black tax"
+              style={{ fontSize: 16 }}
               className="flex-1 h-11 px-3 rounded-xl bg-[var(--surface-1)] border border-[var(--line-strong)] text-[14px]"
             />
             <Button onClick={addCat} className="!w-auto px-4 !h-11">Add</Button>
@@ -258,7 +322,9 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
             {categories.map((c) => (
               <div key={c.id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-[var(--surface-1)]">
                 <span className="text-[14px]">{c.name}</span>
-                <button onClick={() => removeCat(c.id)} className="text-[var(--danger)] text-[12px]">Delete</button>
+                <button onClick={() => removeCat(c.id, c.name)} className="text-[var(--danger)]">
+                  <Trash2 size={14} />
+                </button>
               </div>
             ))}
             {categories.length === 0 && (
@@ -267,6 +333,26 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
               </p>
             )}
           </div>
+        </div>
+      </Modal>
+
+      {/* Budget editor */}
+      <Modal open={isBudgetEditorOpen} onClose={() => setIsBudgetEditorOpen(false)} title="Set category budgets">
+        <div className="space-y-3">
+          <p className="text-[12px] text-[var(--text-3)] px-1">
+            Enter the amount you plan to spend on each category this cycle. The total is your monthly budget.
+          </p>
+          <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
+            {allCategoryNames.map((name) => (
+              <CurrencyField
+                key={name}
+                label={name}
+                value={categoryLimits[name] ?? 0}
+                onChange={(v) => setCategoryAmount(name, v)}
+              />
+            ))}
+          </div>
+          <Button onClick={() => setIsBudgetEditorOpen(false)}>Done</Button>
         </div>
       </Modal>
     </div>
