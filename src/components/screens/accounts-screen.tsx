@@ -9,6 +9,7 @@ import {
 import { AccountCard } from "@/components/ui/account-card";
 import { Modal } from "@/components/ui/modal";
 import { Field, SelectField, Button } from "@/components/ui/form";
+import { CurrencyField } from "@/components/ui/currency-field";
 import { useCurrency } from "@/lib/currency";
 import { useToast } from "@/components/ui/toast";
 import type { Account, Asset } from "@/lib/types";
@@ -23,9 +24,8 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
   const [name, setName] = useState("");
   const [institution, setInstitution] = useState("");
   const [type, setType] = useState("checking");
-  const [balance, setBalance] = useState("");
+  const [balance, setBalance] = useState(0);
   const [balanceAsOf, setBalanceAsOf] = useState(todayISO());
-
   const [assetType, setAssetType] = useState<"asset" | "liability">("asset");
 
   const { fmt } = useCurrency();
@@ -44,16 +44,13 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
       return;
     }
     try {
-      await createAccount(name, institution, type, parseFloat(balance) || 0, balanceAsOf);
+      await createAccount(name, institution, type, balance, balanceAsOf);
       toast("Account created");
       setModal(null);
-      setName("");
-      setInstitution("");
-      setBalance("");
-      setBalanceAsOf(todayISO());
+      setName(""); setInstitution(""); setBalance(0); setBalanceAsOf(todayISO());
       load();
     } catch (e: any) {
-      toast(e.message ?? "Could not create account", "err");
+      toast(e.message ?? "Could not create", "err");
     }
   };
 
@@ -63,11 +60,10 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
       return;
     }
     try {
-      await addAsset(name, assetType, parseFloat(balance) || 0);
+      await addAsset(name, assetType, balance);
       toast("Added");
       setModal(null);
-      setName("");
-      setBalance("");
+      setName(""); setBalance(0);
       load();
     } catch (e: any) {
       toast(e.message ?? "Could not add", "err");
@@ -101,9 +97,6 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
         <div className="rounded-3xl bg-[var(--surface-2)] border border-[var(--line)] p-6 text-center">
           <p className="text-[13px] text-[var(--text-2)] mb-1">Liquid assets</p>
           <p className="text-[32px] font-bold tabular">{fmt(total)}</p>
-          <p className="text-[11px] text-[var(--text-3)] mt-1">
-            Balance = anchor + posted transactions after anchor date
-          </p>
         </div>
 
         <div>
@@ -121,9 +114,7 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
               </div>
             ))}
             {accounts.length === 0 && (
-              <p className="px-4 py-6 text-center text-[14px] text-[var(--text-3)]">
-                No accounts. Tap + to add one.
-              </p>
+              <p className="px-4 py-6 text-center text-[14px] text-[var(--text-3)]">No accounts. Tap + to add one.</p>
             )}
           </div>
         </div>
@@ -173,23 +164,12 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
             <option value="wallet">Wallet</option>
             <option value="dom">Domiciliary</option>
           </SelectField>
-          <Field
-            label="How much is in it right now? (₦)"
-            type="number"
+          <CurrencyField
+            label="How much is in it right now?"
             value={balance}
-            onChange={(e) => setBalance(e.target.value)}
-            placeholder="0.00"
+            onChange={setBalance}
           />
-          <Field
-            label="As of date"
-            type="date"
-            value={balanceAsOf}
-            onChange={(e) => setBalanceAsOf(e.target.value)}
-          />
-          <p className="text-[11px] text-[var(--text-3)] px-1">
-            The balance you enter is an anchor. Transactions dated before it won't move this balance.
-            You can re-anchor any time by checking the balance again.
-          </p>
+          <Field label="As of date" type="date" value={balanceAsOf} onChange={(e) => setBalanceAsOf(e.target.value)} />
           <Button onClick={addAcc} disabled={!name || !institution || !balance}>Create account</Button>
         </div>
       </Modal>
@@ -197,11 +177,11 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
       <Modal open={modal === "asset"} onClose={() => setModal(null)} title="Add Asset / Liability">
         <div className="space-y-3">
           <SelectField label="Type" value={assetType} onChange={(e) => setAssetType(e.target.value as "asset" | "liability")}>
-            <option value="asset">Asset (adds to net worth)</option>
-            <option value="liability">Liability (subtracts from net worth)</option>
+            <option value="asset">Asset (adds to net)</option>
+            <option value="liability">Liability (subtracts from net)</option>
           </SelectField>
           <Field label="Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Land in Lekki" />
-          <Field label="Value (₦)" type="number" value={balance} onChange={(e) => setBalance(e.target.value)} />
+          <CurrencyField label="Value" value={balance} onChange={setBalance} />
           <Button onClick={addA}>Save</Button>
         </div>
       </Modal>

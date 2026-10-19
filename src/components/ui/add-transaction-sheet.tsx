@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Modal } from "./modal";
 import { Field, SelectField, Button } from "./form";
+import { CurrencyField } from "./currency-field";
 import { useToast } from "./toast";
 import { CATEGORY_NAMES } from "@/lib/categories";
 import { getAccounts, createTransaction } from "@/lib/supabase/database";
@@ -12,7 +13,7 @@ export function AddTransactionSheet({ isOpen, onClose, onSaved }: { isOpen: bool
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [accountId, setAccountId] = useState("");
   const [desc, setDesc] = useState("");
-  const [amount, setAmount] = useState("");
+  const [amount, setAmount] = useState(0);
   const [direction, setDirection] = useState<"debit" | "credit">("debit");
   const [category, setCategory] = useState("Groceries");
   const [saving, setSaving] = useState(false);
@@ -26,13 +27,24 @@ export function AddTransactionSheet({ isOpen, onClose, onSaved }: { isOpen: bool
     if (!accountId || !desc || !amount) return;
     setSaving(true);
     try {
-      await createTransaction({ account_id: accountId, amount: parseFloat(amount), direction, description: desc, category, date: new Date().toISOString() });
+      await createTransaction({
+        account_id: accountId,
+        amount,
+        direction,
+        description: desc,
+        category,
+        date: new Date().toISOString(),
+      });
       toast("Transaction added");
       onSaved();
       onClose();
-      setDesc(""); setAmount("");
-    } catch (e) { toast("Could not save", "err"); }
-    finally { setSaving(false); }
+      setDesc("");
+      setAmount(0);
+    } catch {
+      toast("Could not save", "err");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -43,7 +55,7 @@ export function AddTransactionSheet({ isOpen, onClose, onSaved }: { isOpen: bool
           {accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
         </SelectField>
         <Field label="Description" value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="e.g. Uber trip" />
-        <Field label="Amount (₦)" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" />
+        <CurrencyField label="Amount" value={amount} onChange={setAmount} />
         <SelectField label="Direction" value={direction} onChange={(e) => setDirection(e.target.value as "debit" | "credit")}>
           <option value="debit">Money out</option>
           <option value="credit">Money in</option>
