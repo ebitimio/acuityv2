@@ -229,13 +229,13 @@ export default function SandboxPage() {
     }
   };
 
-  // Splash runs FIRST, before auth check completes
   if (showSplash) return <SplashScreen onComplete={() => setShowSplash(false)} />;
   if (isAuthLoading) return <div className="min-h-[100dvh] bg-black" />;
   if (!session) return <AuthScreen />;
   if (isLoading) return <HomeSkeleton />;
 
   const m = metrics ?? ZERO_METRICS;
+  const netAcrossAccounts = m.net_worth_minor / 100;
   const totalSpentNGN = m.total_spent_minor / 100;
   const totalIncomeNGN = m.total_income_minor / 100;
   const showChecklist = !!setupStatus && !setupStatus.is_complete && !checklistDismissed;
@@ -332,7 +332,11 @@ export default function SandboxPage() {
               </div>
             )}
 
-            <SafeToSpendHero data={safeToSpend} />
+            <SafeToSpendHero
+              data={safeToSpend}
+              netAcross={netAcrossAccounts}
+              hasAccounts={(safeToSpend?.liquid_minor ?? 0) > 0}
+            />
 
             <div className="flex gap-2.5 mt-4">
               <button

@@ -15,8 +15,16 @@ import { Field, Button } from "@/components/ui/form";
 import { useToast } from "@/components/ui/toast";
 import type { Txn, HomeMetrics, Account, CustomCategory } from "@/lib/types";
 
+const ZERO_METRICS: HomeMetrics = {
+  net_worth_minor: 0,
+  total_spent_minor: 0,
+  total_income_minor: 0,
+  budget_limit_minor: 0,
+  uncategorized_count: 0,
+};
+
 export function BudgetScreen({ onBack }: { onBack: () => void }) {
-  const [metrics, setMetrics] = useState<HomeMetrics | null>(null);
+  const [metrics, setMetrics] = useState<HomeMetrics>(ZERO_METRICS);
   const [txns, setTxns] = useState<Txn[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<CustomCategory[]>([]);
@@ -32,21 +40,49 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
   const toast = useToast();
 
   const load = async () => {
-    const [m, t, accs, cats, cyc] = await Promise.all([
-      getHomeMetrics(),
-      getTransactionsSince(startOfMonthISO()),
-      getAccounts(),
-      getCustomCategories(),
-      getCurrentCycle(),
-    ]);
-    setMetrics(m);
-    setTxns(t);
-    setAccounts(accs);
-    setCategories(cats);
-    setCycle(cyc);
-    setLimit(String(m.budget_limit_minor / 100));
-    setCycleDay("1");
+    // Each piece is independently safe — one failure can't blank the screen
+    try {
+      const m = await getHomeMetrics();
+      setMetrics(m ?? ZERO_METRICS);
+      setLimit(String((m?.budget_limit_minor ?? 0) / 100));
+    } catch (e: any) {
+      console.error("getHomeMetrics failed:", e);
+      setMetrics(ZERO_METRICS);
+    }
+
+    try {
+      const t = await getTransactionsSince(startOfMonthISO());
+      setTxns(t ?? []);
+    } catch (e: any) {
+      console.error("getTransactionsSince failed:", e);
+      setTxns([]);
+    }
+
+    try {
+      const accs = await getAccounts();
+      setAccounts(accs ?? []);
+    } catch (e: any) {
+      console.error("getAccounts failed:", e);
+      setAccounts([]);
+    }
+
+    try {
+      const cats = await getCustomCategories();
+      setCategories(cats ?? []);
+    } catch (e: any) {
+      console.error("getCustomCategories failed:", e);
+      setCategories([]);
+    }
+
+    try {
+      const cyc = await getCurrentCycle();
+      setCycle(cyc);
+    } catch (e: any) {
+      console.error("getCurrentCycle failed:", e);
+      setCycle(null);
+    }
   };
+
   useEffect(() => { load(); }, []);
 
   const saveLimit = async () => {
@@ -87,8 +123,6 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
     await deleteCustomCategory(id);
     load();
   };
-
-  if (!metrics) return <div className="min-h-[100dvh] bg-black" />;
 
   const filteredTxns = selectedAccount === "all"
     ? txns
@@ -132,11 +166,10 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
       />
 
       <div className="px-4 pt-6 space-y-5">
-        {/* Cycle + account picker */}
-        <div className="flex gap-2 overflow-x-auto">
+        <div className="flex gap-2 overflow-x-auto pb-1">
           <button
             onClick={() => setSelectedAccount("all")}
-            className={`px-3 py-1.5 rounded-full text-[12px] font-semibold ${
+            className={`px-3 py-1.5 rounded-full text-[12px] font-semibold shrink-0 ${
               selectedAccount === "all" ? "bg-[var(--brand)] text-white" : "bg-white/10 text-white/70"
             }`}
           >
@@ -146,7 +179,7 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
             <button
               key={a.id}
               onClick={() => setSelectedAccount(a.id)}
-              className={`px-3 py-1.5 rounded-full text-[12px] font-semibold whitespace-nowrap ${
+              className={`px-3 py-1.5 rounded-full text-[12px] font-semibold whitespace-nowrap shrink-0 ${
                 selectedAccount === a.id ? "bg-[var(--brand)] text-white" : "bg-white/10 text-white/70"
               }`}
             >
@@ -193,7 +226,6 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
         </div>
       </div>
 
-      {/* Edit monthly budget */}
       <Modal open={isEditOpen} onClose={() => setIsEditOpen(false)} title="Monthly budget">
         <div className="space-y-3">
           <Field label="Amount (₦)" type="number" value={limit} onChange={(e) => setLimit(e.target.value)} />
@@ -201,7 +233,6 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
         </div>
       </Modal>
 
-      {/* Edit payday cycle */}
       <Modal open={isCycleOpen} onClose={() => setIsCycleOpen(false)} title="Payday cycle">
         <div className="space-y-3">
           <p className="text-[13px] text-[var(--text-2)]">
@@ -212,7 +243,6 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
         </div>
       </Modal>
 
-      {/* Manage custom categories */}
       <Modal open={isCatsOpen} onClose={() => setIsCatsOpen(false)} title="Custom categories">
         <div className="space-y-4">
           <div className="flex gap-2">
