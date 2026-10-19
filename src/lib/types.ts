@@ -105,3 +105,21 @@ export interface StatementLine {
   bank_ref: string | null;
   category: string | null;
 }
+export interface CustomCategory {
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+  kind: "expense" | "income" | "both";
+}
+
+export interface CategoryRule {
+  id: string;
+  merchant_pattern: string;
+  category: string;
+}
+
+export interface CycleBounds {
+  cycle_start: string;
+  cycle_end: string;
+}

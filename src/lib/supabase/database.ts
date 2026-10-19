@@ -434,3 +434,79 @@ export async function getSafeToSpend(): Promise<SafeToSpend> {
   if (error) throw error;
   return data as SafeToSpend;
 }
+/* ---------- payday cycle ---------- */
+
+export async function getCurrentCycle(): Promise<{ cycle_start: string; cycle_end: string }> {
+  const { sb } = await ctx();
+  const { data, error } = await sb.rpc("get_current_cycle");
+  if (error) throw error;
+  return data as { cycle_start: string; cycle_end: string };
+}
+
+export async function updateCycleStartDay(day: number): Promise<void> {
+  const { sb, workspaceId } = await ctx();
+  const safe = Math.max(1, Math.min(day, 28));
+  const { error } = await sb.from("workspaces").update({ cycle_start_day: safe }).eq("id", workspaceId);
+  if (error) throw error;
+}
+
+/* ---------- custom categories ---------- */
+
+export async function getCustomCategories(): Promise<import("@/lib/types").CustomCategory[]> {
+  const { sb, workspaceId } = await ctx();
+  const { data, error } = await sb
+    .from("custom_categories")
+    .select("id,name,icon,color,kind")
+    .eq("workspace_id", workspaceId)
+    .order("created_at");
+  if (error) throw error;
+  return (data ?? []) as any;
+}
+
+export async function addCustomCategory(
+  name: string,
+  icon = "Tag",
+  color = "#8fb3a3",
+  kind: "expense" | "income" | "both" = "expense"
+): Promise<void> {
+  const { sb, workspaceId } = await ctx();
+  const { error } = await sb.from("custom_categories").insert({
+    workspace_id: workspaceId,
+    name: name.trim(),
+    icon,
+    color,
+    kind,
+  });
+  if (error) throw error;
+}
+
+export async function deleteCustomCategory(id: string): Promise<void> {
+  await removeRow("custom_categories", id);
+}
+
+/* ---------- category rules (memory) ---------- */
+
+export async function getCategoryRules(): Promise<import("@/lib/types").CategoryRule[]> {
+  const { sb, workspaceId } = await ctx();
+  const { data, error } = await sb
+    .from("category_rules")
+    .select("id,merchant_pattern,category")
+    .eq("workspace_id", workspaceId);
+  if (error) throw error;
+  return (data ?? []) as any;
+}
+
+export async function addCategoryRule(merchantPattern: string, category: string): Promise<void> {
+  const { sb, workspaceId } = await ctx();
+  const { error } = await sb
+    .from("category_rules")
+    .upsert(
+      { workspace_id: workspaceId, merchant_pattern: merchantPattern.toLowerCase().trim(), category },
+      { onConflict: "workspace_id,merchant_pattern" }
+    );
+  if (error) throw error;
+}
+
+export async function deleteCategoryRule(id: string): Promise<void> {
+  await removeRow("category_rules", id);
+}
