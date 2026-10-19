@@ -55,44 +55,24 @@ export function AuthScreen() {
 
   return (
     <div className="relative w-full min-h-[100dvh] overflow-hidden">
-      {/* PAINT LAYER — fixed to the screen with 240px overscan at top and bottom.
-          Because it's `fixed`, iOS clips nothing — the gradient is painted 240px
-          below the home indicator, so the black strip can never show through. */}
+      {/* One tall absolute gradient that reaches far past the bottom of the screen.
+          Nothing clips it because it's inside a 100dvh wrapper with overflow hidden,
+          but its height is 250vh so it always fills the visible region. */}
       <div
         aria-hidden
-        className="fixed inset-0"
+        className="absolute top-0 left-0 w-full"
         style={{
+          height: "250vh",
           background:
             "linear-gradient(160deg, #7a0e0e 0%, #b3391f 35%, #e87a1a 75%, #ffb347 100%)",
         }}
       />
-      <div
-        aria-hidden
-        className="fixed"
-        style={{
-          left: 0,
-          right: 0,
-          top: 0,
-          height: "240px",
-          background: "#7a0e0e",
-        }}
-      />
-      <div
-        aria-hidden
-        className="fixed"
-        style={{
-          left: 0,
-          right: 0,
-          bottom: 0,
-          height: "240px",
-          background: "#ffb347",
-        }}
-      />
 
-      {/* CONTENT LAYER — scrolls on top of the paint. */}
+      {/* Content scrolls on top. */}
       <div
-        className="relative z-10 flex min-h-[100dvh] flex-col items-center justify-start px-6 overflow-y-auto"
+        className="relative z-10 flex flex-col items-center justify-start px-6"
         style={{
+          minHeight: "100dvh",
           paddingTop: "calc(env(safe-area-inset-top) + 32px)",
           paddingBottom: "calc(env(safe-area-inset-bottom) + 32px)",
         }}

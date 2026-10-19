@@ -39,15 +39,17 @@
   box-sizing: border-box;
 }
 
-/* html paints the base black; body is transparent so the AmbientBackground shows through */
+/* html background = top of gradient, so the status bar / notch strip is never black */
 html {
-  background: var(--bg);
+  background: #7a0e0e;
+  min-height: 100%;
 }
 
+/* body background = bottom of gradient, so the home-indicator strip is never black */
 body {
   margin: 0;
   padding: 0;
-  background: transparent;
+  background: #ffb347;
   color: var(--text-1);
   font-family: var(--font-ui), -apple-system, "SF Pro Text", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -57,6 +59,11 @@ body {
   -webkit-tap-highlight-color: transparent;
   min-height: 100vh;
   min-height: 100dvh;
+}
+
+/* Every screen that should be dark overrides body with this */
+.dark-screen {
+  background: var(--bg);
 }
 
 /* iOS auto-zooms on inputs with font-size < 16px. Force 16px everywhere. */
