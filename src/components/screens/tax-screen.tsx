@@ -34,7 +34,7 @@ export function TaxScreen({ onBack }: { onBack: () => void }) {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-black pb-32">
+    <div className="min-h-[100dvh] pb-32">
       <ScreenHeader title="Tax Estimator" onBack={onBack} />
       <div className="px-4 pt-6 space-y-5">
         <div className="rounded-3xl bg-[var(--surface-2)] border border-[var(--line)] p-6">

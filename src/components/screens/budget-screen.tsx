@@ -151,7 +151,7 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
     : "";
 
   return (
-    <div className="min-h-[100dvh] bg-black pb-32">
+    <div className="min-h-[100dvh] pb-32">
       <ScreenHeader
         title="Budget"
         onBack={onBack}

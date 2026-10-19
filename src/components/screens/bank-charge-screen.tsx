@@ -15,7 +15,7 @@ export function BankChargeScreen({ onBack }: { onBack: () => void }) {
   const audit = auditCharges(txns as any);
 
   return (
-    <div className="min-h-[100dvh] bg-black pb-32">
+    <div className="min-h-[100dvh] pb-32">
       <ScreenHeader title="Bank Charges" onBack={onBack} />
       <div className="px-4 pt-6 space-y-4">
         <div className="rounded-3xl bg-[var(--surface-2)] border border-[var(--line)] p-6 text-center">

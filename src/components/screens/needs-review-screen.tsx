@@ -37,10 +37,10 @@ export function NeedsReviewScreen({ onBack, onResolved }: { onBack: () => void; 
 
   const swipe = () => { setItems(prev => prev.slice(1)); x.set(0); };
 
-  if (loading) return <div className="min-h-[100dvh] bg-black" />;
+  if (loading) return <div className="min-h-[100dvh]" />;
 
   return (
-    <div className="min-h-[100dvh] bg-black pb-32">
+    <div className="min-h-[100dvh] pb-32">
       <ScreenHeader title="Needs Review" onBack={onBack} />
 
       {items.length === 0 ? (

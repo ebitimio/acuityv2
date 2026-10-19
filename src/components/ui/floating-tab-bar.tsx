@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { Home, PieChart, Wallet, Sparkles, Plus } from "lucide-react";
 import { GlassSurface } from "./glass-surface";
+import { spring } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 const TABS = [
@@ -25,9 +26,9 @@ export function FloatingTabBar({ activeTab, onTabChange, onAddClick, isHidden }:
       aria-label="Main"
       initial={false}
       animate={{ y: isHidden ? 160 : 0 }}
-      transition={{ duration: 0.28, ease: "easeInOut" }}
+      transition={spring.snappy}
       className="pointer-events-none fixed bottom-0 left-0 right-0 z-[60] flex justify-center px-4 pt-6"
-      style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 4px)" }}
+      style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 6px)" }}
     >
       <div className="absolute inset-x-0 bottom-0 -z-10 h-32 bg-gradient-to-t from-black via-black/80 to-transparent" />
 
@@ -41,10 +42,12 @@ export function FloatingTabBar({ activeTab, onTabChange, onAddClick, isHidden }:
             const active = activeTab === tab.id;
             const Icon = tab.icon;
             return (
-              <button
+              <motion.button
                 key={tab.id}
                 onClick={() => onTabChange(tab.id)}
                 aria-current={active ? "page" : undefined}
+                whileTap={{ scale: 0.88 }}
+                transition={spring.snappy}
                 className={cn(
                   "relative flex h-full flex-1 flex-col items-center justify-center gap-0.5 rounded-full transition-colors",
                   active ? "text-[var(--brand)]" : "text-white/55 hover:text-white"
@@ -57,25 +60,31 @@ export function FloatingTabBar({ activeTab, onTabChange, onAddClick, isHidden }:
                     style={{
                       background:
                         "radial-gradient(circle at 50% 100%, rgba(249,115,22,0.35) 0%, rgba(249,115,22,0.08) 70%, transparent 100%)",
-                      boxShadow: "0 0 16px rgba(249,115,22,0.35), inset 0 0 12px rgba(249,115,22,0.15)",
+                      boxShadow:
+                        "0 0 16px rgba(249,115,22,0.35), inset 0 0 12px rgba(249,115,22,0.15)",
                     }}
-                    transition={{ type: "spring", stiffness: 520, damping: 38 }}
+                    transition={spring.liquid}
                   />
                 )}
                 <Icon size={21} strokeWidth={active ? 2.5 : 2} className="relative" />
                 <span className="relative text-[10px] font-semibold">{tab.label}</span>
-              </button>
+              </motion.button>
             );
           })}
         </GlassSurface>
 
-        <button
-          aria-label="Add"
+        <GlassSurface
+          as="button"
+          interactive
+          tier="thick"
+          rim
           onClick={onAddClick}
-          className="press h-[64px] w-[64px] shrink-0 rounded-full bg-[var(--brand)] text-white shadow-[0_8px_30px_rgba(249,115,22,0.4)]"
+          className="flex h-[64px] w-[64px] shrink-0 items-center justify-center text-white"
+          tint="rgba(249,115,22,0.75)"
+          aria-label="Add"
         >
-          <Plus size={30} strokeWidth={2.5} className="mx-auto" />
-        </button>
+          <Plus size={30} strokeWidth={2.5} />
+        </GlassSurface>
       </div>
     </motion.nav>
   );

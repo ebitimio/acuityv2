@@ -18,6 +18,8 @@ import { SetupChecklist } from "@/components/screens/setup-checklist";
 import { SetupWizard } from "@/components/screens/setup-wizard";
 import { SafeToSpendHero } from "@/components/ui/safe-to-spend";
 import { RunwayCards } from "@/components/ui/runway-card";
+import { ScreenTransition } from "@/components/ui/screen-transition";
+import { PullToRefresh } from "@/components/ui/pull-to-refresh";
 import { useCurrency } from "@/lib/currency";
 import { useToast } from "@/components/ui/toast";
 import { AnalyticsScreen } from "@/components/screens/analytics-screen";
@@ -56,7 +58,7 @@ export default function SandboxPage() {
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const supabase = createClient();
   const toast = useToast();
-  const { hidden, toggleHidden } = useCurrency();
+  const { hidden, toggleHidden, fmt } = useCurrency();
   const { workspaces, active: activeWs, setActive: setActiveWs, createWorkspace, deleteWorkspace } = useWorkspace();
 
   const [showSplash, setShowSplash] = useState(true);
@@ -150,6 +152,10 @@ export default function SandboxPage() {
     }
   }, [showSplash, session]);
 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [activeScreen]);
+
   const handleTabChange = (tabId: string) => {
     if (tabId === "advisor") { setIsAdvisorOpen(true); return; }
     setActiveScreen(tabId);
@@ -232,7 +238,7 @@ export default function SandboxPage() {
   };
 
   if (showSplash) return <SplashScreen onComplete={() => setShowSplash(false)} />;
-  if (isAuthLoading) return <div className="min-h-[100dvh] bg-black" />;
+  if (isAuthLoading) return <div className="min-h-[100dvh]" />;
   if (!session) return <AuthScreen />;
   if (isLoading) return <HomeSkeleton />;
 
@@ -243,270 +249,274 @@ export default function SandboxPage() {
   const showChecklist = !!setupStatus && !setupStatus.is_complete && !checklistDismissed;
 
   return (
-    <main className="min-h-[100dvh] bg-black relative overflow-x-hidden flex flex-col">
-      {activeScreen === "analytics" ? (
-        <AnalyticsScreen onBack={() => setActiveScreen("home")} />
-      ) : activeScreen === "budget" ? (
-        <BudgetScreen onBack={() => setActiveScreen("home")} />
-      ) : activeScreen === "accounts" ? (
-        <AccountsScreen onBack={() => setActiveScreen("home")} />
-      ) : activeScreen === "commitments" ? (
-        <CommitmentsScreen onBack={() => setActiveScreen("home")} />
-      ) : activeScreen === "tax" ? (
-        <TaxScreen onBack={() => setActiveScreen("home")} />
-      ) : activeScreen === "needs-review" ? (
-        <NeedsReviewScreen onBack={() => setActiveScreen("home")} onResolved={refreshData} />
-      ) : activeScreen === "ajo" ? (
-        <AjoScreen onBack={() => setActiveScreen("home")} />
-      ) : activeScreen === "bank-charge" ? (
-        <BankChargeScreen onBack={() => setActiveScreen("home")} />
-      ) : (
-        <div className="flex-1 overflow-y-auto pb-32">
-          <div
-            className="relative pt-[calc(env(safe-area-inset-top)+12px)] pb-5 px-5 rounded-b-[36px] overflow-hidden"
-            style={{
-              background: "linear-gradient(160deg, #7a0e0e 0%, #b3391f 35%, #e87a1a 75%, #ffb347 100%)",
-            }}
-          >
-            <div className="flex justify-between items-center mb-4">
-              <button
-                onClick={() => setWsOpen((v) => !v)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-md border border-white/30"
+    <main className="min-h-[100dvh] relative overflow-x-hidden flex flex-col">
+      <PullToRefresh onRefresh={refreshData}>
+        <ScreenTransition id={activeScreen}>
+          {activeScreen === "analytics" ? (
+            <AnalyticsScreen onBack={() => setActiveScreen("home")} />
+          ) : activeScreen === "budget" ? (
+            <BudgetScreen onBack={() => setActiveScreen("home")} />
+          ) : activeScreen === "accounts" ? (
+            <AccountsScreen onBack={() => setActiveScreen("home")} />
+          ) : activeScreen === "commitments" ? (
+            <CommitmentsScreen onBack={() => setActiveScreen("home")} />
+          ) : activeScreen === "tax" ? (
+            <TaxScreen onBack={() => setActiveScreen("home")} />
+          ) : activeScreen === "needs-review" ? (
+            <NeedsReviewScreen onBack={() => setActiveScreen("home")} onResolved={refreshData} />
+          ) : activeScreen === "ajo" ? (
+            <AjoScreen onBack={() => setActiveScreen("home")} />
+          ) : activeScreen === "bank-charge" ? (
+            <BankChargeScreen onBack={() => setActiveScreen("home")} />
+          ) : (
+            <div className="flex-1 overflow-y-auto pb-32">
+              <div
+                className="relative pt-[calc(env(safe-area-inset-top)+12px)] pb-5 px-5 rounded-b-[36px]"
+                style={{
+                  background: "linear-gradient(160deg, #7a0e0e 0%, #b3391f 35%, #e87a1a 75%, #ffb347 100%)",
+                }}
               >
-                <div className="w-6 h-6 rounded-full bg-white/30 flex items-center justify-center text-[10px] font-bold text-white">
-                  {(activeWs?.name ?? "P").charAt(0).toUpperCase()}
+                <div className="flex justify-between items-center mb-4">
+                  <button
+                    onClick={() => setWsOpen((v) => !v)}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-md border border-white/30"
+                  >
+                    <div className="w-6 h-6 rounded-full bg-white/30 flex items-center justify-center text-[10px] font-bold text-white">
+                      {(activeWs?.name ?? "P").charAt(0).toUpperCase()}
+                    </div>
+                    <span className="text-[13px] font-medium text-white max-w-[120px] truncate">
+                      {activeWs?.name ?? "Personal"}
+                    </span>
+                    <ChevronDown size={14} className="text-white/70" />
+                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={toggleHidden}
+                      className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30"
+                    >
+                      {hidden ? <EyeOff size={14} className="text-white" /> : <Eye size={14} className="text-white" />}
+                    </button>
+                    <button
+                      onClick={() => setIsSettingsOpen(true)}
+                      className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30"
+                    >
+                      <Bell size={14} className="text-white" />
+                    </button>
+                  </div>
                 </div>
-                <span className="text-[13px] font-medium text-white max-w-[120px] truncate">
-                  {activeWs?.name ?? "Personal"}
-                </span>
-                <ChevronDown size={14} className="text-white/70" />
-              </button>
-              <div className="flex gap-2">
+
+                {wsOpen && (
+                  <div className="absolute top-14 left-4 z-50 bg-[var(--surface-2)] border border-[var(--line-strong)] rounded-2xl shadow-2xl p-2 w-64">
+                    {workspaces.map((w) => {
+                      const isActive = w.id === activeWs?.id;
+                      const canDelete = workspaces.length > 1;
+                      return (
+                        <div
+                          key={w.id}
+                          className={`flex items-center justify-between px-3 py-2 rounded-lg text-[14px] ${
+                            isActive ? "bg-[var(--brand)]/20 text-[var(--brand)]" : "hover:bg-white/5 text-white"
+                          }`}
+                        >
+                          <button onClick={() => handleSwitchWorkspace(w.id)} className="flex-1 text-left truncate">
+                            {w.name}
+                          </button>
+                          {canDelete && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleDeleteWorkspace(w); }}
+                              className="p-1 text-[var(--danger)] hover:bg-[var(--danger)]/20 rounded ml-2"
+                              aria-label={`Delete ${w.name}`}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                    <div className="h-px bg-white/10 my-1" />
+                    <button
+                      onClick={() => { setWsOpen(false); setWsCreateOpen(true); }}
+                      className="w-full flex items-center gap-1.5 px-3 py-2 rounded-lg text-[14px] text-[var(--brand)] hover:bg-white/5"
+                    >
+                      <Plus size={14} /> Create workspace
+                    </button>
+                  </div>
+                )}
+
+                <SafeToSpendHero
+                  data={safeToSpend}
+                  netAcross={netAcrossAccounts}
+                  hasAccounts={(safeToSpend?.liquid_minor ?? 0) > 0}
+                />
+
+                <div className="flex gap-2.5 mt-4">
+                  <button
+                    onClick={() => setActiveScreen("budget")}
+                    className="flex-1 py-2.5 bg-white/20 backdrop-blur-xl border border-white/30 rounded-2xl text-[13px] font-semibold text-white flex items-center justify-center gap-2 hover:bg-white/30 transition-colors"
+                  >
+                    <TrendingUp size={15} /> Monitoring
+                  </button>
+                  <button
+                    onClick={() => setIsImportOpen(true)}
+                    className="flex-1 py-2.5 bg-white/20 backdrop-blur-xl border border-white/30 rounded-2xl text-[13px] font-semibold text-white flex items-center justify-center gap-2 hover:bg-white/30 transition-colors"
+                  >
+                    <ArrowLeftRight size={15} /> Import
+                  </button>
+                </div>
+              </div>
+
+              <div className="px-4 mt-4">
+                <RunwayCards
+                  safe={safeToSpend}
+                  metrics={metrics}
+                  onOpenUpcoming={() => setIsUpcomingOpen(true)}
+                  onOpenBudget={() => setActiveScreen("budget")}
+                />
+              </div>
+
+              {setupError && (
+                <div className="px-4 mt-2">
+                  <p className="text-[11px] text-[var(--danger)]">Setup status failed: {setupError}</p>
+                </div>
+              )}
+
+              {showChecklist && (
+                <div className="px-4 mt-4">
+                  <SetupChecklist
+                    status={setupStatus!}
+                    onStartStep={handleStartSetupStep}
+                    onDismiss={handleDismissChecklist}
+                  />
+                </div>
+              )}
+
+              <div className="px-4 mt-4 grid grid-cols-2 gap-3">
                 <button
-                  onClick={toggleHidden}
-                  className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30"
+                  onClick={() => setActiveScreen("commitments")}
+                  className="rounded-3xl bg-gradient-to-b from-[#3a1a0a] to-[#0a0a0a] border border-white/10 p-4 flex flex-col justify-between text-left hover:border-[#e87a1a]/50 transition-colors aspect-[4/3]"
                 >
-                  {hidden ? <EyeOff size={14} className="text-white" /> : <Eye size={14} className="text-white" />}
+                  <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
+                    <CalendarDays size={20} className="text-white/80" />
+                  </div>
+                  <div>
+                    <p className="text-[15px] font-semibold text-white">Commitments</p>
+                    <p className="text-[11px] text-white/50 mt-1 leading-snug">Bills & funds.</p>
+                  </div>
                 </button>
                 <button
-                  onClick={() => setIsSettingsOpen(true)}
-                  className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30"
+                  onClick={() => setActiveScreen("tax")}
+                  className="rounded-3xl bg-gradient-to-b from-[#3a1a0a] to-[#0a0a0a] border border-white/10 p-4 flex flex-col justify-between text-left hover:border-[#e87a1a]/50 transition-colors aspect-[4/3]"
                 >
-                  <Bell size={14} className="text-white" />
+                  <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
+                    <FileText size={20} className="text-white/80" />
+                  </div>
+                  <div>
+                    <p className="text-[15px] font-semibold text-white">Tax Estimator</p>
+                    <p className="text-[11px] text-white/50 mt-1 leading-snug">PIT & LIRS.</p>
+                  </div>
+                </button>
+                <button
+                  onClick={() => setActiveScreen("ajo")}
+                  className="rounded-3xl bg-gradient-to-b from-[#3a1a0a] to-[#0a0a0a] border border-white/10 p-4 flex flex-col justify-between text-left hover:border-[#e87a1a]/50 transition-colors aspect-[4/3]"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
+                    <Users size={20} className="text-white/80" />
+                  </div>
+                  <div>
+                    <p className="text-[15px] font-semibold text-white">Ajo Tracker</p>
+                    <p className="text-[11px] text-white/50 mt-1 leading-snug">Cooperative groups.</p>
+                  </div>
+                </button>
+                <button
+                  onClick={() => setActiveScreen("bank-charge")}
+                  className="rounded-3xl bg-gradient-to-b from-[#3a1a0a] to-[#0a0a0a] border border-white/10 p-4 flex flex-col justify-between text-left hover:border-[#e87a1a]/50 transition-colors aspect-[4/3]"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
+                    <ShieldAlert size={20} className="text-white/80" />
+                  </div>
+                  <div>
+                    <p className="text-[15px] font-semibold text-white">Bank Charges</p>
+                    <p className="text-[11px] text-white/50 mt-1 leading-snug">Fee auditor.</p>
+                  </div>
                 </button>
               </div>
-            </div>
 
-            {wsOpen && (
-              <div className="absolute top-14 left-4 z-50 bg-[var(--surface-2)] border border-[var(--line-strong)] rounded-2xl shadow-2xl p-2 w-64">
-                {workspaces.map((w) => {
-                  const isActive = w.id === activeWs?.id;
-                  const canDelete = workspaces.length > 1;
-                  return (
-                    <div
-                      key={w.id}
-                      className={`flex items-center justify-between px-3 py-2 rounded-lg text-[14px] ${
-                        isActive ? "bg-[var(--brand)]/20 text-[var(--brand)]" : "hover:bg-white/5 text-white"
+              <div className="px-4 mt-4">
+                <div className="flex items-center justify-between mb-3 px-1">
+                  <h3 className="text-[17px] font-semibold text-white">Monthly expenses</h3>
+                  <span className="text-[13px] font-medium text-[var(--brand)]">↓ {fmt(totalSpentNGN)}</span>
+                </div>
+                <div className="flex justify-between items-center bg-[#17191A] rounded-3xl p-5 border border-white/5">
+                  <div className="text-center">
+                    <p className="text-[11px] text-white/50 mb-1">Spent</p>
+                    <p className="text-[15px] font-semibold text-white">{fmt(totalSpentNGN)}</p>
+                  </div>
+                  <div className="w-px h-8 bg-white/10" />
+                  <div className="text-center">
+                    <p className="text-[11px] text-white/50 mb-1">Income</p>
+                    <p className="text-[15px] font-semibold text-white">{fmt(totalIncomeNGN)}</p>
+                  </div>
+                  <div className="w-px h-8 bg-white/10" />
+                  <div className="text-center">
+                    <p className="text-[11px] text-white/50 mb-1">Net</p>
+                    <p
+                      className={`text-[15px] font-semibold ${
+                        totalIncomeNGN - totalSpentNGN >= 0 ? "text-[var(--gain)]" : "text-[var(--danger)]"
                       }`}
                     >
-                      <button onClick={() => handleSwitchWorkspace(w.id)} className="flex-1 text-left truncate">
-                        {w.name}
-                      </button>
-                      {canDelete && (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleDeleteWorkspace(w); }}
-                          className="p-1 text-[var(--danger)] hover:bg-[var(--danger)]/20 rounded ml-2"
-                          aria-label={`Delete ${w.name}`}
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-                <div className="h-px bg-white/10 my-1" />
-                <button
-                  onClick={() => { setWsOpen(false); setWsCreateOpen(true); }}
-                  className="w-full flex items-center gap-1.5 px-3 py-2 rounded-lg text-[14px] text-[var(--brand)] hover:bg-white/5"
-                >
-                  <Plus size={14} /> Create workspace
-                </button>
-              </div>
-            )}
-
-            <SafeToSpendHero
-              data={safeToSpend}
-              netAcross={netAcrossAccounts}
-              hasAccounts={(safeToSpend?.liquid_minor ?? 0) > 0}
-            />
-
-            <div className="flex gap-2.5 mt-4">
-              <button
-                onClick={() => setActiveScreen("budget")}
-                className="flex-1 py-2.5 bg-white/20 backdrop-blur-xl border border-white/30 rounded-2xl text-[13px] font-semibold text-white flex items-center justify-center gap-2 hover:bg-white/30 transition-colors"
-              >
-                <TrendingUp size={15} /> Monitoring
-              </button>
-              <button
-                onClick={() => setIsImportOpen(true)}
-                className="flex-1 py-2.5 bg-white/20 backdrop-blur-xl border border-white/30 rounded-2xl text-[13px] font-semibold text-white flex items-center justify-center gap-2 hover:bg-white/30 transition-colors"
-              >
-                <ArrowLeftRight size={15} /> Import
-              </button>
-            </div>
-          </div>
-
-          <div className="px-4 mt-4">
-            <RunwayCards
-              safe={safeToSpend}
-              metrics={metrics}
-              onOpenUpcoming={() => setIsUpcomingOpen(true)}
-              onOpenBudget={() => setActiveScreen("budget")}
-            />
-          </div>
-
-          {setupError && (
-            <div className="px-4 mt-2">
-              <p className="text-[11px] text-[var(--danger)]">Setup status failed: {setupError}</p>
-            </div>
-          )}
-
-          {showChecklist && (
-            <div className="px-4 mt-4">
-              <SetupChecklist
-                status={setupStatus!}
-                onStartStep={handleStartSetupStep}
-                onDismiss={handleDismissChecklist}
-              />
-            </div>
-          )}
-
-          <div className="px-4 mt-4 grid grid-cols-2 gap-3">
-            <button
-              onClick={() => setActiveScreen("commitments")}
-              className="rounded-3xl bg-gradient-to-b from-[#3a1a0a] to-[#0a0a0a] border border-white/10 p-4 flex flex-col justify-between text-left hover:border-[#e87a1a]/50 transition-colors aspect-[4/3]"
-            >
-              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
-                <CalendarDays size={20} className="text-white/80" />
-              </div>
-              <div>
-                <p className="text-[15px] font-semibold text-white">Commitments</p>
-                <p className="text-[11px] text-white/50 mt-1 leading-snug">Bills & funds.</p>
-              </div>
-            </button>
-            <button
-              onClick={() => setActiveScreen("tax")}
-              className="rounded-3xl bg-gradient-to-b from-[#3a1a0a] to-[#0a0a0a] border border-white/10 p-4 flex flex-col justify-between text-left hover:border-[#e87a1a]/50 transition-colors aspect-[4/3]"
-            >
-              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
-                <FileText size={20} className="text-white/80" />
-              </div>
-              <div>
-                <p className="text-[15px] font-semibold text-white">Tax Estimator</p>
-                <p className="text-[11px] text-white/50 mt-1 leading-snug">PIT & LIRS.</p>
-              </div>
-            </button>
-            <button
-              onClick={() => setActiveScreen("ajo")}
-              className="rounded-3xl bg-gradient-to-b from-[#3a1a0a] to-[#0a0a0a] border border-white/10 p-4 flex flex-col justify-between text-left hover:border-[#e87a1a]/50 transition-colors aspect-[4/3]"
-            >
-              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
-                <Users size={20} className="text-white/80" />
-              </div>
-              <div>
-                <p className="text-[15px] font-semibold text-white">Ajo Tracker</p>
-                <p className="text-[11px] text-white/50 mt-1 leading-snug">Cooperative groups.</p>
-              </div>
-            </button>
-            <button
-              onClick={() => setActiveScreen("bank-charge")}
-              className="rounded-3xl bg-gradient-to-b from-[#3a1a0a] to-[#0a0a0a] border border-white/10 p-4 flex flex-col justify-between text-left hover:border-[#e87a1a]/50 transition-colors aspect-[4/3]"
-            >
-              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
-                <ShieldAlert size={20} className="text-white/80" />
-              </div>
-              <div>
-                <p className="text-[15px] font-semibold text-white">Bank Charges</p>
-                <p className="text-[11px] text-white/50 mt-1 leading-snug">Fee auditor.</p>
-              </div>
-            </button>
-          </div>
-
-          <div className="px-4 mt-4">
-            <div className="flex items-center justify-between mb-3 px-1">
-              <h3 className="text-[17px] font-semibold text-white">Monthly expenses</h3>
-              <span className="text-[13px] font-medium text-[var(--brand)]">↓ ₦{totalSpentNGN.toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between items-center bg-[#17191A] rounded-3xl p-5 border border-white/5">
-              <div className="text-center">
-                <p className="text-[11px] text-white/50 mb-1">Spent</p>
-                <p className="text-[15px] font-semibold text-white">₦{totalSpentNGN.toLocaleString()}</p>
-              </div>
-              <div className="w-px h-8 bg-white/10" />
-              <div className="text-center">
-                <p className="text-[11px] text-white/50 mb-1">Income</p>
-                <p className="text-[15px] font-semibold text-white">₦{totalIncomeNGN.toLocaleString()}</p>
-              </div>
-              <div className="w-px h-8 bg-white/10" />
-              <div className="text-center">
-                <p className="text-[11px] text-white/50 mb-1">Net</p>
-                <p
-                  className={`text-[15px] font-semibold ${
-                    totalIncomeNGN - totalSpentNGN >= 0 ? "text-[var(--gain)]" : "text-[var(--danger)]"
-                  }`}
-                >
-                  ₦{(totalIncomeNGN - totalSpentNGN).toLocaleString()}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {m.uncategorized_count > 0 && (
-            <div className="px-4 mt-4">
-              <motion.button
-                whileHover={{ y: -3 }}
-                onClick={() => setActiveScreen("needs-review")}
-                className="w-full flex items-center justify-between p-4 bg-[var(--warn)]/10 border border-[var(--warn)]/20 rounded-2xl group transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-[var(--warn)]/20 flex items-center justify-center">
-                    <span className="text-[var(--warn)] font-semibold text-[14px]">{m.uncategorized_count}</span>
+                      {fmt(totalIncomeNGN - totalSpentNGN)}
+                    </p>
                   </div>
-                  <span className="text-[15px] font-medium text-white">Transactions need review</span>
                 </div>
-                <ChevronRight size={20} className="text-[var(--warn)] group-hover:translate-x-1 transition-transform" />
-              </motion.button>
+              </div>
+
+              {m.uncategorized_count > 0 && (
+                <div className="px-4 mt-4">
+                  <motion.button
+                    whileHover={{ y: -3 }}
+                    onClick={() => setActiveScreen("needs-review")}
+                    className="w-full flex items-center justify-between p-4 bg-[var(--warn)]/10 border border-[var(--warn)]/20 rounded-2xl group transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-[var(--warn)]/20 flex items-center justify-center">
+                        <span className="text-[var(--warn)] font-semibold text-[14px]">{m.uncategorized_count}</span>
+                      </div>
+                      <span className="text-[15px] font-medium text-white">Transactions need review</span>
+                    </div>
+                    <ChevronRight size={20} className="text-[var(--warn)] group-hover:translate-x-1 transition-transform" />
+                  </motion.button>
+                </div>
+              )}
+
+              <div className="px-4 mt-4">
+                <div className="flex items-center justify-between mb-3 px-1">
+                  <h3 className="text-[17px] font-semibold text-white">Recent</h3>
+                  <button
+                    onClick={() => setActiveScreen("analytics")}
+                    className="text-[13px] text-[var(--brand)] font-medium"
+                  >
+                    See all
+                  </button>
+                </div>
+                <div className="group-list">
+                  {transactions.length === 0 ? (
+                    <EmptyState
+                      icon={Receipt}
+                      title="No transactions yet"
+                      body="Once you add an account and log a transaction, it will appear here."
+                      action="Add transaction"
+                      onAction={() => setIsAddTxnOpen(true)}
+                    />
+                  ) : (
+                    transactions.map((t) => (
+                      <TransactionRow key={t.id} txn={t} onOpen={setSelectedTxn} onDelete={handleDeleteTxn} />
+                    ))
+                  )}
+                </div>
+              </div>
             </div>
           )}
-
-          <div className="px-4 mt-4">
-            <div className="flex items-center justify-between mb-3 px-1">
-              <h3 className="text-[17px] font-semibold text-white">Recent</h3>
-              <button
-                onClick={() => setActiveScreen("analytics")}
-                className="text-[13px] text-[var(--brand)] font-medium"
-              >
-                See all
-              </button>
-            </div>
-            <div className="group-list">
-              {transactions.length === 0 ? (
-                <EmptyState
-                  icon={Receipt}
-                  title="No transactions yet"
-                  body="Once you add an account and log a transaction, it will appear here."
-                  action="Add transaction"
-                  onAction={() => setIsAddTxnOpen(true)}
-                />
-              ) : (
-                transactions.map((t) => (
-                  <TransactionRow key={t.id} txn={t} onOpen={setSelectedTxn} onDelete={handleDeleteTxn} />
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+        </ScreenTransition>
+      </PullToRefresh>
 
       <FloatingTabBar
         activeTab={activeScreen === "budget" ? "home" : activeScreen}
@@ -572,7 +582,7 @@ export default function SandboxPage() {
                   <p className="text-[14px] font-medium">{b.name}</p>
                   <p className="text-[11px] text-[var(--text-3)]">Day {b.day}</p>
                 </div>
-                <p className="tabular font-semibold">₦{(b.amount_minor / 100).toLocaleString()}</p>
+                <p className="tabular font-semibold">{fmt(b.amount_minor / 100)}</p>
               </div>
             ))
           )}

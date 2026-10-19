@@ -41,7 +41,7 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
   const top = [...byCat.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
 
   return (
-    <div className="min-h-[100dvh] bg-black pb-32">
+    <div className="min-h-[100dvh] pb-32">
       <ScreenHeader title="Analytics" onBack={onBack} />
       <div className="px-4 pt-6 space-y-5">
         <div className="rounded-3xl bg-[var(--surface-2)] border border-[var(--line)] p-6">

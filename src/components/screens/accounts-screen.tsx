@@ -93,7 +93,7 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
   const totalLiab = assets.filter((a) => a.type === "liability").reduce((s, a) => s + a.value_minor, 0) / 100;
 
   return (
-    <div className="min-h-[100dvh] bg-black pb-32">
+    <div className="min-h-[100dvh] pb-32">
       <ScreenHeader
         title="Accounts"
         onBack={onBack}

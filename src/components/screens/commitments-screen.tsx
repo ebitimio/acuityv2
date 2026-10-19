@@ -103,7 +103,7 @@ export function CommitmentsScreen({ onBack }: { onBack: () => void }) {
   const bills = items.filter((i) => i.kind === "bill");
 
   return (
-    <div className="min-h-[100dvh] bg-black pb-32">
+    <div className="min-h-[100dvh] pb-32">
       <ScreenHeader title="Commitments" onBack={onBack} />
       <div className="px-4 pt-6 space-y-6">
         {visibleSuggestions.length > 0 && (

@@ -28,7 +28,7 @@ export function AjoScreen({ onBack }: { onBack: () => void }) {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-black pb-32">
+    <div className="min-h-[100dvh] pb-32">
       <ScreenHeader title="Ajo Tracker" onBack={onBack} right={<IconButton label="Add" onClick={() => setModal(true)}><Plus size={18} /></IconButton>} />
       <div className="px-4 pt-6 space-y-4">
         {groups.map((g) => {
