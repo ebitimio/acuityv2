@@ -94,10 +94,7 @@ export default function SandboxPage() {
   const refreshData = useCallback(async () => {
     try {
       clearDataCache();
-      const [m, t] = await Promise.all([
-        getHomeMetrics(),
-        getRecentTransactions(8),
-      ]);
+      const [m, t] = await Promise.all([getHomeMetrics(), getRecentTransactions(8)]);
       setMetrics(m ?? ZERO_METRICS);
       setTransactions(t ?? []);
     } catch (e: any) {
@@ -262,13 +259,14 @@ export default function SandboxPage() {
         <BankChargeScreen onBack={() => setActiveScreen("home")} />
       ) : (
         <div className="flex-1 overflow-y-auto pb-32">
+          {/* COMPACT HERO */}
           <div
-            className="relative pt-[calc(env(safe-area-inset-top)+16px)] pb-6 px-6 rounded-b-[40px] overflow-hidden"
+            className="relative pt-[calc(env(safe-area-inset-top)+12px)] pb-5 px-5 rounded-b-[36px] overflow-hidden"
             style={{
               background: "linear-gradient(160deg, #7a0e0e 0%, #b3391f 35%, #e87a1a 75%, #ffb347 100%)",
             }}
           >
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex justify-between items-center mb-4">
               <button
                 onClick={() => setWsOpen((v) => !v)}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-md border border-white/30"
@@ -334,34 +332,32 @@ export default function SandboxPage() {
               </div>
             )}
 
-            <SafeToSpendHero
-              data={safeToSpend}
-              onOpenUpcoming={() => setIsUpcomingOpen(true)}
-            />
+            <SafeToSpendHero data={safeToSpend} />
 
-            <div className="flex gap-3 mt-6">
+            <div className="flex gap-2.5 mt-4">
               <button
                 onClick={() => setActiveScreen("budget")}
-                className="flex-1 py-3 bg-white/20 backdrop-blur-xl border border-white/30 rounded-2xl text-[14px] font-semibold text-white flex items-center justify-center gap-2 hover:bg-white/30 transition-colors"
+                className="flex-1 py-2.5 bg-white/20 backdrop-blur-xl border border-white/30 rounded-2xl text-[13px] font-semibold text-white flex items-center justify-center gap-2 hover:bg-white/30 transition-colors"
               >
-                <TrendingUp size={16} /> Monitoring
+                <TrendingUp size={15} /> Monitoring
               </button>
               <button
                 onClick={() => setIsImportOpen(true)}
-                className="flex-1 py-3 bg-white/20 backdrop-blur-xl border border-white/30 rounded-2xl text-[14px] font-semibold text-white flex items-center justify-center gap-2 hover:bg-white/30 transition-colors"
+                className="flex-1 py-2.5 bg-white/20 backdrop-blur-xl border border-white/30 rounded-2xl text-[13px] font-semibold text-white flex items-center justify-center gap-2 hover:bg-white/30 transition-colors"
               >
-                <ArrowLeftRight size={16} /> Import
+                <ArrowLeftRight size={15} /> Import
               </button>
             </div>
+          </div>
 
-            <div className="mt-4">
-              <RunwayCards
-                safe={safeToSpend}
-                metrics={metrics}
-                onOpenUpcoming={() => setIsUpcomingOpen(true)}
-                onOpenBudget={() => setActiveScreen("budget")}
-              />
-            </div>
+          {/* RUNWAY CARDS — moved out of the hero */}
+          <div className="px-4 mt-4">
+            <RunwayCards
+              safe={safeToSpend}
+              metrics={metrics}
+              onOpenUpcoming={() => setIsUpcomingOpen(true)}
+              onOpenBudget={() => setActiveScreen("budget")}
+            />
           </div>
 
           {setupError && (
@@ -371,7 +367,7 @@ export default function SandboxPage() {
           )}
 
           {showChecklist && (
-            <div className="px-4 mt-6">
+            <div className="px-4 mt-4">
               <SetupChecklist
                 status={setupStatus!}
                 onStartStep={handleStartSetupStep}
@@ -380,7 +376,7 @@ export default function SandboxPage() {
             </div>
           )}
 
-          <div className="px-4 mt-6 grid grid-cols-2 gap-3">
+          <div className="px-4 mt-4 grid grid-cols-2 gap-3">
             <button
               onClick={() => setActiveScreen("commitments")}
               className="rounded-3xl bg-gradient-to-b from-[#3a1a0a] to-[#0a0a0a] border border-white/10 p-4 flex flex-col justify-between text-left hover:border-[#e87a1a]/50 transition-colors aspect-[4/3]"
@@ -431,7 +427,7 @@ export default function SandboxPage() {
             </button>
           </div>
 
-          <div className="px-4 mt-6">
+          <div className="px-4 mt-4">
             <div className="flex items-center justify-between mb-3 px-1">
               <h3 className="text-[17px] font-semibold text-white">Monthly expenses</h3>
               <span className="text-[13px] font-medium text-[var(--brand)]">↓ ₦{totalSpentNGN.toLocaleString()}</span>
@@ -478,7 +474,7 @@ export default function SandboxPage() {
             </div>
           )}
 
-          <div className="px-4 mt-6">
+          <div className="px-4 mt-4">
             <div className="flex items-center justify-between mb-3 px-1">
               <h3 className="text-[17px] font-semibold text-white">Recent</h3>
               <button

@@ -7,12 +7,10 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
-    // Total splash duration: 1.6s
     const timer = setTimeout(() => {
       setIsVisible(false);
-      setTimeout(onComplete, 400); // Wait for exit animation to finish
-    }, 1600);
-
+      setTimeout(onComplete, 500);
+    }, 1400);
     return () => clearTimeout(timer);
   }, [onComplete]);
 
@@ -22,67 +20,41 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
         <motion.div
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.4, ease: "easeInOut" }}
-          className="fixed inset-0 z-[999] flex items-center justify-center bg-black"
+          transition={{ duration: 0.45, ease: "easeInOut" }}
+          className="fixed inset-0 z-[999] flex items-center justify-center"
+          style={{
+            background: "linear-gradient(160deg, #7a0e0e 0%, #b3391f 35%, #e87a1a 75%, #ffb347 100%)",
+          }}
         >
-          {/* Emerald Bloom */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 0.3, scale: 1.2 }}
-            transition={{ duration: 1.2, ease: "easeOut" }}
-            className="absolute w-64 h-64 rounded-full bg-[var(--brand)] blur-[80px]"
-          />
-
-          {/* SVG Logo */}
-          <div className="relative z-10 flex flex-col items-center">
-            <svg
-              width="80"
-              height="80"
-              viewBox="0 0 100 100"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              {/* The "A" shape drawn with stroke */}
-              <motion.path
-                d="M 20 80 L 50 20 L 80 80"
-                stroke="var(--brand)"
-                strokeWidth="6"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                initial={{ pathLength: 0, opacity: 0 }}
-                animate={{ pathLength: 1, opacity: 1 }}
-                transition={{ duration: 0.6, ease: "easeInOut", delay: 0.1 }}
-              />
-              {/* The crossbar */}
-              <motion.path
-                d="M 35 60 L 65 60"
-                stroke="var(--brand)"
-                strokeWidth="6"
-                strokeLinecap="round"
-                initial={{ pathLength: 0, opacity: 0 }}
-                animate={{ pathLength: 1, opacity: 1 }}
-                transition={{ duration: 0.4, ease: "easeInOut", delay: 0.5 }}
-              />
-              {/* Specular sweep */}
-              <motion.path
-                d="M 20 80 L 50 20 L 80 80"
-                stroke="rgba(255,255,255,0.8)"
-                strokeWidth="6"
-                strokeLinecap="round"
-                initial={{ pathLength: 0, opacity: 0 }}
-                animate={{ pathLength: 1, opacity: [0, 0.8, 0] }}
-                transition={{ duration: 0.8, ease: "easeInOut", delay: 0.8 }}
-              />
-            </svg>
-
-            <motion.p
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.2, duration: 0.4 }}
-              className="text-white text-[17px] font-semibold tracking-wider mt-4"
+            initial={{ opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.8, ease: [0.2, 0.8, 0.2, 1] }}
+            className="flex flex-col items-center gap-4"
+          >
+            <h1
+              className="text-black font-black tracking-tighter"
+              style={{
+                fontSize: "clamp(64px, 22vw, 120px)",
+                lineHeight: 0.9,
+                letterSpacing: "-0.04em",
+                fontWeight: 900,
+              }}
             >
               ACUITY
-            </motion.p>
+            </h1>
+          </motion.div>
+
+          {/* Bottom loading bar */}
+          <div className="absolute bottom-16 left-0 right-0 flex justify-center">
+            <div className="w-32 h-1 bg-black/15 rounded-full overflow-hidden">
+              <motion.div
+                initial={{ x: "-100%" }}
+                animate={{ x: "100%" }}
+                transition={{ duration: 1.3, ease: "easeInOut", repeat: Infinity }}
+                className="w-1/2 h-full bg-black/70 rounded-full"
+              />
+            </div>
           </div>
         </motion.div>
       )}
