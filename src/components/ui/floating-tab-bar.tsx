@@ -24,14 +24,19 @@ export function FloatingTabBar({ activeTab, onTabChange, onAddClick, isHidden }:
     <motion.nav
       aria-label="Main"
       initial={false}
-      animate={{ y: isHidden ? 140 : 0 }}
+      animate={{ y: isHidden ? 160 : 0 }}
       transition={{ duration: 0.28, ease: "easeInOut" }}
-      className="pointer-events-none fixed bottom-0 left-0 right-0 z-[60] flex justify-center px-4 pb-[calc(12px+env(safe-area-inset-bottom))] pt-6"
+      className="pointer-events-none fixed bottom-0 left-0 right-0 z-[60] flex justify-center px-4 pt-6"
+      style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 10px)" }}
     >
-      <div className="absolute inset-x-0 bottom-0 -z-10 h-36 bg-gradient-to-t from-black via-black/85 to-transparent" />
+      <div className="absolute inset-x-0 bottom-0 -z-10 h-32 bg-gradient-to-t from-black via-black/80 to-transparent" />
 
       <div className="pointer-events-auto flex w-full max-w-[420px] items-center gap-3">
-        <GlassSurface tier="thick" rim className="flex h-[66px] flex-1 items-center p-1.5">
+        <GlassSurface
+          tier="thick"
+          rim
+          className="flex h-[64px] flex-1 items-center p-1.5"
+        >
           {TABS.map((tab) => {
             const active = activeTab === tab.id;
             const Icon = tab.icon;
@@ -42,24 +47,28 @@ export function FloatingTabBar({ activeTab, onTabChange, onAddClick, isHidden }:
                 aria-current={active ? "page" : undefined}
                 className={cn(
                   "relative flex h-full flex-1 flex-col items-center justify-center gap-0.5 rounded-full transition-colors",
-                  active ? "text-[var(--brand)]" : "text-white/50 hover:text-white"
+                  active ? "text-white" : "text-white/55 hover:text-white"
                 )}
               >
                 {active && (
                   <motion.span
                     layoutId="tab-lens"
-                    className="absolute inset-0 rounded-full bg-white/[0.09]"
+                    className="absolute inset-0 rounded-full bg-white/15"
                     transition={{ type: "spring", stiffness: 520, damping: 38 }}
                   />
                 )}
                 <Icon size={21} strokeWidth={active ? 2.5 : 2} className="relative" />
-                <span className="relative text-[11px] font-semibold">{tab.label}</span>
+                <span className="relative text-[10px] font-semibold">{tab.label}</span>
               </button>
             );
           })}
         </GlassSurface>
 
-        <button aria-label="Add" onClick={onAddClick} className="press h-[66px] w-[66px] shrink-0 rounded-full bg-[var(--brand)] text-white shadow-[0_8px_30px_rgba(249,115,22,0.35)]">
+        <button
+          aria-label="Add"
+          onClick={onAddClick}
+          className="press h-[64px] w-[64px] shrink-0 rounded-full bg-[var(--brand)] text-white shadow-[0_8px_30px_rgba(249,115,22,0.4)]"
+        >
           <Plus size={30} strokeWidth={2.5} className="mx-auto" />
         </button>
       </div>

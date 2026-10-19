@@ -188,3 +188,12 @@ body::after {
   pointer-events: none;
   z-index: -1;
 }
+/* Splash/onboarding pages paint the gradient on html+body too,
+   so the iOS safe-area strip is never black. */
+html.splash-bg,
+html.splash-bg body {
+  background: linear-gradient(160deg, #7a0e0e 0%, #b3391f 35%, #e87a1a 75%, #ffb347 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
+  min-height: 100dvh;
+}

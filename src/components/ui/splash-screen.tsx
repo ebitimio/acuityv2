@@ -6,6 +6,15 @@ import { useEffect, useState } from "react";
 export function SplashScreen({ onComplete }: { onComplete: () => void }) {
   const [isVisible, setIsVisible] = useState(true);
 
+  // Paint the html element with the gradient so the iOS home indicator strip
+  // and the status-bar strip are never black.
+  useEffect(() => {
+    document.documentElement.classList.add("splash-bg");
+    return () => {
+      document.documentElement.classList.remove("splash-bg");
+    };
+  }, []);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsVisible(false);
@@ -24,8 +33,8 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
           className="fixed inset-0 z-[999] flex items-center justify-center"
           style={{
             background: "linear-gradient(160deg, #7a0e0e 0%, #b3391f 35%, #e87a1a 75%, #ffb347 100%)",
-            paddingBottom: "env(safe-area-inset-bottom)",
             paddingTop: "env(safe-area-inset-top)",
+            paddingBottom: "env(safe-area-inset-bottom)",
           }}
         >
           <motion.div
@@ -47,7 +56,10 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
             </h1>
           </motion.div>
 
-          <div className="absolute left-0 right-0 flex justify-center" style={{ bottom: "calc(env(safe-area-inset-bottom) + 56px)" }}>
+          <div
+            className="absolute left-0 right-0 flex justify-center"
+            style={{ bottom: "calc(env(safe-area-inset-bottom) + 56px)" }}
+          >
             <div className="w-32 h-1 bg-black/15 rounded-full overflow-hidden">
               <motion.div
                 initial={{ x: "-100%" }}
