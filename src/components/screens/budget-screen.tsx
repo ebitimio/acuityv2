@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ScreenHeader, IconButton } from "@/components/ui/screen-header";
-import { Pencil, Plus, Trash2, CalendarRange, Settings2 } from "lucide-react";
+import { Plus, Trash2, CalendarRange, Settings2 } from "lucide-react";
 import {
   getHomeMetrics, getTransactionsSince, getAccounts,
   getCurrentCycle, updateCycleStartDay,
@@ -18,6 +18,7 @@ import { CurrencyField } from "@/components/ui/currency-field";
 import { useToast } from "@/components/ui/toast";
 import type { Txn, HomeMetrics, Account, CustomCategory, Budget } from "@/lib/types";
 import { getCategory } from "@/lib/categories";
+import { buildCategoryList } from "@/lib/category-options";
 
 const ZERO_METRICS: HomeMetrics = {
   net_worth_minor: 0,
@@ -51,9 +52,7 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
       const bs = await getBudgets(accountKey === "all" ? null : accountKey);
       setBudgets(bs ?? []);
       const map: Record<string, number> = {};
-      for (const b of bs ?? []) {
-        map[b.category] = b.limit_minor / 100;
-      }
+      for (const b of bs ?? []) map[b.category] = b.limit_minor / 100;
       setCategoryLimits(map);
     } catch (e: any) {
       console.error("getBudgets failed:", e);
@@ -63,46 +62,14 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
   };
 
   const loadStatic = async () => {
-    try {
-      const m = await getHomeMetrics();
-      setMetrics(m ?? ZERO_METRICS);
-    } catch (e: any) {
-      console.error("getHomeMetrics failed:", e);
-      setMetrics(ZERO_METRICS);
-    }
-    try {
-      const t = await getTransactionsSince(startOfMonthISO());
-      setTxns(t ?? []);
-    } catch (e: any) {
-      console.error("getTransactionsSince failed:", e);
-      setTxns([]);
-    }
-    try {
-      const accs = await getAccounts();
-      setAccounts(accs ?? []);
-    } catch (e: any) {
-      console.error("getAccounts failed:", e);
-      setAccounts([]);
-    }
-    try {
-      const cats = await getCustomCategories();
-      setCategories(cats ?? []);
-    } catch (e: any) {
-      console.error("getCustomCategories failed:", e);
-      setCategories([]);
-    }
-    try {
-      const cyc = await getCurrentCycle();
-      setCycle(cyc);
-    } catch (e: any) {
-      console.error("getCurrentCycle failed:", e);
-      setCycle(null);
-    }
+    try { setMetrics((await getHomeMetrics()) ?? ZERO_METRICS); } catch {}
+    try { setTxns((await getTransactionsSince(startOfMonthISO())) ?? []); } catch {}
+    try { setAccounts((await getAccounts()) ?? []); } catch {}
+    try { setCategories((await getCustomCategories()) ?? []); } catch {}
+    try { setCycle(await getCurrentCycle()); } catch { setCycle(null); }
   };
 
-  // Load static once
   useEffect(() => { loadStatic(); }, []);
-  // Reload budgets whenever the account changes
   useEffect(() => { loadBudgetsForAccount(selectedAccount); }, [selectedAccount]);
 
   const saveCycle = async () => {
@@ -111,9 +78,7 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
       toast("Payday cycle saved");
       setIsCycleOpen(false);
       loadStatic();
-    } catch (e: any) {
-      toast(e.message ?? "Could not save", "err");
-    }
+    } catch (e: any) { toast(e.message ?? "Could not save", "err"); }
   };
 
   const addCat = async () => {
@@ -121,16 +86,16 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
     try {
       await addCustomCategory(newCatName.trim());
       setNewCatName("");
-      loadStatic();
-    } catch (e: any) {
-      toast(e.message ?? "Could not add", "err");
-    }
+      await loadStatic();
+      await loadBudgetsForAccount(selectedAccount);
+    } catch (e: any) { toast(e.message ?? "Could not add", "err"); }
   };
 
   const removeCat = async (id: string, name: string) => {
     if (!confirm(`Delete category "${name}"? Existing transactions keep their label.`)) return;
     await deleteCustomCategory(id);
-    loadStatic();
+    await loadStatic();
+    await loadBudgetsForAccount(selectedAccount);
   };
 
   const setCategoryAmount = async (category: string, amount: number) => {
@@ -144,18 +109,12 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
         }
       } else {
         await setBudget(selectedAccount === "all" ? null : selectedAccount, category, Math.round(amount * 100));
-        // Refresh list for this account
         await loadBudgetsForAccount(selectedAccount);
       }
-    } catch (e: any) {
-      toast(e.message ?? "Could not save category budget", "err");
-    }
+    } catch (e: any) { toast(e.message ?? "Could not save category budget", "err"); }
   };
 
-  const filteredTxns = selectedAccount === "all"
-    ? txns
-    : txns.filter((t) => t.account_id === selectedAccount);
-
+  const filteredTxns = selectedAccount === "all" ? txns : txns.filter((t) => t.account_id === selectedAccount);
   const spent = filteredTxns.filter((t) => t.direction === "debit").reduce((s, t) => s + t.amount_minor, 0) / 100;
   const totalBudget = Object.values(categoryLimits).reduce((s, v) => s + v, 0);
   const pct = totalBudget > 0 ? Math.min((spent / totalBudget) * 100, 100) : 0;
@@ -168,10 +127,13 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
     }
   }
 
+  // Build the full list of category names to display:
+  // built-in + custom + any category that has spend/limit already
+  const allOptions = buildCategoryList(categories.map((c) => c.name));
   const allCategoryNames = Array.from(new Set([
-    ...byCat.keys(),
+    ...allOptions,
     ...Object.keys(categoryLimits),
-    ...categories.map((c) => c.name),
+    ...byCat.keys(),
   ])).filter((c) => c !== "Split Parent");
 
   const categoryRows = allCategoryNames
@@ -180,6 +142,8 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
       spent: byCat.get(name) ?? 0,
       limit: categoryLimits[name] ?? 0,
     }))
+    // Only show a row if it has spend, a limit, or is a custom category
+    .filter((r) => r.spent > 0 || r.limit > 0 || categories.some((c) => c.name === r.name))
     .sort((a, b) => b.spent - a.spent || b.limit - a.limit);
 
   const cycleLabel = cycle
@@ -203,9 +167,7 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
         <div className="flex gap-2 overflow-x-auto pb-1">
           <button
             onClick={() => setSelectedAccount("all")}
-            className={`px-3 py-1.5 rounded-full text-[12px] font-semibold shrink-0 ${
-              selectedAccount === "all" ? "bg-[var(--brand)] text-white" : "bg-white/10 text-white/70"
-            }`}
+            className={`px-3 py-1.5 rounded-full text-[12px] font-semibold shrink-0 ${selectedAccount === "all" ? "bg-[var(--brand)] text-white" : "bg-white/10 text-white/70"}`}
           >
             All accounts
           </button>
@@ -213,18 +175,14 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
             <button
               key={a.id}
               onClick={() => setSelectedAccount(a.id)}
-              className={`px-3 py-1.5 rounded-full text-[12px] font-semibold whitespace-nowrap shrink-0 ${
-                selectedAccount === a.id ? "bg-[var(--brand)] text-white" : "bg-white/10 text-white/70"
-              }`}
+              className={`px-3 py-1.5 rounded-full text-[12px] font-semibold whitespace-nowrap shrink-0 ${selectedAccount === a.id ? "bg-[var(--brand)] text-white" : "bg-white/10 text-white/70"}`}
             >
               {a.name}
             </button>
           ))}
         </div>
 
-        {cycleLabel && (
-          <p className="text-[12px] text-[var(--text-3)] px-1">Current cycle: {cycleLabel}</p>
-        )}
+        {cycleLabel && <p className="text-[12px] text-[var(--text-3)] px-1">Current cycle: {cycleLabel}</p>}
 
         <div className="rounded-3xl bg-[var(--surface-2)] border border-[var(--line)] p-6 flex flex-col items-center">
           <GaugeArc percentage={pct} />
@@ -245,10 +203,7 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
         <div>
           <div className="flex items-center justify-between mb-3 px-1">
             <h3 className="text-[15px] font-semibold">Category budgets</h3>
-            <button
-              onClick={() => setIsBudgetEditorOpen(true)}
-              className="text-[13px] text-[var(--brand)] font-semibold flex items-center gap-1"
-            >
+            <button onClick={() => setIsBudgetEditorOpen(true)} className="text-[13px] text-[var(--brand)] font-semibold flex items-center gap-1">
               <Plus size={14} /> Edit amounts
             </button>
           </div>
@@ -333,6 +288,9 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
               />
             ))}
           </div>
+          <Button variant="ghost" onClick={() => { setIsBudgetEditorOpen(false); setIsCatsOpen(true); }}>
+            + Add new category
+          </Button>
           <Button onClick={() => setIsBudgetEditorOpen(false)}>Done</Button>
         </div>
       </Modal>
