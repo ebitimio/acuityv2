@@ -39,17 +39,15 @@
   box-sizing: border-box;
 }
 
-/* html background = top of gradient, so the status bar / notch strip is never black */
 html {
-  background: #7a0e0e;
+  background: var(--bg);
   min-height: 100%;
 }
 
-/* body background = bottom of gradient, so the home-indicator strip is never black */
 body {
   margin: 0;
   padding: 0;
-  background: #ffb347;
+  background: var(--bg);
   color: var(--text-1);
   font-family: var(--font-ui), -apple-system, "SF Pro Text", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -61,19 +59,12 @@ body {
   min-height: 100dvh;
 }
 
-/* Every screen that should be dark overrides body with this */
-.dark-screen {
-  background: var(--bg);
-}
-
-/* iOS auto-zooms on inputs with font-size < 16px. Force 16px everywhere. */
 input,
 textarea,
 select {
   font-size: 16px !important;
 }
 
-/* Kill the boxy orange focus outline */
 :focus,
 :focus-visible {
   outline: none;
@@ -100,7 +91,6 @@ select {
     border-radius: 22px;
   }
 
-  /* Fields: soft orange glow on focus, no boxy outline */
   .field {
     display: flex;
     align-items: center;

@@ -6,22 +6,6 @@ import { useEffect, useState } from "react";
 export function SplashScreen({ onComplete }: { onComplete: () => void }) {
   const [isVisible, setIsVisible] = useState(true);
 
-  // Set html + body to the *bottom* colour of the gradient so any safe-area
-  // strip blends seamlessly with the splash.
-  useEffect(() => {
-    const htmlEl = document.documentElement;
-    const bodyEl = document.body;
-    const prevHtmlBg = htmlEl.style.background;
-    const prevBodyBg = bodyEl.style.background;
-    htmlEl.style.background = "#ffb347";
-    bodyEl.style.background = "#ffb347";
-
-    return () => {
-      htmlEl.style.background = prevHtmlBg;
-      bodyEl.style.background = prevBodyBg;
-    };
-  }, []);
-
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsVisible(false);
@@ -38,62 +22,49 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.4, ease: "easeInOut" }}
-          className="fixed inset-0 z-[999] overflow-visible"
+          className="fixed inset-0 z-[999] flex flex-col items-center justify-center"
+          style={{
+            background:
+              "linear-gradient(160deg, #7a0e0e 0%, #b3391f 35%, #e87a1a 75%, #ffb347 100%)",
+            /* Extend the fixed box past every safe area */
+            marginTop: "calc(-1 * env(safe-area-inset-top))",
+            marginBottom: "calc(-1 * env(safe-area-inset-bottom))",
+            paddingTop: "env(safe-area-inset-top)",
+            paddingBottom: "env(safe-area-inset-bottom)",
+            top: 0,
+            bottom: 0,
+          }}
         >
-          {/* PAINT LAYER — extends 240px past every edge so no safe-area strip
-              can ever show through, on any device, in any orientation. */}
-          <div
-            aria-hidden
-            className="absolute"
-            style={{
-              left: "-1px",
-              right: "-1px",
-              top: "-240px",
-              bottom: "-240px",
-              background:
-                "linear-gradient(160deg, #7a0e0e 0%, #b3391f 35%, #e87a1a 75%, #ffb347 100%)",
-            }}
-          />
-
-          {/* CONTENT LAYER — safe-area padded, centered. */}
-          <div
-            className="relative flex h-full w-full items-center justify-center"
-            style={{
-              paddingTop: "env(safe-area-inset-top)",
-              paddingBottom: "env(safe-area-inset-bottom)",
-            }}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.92 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.8, ease: [0.2, 0.8, 0.2, 1] }}
+            className="flex flex-col items-center gap-4"
           >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.92 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.8, ease: [0.2, 0.8, 0.2, 1] }}
-              className="flex flex-col items-center gap-4"
+            <h1
+              className="text-black font-black"
+              style={{
+                fontSize: "clamp(60px, 20vw, 112px)",
+                lineHeight: 0.9,
+                letterSpacing: "-0.05em",
+                fontWeight: 900,
+              }}
             >
-              <h1
-                className="text-black font-black"
-                style={{
-                  fontSize: "clamp(60px, 20vw, 112px)",
-                  lineHeight: 0.9,
-                  letterSpacing: "-0.05em",
-                  fontWeight: 900,
-                }}
-              >
-                ACUITY
-              </h1>
-            </motion.div>
+              ACUITY
+            </h1>
+          </motion.div>
 
-            <div
-              className="absolute left-0 right-0 flex justify-center"
-              style={{ bottom: "calc(env(safe-area-inset-bottom) + 56px)" }}
-            >
-              <div className="w-32 h-1 bg-black/15 rounded-full overflow-hidden">
-                <motion.div
-                  initial={{ x: "-100%" }}
-                  animate={{ x: "100%" }}
-                  transition={{ duration: 1.4, ease: "easeInOut", repeat: Infinity }}
-                  className="w-1/2 h-full bg-black/70 rounded-full"
-                />
-              </div>
+          <div
+            className="absolute left-0 right-0 flex justify-center"
+            style={{ bottom: "calc(env(safe-area-inset-bottom) + 56px)" }}
+          >
+            <div className="w-32 h-1 bg-black/15 rounded-full overflow-hidden">
+              <motion.div
+                initial={{ x: "-100%" }}
+                animate={{ x: "100%" }}
+                transition={{ duration: 1.4, ease: "easeInOut", repeat: Infinity }}
+                className="w-1/2 h-full bg-black/70 rounded-full"
+              />
             </div>
           </div>
         </motion.div>
