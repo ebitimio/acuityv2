@@ -33,6 +33,7 @@ import { ImportSheet } from "@/components/ui/import-sheet";
 import { TransactionDetailSheet } from "@/components/ui/transaction-detail-sheet";
 import { AIDrawer } from "@/components/ui/ai-drawer";
 import { AddTransactionSheet } from "@/components/ui/add-transaction-sheet";
+import { QuickAddSheet } from "@/components/ui/quick-add-sheet";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Modal } from "@/components/ui/modal";
 import { Field, Button } from "@/components/ui/form";
@@ -66,6 +67,7 @@ export default function SandboxPage() {
   const [isAdvisorOpen, setIsAdvisorOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAddTxnOpen, setIsAddTxnOpen] = useState(false);
+  const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [isUpcomingOpen, setIsUpcomingOpen] = useState(false);
   const [selectedTxn, setSelectedTxn] = useState<Txn | null>(null);
 
@@ -153,7 +155,7 @@ export default function SandboxPage() {
     setActiveScreen(tabId);
   };
 
-  const handleAddClick = () => setIsAddTxnOpen(true);
+  const handleAddClick = () => setIsQuickAddOpen(true);
 
   const handleDeleteTxn = async (t: Txn) => {
     try {
@@ -526,6 +528,7 @@ export default function SandboxPage() {
         onSignOut={handleSignOut}
       />
       <AddTransactionSheet isOpen={isAddTxnOpen} onClose={() => setIsAddTxnOpen(false)} onSaved={refreshData} />
+      <QuickAddSheet isOpen={isQuickAddOpen} onClose={() => setIsQuickAddOpen(false)} onSaved={refreshData} />
 
       <SetupWizard
         isOpen={setupWizardOpen}
