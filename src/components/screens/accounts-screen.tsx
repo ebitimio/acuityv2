@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { ScreenHeader, IconButton } from "@/components/ui/screen-header";
-import { Plus } from "lucide-react";
-import { getAccounts, createAccount, deleteAccount, getAssets, addAsset, deleteAsset } from "@/lib/supabase/database";
+import { Plus, Trash2 } from "lucide-react";
+import {
+  getAccounts, createAccount, deleteAccount, getAssets, addAsset, deleteAsset,
+} from "@/lib/supabase/database";
 import { AccountCard } from "@/components/ui/account-card";
 import { Modal } from "@/components/ui/modal";
 import { Field, SelectField, Button } from "@/components/ui/form";
@@ -11,62 +13,118 @@ import { useCurrency } from "@/lib/currency";
 import { useToast } from "@/components/ui/toast";
 import type { Account, Asset } from "@/lib/types";
 
+const todayISO = () => new Date().toISOString().slice(0, 10);
+
 export function AccountsScreen({ onBack }: { onBack: () => void }) {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [modal, setModal] = useState<"account" | "asset" | null>(null);
+
   const [name, setName] = useState("");
   const [institution, setInstitution] = useState("");
   const [type, setType] = useState("checking");
-  const [bal, setBal] = useState("");
+  const [balance, setBalance] = useState("");
+  const [balanceAsOf, setBalanceAsOf] = useState(todayISO());
+
   const [assetType, setAssetType] = useState<"asset" | "liability">("asset");
+
   const { fmt } = useCurrency();
   const toast = useToast();
 
   const load = async () => {
     const [a, s] = await Promise.all([getAccounts(), getAssets()]);
-    setAccounts(a); setAssets(s);
+    setAccounts(a);
+    setAssets(s);
   };
   useEffect(() => { load(); }, []);
 
   const addAcc = async () => {
-    if (!name || !institution) return;
-    try { await createAccount(name, institution, type, parseFloat(bal) || 0); toast("Account created"); setModal(null); setName(""); setInstitution(""); setBal(""); load(); }
-    catch { toast("Could not create", "err"); }
+    if (!name || !institution || !balance) {
+      toast("Name, bank, and current balance are required", "err");
+      return;
+    }
+    try {
+      await createAccount(name, institution, type, parseFloat(balance) || 0, balanceAsOf);
+      toast("Account created");
+      setModal(null);
+      setName("");
+      setInstitution("");
+      setBalance("");
+      setBalanceAsOf(todayISO());
+      load();
+    } catch (e: any) {
+      toast(e.message ?? "Could not create account", "err");
+    }
   };
 
   const addA = async () => {
-    if (!name || !bal) return;
-    try { await addAsset(name, assetType, parseFloat(bal)); toast("Added"); setModal(null); setName(""); setBal(""); load(); }
-    catch { toast("Could not add", "err"); }
+    if (!name || !balance) {
+      toast("Name and value required", "err");
+      return;
+    }
+    try {
+      await addAsset(name, assetType, parseFloat(balance) || 0);
+      toast("Added");
+      setModal(null);
+      setName("");
+      setBalance("");
+      load();
+    } catch (e: any) {
+      toast(e.message ?? "Could not add", "err");
+    }
   };
 
-  const delAcc = async (a: Account) => { if (confirm(`Delete ${a.name}?`)) { await deleteAccount(a.id); load(); } };
-  const delA = async (a: Asset) => { if (confirm(`Delete ${a.name}?`)) { await deleteAsset(a.id); load(); } };
+  const delAcc = async (a: Account) => {
+    if (!confirm(`Delete ${a.name}? This will delete all its transactions.`)) return;
+    await deleteAccount(a.id);
+    load();
+  };
+  const delA = async (a: Asset) => {
+    if (!confirm(`Delete ${a.name}?`)) return;
+    await deleteAsset(a.id);
+    load();
+  };
 
   const total = accounts.reduce((s, a) => s + (a.current_minor ?? a.balance_minor), 0) / 100;
-  const totalAssets = assets.filter(a => a.type === "asset").reduce((s, a) => s + a.value_minor, 0) / 100;
-  const totalLiab = assets.filter(a => a.type === "liability").reduce((s, a) => s + a.value_minor, 0) / 100;
+  const totalAssets = assets.filter((a) => a.type === "asset").reduce((s, a) => s + a.value_minor, 0) / 100;
+  const totalLiab = assets.filter((a) => a.type === "liability").reduce((s, a) => s + a.value_minor, 0) / 100;
 
   return (
     <div className="min-h-[100dvh] bg-black pb-32">
-      <ScreenHeader title="Accounts" onBack={onBack} right={<IconButton label="Add" onClick={() => setModal("account")}><Plus size={18} /></IconButton>} />
+      <ScreenHeader
+        title="Accounts"
+        onBack={onBack}
+        right={<IconButton label="Add" onClick={() => setModal("account")}><Plus size={18} /></IconButton>}
+      />
+
       <div className="px-4 pt-6 space-y-6">
         <div className="rounded-3xl bg-[var(--surface-2)] border border-[var(--line)] p-6 text-center">
           <p className="text-[13px] text-[var(--text-2)] mb-1">Liquid assets</p>
           <p className="text-[32px] font-bold tabular">{fmt(total)}</p>
+          <p className="text-[11px] text-[var(--text-3)] mt-1">
+            Balance = anchor + posted transactions after anchor date
+          </p>
         </div>
 
         <div>
-          <h3 className="text-[15px] font-semibold mb-3 px-1">Connected accounts</h3>
+          <h3 className="text-[15px] font-semibold mb-3 px-1">Accounts</h3>
           <div className="group-list">
             {accounts.map((a) => (
               <div key={a.id} className="relative">
                 <AccountCard account={a} onClick={() => {}} />
-                <button onClick={() => delAcc(a)} className="absolute top-1/2 right-2 -translate-y-1/2 text-[var(--danger)] text-[12px] px-2">Delete</button>
+                <div className="absolute top-1/2 right-2 -translate-y-1/2 flex items-center gap-1 text-[11px] text-[var(--text-3)]">
+                  <span>Checked {a.balance_as_of}</span>
+                  <button onClick={() => delAcc(a)} className="ml-2 text-[var(--danger)] p-1">
+                    <Trash2 size={14} />
+                  </button>
+                </div>
               </div>
             ))}
-            {accounts.length === 0 && <p className="px-4 py-6 text-center text-[14px] text-[var(--text-3)]">No accounts. Tap + to add one.</p>}
+            {accounts.length === 0 && (
+              <p className="px-4 py-6 text-center text-[14px] text-[var(--text-3)]">
+                No accounts. Tap + to add one.
+              </p>
+            )}
           </div>
         </div>
 
@@ -86,29 +144,53 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
             </div>
           </div>
           <div className="group-list mt-3">
-            {assets.map(a => (
+            {assets.map((a) => (
               <div key={a.id} className="flex items-center justify-between px-4 py-3">
-                <div><p className="text-[14px] font-medium">{a.name}</p><p className="text-[11px] text-[var(--text-3)] capitalize">{a.type}</p></div>
+                <div>
+                  <p className="text-[14px] font-medium">{a.name}</p>
+                  <p className="text-[11px] text-[var(--text-3)] capitalize">{a.type}</p>
+                </div>
                 <div className="flex items-center gap-3">
                   <span className="tabular font-semibold">{fmt(a.value_minor / 100)}</span>
-                  <button onClick={() => delA(a)} className="text-[var(--danger)] text-[12px]">Delete</button>
+                  <button onClick={() => delA(a)} className="text-[var(--danger)]"><Trash2 size={14} /></button>
                 </div>
               </div>
             ))}
-            {assets.length === 0 && <p className="px-4 py-6 text-center text-[14px] text-[var(--text-3)]">No offline assets yet.</p>}
+            {assets.length === 0 && (
+              <p className="px-4 py-6 text-center text-[14px] text-[var(--text-3)]">No offline assets yet.</p>
+            )}
           </div>
         </div>
       </div>
 
       <Modal open={modal === "account"} onClose={() => setModal(null)} title="Add Account">
         <div className="space-y-3">
-          <Field label="Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Main Checking" />
-          <Field label="Institution" value={institution} onChange={(e) => setInstitution(e.target.value)} placeholder="e.g. GTBank" />
+          <Field label="Account name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Main Checking" />
+          <Field label="Bank / institution" value={institution} onChange={(e) => setInstitution(e.target.value)} placeholder="e.g. GTBank" />
           <SelectField label="Type" value={type} onChange={(e) => setType(e.target.value)}>
-            <option value="checking">Current</option><option value="savings">Savings</option><option value="wallet">Wallet</option><option value="dom">Domiciliary</option>
+            <option value="checking">Current</option>
+            <option value="savings">Savings</option>
+            <option value="wallet">Wallet</option>
+            <option value="dom">Domiciliary</option>
           </SelectField>
-          <Field label="Opening balance (₦)" type="number" value={bal} onChange={(e) => setBal(e.target.value)} />
-          <Button onClick={addAcc}>Create</Button>
+          <Field
+            label="How much is in it right now? (₦)"
+            type="number"
+            value={balance}
+            onChange={(e) => setBalance(e.target.value)}
+            placeholder="0.00"
+          />
+          <Field
+            label="As of date"
+            type="date"
+            value={balanceAsOf}
+            onChange={(e) => setBalanceAsOf(e.target.value)}
+          />
+          <p className="text-[11px] text-[var(--text-3)] px-1">
+            The balance you enter is an anchor. Transactions dated before it won't move this balance.
+            You can re-anchor any time by checking the balance again.
+          </p>
+          <Button onClick={addAcc} disabled={!name || !institution || !balance}>Create account</Button>
         </div>
       </Modal>
 
@@ -119,7 +201,7 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
             <option value="liability">Liability (subtracts from net worth)</option>
           </SelectField>
           <Field label="Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Land in Lekki" />
-          <Field label="Value (₦)" type="number" value={bal} onChange={(e) => setBal(e.target.value)} />
+          <Field label="Value (₦)" type="number" value={balance} onChange={(e) => setBalance(e.target.value)} />
           <Button onClick={addA}>Save</Button>
         </div>
       </Modal>
