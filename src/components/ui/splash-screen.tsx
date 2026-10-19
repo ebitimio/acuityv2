@@ -23,29 +23,22 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
           transition={{ duration: 0.4, ease: "easeInOut" }}
           className="fixed inset-0 z-[999] flex items-center justify-center"
           style={{
-            background:
-              "linear-gradient(160deg, #7a0e0e 0%, #b3391f 35%, #e87a1a 75%, #ffb347 100%)",
+            background: "linear-gradient(160deg, #7a0e0e 0%, #b3391f 35%, #e87a1a 75%, #ffb347 100%)",
+            backgroundAttachment: "fixed",
             paddingTop: "env(safe-area-inset-top)",
             paddingBottom: "env(safe-area-inset-bottom)",
+            paddingLeft: "env(safe-area-inset-left)",
+            paddingRight: "env(safe-area-inset-right)",
+            margin: 0,
+            top: 0,
+            bottom: 0,
+            left: 0,
+            right: 0,
+            // Force the gradient to paint behind the safe-area strips
+            WebkitTransform: "translateZ(0)",
+            transform: "translateZ(0)",
           }}
         >
-          {/* Top safe-area strip */}
-          <div
-            className="absolute top-0 left-0 right-0 pointer-events-none"
-            style={{
-              height: "env(safe-area-inset-top)",
-              background: "linear-gradient(180deg, #7a0e0e, #b3391f)",
-            }}
-          />
-          {/* Bottom safe-area strip */}
-          <div
-            className="absolute bottom-0 left-0 right-0 pointer-events-none"
-            style={{
-              height: "env(safe-area-inset-bottom)",
-              background: "linear-gradient(0deg, #ffb347, #e87a1a)",
-            }}
-          />
-
           <motion.div
             initial={{ opacity: 0, scale: 0.92 }}
             animate={{ opacity: 1, scale: 1 }}

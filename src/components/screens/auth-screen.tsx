@@ -64,23 +64,6 @@ export function AuthScreen() {
         margin: 0,
       }}
     >
-      {/* Top safe-area strip */}
-      <div
-        className="absolute top-0 left-0 right-0 pointer-events-none z-[1]"
-        style={{
-          height: "env(safe-area-inset-top)",
-          background: "linear-gradient(180deg, #7a0e0e, #b3391f)",
-        }}
-      />
-      {/* Bottom safe-area strip */}
-      <div
-        className="absolute bottom-0 left-0 right-0 pointer-events-none z-[1]"
-        style={{
-          height: "env(safe-area-inset-bottom)",
-          background: "linear-gradient(0deg, #ffb347, #e87a1a)",
-        }}
-      />
-
       <div className="relative w-full h-[200px] flex items-center justify-center pointer-events-none shrink-0">
         <motion.div
           animate={{ rotate: -12, x: -25, y: 10 }}
