@@ -383,3 +383,33 @@ export async function importStatement(): Promise<{ inserted: number; skipped: nu
 
 // Backward-compatible alias so no other file breaks
 export const importCsvStatement = importStatement;
+/* ---------- setup status / onboarding ---------- */
+
+export interface SetupStatus {
+  workspace_id: string | null;
+  onboarding_step: number;
+  has_account: boolean;
+  has_income: boolean;
+  has_bills: boolean;
+  has_budget: boolean;
+  is_complete: boolean;
+}
+
+export async function getSetupStatus(): Promise<SetupStatus> {
+  const { sb } = await ctx();
+  const { data, error } = await sb.rpc("get_setup_status");
+  if (error) throw error;
+  return data as SetupStatus;
+}
+
+export async function completeOnboarding(): Promise<void> {
+  const { sb } = await ctx();
+  const { error } = await sb.rpc("complete_onboarding");
+  if (error) throw error;
+}
+
+export async function updateWorkspaceBudget(newLimitMinor: number): Promise<void> {
+  const { sb, workspaceId } = await ctx();
+  const { error } = await sb.from("workspaces").update({ budget_limit_minor: newLimitMinor }).eq("id", workspaceId);
+  if (error) throw error;
+}
