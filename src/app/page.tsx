@@ -2,7 +2,10 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { getHomeMetrics, getRecentTransactions, deleteTransaction, clearDataCache } from "@/lib/supabase/database";
+import {
+  getHomeMetrics, getRecentTransactions, deleteTransaction, clearDataCache,
+  getSetupStatus, completeOnboarding, type SetupStatus,
+} from "@/lib/supabase/database";
 import { useWorkspace } from "@/lib/workspace";
 import type { Txn, HomeMetrics } from "@/lib/types";
 import { AuthScreen } from "@/components/screens/auth-screen";
@@ -11,6 +14,8 @@ import { HomeSkeleton } from "@/components/ui/skeleton-loader";
 import { FloatingTabBar } from "@/components/ui/floating-tab-bar";
 import { NumberRoll } from "@/components/ui/number-roll";
 import { TransactionRow } from "@/components/ui/transaction-row";
+import { SetupChecklist } from "@/components/screens/setup-checklist";
+import { SetupWizard } from "@/components/screens/setup-wizard";
 import { useCurrency } from "@/lib/currency";
 import { useToast } from "@/components/ui/toast";
 import { AnalyticsScreen } from "@/components/screens/analytics-screen";
@@ -60,6 +65,12 @@ export default function SandboxPage() {
 
   const [metrics, setMetrics] = useState<HomeMetrics | null>(null);
   const [transactions, setTransactions] = useState<Txn[]>([]);
+  const [setupStatus, setSetupStatus] = useState<SetupStatus | null>(null);
+  const [setupError, setSetupError] = useState<string | null>(null);
+  const [setupWizardOpen, setSetupWizardOpen] = useState(false);
+  const [setupWizardStep, setSetupWizardStep] = useState<"account" | "income" | "bills" | "budget">("account");
+  const [checklistDismissed, setChecklistDismissed] = useState(false);
+
   const [navHidden, setNavHidden] = useState(false);
   const [wsOpen, setWsOpen] = useState(false);
   const [wsCreateOpen, setWsCreateOpen] = useState(false);
@@ -76,13 +87,28 @@ export default function SandboxPage() {
   const refreshData = useCallback(async () => {
     try {
       clearDataCache();
-      const [m, t] = await Promise.all([getHomeMetrics(), getRecentTransactions(8)]);
+      const [m, t] = await Promise.all([
+        getHomeMetrics(),
+        getRecentTransactions(8),
+      ]);
       setMetrics(m ?? ZERO_METRICS);
       setTransactions(t ?? []);
-    } catch (e) {
+    } catch (e: any) {
       console.error("refreshData failed:", e);
       setMetrics(ZERO_METRICS);
       setTransactions([]);
+    }
+
+    // Setup status separately so failure doesn't block the dashboard
+    try {
+      const s = await getSetupStatus();
+      console.log("[Acuity] setupStatus:", s);
+      setSetupStatus(s);
+      setSetupError(null);
+    } catch (e: any) {
+      console.error("[Acuity] getSetupStatus failed:", e);
+      setSetupError(e?.message ?? String(e));
+      setSetupStatus(null);
     }
   }, []);
 
@@ -97,12 +123,10 @@ export default function SandboxPage() {
     return () => subscription.unsubscribe();
   }, [supabase.auth]);
 
-  // First load — do NOT wait for activeWs
   useEffect(() => {
     if (session) refreshData();
   }, [session, refreshData]);
 
-  // Reload when active workspace ID changes
   useEffect(() => {
     if (session && activeWs?.id) refreshData();
   }, [activeWs?.id]);
@@ -172,11 +196,24 @@ export default function SandboxPage() {
     try {
       await deleteWorkspace(w.id);
       toast(`Deleted "${w.name}"`);
-      if (w.id === activeWs?.id) {
-        window.location.href = "/";
-      }
+      if (w.id === activeWs?.id) window.location.href = "/";
     } catch (err: any) {
       toast(`Could not delete: ${err?.message ?? "Unknown error"}`, "err");
+    }
+  };
+
+  const handleStartSetupStep = (step: "account" | "income" | "bills" | "budget") => {
+    setSetupWizardStep(step);
+    setSetupWizardOpen(true);
+  };
+
+  const handleDismissChecklist = async () => {
+    try {
+      await completeOnboarding();
+      setChecklistDismissed(true);
+      toast("Setup skipped — you can finish any time from Accounts or Commitments");
+    } catch {
+      setChecklistDismissed(true);
     }
   };
 
@@ -189,6 +226,7 @@ export default function SandboxPage() {
   const netWorthNGN = m.net_worth_minor / 100;
   const totalSpentNGN = m.total_spent_minor / 100;
   const totalIncomeNGN = m.total_income_minor / 100;
+  const showChecklist = !!setupStatus && !setupStatus.is_complete && !checklistDismissed;
 
   return (
     <main className="min-h-[100dvh] bg-black relative overflow-x-hidden flex flex-col">
@@ -236,15 +274,9 @@ export default function SandboxPage() {
                   const canDelete = workspaces.length > 1;
                   return (
                     <div key={w.id} className={`flex items-center justify-between px-3 py-2 rounded-lg text-[14px] ${isActive ? "bg-[var(--brand)]/20 text-[var(--brand)]" : "hover:bg-white/5 text-white"}`}>
-                      <button onClick={() => handleSwitchWorkspace(w.id)} className="flex-1 text-left truncate">
-                        {w.name}
-                      </button>
+                      <button onClick={() => handleSwitchWorkspace(w.id)} className="flex-1 text-left truncate">{w.name}</button>
                       {canDelete && (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleDeleteWorkspace(w); }}
-                          className="p-1 text-[var(--danger)] hover:bg-[var(--danger)]/20 rounded ml-2"
-                          aria-label={`Delete ${w.name}`}
-                        >
+                        <button onClick={(e) => { e.stopPropagation(); handleDeleteWorkspace(w); }} className="p-1 text-[var(--danger)] hover:bg-[var(--danger)]/20 rounded ml-2" aria-label={`Delete ${w.name}`}>
                           <Trash2 size={14} />
                         </button>
                       )}
@@ -273,6 +305,23 @@ export default function SandboxPage() {
               </button>
             </div>
           </div>
+
+          {/* DEBUG: show setup status briefly so you can confirm it's loading */}
+          {setupError && (
+            <div className="px-4 mt-2">
+              <p className="text-[11px] text-[var(--danger)]">Setup status failed: {setupError}</p>
+            </div>
+          )}
+
+          {showChecklist && (
+            <div className="px-4 mt-6">
+              <SetupChecklist
+                status={setupStatus!}
+                onStartStep={handleStartSetupStep}
+                onDismiss={handleDismissChecklist}
+              />
+            </div>
+          )}
 
           <div className="px-4 mt-6 grid grid-cols-2 gap-3">
             <button onClick={() => setActiveScreen("commitments")} className="rounded-3xl bg-gradient-to-b from-[#3a1a0a] to-[#0a0a0a] border border-white/10 p-4 flex flex-col justify-between text-left hover:border-[#e87a1a]/50 transition-colors aspect-[4/3]">
@@ -331,9 +380,9 @@ export default function SandboxPage() {
                 <EmptyState
                   icon={Receipt}
                   title="No transactions yet"
-                  body="Import your bank statement to start tracking your finances."
-                  action="Import statement"
-                  onAction={() => setIsImportOpen(true)}
+                  body="Once you add an account and log a transaction, it will appear here."
+                  action="Add transaction"
+                  onAction={() => setIsAddTxnOpen(true)}
                 />
               ) : (
                 transactions.map((t) => (
@@ -352,18 +401,17 @@ export default function SandboxPage() {
       <SettingsSheet isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} user={session.user} onSignOut={handleSignOut} />
       <AddTransactionSheet isOpen={isAddTxnOpen} onClose={() => setIsAddTxnOpen(false)} onSaved={refreshData} />
 
+      <SetupWizard
+        isOpen={setupWizardOpen}
+        initialStep={setupWizardStep}
+        onClose={() => { setSetupWizardOpen(false); refreshData(); }}
+        onRefresh={refreshData}
+      />
+
       <Modal open={wsCreateOpen} onClose={() => { setWsCreateOpen(false); setWsNewName(""); }} title="New workspace">
         <div className="space-y-3">
-          <Field
-            label="Workspace name"
-            value={wsNewName}
-            onChange={(e) => setWsNewName(e.target.value)}
-            placeholder="e.g. Side Business"
-            autoFocus
-          />
-          <Button loading={wsBusy} onClick={handleCreateWorkspace} disabled={!wsNewName.trim()}>
-            Create
-          </Button>
+          <Field label="Workspace name" value={wsNewName} onChange={(e) => setWsNewName(e.target.value)} placeholder="e.g. Side Business" autoFocus />
+          <Button loading={wsBusy} onClick={handleCreateWorkspace} disabled={!wsNewName.trim()}>Create</Button>
         </div>
       </Modal>
 
