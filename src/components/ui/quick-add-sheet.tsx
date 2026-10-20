@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { Modal } from "./modal";
 import { Button } from "./form";
 import { useCurrency } from "@/lib/currency";
 import { createClient } from "@/lib/supabase/client";
@@ -97,118 +98,121 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
   ];
 
   return (
-    <div className="flex flex-col h-full min-h-0">
-      {/* Scrollable top */}
-      <div className="flex-1 overflow-y-auto min-h-0">
-        <div className="mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-2 rounded-full bg-[var(--brand)]/10 px-3 py-1.5 text-[13px] font-medium text-[var(--brand)]">
-            {activeWs?.name || "Main Acc"}
+    <Modal open={isOpen} onClose={onClose} title="Quick add">
+      <div className="flex flex-col h-[75dvh] min-h-0">
+        
+        {/* Scrollable top */}
+        <div className="flex-1 overflow-y-auto min-h-0">
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-2 rounded-full bg-[var(--brand)]/10 px-3 py-1.5 text-[13px] font-medium text-[var(--brand)]">
+              {activeWs?.name || "Main Acc"}
+            </div>
+          </div>
+
+          <div className="flex flex-col items-center justify-center py-2">
+            <p className="text-[14px] font-medium text-[var(--text-3)] mb-1">
+              {direction === "credit" ? "Received" : "Spent"}
+            </p>
+            <p className="text-[44px] font-bold tabular tracking-tight text-[var(--text-1)] leading-none">
+              ₦{amount || "0"}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 mt-3 no-scrollbar justify-center">
+            {quickPills.map((p) => (
+              <button
+                key={p.label}
+                onClick={() => setAmount(p.amount.toString())}
+                className="whitespace-nowrap rounded-full border border-[var(--line)] bg-[var(--surface-2)] px-3 py-1.5 text-[12px] font-medium text-[var(--text-2)]"
+              >
+                {p.label} ₦{p.amount.toLocaleString()}
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-4 space-y-3">
+            <div>
+              <p className="mb-1.5 px-1 text-[13px] font-medium text-[var(--text-3)]">Category</p>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-full rounded-xl border border-[var(--line-strong)] bg-[var(--surface-2)] px-4 py-3 text-[15px] text-[var(--text-1)] focus:border-[var(--brand)] outline-none appearance-none"
+              >
+                {categoryNames.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <p className="mb-1.5 px-1 text-[13px] font-medium text-[var(--text-3)]">Date</p>
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="w-full rounded-xl border border-[var(--line-strong)] bg-[var(--surface-2)] px-4 py-3 text-[15px] text-[var(--text-1)] focus:border-[var(--brand)] outline-none"
+              />
+            </div>
           </div>
         </div>
 
-        <div className="flex flex-col items-center justify-center py-2">
-          <p className="text-[14px] font-medium text-[var(--text-3)] mb-1">
-            {direction === "credit" ? "Received" : "Spent"}
-          </p>
-          <p className="text-[44px] font-bold tabular tracking-tight text-[var(--text-1)] leading-none">
-            ₦{amount || "0"}
-          </p>
-        </div>
+        {/* Fixed bottom: keypad + save */}
+        <div className="shrink-0 pt-3 mt-2 border-t border-[var(--line)]">
+          {error && (
+            <p className="mb-2 text-center text-[12px] font-medium text-[var(--danger)]">
+              {error}
+            </p>
+          )}
 
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 mt-3 no-scrollbar justify-center">
-          {quickPills.map((p) => (
+          <div className="grid grid-cols-3 gap-1.5 mb-2">
+            {["1", "2", "3", "4", "5", "6", "7", "8", "9", "000", "0", "backspace"].map((key) => (
+              <button
+                key={key}
+                onClick={() => handleKeyPress(key)}
+                className="flex h-11 items-center justify-center rounded-xl bg-[var(--surface-3)] text-[19px] font-medium text-[var(--text-1)] active:bg-[var(--fill-2)] transition-colors"
+              >
+                {key === "backspace" ? <Delete size={20} className="text-[var(--text-2)]" /> : key}
+              </button>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-2 gap-1.5 mb-2">
             <button
-              key={p.label}
-              onClick={() => setAmount(p.amount.toString())}
-              className="whitespace-nowrap rounded-full border border-[var(--line)] bg-[var(--surface-2)] px-3 py-1.5 text-[12px] font-medium text-[var(--text-2)]"
+              onClick={() => setDirection("debit")}
+              className={cn(
+                "flex h-10 items-center justify-center rounded-xl text-[13px] font-medium transition-colors",
+                direction === "debit"
+                  ? "bg-[var(--text-1)] text-[var(--bg)]"
+                  : "bg-[var(--surface-3)] text-[var(--text-3)]"
+              )}
             >
-              {p.label} ₦{p.amount.toLocaleString()}
+              Money out
             </button>
-          ))}
-        </div>
-
-        <div className="mt-4 space-y-3">
-          <div>
-            <p className="mb-1.5 px-1 text-[13px] font-medium text-[var(--text-3)]">Category</p>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full rounded-xl border border-[var(--line-strong)] bg-[var(--surface-2)] px-4 py-3 text-[15px] text-[var(--text-1)] focus:border-[var(--brand)] outline-none appearance-none"
+            <button
+              onClick={() => setDirection("credit")}
+              className={cn(
+                "flex h-10 items-center justify-center rounded-xl text-[13px] font-medium transition-colors",
+                direction === "credit"
+                  ? "bg-[var(--brand)] text-white"
+                  : "bg-[var(--surface-3)] text-[var(--text-3)]"
+              )}
             >
-              {categoryNames.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
+              Money in
+            </button>
           </div>
 
-          <div>
-            <p className="mb-1.5 px-1 text-[13px] font-medium text-[var(--text-3)]">Date</p>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="w-full rounded-xl border border-[var(--line-strong)] bg-[var(--surface-2)] px-4 py-3 text-[15px] text-[var(--text-1)] focus:border-[var(--brand)] outline-none"
-            />
-          </div>
+          <Button
+            onClick={handleSave}
+            loading={isSaving}
+            disabled={parseNumberInput(amount) <= 0}
+            className="w-full h-12 rounded-xl text-[15px]"
+          >
+            Save
+          </Button>
         </div>
       </div>
-
-      {/* Fixed bottom: keypad + save */}
-      <div className="shrink-0 pt-3 mt-2 border-t border-[var(--line)]">
-        {error && (
-          <p className="mb-2 text-center text-[12px] font-medium text-[var(--danger)]">
-            {error}
-          </p>
-        )}
-
-        <div className="grid grid-cols-3 gap-1.5 mb-2">
-          {["1", "2", "3", "4", "5", "6", "7", "8", "9", "000", "0", "backspace"].map((key) => (
-            <button
-              key={key}
-              onClick={() => handleKeyPress(key)}
-              className="flex h-11 items-center justify-center rounded-xl bg-[var(--surface-3)] text-[19px] font-medium text-[var(--text-1)] active:bg-[var(--fill-2)] transition-colors"
-            >
-              {key === "backspace" ? <Delete size={20} className="text-[var(--text-2)]" /> : key}
-            </button>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-2 gap-1.5 mb-2">
-          <button
-            onClick={() => setDirection("debit")}
-            className={cn(
-              "flex h-10 items-center justify-center rounded-xl text-[13px] font-medium transition-colors",
-              direction === "debit"
-                ? "bg-[var(--text-1)] text-[var(--bg)]"
-                : "bg-[var(--surface-3)] text-[var(--text-3)]"
-            )}
-          >
-            Money out
-          </button>
-          <button
-            onClick={() => setDirection("credit")}
-            className={cn(
-              "flex h-10 items-center justify-center rounded-xl text-[13px] font-medium transition-colors",
-              direction === "credit"
-                ? "bg-[var(--brand)] text-white"
-                : "bg-[var(--surface-3)] text-[var(--text-3)]"
-            )}
-          >
-            Money in
-          </button>
-        </div>
-
-        <Button
-          onClick={handleSave}
-          loading={isSaving}
-          disabled={parseNumberInput(amount) <= 0}
-          className="w-full h-12 rounded-xl text-[15px]"
-        >
-          Save
-        </Button>
-      </div>
-    </div>
+    </Modal>
   );
 }
