@@ -27,42 +27,42 @@ export function SafeToSpendHero({
   nextIncomeDate,
 }: Props) {
   const { fmt } = useCurrency();
-  const isNegativeNet = netAcross < 0;
   const hasBudget = budgetLimit > 0;
   const budgetUsedPct = hasBudget ? Math.min((spentThisMonth / budgetLimit) * 100, 100) : 0;
   const budgetRemaining = hasBudget ? Math.max(budgetLimit - spentThisMonth, 0) : 0;
   const cycleProgressPct = Math.min(((30 - daysUntilIncome) / 30) * 100, 100);
 
-  // Daily safe-to-spend from the RPC. Fallback to 0 if no data.
   const dailySafe = data?.daily_safe_minor ? data.daily_safe_minor / 100 : 0;
   const hasIncome = data?.has_income ?? false;
 
+  // The exact orange-red requested
+  const heroBg = "#DE3121";
+
   return (
-    <div className="card p-5">
-      <p className="text-center text-[13px] font-semibold text-[var(--text-2)]">
+    <div className="p-5 rounded-[24px]" style={{ background: heroBg }}>
+      <p className="text-center text-[13px] font-semibold text-black/70">
         {periodLabel}
       </p>
 
       {/* Net across accounts hero */}
       <div className="mt-3">
-        <p className="text-[12px] text-[var(--text-3)]">Net across accounts</p>
-        <div
-          className={`mt-1 text-[38px] font-bold leading-none tracking-tight ${
-            isNegativeNet ? "text-[var(--danger)]" : "text-[var(--text-1)]"
-          }`}
-        >
-          <NumberRoll value={netAcross} showDecimals={false} />
+        <p className="text-[12px] text-black/70">Net across accounts</p>
+        <div className="mt-1 text-[38px] font-bold leading-none tracking-tight text-black">
+          {/* Overriding NumberRoll's text color with a wrapper class */}
+          <span className="[&_span]:!text-black">
+            <NumberRoll value={netAcross} showDecimals={false} />
+          </span>
         </div>
-        <p className="mt-1 text-[12px] text-[var(--text-3)]">
+        <p className="mt-1 text-[12px] text-black/70">
           {fmt(spentThisMonth)} spent this month
         </p>
       </div>
 
-      {/* Safe to spend today — highlighted pill */}
+      {/* Safe to spend today — black pill with white text */}
       {hasIncome && (
-        <div className="mt-3 flex items-center justify-between rounded-xl bg-[var(--brand)]/10 px-3 py-2">
-          <span className="text-[11px] font-medium text-[var(--brand)]">Safe to spend today</span>
-          <span className="tabular text-[15px] font-bold text-[var(--brand)]">
+        <div className="mt-3 flex items-center justify-between rounded-xl bg-black px-3 py-2">
+          <span className="text-[11px] font-medium text-white">Safe to spend today</span>
+          <span className="tabular text-[15px] font-bold text-white">
             {fmt(dailySafe)}
           </span>
         </div>
@@ -71,47 +71,52 @@ export function SafeToSpendHero({
       {/* Income / Balance columns */}
       <div className="mt-4 grid grid-cols-2 gap-3">
         <div>
-          <p className="text-[11px] text-[var(--text-3)]">Income</p>
-          <p className="mt-0.5 text-[15px] font-semibold text-[var(--gain)]">
+          <p className="text-[11px] text-black/70">Income</p>
+          <p className="mt-0.5 text-[15px] font-semibold" style={{ color: "#22c55e" }}>
             {fmt(incomeThisMonth)}
           </p>
         </div>
         <div>
-          <p className="text-[11px] text-[var(--text-3)]">Balance</p>
-          <p className="mt-0.5 text-[15px] font-semibold text-[var(--text-1)]">
+          <p className="text-[11px] text-black/70">Balance</p>
+          <p className="mt-0.5 text-[15px] font-semibold text-black">
             {fmt(netAcross)}
           </p>
         </div>
       </div>
 
-      {/* Ring + progress bars — only show if budget is set */}
+      {/* Ring + progress bars — black accent */}
       <div className="mt-4 grid grid-cols-[44px_1fr] gap-3">
-        <RingProgress
-          percentage={hasBudget ? budgetUsedPct : 0}
-          label={hasBudget ? `${Math.round(budgetUsedPct)}%` : "—"}
-        />
+        <div className="[&_svg]:!text-black [&_circle]:!stroke-black">
+          <RingProgress
+            percentage={hasBudget ? budgetUsedPct : 0}
+            label={hasBudget ? `${Math.round(budgetUsedPct)}%` : "—"}
+          />
+        </div>
         <div className="min-w-0">
           <div className="flex items-baseline justify-between gap-2">
-            <p className="truncate text-[11px] text-[var(--text-3)]">Monthly budget</p>
-            <p className="tabular shrink-0 text-[11px] text-[var(--text-2)]">
+            <p className="truncate text-[11px] text-black/70">Monthly budget</p>
+            <p className="tabular shrink-0 text-[11px] text-black/80">
               {hasBudget ? `${fmt(budgetRemaining)} left` : "Not set"}
             </p>
           </div>
-          <div className="mt-1 h-[3px] w-full overflow-hidden rounded-full bg-[var(--fill-2)]">
+          {/* Black progress bar */}
+          <div className="mt-1 h-[3px] w-full overflow-hidden rounded-full bg-black/20">
             <div
-              className="h-full rounded-full bg-[var(--brand)]"
+              className="h-full rounded-full bg-black"
               style={{ width: `${hasBudget ? budgetUsedPct : 0}%` }}
             />
           </div>
+          
           <div className="mt-2 flex items-baseline justify-between gap-2">
-            <p className="truncate text-[11px] text-[var(--text-3)]">Cycle progress</p>
-            <p className="tabular shrink-0 text-[11px] text-[var(--text-2)]">
+            <p className="truncate text-[11px] text-black/70">Cycle progress</p>
+            <p className="tabular shrink-0 text-[11px] text-black/80">
               {daysUntilIncome > 0 ? `${daysUntilIncome}d until ${nextIncomeDate}` : "No income set"}
             </p>
           </div>
-          <div className="mt-1 h-[3px] w-full overflow-hidden rounded-full bg-[var(--fill-2)]">
+          {/* Black cycle progress bar */}
+          <div className="mt-1 h-[3px] w-full overflow-hidden rounded-full bg-black/20">
             <div
-              className="h-full rounded-full bg-[var(--text-1)]"
+              className="h-full rounded-full bg-black"
               style={{ width: `${cycleProgressPct}%` }}
             />
           </div>
