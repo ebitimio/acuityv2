@@ -69,7 +69,8 @@ export function TransactionDetailSheet({ isOpen, onClose, onSaved, transaction }
             </div>
             <p className="text-[17px] font-medium">{transaction.description_clean || transaction.description_raw}</p>
             <p className={`text-[32px] font-bold tabular ${transaction.direction === "credit" ? "text-[var(--gain)]" : ""}`}>
-              {transaction.direction === "credit" && "+"}
+              {/* FIX: show + for credit, - for debit */}
+              {transaction.direction === "credit" ? "+" : "-"}
               {fmt(transaction.amount_minor / 100)}
             </p>
           </div>

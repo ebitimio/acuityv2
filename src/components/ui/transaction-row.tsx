@@ -71,7 +71,8 @@ export function TransactionRow({
               income ? "text-[var(--gain)]" : "text-[var(--text-1)]"
             }`}
           >
-            {income && "+"}
+            {/* FIX: Debits get a "-" prefix, credits get a "+" prefix */}
+            {income ? "+" : "-"}
             {fmt(txn.amount_minor / 100)}
           </p>
           <p className="text-[11px] text-[var(--text-3)]">{shortDate(txn.date)}</p>
