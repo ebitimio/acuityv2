@@ -55,55 +55,76 @@ export function AuthScreen() {
 
   return (
     <div
-      className="w-full h-[100dvh] overflow-hidden flex flex-col items-center justify-center px-6"
+      className="relative flex h-[100dvh] w-full flex-col items-center justify-center overflow-hidden px-6"
       style={{
-        background:
-          "linear-gradient(160deg, #7a0e0e 0%, #b3391f 35%, #e87a1a 75%, #ffb347 100%)",
+        background: "var(--bg)",
         paddingTop: "calc(env(safe-area-inset-top) + 16px)",
         paddingBottom: "calc(env(safe-area-inset-bottom) + 16px)",
       }}
     >
-      {/* ATM cards */}
-      <div className="relative w-full h-[160px] flex items-center justify-center pointer-events-none shrink-0">
+      {/* Faint teal ambient glow */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute"
+        style={{
+          top: "-20%",
+          right: "-20%",
+          width: "80vmax",
+          height: "80vmax",
+          background:
+            "radial-gradient(closest-side, var(--brand-soft), transparent 70%)",
+        }}
+      />
+
+      {/* Floating neutral glass tiles */}
+      <div className="relative z-10 mb-6 flex h-[140px] w-full shrink-0 items-center justify-center pointer-events-none">
         <motion.div
-          animate={{ rotate: -12, x: -25, y: 10 }}
-          transition={{ duration: 4, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-          className="absolute top-6 w-56 h-36 bg-gradient-to-tr from-[#2a0a0a] to-[#4a0e0e] rounded-3xl border border-white/10 shadow-2xl"
-        />
-        <motion.div
-          animate={{ rotate: 8, x: 25, y: -10 }}
-          transition={{ duration: 4, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-          className="absolute top-2 w-56 h-36 bg-gradient-to-tr from-[#5a1a1a] to-[#8b1a1a] rounded-3xl border border-white/20 shadow-2xl z-10 overflow-hidden"
+          animate={{ rotate: -10, x: -22, y: 8 }}
+          transition={{ duration: 5, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
+          className="absolute"
         >
-          <div className="absolute top-4 left-4 text-white/80 font-bold italic text-sm z-10">VISA</div>
-          <div className="absolute bottom-6 left-4 text-white/90 font-mono text-sm tracking-widest z-10">
-            •••• 4291
-          </div>
+          <GlassSurface
+            tier="thick"
+            radius={22}
+            className="h-[120px] w-[180px]"
+          />
+        </motion.div>
+        <motion.div
+          animate={{ rotate: 6, x: 22, y: -8 }}
+          transition={{ duration: 5, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
+          className="absolute"
+        >
+          <GlassSurface
+            tier="regular"
+            radius={22}
+            className="h-[120px] w-[180px]"
+          />
         </motion.div>
       </div>
 
-      {/* ACUITY wordmark */}
+      {/* Wordmark */}
       <motion.h1
-        initial={{ opacity: 0, scale: 0.92 }}
+        initial={{ opacity: 0, scale: 0.94 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ ...spring.soft, delay: 0.1 }}
-        className="text-black font-black shrink-0 mt-1"
+        className="relative z-10 shrink-0 font-black"
         style={{
-          fontSize: "clamp(32px, 10vw, 52px)",
+          fontSize: "clamp(36px, 12vw, 56px)",
           lineHeight: 1,
           letterSpacing: "-0.045em",
           fontWeight: 900,
+          color: "var(--text-1)",
         }}
       >
         ACUITY
       </motion.h1>
 
-      {/* Title */}
-      <div className="flex flex-col items-center mt-2 mb-3 shrink-0">
-        <h2 className="text-[18px] font-bold text-white text-center">
+      {/* Subtitle */}
+      <div className="relative z-10 mt-2 mb-4 flex shrink-0 flex-col items-center">
+        <h2 className="text-center text-[18px] font-bold text-[var(--text-1)]">
           {mode === "login" ? "Welcome back." : mode === "signup" ? "Create Acuity." : "Verify Email."}
         </h2>
-        <p className="text-[12px] text-white/80 mt-1 text-center">
+        <p className="mt-1 text-center text-[12px] text-[var(--text-2)]">
           {mode === "login" ? "Sign in to access your AI wealth manager." : "Start tracking your finances today."}
         </p>
       </div>
@@ -113,31 +134,43 @@ export function AuthScreen() {
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ ...spring.smooth, delay: 0.2 }}
-        className="w-full max-w-[340px] shrink-0"
+        className="relative z-10 w-full max-w-[340px] shrink-0"
       >
-        <GlassSurface tier="thick" radius={24} tint="rgba(10, 8, 6, 0.72)" className="p-4">
+        <GlassSurface tier="thick" radius={24} className="p-4">
           <form onSubmit={submit} className="flex flex-col gap-2.5">
             {mode !== "otp" ? (
               <>
                 <label className="field">
-                  <Mail size={18} className="shrink-0 text-white/40" />
-                  <input type="email" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                  <Mail size={18} className="shrink-0 text-[var(--text-3)]" />
+                  <input
+                    type="email"
+                    placeholder="Email address"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
                 </label>
                 <label className="field">
-                  <Lock size={18} className="shrink-0 text-white/40" />
-                  <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                  <Lock size={18} className="shrink-0 text-[var(--text-3)]" />
+                  <input
+                    type="password"
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
                 </label>
                 {mode === "signup" && password.length > 0 && (
                   <div className="flex gap-1">
-                    <div className={`h-1 flex-1 rounded-full ${password.length >= 1 ? "bg-[var(--danger)]" : "bg-white/10"}`} />
-                    <div className={`h-1 flex-1 rounded-full ${password.length >= 6 ? "bg-[var(--warn)]" : "bg-white/10"}`} />
-                    <div className={`h-1 flex-1 rounded-full ${isStrong ? "bg-[var(--gain)]" : "bg-white/10"}`} />
+                    <div className={`h-1 flex-1 rounded-full ${password.length >= 1 ? "bg-[var(--danger)]" : "bg-[var(--fill-2)]"}`} />
+                    <div className={`h-1 flex-1 rounded-full ${password.length >= 6 ? "bg-[var(--warn)]" : "bg-[var(--fill-2)]"}`} />
+                    <div className={`h-1 flex-1 rounded-full ${isStrong ? "bg-[var(--gain)]" : "bg-[var(--fill-2)]"}`} />
                   </div>
                 )}
               </>
             ) : (
               <label className="field">
-                <Lock size={18} className="shrink-0 text-white/40" />
+                <Lock size={18} className="shrink-0 text-[var(--text-3)]" />
                 <input
                   type="text"
                   placeholder="6-digit code"
@@ -150,7 +183,11 @@ export function AuthScreen() {
             )}
 
             {message && (
-              <p className={`text-[11px] text-center ${message.includes("Check") ? "text-[var(--gain)]" : "text-[var(--warn)]"}`}>
+              <p
+                className={`text-center text-[11px] ${
+                  message.includes("Check") ? "text-[var(--gain)]" : "text-[var(--warn)]"
+                }`}
+              >
                 {message}
               </p>
             )}
@@ -168,19 +205,19 @@ export function AuthScreen() {
 
           {mode !== "otp" && (
             <>
-              <div className="flex items-center gap-3 my-2.5">
-                <div className="h-px bg-white/15 flex-1" />
-                <span className="text-[10px] text-white/50">or</span>
-                <div className="h-px bg-white/15 flex-1" />
+              <div className="my-2.5 flex items-center gap-3">
+                <div className="h-px flex-1 bg-[var(--line)]" />
+                <span className="text-[10px] text-[var(--text-3)]">or</span>
+                <div className="h-px flex-1 bg-[var(--line)]" />
               </div>
               <motion.button
                 onClick={google}
                 disabled={loading}
                 whileTap={{ scale: 0.97 }}
                 transition={spring.snappy}
-                className="w-full py-2.5 bg-white/10 border border-white/15 text-white rounded-full font-medium text-[13px] flex items-center justify-center gap-2 hover:bg-white/20 transition-colors"
+                className="w-full rounded-full border border-[var(--line)] bg-[var(--fill-1)] py-2.5 text-[13px] font-medium text-[var(--text-1)] flex items-center justify-center gap-2 hover:bg-[var(--fill-2)] transition-colors"
               >
-                <svg className="w-4 h-4" viewBox="0 0 24 24">
+                <svg className="h-4 w-4" viewBox="0 0 24 24">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
                   <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
                   <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
@@ -191,13 +228,19 @@ export function AuthScreen() {
             </>
           )}
 
-          <div className="text-center mt-2.5">
+          <div className="mt-2.5 text-center">
             {mode === "otp" ? (
-              <button onClick={() => setMode("signup")} className="text-[11px] text-white/60 flex items-center justify-center gap-1 mx-auto">
+              <button
+                onClick={() => setMode("signup")}
+                className="mx-auto flex items-center justify-center gap-1 text-[11px] text-[var(--text-3)]"
+              >
                 <ArrowLeft size={11} /> Back
               </button>
             ) : (
-              <button onClick={() => setMode(mode === "login" ? "signup" : "login")} className="text-[11px] text-white/60">
+              <button
+                onClick={() => setMode(mode === "login" ? "signup" : "login")}
+                className="text-[11px] text-[var(--text-3)]"
+              >
                 {mode === "login" ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
               </button>
             )}
