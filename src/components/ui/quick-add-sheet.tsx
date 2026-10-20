@@ -1,229 +1,241 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { Modal } from "./modal";
-import { Button, Field } from "./form";
-import { useToast } from "./toast";
-import { getAccounts, createTransaction, getCustomCategories, addCustomCategory } from "@/lib/supabase/database";
-import { buildCategoryList } from "@/lib/category-options";
-import type { Account } from "@/lib/types";
-import { Delete, Check, Plus } from "lucide-react";
+import { Button } from "./form";
+import { useCurrency } from "@/lib/currency";
+import { createClient } from "@/lib/supabase/client";
+import { formatNumberInput, parseNumberInput } from "@/lib/format";
+import { cn } from "@/lib/utils";
+import { Check, ChevronRight, Delete } from "lucide-react";
+import { useWorkspace } from "@/lib/workspace";
+import { CategoryOptions } from "@/lib/category-options";
+import type { Txn } from "@/lib/types";
 
-const todayISO = () => new Date().toISOString().slice(0, 10);
+interface QuickAddSheetProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSaved: () => void;
+}
 
-const USUALS = [
-  { label: "Bolt", category: "Transport", amount: 1500 },
-  { label: "Lunch", category: "Food & Dining", amount: 2500 },
-  { label: "Data", category: "Bills & Utilities", amount: 2000 },
-  { label: "Fuel", category: "Fuel", amount: 8000 },
-];
-
-export function QuickAddSheet({
-  isOpen, onClose, onSaved,
-}: { isOpen: boolean; onClose: () => void; onSaved: () => void }) {
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [customNames, setCustomNames] = useState<string[]>([]);
-  const [accountId, setAccountId] = useState("");
-  const [category, setCategory] = useState("Groceries");
-  const [digitString, setDigitString] = useState("");
+export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) {
+  const [amount, setAmount] = useState("");
   const [direction, setDirection] = useState<"debit" | "credit">("debit");
-  const [date, setDate] = useState(todayISO());
-  const [saving, setSaving] = useState(false);
+  const [category, setCategory] = useState("Groceries");
+  const [isCatOpen, setIsCatOpen] = useState(false);
+  const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const [newCatOpen, setNewCatOpen] = useState(false);
-  const [newCatText, setNewCatText] = useState("");
+  const { currency, fmt } = useCurrency();
+  const { active: activeWs } = useWorkspace();
+  const supabase = createClient();
 
-  const toast = useToast();
-
-  const reload = async () => {
-    const [a, cats] = await Promise.all([getAccounts(), getCustomCategories()]);
-    setAccounts(a);
-    setCustomNames(cats.map((c) => c.name));
-    if (a[0] && !accountId) setAccountId(a[0].id);
-  };
-
+  // Reset state when opened
   useEffect(() => {
-    if (!isOpen) return;
-    reload().catch(() => {});
-    setDate(todayISO());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (isOpen) {
+      setAmount("");
+      setDirection("debit");
+      setCategory("Groceries");
+      setIsCatOpen(false);
+      setDate(new Date().toISOString().split("T")[0]);
+      setError(null);
+      setIsSaving(false);
+    }
   }, [isOpen]);
 
-  const categories = buildCategoryList(customNames);
-  const displayed = (parseInt(digitString || "0", 10) / 100).toLocaleString("en-NG", {
-    minimumFractionDigits: 0,
-  });
-
-  const press = (key: string) => {
-    if (key === "del") setDigitString((s) => s.slice(0, -1));
-    else if (key === "000") setDigitString((s) => (s + "000").slice(0, 12));
-    else setDigitString((s) => (s + key).slice(0, 12));
-  };
-
-  const createCategory = async () => {
-    const trimmed = newCatText.trim();
-    if (!trimmed) return;
-    try {
-      await addCustomCategory(trimmed);
-      await reload();
-      setCategory(trimmed);
-      setNewCatText("");
-      setNewCatOpen(false);
-      setPickerOpen(false);
-    } catch (e: any) {
-      toast(e.message ?? "Could not create category", "err");
+  const handleKeyPress = (key: string) => {
+    if (key === "backspace") {
+      setAmount((prev) => prev.slice(0, -1));
+    } else if (key === "000") {
+      if (amount !== "" && amount !== "0") setAmount((prev) => prev + "000");
+    } else {
+      if (amount === "0" && key !== ".") setAmount(key);
+      else if (amount.includes(".") && key === ".") return;
+      else setAmount((prev) => prev + key);
     }
   };
 
-  const submit = async () => {
-    const amount = parseInt(digitString || "0", 10) / 100;
-    if (!accountId || !amount) return;
-    setSaving(true);
+  const handleSave = async () => {
+    const parsedAmount = parseNumberInput(amount);
+    if (parsedAmount <= 0) {
+      setError("Enter an amount greater than 0");
+      return;
+    }
+    if (!activeWs) {
+      setError("No active workspace");
+      return;
+    }
+
+    setIsSaving(true);
+    setError(null);
+
     try {
-      await createTransaction({
-        account_id: accountId,
-        amount,
-        direction,
+      const { error: dbError } = await supabase.from("transactions").insert({
+        workspace_id: activeWs.id,
+        amount_minor: Math.round(parsedAmount * 100),
+        direction: direction,
+        category_name: category,
+        transaction_date: date,
         description: category,
-        category,
-        date: new Date(date + "T12:00:00").toISOString(),
       });
-      toast(`${direction === "credit" ? "Received" : "Spent"} â¦${amount.toLocaleString()}`);
+
+      if (dbError) throw dbError;
+
       onSaved();
       onClose();
-      setDigitString("");
-      setDate(todayISO());
-    } catch (e: any) {
-      toast(e.message ?? "Could not save", "err");
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Failed to save transaction");
     } finally {
-      setSaving(false);
+      setIsSaving(false);
     }
   };
 
+  const quickPills = [
+    { label: "Bolt", amount: 1500 },
+    { label: "Lunch", amount: 2500 },
+    { label: "Data", amount: 2000 },
+  ];
+
   return (
-    <Modal open={isOpen} onClose={onClose} title="Quick add">
-      <div className="space-y-4">
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {accounts.map((a) => (
+    <Modal open={isOpen} onClose={onClose} title="Quick add" fullScreen>
+      <div className="flex flex-col h-full bg-[var(--bg)]">
+        {/* Header area */}
+        <div className="flex-1 overflow-y-auto px-6 pt-4 pb-6">
+          
+          <div className="mb-8 flex items-center justify-between">
+            <div className="flex items-center gap-2 rounded-full bg-[var(--brand)]/10 px-3 py-1.5 text-[13px] font-medium text-[var(--brand)]">
+              {activeWs?.name || "Main Acc"}
+            </div>
+          </div>
+
+          <div className="flex flex-col items-center justify-center py-6">
+            <p className="text-[14px] font-medium text-[var(--text-3)] mb-1">
+              {direction === "credit" ? "Received" : "Spent"}
+            </p>
+            <p className="text-[48px] font-bold tabular tracking-tight text-[var(--text-1)]">
+              ₦{amount || "0"}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar justify-center">
+            {quickPills.map((p) => (
+              <button
+                key={p.label}
+                onClick={() => setAmount(p.amount.toString())}
+                className="whitespace-nowrap rounded-full border border-[var(--line)] bg-[var(--surface-2)] px-4 py-2 text-[13px] font-medium text-[var(--text-2)]"
+              >
+                {p.label} {fmt(p.amount)}
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-8 space-y-4">
+            {/* Category picker */}
+            <div className="relative">
+              <button
+                onClick={() => setIsCatOpen(!isCatOpen)}
+                className="flex w-full items-center justify-between rounded-xl border border-[var(--line-strong)] bg-[var(--surface-2)] px-4 py-3.5 text-left"
+              >
+                <span className="text-[15px] font-medium text-[var(--text-1)]">
+                  {category || "Select category"}
+                </span>
+                <span className="text-[13px] text-[var(--text-3)]">Change</span>
+              </button>
+              
+              {isCatOpen && (
+                <div className="absolute left-0 right-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-xl border border-[var(--line)] bg-[var(--surface-3)] p-1 shadow-xl">
+                  {CategoryOptions.map((c) => (
+                    <button
+                      key={c.value}
+                      onClick={() => {
+                        setCategory(c.value);
+                        setIsCatOpen(false);
+                      }}
+                      className={cn(
+                        "flex w-full items-center justify-between rounded-lg px-3 py-2 text-[14px]",
+                        category === c.value
+                          ? "bg-[var(--brand)]/10 text-[var(--brand)]"
+                          : "text-[var(--text-1)] hover:bg-[var(--fill-1)]"
+                      )}
+                    >
+                      {c.label}
+                      {category === c.value && <Check size={14} />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Date picker */}
+            <div>
+              <p className="mb-1.5 px-1 text-[13px] font-medium text-[var(--text-3)]">Date</p>
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="w-full rounded-xl border border-[var(--line-strong)] bg-[var(--surface-2)] px-4 py-3 text-[15px] text-[var(--text-1)] focus:border-[var(--brand)] focus:outline-none"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Keypad & Submit */}
+        <div className="bg-[var(--surface-2)] px-4 pb-8 pt-4 rounded-t-3xl border-t border-[var(--line)]">
+          {error && (
+            <p className="mb-3 text-center text-[12px] font-medium text-[var(--danger)]">
+              {error}
+            </p>
+          )}
+
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            {["1", "2", "3", "4", "5", "6", "7", "8", "9", "000", "0", "backspace"].map((key) => (
+              <button
+                key={key}
+                onClick={() => handleKeyPress(key)}
+                className="flex h-14 items-center justify-center rounded-xl bg-[var(--surface-3)] text-[20px] font-medium text-[var(--text-1)] active:bg-[var(--fill-2)] transition-colors"
+              >
+                {key === "backspace" ? <Delete size={22} className="text-[var(--text-2)]" /> : key}
+              </button>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 mb-4">
             <button
-              key={a.id}
-              onClick={() => setAccountId(a.id)}
-              className={`px-3 py-1.5 rounded-full text-[12px] font-semibold whitespace-nowrap shrink-0 ${
-                accountId === a.id ? "bg-[var(--brand)] text-[var(--text-1)]" : "bg-[var(--fill-2)] text-[var(--text-2)]"
-              }`}
+              onClick={() => setDirection("debit")}
+              className={cn(
+                "flex h-12 items-center justify-center rounded-xl text-[14px] font-medium transition-colors",
+                direction === "debit"
+                  ? "bg-[var(--text-1)] text-[var(--bg)]"
+                  : "bg-[var(--surface-3)] text-[var(--text-3)]"
+              )}
             >
-              {a.name}
+              Money out
             </button>
-          ))}
-        </div>
-
-        <div className="text-center py-2">
-          <p className="text-[13px] text-[var(--text-3)]">{direction === "credit" ? "Received" : "Spent"}</p>
-          <p className="text-[44px] font-bold tabular tracking-tight">₦| "0"}</p>
-        </div>
-
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {USUALS.map((u) => (
             <button
-              key={u.label}
-              onClick={() => {
-                setCategory(u.category);
-                setDigitString(String(u.amount * 100));
-              }}
-              className="px-3 py-1.5 rounded-full bg-[var(--fill-1)] border border-[var(--line)] text-[12px] whitespace-nowrap"
+              onClick={() => setDirection("credit")}
+              className={cn(
+                "flex h-12 items-center justify-center rounded-xl text-[14px] font-medium transition-colors",
+                direction === "credit"
+                  ? "bg-[var(--brand)] text-white"
+                  : "bg-[var(--surface-3)] text-[var(--text-3)]"
+              )}
             >
-              {u.label} â¦{u.amount.toLocaleString()}
+              Money in
             </button>
-          ))}
-        </div>
+          </div>
 
-        <button
-          onClick={() => setPickerOpen(true)}
-          className="field w-full justify-between text-left"
-        >
-          <span className="text-[16px] text-[var(--text-1)]">{category}</span>
-          <span className="text-[11px] text-[var(--text-3)]">Change</span>
-        </button>
-
-        <Field label="Date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-
-        <div className="grid grid-cols-3 gap-2">
-          {["1", "2", "3", "4", "5", "6", "7", "8", "9", "000", "0", "del"].map((k) => (
-            <button
-              key={k}
-              onClick={() => press(k)}
-              className="h-14 rounded-xl bg-[var(--fill-1)] border border-[var(--line)] text-[20px] font-semibold active:bg-white/[0.12]"
-            >
-              {k === "del" ? <Delete size={20} className="mx-auto" /> : k}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex gap-2">
-          <button
-            onClick={() => setDirection("debit")}
-            className={`flex-1 py-2 rounded-xl text-[13px] font-semibold ${
-              direction === "debit" ? "bg-[var(--fill-3)]" : "bg-[var(--fill-1)] text-[var(--text-2)]"
-            }`}
+          <Button
+            onClick={handleSave}
+            loading={isSaving}
+            disabled={parseNumberInput(amount) <= 0}
+            className="w-full h-14 rounded-2xl text-[16px]"
           >
-            Money out
-          </button>
-          <button
-            onClick={() => setDirection("credit")}
-            className={`flex-1 py-2 rounded-xl text-[13px] font-semibold ${
-              direction === "credit" ? "bg-[var(--gain)]/25 text-[var(--gain)]" : "bg-[var(--fill-1)] text-[var(--text-2)]"
-            }`}
-          >
-            Money in
-          </button>
+            Save
+          </Button>
         </div>
-
-        <Button loading={saving} onClick={submit} disabled={!accountId || !digitString}>
-          Save
-        </Button>
       </div>
-
-      <Modal open={pickerOpen} onClose={() => setPickerOpen(false)} title="Choose category">
-        <div className="space-y-1 max-h-[60vh] overflow-y-auto pr-1">
-          {categories.map((name) => (
-            <button
-              key={name}
-              onClick={() => { setCategory(name); setPickerOpen(false); }}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--fill-1)] text-left"
-            >
-              <div className="w-4 flex justify-center shrink-0">
-                {category === name && <Check size={16} className="text-[var(--brand)]" />}
-              </div>
-              <span className="text-[15px]">{name}</span>
-            </button>
-          ))}
-
-          <div className="h-px bg-[var(--fill-2)] my-2" />
-
-          <button
-            onClick={() => { setNewCatOpen(true); setPickerOpen(false); }}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--fill-1)] text-left text-[var(--brand)]"
-          >
-            <Plus size={16} />
-            <span className="text-[15px] font-semibold">Other / create new categoryâ¦</span>
-          </button>
-        </div>
-      </Modal>
-
-      <Modal open={newCatOpen} onClose={() => setNewCatOpen(false)} title="New category">
-        <div className="space-y-3">
-          <Field
-            label="Category name"
-            value={newCatText}
-            onChange={(e) => setNewCatText(e.target.value)}
-            placeholder="e.g. Church, Black tax"
-            autoFocus
-          />
-          <Button onClick={createCategory} disabled={!newCatText.trim()}>Create category</Button>
-          <Button variant="ghost" onClick={() => setNewCatOpen(false)}>Cancel</Button>
-        </div>
-      </Modal>
     </Modal>
   );
 }
