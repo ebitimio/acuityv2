@@ -118,10 +118,10 @@ export function CommitmentsScreen({ onBack }: { onBack: () => void }) {
                   <p className="text-[14px] font-semibold truncate">{s.name}</p>
                   <p className="text-[11px] text-[var(--text-2)] mb-3">{fmt(s.amount_minor / 100)} · {s.cadence} · seen {s.occurrences}×</p>
                   <div className="flex gap-2">
-                    <button onClick={() => acceptSuggestion(s)} className="flex-1 py-2 rounded-lg bg-[var(--brand)] text-white text-[13px] font-semibold flex items-center justify-center gap-1">
+                    <button onClick={() => acceptSuggestion(s)} className="flex-1 py-2 rounded-lg bg-[var(--brand)] text-[var(--text-1)] text-[13px] font-semibold flex items-center justify-center gap-1">
                       <Check size={14} /> Save as bill
                     </button>
-                    <button onClick={() => dismiss(s.key)} className="px-3 py-2 rounded-lg bg-white/10 text-[13px] flex items-center gap-1">
+                    <button onClick={() => dismiss(s.key)} className="px-3 py-2 rounded-lg bg-[var(--fill-2)] text-[13px] flex items-center gap-1">
                       <X size={14} /> Dismiss
                     </button>
                   </div>
@@ -186,7 +186,7 @@ export function CommitmentsScreen({ onBack }: { onBack: () => void }) {
                 <div className="flex-1">
                   <p className="text-[14px] font-medium">{f.name}</p>
                   <p className="text-[11px] text-[var(--text-3)]">{fmt(f.saved_minor / 100)} of {fmt(f.target_minor / 100)}</p>
-                  <div className="h-1 mt-2 bg-white/10 rounded-full overflow-hidden">
+                  <div className="h-1 mt-2 bg-[var(--fill-2)] rounded-full overflow-hidden">
                     <div className="h-full bg-[var(--brand)]" style={{ width: `${f.target_minor ? Math.min((f.saved_minor / f.target_minor) * 100, 100) : 0}%` }} />
                   </div>
                 </div>

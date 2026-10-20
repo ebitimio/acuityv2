@@ -63,7 +63,7 @@ export function NeedsReviewScreen({ onBack, onResolved }: { onBack: () => void; 
                     <div><p className="text-[18px] font-semibold mb-2">{t.description_clean || t.description_raw}</p><p className="text-[13px] text-[var(--text-2)]">What category does this belong to?</p></div>
                     <div className="flex flex-col gap-2">
                       {CATEGORY_NAMES.slice(0, 4).map((c) => (
-                        <button key={c} onClick={() => handleResolve(c)} className="w-full py-3 bg-white/5 border border-white/10 rounded-xl text-[15px] font-medium hover:bg-[var(--brand)] hover:text-white transition-colors">
+                        <button key={c} onClick={() => handleResolve(c)} className="w-full py-3 bg-[var(--fill-1)] border border-[var(--line)] rounded-xl text-[15px] font-medium hover:bg-[var(--brand)] hover:text-[var(--text-1)] transition-colors">
                           {c}
                         </button>
                       ))}

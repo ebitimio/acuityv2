@@ -112,7 +112,7 @@ export function AddTransactionSheet({
             onClick={() => setPickerOpen(true)}
             className="field w-full justify-between text-left"
           >
-            <span className="text-[16px] text-white">{category}</span>
+            <span className="text-[16px] text-[var(--text-1)]">{category}</span>
             <span className="text-[11px] text-[var(--text-3)]">Change</span>
           </button>
         </div>
@@ -126,7 +126,7 @@ export function AddTransactionSheet({
             <button
               key={name}
               onClick={() => { setCategory(name); setPickerOpen(false); }}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 text-left"
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--fill-1)] text-left"
             >
               <div className="w-4 flex justify-center shrink-0">
                 {category === name && <Check size={16} className="text-[var(--brand)]" />}
@@ -135,11 +135,11 @@ export function AddTransactionSheet({
             </button>
           ))}
 
-          <div className="h-px bg-white/10 my-2" />
+          <div className="h-px bg-[var(--fill-2)] my-2" />
 
           <button
             onClick={() => { setNewCatOpen(true); setPickerOpen(false); }}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 text-left text-[var(--brand)]"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--fill-1)] text-left text-[var(--brand)]"
           >
             <Plus size={16} />
             <span className="text-[15px] font-semibold">Other / create new category…</span>

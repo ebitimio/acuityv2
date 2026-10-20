@@ -110,7 +110,7 @@ export function QuickAddSheet({
               key={a.id}
               onClick={() => setAccountId(a.id)}
               className={`px-3 py-1.5 rounded-full text-[12px] font-semibold whitespace-nowrap shrink-0 ${
-                accountId === a.id ? "bg-[var(--brand)] text-white" : "bg-white/10 text-white/70"
+                accountId === a.id ? "bg-[var(--brand)] text-[var(--text-1)]" : "bg-[var(--fill-2)] text-[var(--text-2)]"
               }`}
             >
               {a.name}
@@ -131,7 +131,7 @@ export function QuickAddSheet({
                 setCategory(u.category);
                 setDigitString(String(u.amount * 100));
               }}
-              className="px-3 py-1.5 rounded-full bg-white/[0.06] border border-white/10 text-[12px] whitespace-nowrap"
+              className="px-3 py-1.5 rounded-full bg-[var(--fill-1)] border border-[var(--line)] text-[12px] whitespace-nowrap"
             >
               {u.label} ₦{u.amount.toLocaleString()}
             </button>
@@ -142,7 +142,7 @@ export function QuickAddSheet({
           onClick={() => setPickerOpen(true)}
           className="field w-full justify-between text-left"
         >
-          <span className="text-[16px] text-white">{category}</span>
+          <span className="text-[16px] text-[var(--text-1)]">{category}</span>
           <span className="text-[11px] text-[var(--text-3)]">Change</span>
         </button>
 
@@ -153,7 +153,7 @@ export function QuickAddSheet({
             <button
               key={k}
               onClick={() => press(k)}
-              className="h-14 rounded-xl bg-white/[0.06] border border-white/10 text-[20px] font-semibold active:bg-white/[0.12]"
+              className="h-14 rounded-xl bg-[var(--fill-1)] border border-[var(--line)] text-[20px] font-semibold active:bg-white/[0.12]"
             >
               {k === "del" ? <Delete size={20} className="mx-auto" /> : k}
             </button>
@@ -164,7 +164,7 @@ export function QuickAddSheet({
           <button
             onClick={() => setDirection("debit")}
             className={`flex-1 py-2 rounded-xl text-[13px] font-semibold ${
-              direction === "debit" ? "bg-white/15" : "bg-white/5 text-white/60"
+              direction === "debit" ? "bg-[var(--fill-3)]" : "bg-[var(--fill-1)] text-[var(--text-2)]"
             }`}
           >
             Money out
@@ -172,7 +172,7 @@ export function QuickAddSheet({
           <button
             onClick={() => setDirection("credit")}
             className={`flex-1 py-2 rounded-xl text-[13px] font-semibold ${
-              direction === "credit" ? "bg-[var(--gain)]/25 text-[var(--gain)]" : "bg-white/5 text-white/60"
+              direction === "credit" ? "bg-[var(--gain)]/25 text-[var(--gain)]" : "bg-[var(--fill-1)] text-[var(--text-2)]"
             }`}
           >
             Money in
@@ -190,7 +190,7 @@ export function QuickAddSheet({
             <button
               key={name}
               onClick={() => { setCategory(name); setPickerOpen(false); }}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 text-left"
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--fill-1)] text-left"
             >
               <div className="w-4 flex justify-center shrink-0">
                 {category === name && <Check size={16} className="text-[var(--brand)]" />}
@@ -199,11 +199,11 @@ export function QuickAddSheet({
             </button>
           ))}
 
-          <div className="h-px bg-white/10 my-2" />
+          <div className="h-px bg-[var(--fill-2)] my-2" />
 
           <button
             onClick={() => { setNewCatOpen(true); setPickerOpen(false); }}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 text-left text-[var(--brand)]"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--fill-1)] text-left text-[var(--brand)]"
           >
             <Plus size={16} />
             <span className="text-[15px] font-semibold">Other / create new category…</span>

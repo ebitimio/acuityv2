@@ -31,13 +31,13 @@ export function SetupChecklist({ status, onStartStep, onDismiss }: Props) {
         </div>
         <button
           onClick={onDismiss}
-          className="text-[12px] text-[var(--text-3)] hover:text-white"
+          className="text-[12px] text-[var(--text-3)] hover:text-[var(--text-1)]"
         >
           Skip setup
         </button>
       </div>
 
-      <div className="h-1.5 bg-white/10 rounded-full overflow-hidden mb-4">
+      <div className="h-1.5 bg-[var(--fill-2)] rounded-full overflow-hidden mb-4">
         <div
           className="h-full bg-[var(--brand)] transition-all"
           style={{ width: `${(doneCount / total) * 100}%` }}
@@ -53,12 +53,12 @@ export function SetupChecklist({ status, onStartStep, onDismiss }: Props) {
               onClick={() => !done && onStartStep(step.key)}
               disabled={done}
               className={`w-full flex items-center gap-3 px-2 py-2.5 rounded-xl text-left transition-colors ${
-                done ? "opacity-50" : "hover:bg-white/5"
+                done ? "opacity-50" : "hover:bg-[var(--fill-1)]"
               }`}
             >
               <div
                 className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${
-                  done ? "bg-[var(--gain)] text-white" : "bg-white/10 text-[var(--text-3)]"
+                  done ? "bg-[var(--gain)] text-[var(--text-1)]" : "bg-[var(--fill-2)] text-[var(--text-3)]"
                 }`}
               >
                 {done ? <Check size={14} strokeWidth={3} /> : null}

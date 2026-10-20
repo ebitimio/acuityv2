@@ -95,7 +95,7 @@ export function BalanceCheckinSheet({ isOpen, onClose, onSaved, account }: Props
         {!hasDiff && reported > 0 && (
           <div className="rounded-2xl p-4 bg-[var(--gain)]/10 border border-[var(--gain)]/30 flex items-center gap-2">
             <CheckCircle2 size={16} className="text-[var(--gain)] shrink-0" />
-            <p className="text-[13px] text-white">Everything matches. No adjustment needed.</p>
+            <p className="text-[13px] text-[var(--text-1)]">Everything matches. No adjustment needed.</p>
           </div>
         )}
 

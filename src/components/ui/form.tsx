@@ -38,7 +38,7 @@ export function Button({ variant = "primary", loading, className, children, disa
 
 export function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
   return (
-    <button role="switch" aria-checked={checked} aria-label={label} onClick={() => onChange(!checked)} className={cn("relative h-7 w-12 shrink-0 rounded-full transition-colors", checked ? "bg-[var(--brand)]" : "bg-white/15")}>
+    <button role="switch" aria-checked={checked} aria-label={label} onClick={() => onChange(!checked)} className={cn("relative h-7 w-12 shrink-0 rounded-full transition-colors", checked ? "bg-[var(--brand)]" : "bg-[var(--fill-3)]")}>
       <span className={cn("absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-all", checked ? "left-[22px]" : "left-0.5")} />
     </button>
   );
@@ -48,7 +48,7 @@ export function Segmented<T extends string>({ value, onChange, options }: { valu
   return (
     <div className="inline-flex rounded-full border border-[var(--line)] bg-[var(--surface-1)] p-1">
       {options.map((o) => (
-        <button key={o.value} onClick={() => onChange(o.value)} className={cn("rounded-full px-3.5 py-1.5 text-[13px] font-bold transition-colors", value === o.value ? "bg-[var(--brand)] text-white" : "text-[var(--text-2)] hover:text-white")}>
+        <button key={o.value} onClick={() => onChange(o.value)} className={cn("rounded-full px-3.5 py-1.5 text-[13px] font-bold transition-colors", value === o.value ? "bg-[var(--brand)] text-[var(--text-1)]" : "text-[var(--text-2)] hover:text-[var(--text-1)]")}>
           {o.label}
         </button>
       ))}

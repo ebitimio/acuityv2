@@ -1,4 +1,4 @@
-ï»¿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { ScreenHeader, IconButton } from "@/components/ui/screen-header";
@@ -154,7 +154,7 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
     .sort((a, b) => b.spent - a.spent || b.limit - a.limit);
 
   const cycleLabel = cycle
-    ? `${new Date(cycle.cycle_start).toLocaleDateString("en-NG", { day: "numeric", month: "short" })} â†’ ${new Date(cycle.cycle_end).toLocaleDateString("en-NG", { day: "numeric", month: "short" })}`
+    ? `${new Date(cycle.cycle_start).toLocaleDateString("en-NG", { day: "numeric", month: "short" })} ? ${new Date(cycle.cycle_end).toLocaleDateString("en-NG", { day: "numeric", month: "short" })}`
     : "";
 
   const selectedAccountName = accounts.find((a) => a.id === selectedAccount)?.name ?? "";
@@ -173,14 +173,14 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
       />
 
       <div className="px-4 pt-6 space-y-5">
-        {/* Account chips â€” real accounts only, no "All" */}
+        {/* Account chips — real accounts only, no "All" */}
         <div className="flex gap-2 overflow-x-auto pb-1">
           {accounts.map((a) => (
             <button
               key={a.id}
               onClick={() => setSelectedAccount(a.id)}
               className={`px-3 py-1.5 rounded-full text-[12px] font-semibold whitespace-nowrap shrink-0 ${
-                selectedAccount === a.id ? "bg-[var(--brand)] text-white" : "bg-white/10 text-white/70"
+                selectedAccount === a.id ? "bg-[var(--brand)] text-[var(--text-1)]" : "bg-[var(--fill-2)] text-[var(--text-2)]"
               }`}
             >
               {a.name}
@@ -232,7 +232,7 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
                   <div className="flex-1 min-w-0">
                     <p className="text-[14px] font-medium truncate">{row.name}</p>
                     <p className="text-[11px] text-[var(--text-3)] tabular">
-                      {fmt(row.spent)} {row.limit > 0 ? `of ${fmt(row.limit)}` : "Â· no limit set"}
+                      {fmt(row.spent)} {row.limit > 0 ? `of ${fmt(row.limit)}` : "· no limit set"}
                     </p>
                   </div>
                   <p className="tabular font-semibold text-[14px]">
@@ -241,7 +241,7 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
                     ) : row.limit > 0 ? (
                       <span className="text-[var(--gain)]">{fmt(row.limit - row.spent)} left</span>
                     ) : (
-                      <span className="text-[var(--text-3)]">â€”</span>
+                      <span className="text-[var(--text-3)]">—</span>
                     )}
                   </p>
                 </div>
