@@ -3,36 +3,108 @@
 
 @source "../../";
 
-:root {
+:root,
+:root[data-theme="dark"] {
   color-scheme: dark;
 
-  --bg: #000000;
-  --surface-1: #0a0a0a;
-  --surface-2: #17191A;
-  --surface-3: #252525;
-  --line: rgba(255, 255, 255, 0.06);
+  --bg: #0b0b0c;
+  --surface-1: #121213;
+  --surface-2: #1a1a1c;
+  --surface-3: #242427;
+
+  --fill-1: rgba(255, 255, 255, 0.05);
+  --fill-2: rgba(255, 255, 255, 0.09);
+  --fill-3: rgba(255, 255, 255, 0.14);
+
+  --line: rgba(255, 255, 255, 0.07);
   --line-strong: rgba(255, 255, 255, 0.14);
 
-  --text-1: #ffffff;
-  --text-2: rgba(255, 255, 255, 0.62);
-  --text-3: rgba(255, 255, 255, 0.38);
+  --text-1: #f5f5f6;
+  --text-2: rgba(245, 245, 246, 0.6);
+  --text-3: rgba(245, 245, 246, 0.38);
 
-  --brand: #f97316;
-  --brand-ink: #1a0a00;
-  --brand-soft: rgba(249, 115, 22, 0.14);
-  --gain: #30D158;
-  --warn: #ff9f0a;
-  --danger: #ff453a;
-  --info: #64d2ff;
+  --brand: #46a3b0;
+  --brand-soft: rgba(70, 163, 176, 0.14);
+  --ink: #f5f5f6;
+  --ink-on: #0b0b0c;
 
-  --hero: linear-gradient(160deg, #7a0e0e 0%, #b3391f 35%, #e87a1a 75%, #ffb347 100%);
-  --engrave: repeating-radial-gradient(
-    circle at 92% -8%,
-    rgba(255, 255, 255, 0.075) 0 1px,
-    transparent 1px 10px
-  );
+  --gain: #52c28a;
+  --warn: #e8a23b;
+  --danger: #ff6b60;
+  --info: #6fa3c7;
 
-  --nav-h: 76px;
+  --scrim: rgba(0, 0, 0, 0.55);
+  --card-shadow: none;
+
+  --glass-fill-thin: rgba(26, 26, 28, 0.45);
+  --glass-fill-regular: rgba(26, 26, 28, 0.62);
+  --glass-fill-thick: rgba(26, 26, 28, 0.78);
+  --glass-rim-top: rgba(255, 255, 255, 0.22);
+  --glass-rim-bottom: rgba(255, 255, 255, 0.04);
+  --glass-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  --glass-spec: 0.10;
+
+  --nav-h: 64px;
+  --r-card: 24px;
+  --r-tile: 18px;
+  --r-field: 16px;
+  --r-sheet: 28px;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --bg: #f7f7f9;
+  --surface-1: #ffffff;
+  --surface-2: #eef0f5;
+  --surface-3: #e4e7ee;
+
+  --fill-1: rgba(15, 23, 42, 0.04);
+  --fill-2: rgba(15, 23, 42, 0.07);
+  --fill-3: rgba(15, 23, 42, 0.11);
+
+  --line: rgba(15, 20, 35, 0.07);
+  --line-strong: rgba(15, 20, 35, 0.14);
+
+  --text-1: #0f1115;
+  --text-2: rgba(15, 17, 21, 0.62);
+  --text-3: rgba(15, 17, 21, 0.4);
+
+  --brand: #2b7f8c;
+  --brand-soft: rgba(43, 127, 140, 0.12);
+  --ink: #0f1115;
+  --ink-on: #ffffff;
+
+  --gain: #2e9e6b;
+  --warn: #c77d12;
+  --danger: #d9453b;
+  --info: #3b7fb0;
+
+  --scrim: rgba(15, 20, 35, 0.28);
+  --card-shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 8px 24px rgba(16, 24, 40, 0.05);
+
+  --glass-fill-thin: rgba(255, 255, 255, 0.5);
+  --glass-fill-regular: rgba(255, 255, 255, 0.68);
+  --glass-fill-thick: rgba(255, 255, 255, 0.82);
+  --glass-rim-top: rgba(255, 255, 255, 0.95);
+  --glass-rim-bottom: rgba(15, 20, 35, 0.08);
+  --glass-shadow: 0 10px 30px rgba(16, 24, 40, 0.12);
+  --glass-spec: 0.35;
+}
+
+@theme inline {
+  --color-fill-1: var(--fill-1);
+  --color-fill-2: var(--fill-2);
+  --color-fill-3: var(--fill-3);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-brand: var(--brand);
+  --color-gain: var(--gain);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
 }
 
 * {
@@ -70,6 +142,36 @@ select {
   outline: none;
 }
 
+:focus-visible {
+  outline: 2px solid var(--text-1);
+  outline-offset: 2px;
+}
+
+/* Hide native scrollbars everywhere */
+html,
+body {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+* {
+  scrollbar-width: none;
+}
+.overflow-y-auto,
+.overflow-auto {
+  scrollbar-width: none;
+}
+.overflow-y-auto::-webkit-scrollbar,
+.overflow-auto::-webkit-scrollbar {
+  display: none;
+}
+
 .tabular {
   font-variant-numeric: tabular-nums;
 }
@@ -78,7 +180,7 @@ select {
   .group-list {
     background: var(--surface-2);
     border: 1px solid var(--line);
-    border-radius: 22px;
+    border-radius: var(--r-card);
     overflow: hidden;
   }
   .group-list > * + * {
@@ -88,7 +190,8 @@ select {
   .card {
     background: var(--surface-2);
     border: 1px solid var(--line);
-    border-radius: 22px;
+    border-radius: var(--r-card);
+    box-shadow: var(--card-shadow);
   }
 
   .field {
@@ -99,16 +202,13 @@ select {
     padding: 0 16px;
     background: var(--surface-1);
     border: 1px solid var(--line-strong);
-    border-radius: 16px;
+    border-radius: var(--r-field);
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
     position: relative;
   }
   .field:focus-within {
-    border-color: var(--brand);
-    box-shadow:
-      0 0 0 3px rgba(249, 115, 22, 0.18),
-      0 0 12px rgba(249, 115, 22, 0.35),
-      inset 0 0 6px rgba(249, 115, 22, 0.08);
+    border-color: var(--text-1);
+    box-shadow: 0 0 0 3px var(--fill-2);
   }
   .field input,
   .field select,
@@ -135,6 +235,7 @@ select {
   }
   .field select option {
     background: var(--surface-2);
+    color: var(--text-1);
   }
 
   .btn {
@@ -154,14 +255,25 @@ select {
     opacity: 0.45;
     pointer-events: none;
   }
-  .btn-primary { background: var(--brand); color: #fff; }
-  .btn-white { background: var(--text-1); color: var(--bg); }
-  .btn-ghost { background: rgba(255, 255, 255, 0.08); color: var(--text-1); }
-  .btn-ghost:hover { background: rgba(255, 255, 255, 0.14); }
+  .btn-primary {
+    background: var(--ink);
+    color: var(--ink-on);
+  }
+  .btn-accent {
+    background: var(--brand);
+    color: #ffffff;
+  }
+  .btn-ghost {
+    background: var(--fill-1);
+    color: var(--text-1);
+  }
+  .btn-ghost:hover {
+    background: var(--fill-2);
+  }
   .btn-danger {
-    background: rgba(255, 69, 58, 0.14);
+    background: color-mix(in srgb, var(--danger) 14%, transparent);
     color: var(--danger);
-    border: 1px solid rgba(255, 69, 58, 0.28);
+    border: 1px solid color-mix(in srgb, var(--danger) 28%, transparent);
   }
 
   .t-label {
@@ -193,62 +305,4 @@ select {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
-  .ambient-orb {
-    animation: none !important;
-  }
-}
-/* Hide the native scrollbar everywhere. The app never needs a visible bar. */
-html,
-body {
-  scrollbar-width: none;          /* Firefox */
-  -ms-overflow-style: none;       /* IE and Edge */
-}
-
-html::-webkit-scrollbar,
-body::-webkit-scrollbar,
-*::-webkit-scrollbar {
-  width: 0 !important;
-  height: 0 !important;
-  display: none !important;
-}
-
-* {
-  scrollbar-width: none;
-}
-
-/* Every scrollable region inside the app */
-.overflow-y-auto,
-.overflow-auto {
-  scrollbar-width: none;
-}
-.overflow-y-auto::-webkit-scrollbar,
-.overflow-auto::-webkit-scrollbar {
-  display: none;
-}
-/* Hide the native scrollbar everywhere. The app never needs a visible bar. */
-html,
-body {
-  scrollbar-width: none;          /* Firefox */
-  -ms-overflow-style: none;       /* IE and Edge */
-}
-
-html::-webkit-scrollbar,
-body::-webkit-scrollbar,
-*::-webkit-scrollbar {
-  width: 0 !important;
-  height: 0 !important;
-  display: none !important;
-}
-
-* {
-  scrollbar-width: none;
-}
-
-.overflow-y-auto,
-.overflow-auto {
-  scrollbar-width: none;
-}
-.overflow-y-auto::-webkit-scrollbar,
-.overflow-auto::-webkit-scrollbar {
-  display: none;
 }

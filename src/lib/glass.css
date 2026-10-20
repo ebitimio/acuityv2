@@ -1,67 +1,57 @@
 @layer components {
-  /* ---------- Liquid glass ---------- */
   .glass {
     --glass-blur: 24px;
-    /* much lower alpha than before */
-    --glass-fill: rgba(20, 16, 14, 0.18);
+    --glass-fill: var(--glass-fill-regular);
     position: relative;
     isolation: isolate;
-    /* very light overlay so specular reads but tint stays minimal */
-    background:
-      linear-gradient(160deg, rgba(255,255,255,.08), rgba(255,255,255,.02) 55%, rgba(255,255,255,.05)),
-      var(--glass-fill);
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(190%) brightness(1.08);
-    backdrop-filter: blur(var(--glass-blur)) saturate(190%) brightness(1.08);
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,.30),
-      inset 0 -1px 0 rgba(0,0,0,.30),
-      inset 0 0 24px rgba(255,255,255,.04),
-      0 12px 40px rgba(0,0,0,.40);
+    background: var(--glass-fill);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(170%);
+    backdrop-filter: blur(var(--glass-blur)) saturate(170%);
+    box-shadow: var(--glass-shadow);
   }
-  .glass-thin    { --glass-blur: 16px; --glass-fill: rgba(20,16,14,0.10); }
-  .glass-regular { --glass-blur: 24px; --glass-fill: rgba(20,16,14,0.18); }
-  .glass-thick   { --glass-blur: 28px; --glass-fill: rgba(20,16,14,0.22); }
+  .glass-thin    { --glass-blur: 16px; --glass-fill: var(--glass-fill-thin); }
+  .glass-regular { --glass-blur: 24px; --glass-fill: var(--glass-fill-regular); }
+  .glass-thick   { --glass-blur: 30px; --glass-fill: var(--glass-fill-thick); }
 
-  /* bright 1px edge */
   .glass::before {
     content: "";
     position: absolute; inset: 0; z-index: -1;
     border-radius: inherit; padding: 1px; pointer-events: none;
-    background: linear-gradient(135deg, rgba(255,255,255,.55), rgba(255,255,255,.06) 40%, rgba(255,255,255,.18));
+    background: linear-gradient(160deg, var(--glass-rim-top), var(--glass-rim-bottom) 45%, var(--glass-rim-bottom));
     -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
   }
   .glass-norim::before { display: none; }
 
-  /* specular highlight */
   .glass::after {
     content: "";
     position: absolute; inset: 0; z-index: -1;
     border-radius: inherit; pointer-events: none;
-    background: radial-gradient(200px circle at var(--mx, 25%) var(--my, 0%), rgba(255,255,255,.16), transparent 62%);
-    opacity: var(--spec, .4);
-    transition: opacity .3s ease;
+    background: radial-gradient(180px circle at var(--mx, 30%) var(--my, 0%), rgba(255,255,255,0.5), transparent 65%);
+    opacity: var(--glass-spec);
+    transition: opacity 0.3s ease;
   }
-  .glass:hover, .glass:active { --spec: .8; }
+  .glass:hover, .glass:active {
+    --glass-spec: calc(var(--glass-spec) * 1.8);
+  }
 
-  /* pressed glass squish */
-  .glass-press { transition: transform .38s cubic-bezier(.3, 1.6, .5, 1); }
-  .glass-press:active { transform: scale(.965); transition-duration: .12s; }
+  .glass-press { transition: transform 0.38s cubic-bezier(0.3, 1.6, 0.5, 1); }
+  .glass-press:active { transform: scale(0.965); transition-duration: 0.12s; }
 
-  /* ambient orbs stay as before */
+  /* Ambient orb — one faint teal radial, background only */
   .ambient-orb { position: absolute; border-radius: 9999px; will-change: transform; }
-  .ambient-a { top: -18%; left: -25%; width: 90vmax; height: 90vmax;
-    background: radial-gradient(closest-side, rgba(232,122,26,.38), transparent 70%);
-    animation: drift-a 38s ease-in-out infinite; }
-  .ambient-b { bottom: -30%; right: -30%; width: 100vmax; height: 100vmax;
-    background: radial-gradient(closest-side, rgba(179,57,31,.34), transparent 70%);
-    animation: drift-b 46s ease-in-out infinite; }
-  .ambient-c { top: 35%; left: 20%; width: 60vmax; height: 60vmax;
-    background: radial-gradient(closest-side, rgba(255,179,71,.14), transparent 70%);
-    animation: drift-c 52s ease-in-out infinite; }
+  .ambient-a {
+    top: -10%;
+    right: -20%;
+    width: 80vmax;
+    height: 80vmax;
+    background: radial-gradient(closest-side, rgba(70, 163, 176, 0.06), transparent 70%);
+    animation: drift-a 60s ease-in-out infinite;
+  }
 }
 
-@keyframes drift-a { 0%,100% { transform: translate3d(0,0,0) scale(1); } 50% { transform: translate3d(14vw,8vh,0) scale(1.15); } }
-@keyframes drift-b { 0%,100% { transform: translate3d(0,0,0) scale(1); } 50% { transform: translate3d(-16vw,-10vh,0) scale(1.1); } }
-@keyframes drift-c { 0%,100% { transform: translate3d(0,0,0) scale(1); } 50% { transform: translate3d(-8vw,12vh,0) scale(1.25); } }
+@keyframes drift-a {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-6vw, 6vh, 0) scale(1.08); }
+}

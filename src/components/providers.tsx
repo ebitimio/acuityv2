@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { MotionConfig } from "framer-motion";
+import { ThemeProvider } from "@/lib/theme";
 import { CurrencyProvider } from "@/lib/currency";
 import { WorkspaceProvider } from "@/lib/workspace";
 import { ToastProvider } from "@/components/ui/toast";
@@ -15,15 +16,17 @@ export function Providers({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <MotionConfig reducedMotion="user">
-      <CurrencyProvider>
-        <WorkspaceProvider>
-          <ToastProvider>
-            <AmbientBackground />
-            {children}
-          </ToastProvider>
-        </WorkspaceProvider>
-      </CurrencyProvider>
-    </MotionConfig>
+    <ThemeProvider>
+      <MotionConfig reducedMotion="user">
+        <CurrencyProvider>
+          <WorkspaceProvider>
+            <ToastProvider>
+              <AmbientBackground />
+              {children}
+            </ToastProvider>
+          </WorkspaceProvider>
+        </CurrencyProvider>
+      </MotionConfig>
+    </ThemeProvider>
   );
 }
