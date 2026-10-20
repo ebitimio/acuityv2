@@ -58,6 +58,7 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<Ctx>(() => {
     const symbol = currency === "USD" ? "$" : "₦";
     const convert = (n: number) => (currency === "USD" ? n / rate : n);
+    
     const fmt = (n: number, o?: FmtOpts) => {
       if (hidden && !o?.force) return "₦";
       const v = convert(n);
@@ -66,9 +67,13 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
         minimumFractionDigits: d ? 2 : 0,
         maximumFractionDigits: d ? 2 : 0,
       }).format(Math.abs(v));
+      
+      // FIXED: Removed the hardcoded ₦ from the negative sign logic.
+      // It now outputs "-₦50,000" instead of "₦₦50,000"
       const sign = v < 0 ? "-" : o?.sign && v > 0 ? "+" : "";
       return `${sign}${symbol}${s}`;
     };
+    
     return { currency, setCurrency, rate, symbol, hidden, toggleHidden, convert, fmt };
   }, [currency, rate, hidden, setCurrency, toggleHidden]);
 
