@@ -353,7 +353,7 @@ export default function SandboxPage() {
                     onClick={() => setActiveScreen("budget")}
                     className="flex-1 py-2.5 bg-white/20 backdrop-blur-xl border border-white/30 rounded-2xl text-[13px] font-semibold text-white flex items-center justify-center gap-2 hover:bg-white/30 transition-colors"
                   >
-                    <TrendingUp size={15} /> Monitoring
+                    <TrendingUp size={15} /> Budget
                   </button>
                   <button
                     onClick={() => setIsImportOpen(true)}

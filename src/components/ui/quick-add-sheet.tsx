@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { Modal } from "./modal";
-import { Button } from "./form";
-import { Field } from "./form";
+import { Button, Field } from "./form";
 import { useToast } from "./toast";
 import { getAccounts, createTransaction, getCustomCategories, addCustomCategory } from "@/lib/supabase/database";
 import { buildCategoryList } from "@/lib/category-options";
 import type { Account } from "@/lib/types";
 import { Delete, Check, Plus } from "lucide-react";
+
+const todayISO = () => new Date().toISOString().slice(0, 10);
 
 const USUALS = [
   { label: "Bolt", category: "Transport", amount: 1500 },
@@ -26,6 +27,7 @@ export function QuickAddSheet({
   const [category, setCategory] = useState("Groceries");
   const [digitString, setDigitString] = useState("");
   const [direction, setDirection] = useState<"debit" | "credit">("debit");
+  const [date, setDate] = useState(todayISO());
   const [saving, setSaving] = useState(false);
 
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -44,6 +46,7 @@ export function QuickAddSheet({
   useEffect(() => {
     if (!isOpen) return;
     reload().catch(() => {});
+    setDate(todayISO());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
@@ -84,12 +87,13 @@ export function QuickAddSheet({
         direction,
         description: category,
         category,
-        date: new Date().toISOString(),
+        date: new Date(date + "T12:00:00").toISOString(),
       });
       toast(`${direction === "credit" ? "Received" : "Spent"} ₦${amount.toLocaleString()}`);
       onSaved();
       onClose();
       setDigitString("");
+      setDate(todayISO());
     } catch (e: any) {
       toast(e.message ?? "Could not save", "err");
     } finally {
@@ -100,7 +104,6 @@ export function QuickAddSheet({
   return (
     <Modal open={isOpen} onClose={onClose} title="Quick add">
       <div className="space-y-4">
-        {/* Account picker */}
         <div className="flex gap-2 overflow-x-auto pb-1">
           {accounts.map((a) => (
             <button
@@ -115,13 +118,11 @@ export function QuickAddSheet({
           ))}
         </div>
 
-        {/* Big number */}
         <div className="text-center py-2">
           <p className="text-[13px] text-[var(--text-3)]">{direction === "credit" ? "Received" : "Spent"}</p>
           <p className="text-[44px] font-bold tabular tracking-tight">₦{displayed || "0"}</p>
         </div>
 
-        {/* Usual chips */}
         <div className="flex gap-2 overflow-x-auto pb-1">
           {USUALS.map((u) => (
             <button
@@ -137,7 +138,6 @@ export function QuickAddSheet({
           ))}
         </div>
 
-        {/* Category picker button — replaces the chip row so users can reach custom + create new */}
         <button
           onClick={() => setPickerOpen(true)}
           className="field w-full justify-between text-left"
@@ -146,7 +146,8 @@ export function QuickAddSheet({
           <span className="text-[11px] text-[var(--text-3)]">Change</span>
         </button>
 
-        {/* Number pad */}
+        <Field label="Date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+
         <div className="grid grid-cols-3 gap-2">
           {["1", "2", "3", "4", "5", "6", "7", "8", "9", "000", "0", "del"].map((k) => (
             <button
@@ -159,7 +160,6 @@ export function QuickAddSheet({
           ))}
         </div>
 
-        {/* Direction toggle */}
         <div className="flex gap-2">
           <button
             onClick={() => setDirection("debit")}
@@ -184,16 +184,12 @@ export function QuickAddSheet({
         </Button>
       </div>
 
-      {/* Category picker */}
       <Modal open={pickerOpen} onClose={() => setPickerOpen(false)} title="Choose category">
         <div className="space-y-1 max-h-[60vh] overflow-y-auto pr-1">
           {categories.map((name) => (
             <button
               key={name}
-              onClick={() => {
-                setCategory(name);
-                setPickerOpen(false);
-              }}
+              onClick={() => { setCategory(name); setPickerOpen(false); }}
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 text-left"
             >
               <div className="w-4 flex justify-center shrink-0">
@@ -206,10 +202,7 @@ export function QuickAddSheet({
           <div className="h-px bg-white/10 my-2" />
 
           <button
-            onClick={() => {
-              setNewCatOpen(true);
-              setPickerOpen(false);
-            }}
+            onClick={() => { setNewCatOpen(true); setPickerOpen(false); }}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 text-left text-[var(--brand)]"
           >
             <Plus size={16} />
@@ -218,7 +211,6 @@ export function QuickAddSheet({
         </div>
       </Modal>
 
-      {/* Create new category */}
       <Modal open={newCatOpen} onClose={() => setNewCatOpen(false)} title="New category">
         <div className="space-y-3">
           <Field
@@ -228,12 +220,8 @@ export function QuickAddSheet({
             placeholder="e.g. Church, Black tax"
             autoFocus
           />
-          <Button onClick={createCategory} disabled={!newCatText.trim()}>
-            Create category
-          </Button>
-          <Button variant="ghost" onClick={() => setNewCatOpen(false)}>
-            Cancel
-          </Button>
+          <Button onClick={createCategory} disabled={!newCatText.trim()}>Create category</Button>
+          <Button variant="ghost" onClick={() => setNewCatOpen(false)}>Cancel</Button>
         </div>
       </Modal>
     </Modal>

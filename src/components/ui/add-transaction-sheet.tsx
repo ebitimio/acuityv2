@@ -8,7 +8,9 @@ import { useToast } from "./toast";
 import { getAccounts, createTransaction, getCustomCategories, addCustomCategory } from "@/lib/supabase/database";
 import { buildCategoryList } from "@/lib/category-options";
 import type { Account } from "@/lib/types";
-import { Check, Plus, X } from "lucide-react";
+import { Check, Plus } from "lucide-react";
+
+const todayISO = () => new Date().toISOString().slice(0, 10);
 
 export function AddTransactionSheet({
   isOpen, onClose, onSaved,
@@ -18,6 +20,7 @@ export function AddTransactionSheet({
   const [accountId, setAccountId] = useState("");
   const [desc, setDesc] = useState("");
   const [amount, setAmount] = useState(0);
+  const [date, setDate] = useState(todayISO());
   const [direction, setDirection] = useState<"debit" | "credit">("debit");
   const [category, setCategory] = useState("Groceries");
   const [saving, setSaving] = useState(false);
@@ -35,7 +38,10 @@ export function AddTransactionSheet({
   };
 
   useEffect(() => {
-    if (isOpen) reload().catch(() => {});
+    if (isOpen) {
+      reload().catch(() => {});
+      setDate(todayISO());
+    }
   }, [isOpen]);
 
   const options = buildCategoryList(customNames);
@@ -65,13 +71,14 @@ export function AddTransactionSheet({
         direction,
         description: desc,
         category,
-        date: new Date().toISOString(),
+        date: new Date(date + "T12:00:00").toISOString(),
       });
       toast("Transaction added");
       onSaved();
       onClose();
       setDesc("");
       setAmount(0);
+      setDate(todayISO());
     } catch {
       toast("Could not save", "err");
     } finally {
@@ -91,12 +98,13 @@ export function AddTransactionSheet({
 
         <CurrencyField label="Amount" value={amount} onChange={setAmount} />
 
+        <Field label="Date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+
         <SelectField label="Direction" value={direction} onChange={(e) => setDirection(e.target.value as "debit" | "credit")}>
           <option value="debit">Money out</option>
           <option value="credit">Money in</option>
         </SelectField>
 
-        {/* Category field — opens a picker */}
         <div>
           <label className="t-label mb-1.5 block px-1">Category</label>
           <button
@@ -112,16 +120,12 @@ export function AddTransactionSheet({
         <Button loading={saving} onClick={submit}>Save Transaction</Button>
       </div>
 
-      {/* Category picker (uses the same modal styling, sits above everything) */}
       <Modal open={pickerOpen} onClose={() => setPickerOpen(false)} title="Choose category">
         <div className="space-y-1 max-h-[60vh] overflow-y-auto pr-1">
           {options.map((name) => (
             <button
               key={name}
-              onClick={() => {
-                setCategory(name);
-                setPickerOpen(false);
-              }}
+              onClick={() => { setCategory(name); setPickerOpen(false); }}
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 text-left"
             >
               <div className="w-4 flex justify-center shrink-0">
@@ -143,7 +147,6 @@ export function AddTransactionSheet({
         </div>
       </Modal>
 
-      {/* Create new category */}
       <Modal open={newCatOpen} onClose={() => setNewCatOpen(false)} title="New category">
         <div className="space-y-3">
           <Field

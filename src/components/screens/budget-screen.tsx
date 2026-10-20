@@ -35,7 +35,7 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
   const [categories, setCategories] = useState<CustomCategory[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [cycle, setCycle] = useState<{ cycle_start: string; cycle_end: string } | null>(null);
-  const [selectedAccount, setSelectedAccount] = useState<string>("all");
+  const [selectedAccount, setSelectedAccount] = useState<string>("");
   const [isCycleOpen, setIsCycleOpen] = useState(false);
   const [cycleDay, setCycleDay] = useState("1");
   const [isCatsOpen, setIsCatsOpen] = useState(false);
@@ -48,8 +48,9 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
   const toast = useToast();
 
   const loadBudgetsForAccount = async (accountKey: string) => {
+    if (!accountKey) { setBudgets([]); setCategoryLimits({}); return; }
     try {
-      const bs = await getBudgets(accountKey === "all" ? null : accountKey);
+      const bs = await getBudgets(accountKey);
       setBudgets(bs ?? []);
       const map: Record<string, number> = {};
       for (const b of bs ?? []) map[b.category] = b.limit_minor / 100;
@@ -64,7 +65,14 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
   const loadStatic = async () => {
     try { setMetrics((await getHomeMetrics()) ?? ZERO_METRICS); } catch {}
     try { setTxns((await getTransactionsSince(startOfMonthISO())) ?? []); } catch {}
-    try { setAccounts((await getAccounts()) ?? []); } catch {}
+    try {
+      const accs = await getAccounts();
+      setAccounts(accs ?? []);
+      // If no account is selected yet, pick the first one
+      if (accs && accs.length > 0 && !selectedAccount) {
+        setSelectedAccount(accs[0].id);
+      }
+    } catch {}
     try { setCategories((await getCustomCategories()) ?? []); } catch {}
     try { setCycle(await getCurrentCycle()); } catch { setCycle(null); }
   };
@@ -108,13 +116,15 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
           setBudgets((prev) => prev.filter((b) => b.id !== existing.id));
         }
       } else {
-        await setBudget(selectedAccount === "all" ? null : selectedAccount, category, Math.round(amount * 100));
+        await setBudget(selectedAccount, category, Math.round(amount * 100));
         await loadBudgetsForAccount(selectedAccount);
       }
     } catch (e: any) { toast(e.message ?? "Could not save category budget", "err"); }
   };
 
-  const filteredTxns = selectedAccount === "all" ? txns : txns.filter((t) => t.account_id === selectedAccount);
+  const filteredTxns = selectedAccount
+    ? txns.filter((t) => t.account_id === selectedAccount)
+    : [];
   const spent = filteredTxns.filter((t) => t.direction === "debit").reduce((s, t) => s + t.amount_minor, 0) / 100;
   const totalBudget = Object.values(categoryLimits).reduce((s, v) => s + v, 0);
   const pct = totalBudget > 0 ? Math.min((spent / totalBudget) * 100, 100) : 0;
@@ -127,8 +137,6 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
     }
   }
 
-  // Build the full list of category names to display:
-  // built-in + custom + any category that has spend/limit already
   const allOptions = buildCategoryList(categories.map((c) => c.name));
   const allCategoryNames = Array.from(new Set([
     ...allOptions,
@@ -142,13 +150,14 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
       spent: byCat.get(name) ?? 0,
       limit: categoryLimits[name] ?? 0,
     }))
-    // Only show a row if it has spend, a limit, or is a custom category
     .filter((r) => r.spent > 0 || r.limit > 0 || categories.some((c) => c.name === r.name))
     .sort((a, b) => b.spent - a.spent || b.limit - a.limit);
 
   const cycleLabel = cycle
     ? `${new Date(cycle.cycle_start).toLocaleDateString("en-NG", { day: "numeric", month: "short" })} → ${new Date(cycle.cycle_end).toLocaleDateString("en-NG", { day: "numeric", month: "short" })}`
     : "";
+
+  const selectedAccountName = accounts.find((a) => a.id === selectedAccount)?.name ?? "";
 
   return (
     <div className="min-h-[100dvh] pb-32">
@@ -164,25 +173,29 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
       />
 
       <div className="px-4 pt-6 space-y-5">
+        {/* Account chips — real accounts only, no "All" */}
         <div className="flex gap-2 overflow-x-auto pb-1">
-          <button
-            onClick={() => setSelectedAccount("all")}
-            className={`px-3 py-1.5 rounded-full text-[12px] font-semibold shrink-0 ${selectedAccount === "all" ? "bg-[var(--brand)] text-white" : "bg-white/10 text-white/70"}`}
-          >
-            All accounts
-          </button>
           {accounts.map((a) => (
             <button
               key={a.id}
               onClick={() => setSelectedAccount(a.id)}
-              className={`px-3 py-1.5 rounded-full text-[12px] font-semibold whitespace-nowrap shrink-0 ${selectedAccount === a.id ? "bg-[var(--brand)] text-white" : "bg-white/10 text-white/70"}`}
+              className={`px-3 py-1.5 rounded-full text-[12px] font-semibold whitespace-nowrap shrink-0 ${
+                selectedAccount === a.id ? "bg-[var(--brand)] text-white" : "bg-white/10 text-white/70"
+              }`}
             >
               {a.name}
             </button>
           ))}
+          {accounts.length === 0 && (
+            <p className="text-[13px] text-[var(--text-3)]">
+              No accounts yet. Add one from the Accounts screen.
+            </p>
+          )}
         </div>
 
-        {cycleLabel && <p className="text-[12px] text-[var(--text-3)] px-1">Current cycle: {cycleLabel}</p>}
+        {cycleLabel && (
+          <p className="text-[12px] text-[var(--text-3)] px-1">Current cycle: {cycleLabel}</p>
+        )}
 
         <div className="rounded-3xl bg-[var(--surface-2)] border border-[var(--line)] p-6 flex flex-col items-center">
           <GaugeArc percentage={pct} />
@@ -235,7 +248,9 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
               );
             })}
             {categoryRows.length === 0 && (
-              <p className="px-4 py-6 text-center text-[14px] text-[var(--text-3)]">No categories yet. Add amounts to start your budget.</p>
+              <p className="px-4 py-6 text-center text-[14px] text-[var(--text-3)]">
+                {selectedAccount ? "No categories yet. Add amounts to start your budget." : "Add an account to start budgeting."}
+              </p>
             )}
           </div>
         </div>
@@ -276,7 +291,7 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
       <Modal open={isBudgetEditorOpen} onClose={() => setIsBudgetEditorOpen(false)} title="Set category budgets">
         <div className="space-y-3">
           <p className="text-[12px] text-[var(--text-3)] px-1">
-            Enter the amount you plan to spend on each category this cycle. The total becomes your monthly budget for {selectedAccount === "all" ? "all accounts" : accounts.find(a => a.id === selectedAccount)?.name ?? "this account"}.
+            Enter the amount you plan to spend on each category this cycle for <strong>{selectedAccountName || "this account"}</strong>.
           </p>
           <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
             {allCategoryNames.map((name) => (
