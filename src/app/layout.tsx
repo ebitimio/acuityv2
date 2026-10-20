@@ -14,8 +14,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Acuity",
+  title: "Acuity: AI Wealth Manager",
   description: "Personal finance workspace",
+  // This tells the browser to use your new logo in the tab
+  icons: {
+    icon: "/icon.png",
+    apple: "/apple-icon.png",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -29,7 +34,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  viewportFit: "cover", // <-- FIXES THE SAFE AREA
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -39,7 +44,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      {/* Added bg-black to kill the white safe area */}
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-black text-white min-h-screen`}
       >
