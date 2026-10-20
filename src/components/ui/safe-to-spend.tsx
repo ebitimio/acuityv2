@@ -1,63 +1,106 @@
 "use client";
 
 import { NumberRoll } from "./number-roll";
-import { Calendar, AlertTriangle } from "lucide-react";
+import { RingProgress } from "./ring-progress";
+import { useCurrency } from "@/lib/currency";
 import type { SafeToSpend as SafeToSpendData } from "@/lib/supabase/database";
 
 interface Props {
   data: SafeToSpendData | null;
   netAcross: number;
-  hasAccounts: boolean;
+  spentThisMonth: number;
+  incomeThisMonth: number;
+  budgetLimit: number;
+  periodLabel: string;
+  daysUntilIncome: number;
+  nextIncomeDate: string;
 }
 
-export function SafeToSpendHero({ data, netAcross, hasAccounts }: Props) {
+export function SafeToSpendHero({
+  data,
+  netAcross,
+  spentThisMonth,
+  incomeThisMonth,
+  budgetLimit,
+  periodLabel,
+  daysUntilIncome,
+  nextIncomeDate,
+}: Props) {
+  const { fmt } = useCurrency();
   const isNegativeNet = netAcross < 0;
-  const dailySafe = data && !data.error ? data.daily_safe_minor / 100 : 0;
-  const days = data && !data.error ? data.days_until_next_income : 0;
-  const incomeDate =
-    data && !data.error && data.next_income_date
-      ? new Date(data.next_income_date).toLocaleDateString("en-NG", { day: "numeric", month: "short" })
-      : "";
-  const isNegativeSafe = data && !data.error && data.total_safe_minor < 0;
+  const budgetUsedPct = budgetLimit > 0 ? Math.min((spentThisMonth / budgetLimit) * 100, 100) : 0;
+  const budgetRemaining = Math.max(budgetLimit - spentThisMonth, 0);
+  // Cycle progress: assume a ~30-day cycle
+  const cycleProgressPct = Math.min(((30 - daysUntilIncome) / 30) * 100, 100);
 
   return (
-    <div>
-      <p className="text-[13px] font-medium text-white/70 mb-1">Net across all accounts</p>
-      <div
-        className={`text-[44px] font-bold tracking-tight leading-none ${
-          isNegativeNet ? "text-[var(--danger)]" : "text-white"
-        }`}
-      >
-        <NumberRoll value={netAcross} showDecimals={false} />
-      </div>
+    <div className="card p-5">
+      {/* Period centered */}
+      <p className="text-center text-[13px] font-semibold text-[var(--text-2)]">
+        {periodLabel}
+      </p>
 
-      <div className="mt-3 flex items-baseline gap-2">
-        <span className="text-[13px] text-white/70">Safe to spend today</span>
-        <span className="text-[17px] font-semibold text-white tabular">
-          ₦{dailySafe.toLocaleString()}
-        </span>
-        {days > 0 && (
-          <span className="text-[11px] text-white/60 ml-1">· {days}d until {incomeDate}</span>
-        )}
-      </div>
-
-      {hasAccounts && !isNegativeSafe && (
-        <div className="mt-2 flex items-center gap-1.5 text-[11px] text-white/60">
-          <Calendar size={11} />
-          <span>
-            ₦{((data?.total_safe_minor ?? 0) / 100).toLocaleString()} available until next income
-          </span>
+      {/* Net across accounts — hero figure */}
+      <div className="mt-3">
+        <p className="text-[12px] text-[var(--text-3)]">Net across accounts</p>
+        <div
+          className={`mt-1 text-[38px] font-bold leading-none tracking-tight ${
+            isNegativeNet ? "text-[var(--danger)]" : "text-[var(--text-1)]"
+          }`}
+        >
+          <NumberRoll value={netAcross} showDecimals={false} />
         </div>
-      )}
+        <p className="mt-1 text-[12px] text-[var(--text-3)]">
+          {fmt(spentThisMonth)} spent this month
+        </p>
+      </div>
 
-      {isNegativeSafe && (
-        <div className="mt-3 flex items-center gap-2 px-3 py-2 rounded-xl bg-[var(--danger)]/25 border border-white/20">
-          <AlertTriangle size={13} className="text-white shrink-0" />
-          <p className="text-[12px] text-white">
-            ₦{Math.abs((data!.total_safe_minor ?? 0) / 100).toLocaleString()} short before payday
+      {/* Income / Balance columns */}
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <div>
+          <p className="text-[11px] text-[var(--text-3)]">Income</p>
+          <p className="mt-0.5 text-[15px] font-semibold text-[var(--gain)]">
+            {fmt(incomeThisMonth)}
           </p>
         </div>
-      )}
+        <div>
+          <p className="text-[11px] text-[var(--text-3)]">Balance</p>
+          <p className="mt-0.5 text-[15px] font-semibold text-[var(--text-1)]">
+            {fmt(netAcross)}
+          </p>
+        </div>
+      </div>
+
+      {/* Ring + days progress */}
+      <div className="mt-4 grid grid-cols-[44px_1fr] gap-3">
+        <RingProgress percentage={budgetUsedPct} label={`${Math.round(budgetUsedPct)}%`} />
+        <div className="min-w-0">
+          <div className="flex items-baseline justify-between gap-2">
+            <p className="truncate text-[11px] text-[var(--text-3)]">Monthly budget</p>
+            <p className="tabular shrink-0 text-[11px] text-[var(--text-2)]">
+              {fmt(budgetRemaining)} left
+            </p>
+          </div>
+          <div className="mt-1 h-[3px] w-full overflow-hidden rounded-full bg-[var(--fill-2)]">
+            <div
+              className="h-full rounded-full bg-[var(--brand)]"
+              style={{ width: `${budgetUsedPct}%` }}
+            />
+          </div>
+          <div className="mt-2 flex items-baseline justify-between gap-2">
+            <p className="truncate text-[11px] text-[var(--text-3)]">Safe to spend today</p>
+            <p className="tabular shrink-0 text-[11px] text-[var(--text-2)]">
+              {daysUntilIncome > 0 ? `${daysUntilIncome}d until ${nextIncomeDate}` : "No income set"}
+            </p>
+          </div>
+          <div className="mt-1 h-[3px] w-full overflow-hidden rounded-full bg-[var(--fill-2)]">
+            <div
+              className="h-full rounded-full bg-[var(--text-1)]"
+              style={{ width: `${cycleProgressPct}%` }}
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

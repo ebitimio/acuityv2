@@ -529,3 +529,43 @@ export async function getLastCheckin(accountId: string): Promise<{ created_at: s
   if (error) throw error;
   return data as { created_at: string } | null;
 }
+/* ---------- home helpers ---------- */
+
+export interface CategorySpendRow {
+  category: string;
+  total_minor: number;
+}
+
+/**
+ * Returns debit totals per category for a given period, sorted descending.
+ * Used by the Home "By category" scroller.
+ */
+export async function getCategorySpend(sinceISO: string): Promise<CategorySpendRow[]> {
+  const { sb } = await ctx();
+  const { data, error } = await sb
+    .from("transactions")
+    .select("category_name,amount_minor")
+    .or(NOT_SPLIT)
+    .eq("direction", "debit")
+    .eq("status", "posted")
+    .gte("date", sinceISO)
+    .limit(2000);
+  if (error) throw error;
+
+  const map = new Map<string, number>();
+  for (const t of (data ?? []) as { category_name: string | null; amount_minor: number }[]) {
+    const k = t.category_name || "Uncategorized";
+    map.set(k, (map.get(k) ?? 0) + t.amount_minor);
+  }
+  return [...map.entries()]
+    .map(([category, total_minor]) => ({ category, total_minor }))
+    .sort((a, b) => b.total_minor - a.total_minor);
+}
+
+/**
+ * "October 2026" from the current cycle (fallback: current month).
+ */
+export function getPeriodLabel(cycle: { cycle_start: string; cycle_end: string } | null): string {
+  const ref = cycle ? new Date(cycle.cycle_start) : new Date();
+  return ref.toLocaleDateString("en-NG", { month: "long", year: "numeric" });
+}

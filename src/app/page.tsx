@@ -5,7 +5,8 @@ import { createClient } from "@/lib/supabase/client";
 import {
   getHomeMetrics, getRecentTransactions, deleteTransaction, clearDataCache,
   getSetupStatus, completeOnboarding, getSafeToSpend,
-  type SetupStatus, type SafeToSpend,
+  getCurrentCycle, getCategorySpend, getPeriodLabel,
+  type SetupStatus, type SafeToSpend, type CategorySpendRow,
 } from "@/lib/supabase/database";
 import { useWorkspace } from "@/lib/workspace";
 import type { Txn, HomeMetrics } from "@/lib/types";
@@ -17,7 +18,9 @@ import { TransactionRow } from "@/components/ui/transaction-row";
 import { SetupChecklist } from "@/components/screens/setup-checklist";
 import { SetupWizard } from "@/components/screens/setup-wizard";
 import { SafeToSpendHero } from "@/components/ui/safe-to-spend";
-import { RunwayCards } from "@/components/ui/runway-card";
+import { CategoryScroller } from "@/components/ui/category-scroller";
+import { ToolsScroller } from "@/components/ui/tools-scroller";
+import { TransactionFilterChips, type TransactionFilter } from "@/components/ui/transaction-filter-chips";
 import { ScreenTransition } from "@/components/ui/screen-transition";
 import { PullToRefresh } from "@/components/ui/pull-to-refresh";
 import { useCurrency } from "@/lib/currency";
@@ -41,8 +44,8 @@ import { Modal } from "@/components/ui/modal";
 import { Field, Button } from "@/components/ui/form";
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
 import {
-  Eye, EyeOff, Bell, TrendingUp, ArrowLeftRight, CalendarDays, FileText,
-  Users, ShieldAlert, ChevronRight, Receipt, ChevronDown, Plus, Trash2,
+  Eye, EyeOff, ChevronRight, Receipt, ChevronDown, Plus, Trash2,
+  Wallet, PieChart, ArrowLeftRight,
 } from "lucide-react";
 
 const ZERO_METRICS: HomeMetrics = {
@@ -70,17 +73,19 @@ export default function SandboxPage() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAddTxnOpen, setIsAddTxnOpen] = useState(false);
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
-  const [isUpcomingOpen, setIsUpcomingOpen] = useState(false);
   const [selectedTxn, setSelectedTxn] = useState<Txn | null>(null);
 
   const [metrics, setMetrics] = useState<HomeMetrics | null>(null);
   const [transactions, setTransactions] = useState<Txn[]>([]);
+  const [categoryRows, setCategoryRows] = useState<CategorySpendRow[]>([]);
   const [setupStatus, setSetupStatus] = useState<SetupStatus | null>(null);
   const [setupError, setSetupError] = useState<string | null>(null);
   const [safeToSpend, setSafeToSpend] = useState<SafeToSpend | null>(null);
+  const [cycle, setCycle] = useState<{ cycle_start: string; cycle_end: string } | null>(null);
   const [setupWizardOpen, setSetupWizardOpen] = useState(false);
   const [setupWizardStep, setSetupWizardStep] = useState<"account" | "income" | "bills" | "budget">("account");
   const [checklistDismissed, setChecklistDismissed] = useState(false);
+  const [txnFilter, setTxnFilter] = useState<TransactionFilter>("all");
 
   const [navHidden, setNavHidden] = useState(false);
   const [wsOpen, setWsOpen] = useState(false);
@@ -98,13 +103,23 @@ export default function SandboxPage() {
   const refreshData = useCallback(async () => {
     try {
       clearDataCache();
-      const [m, t] = await Promise.all([getHomeMetrics(), getRecentTransactions(8)]);
+      const [m, t] = await Promise.all([getHomeMetrics(), getRecentTransactions(20)]);
       setMetrics(m ?? ZERO_METRICS);
       setTransactions(t ?? []);
     } catch (e: any) {
       console.error("refreshData failed:", e);
       setMetrics(ZERO_METRICS);
       setTransactions([]);
+    }
+
+    try {
+      const catSpend = await getCategorySpend(
+        new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
+      );
+      setCategoryRows(catSpend ?? []);
+    } catch (e: any) {
+      console.error("getCategorySpend failed:", e);
+      setCategoryRows([]);
     }
 
     try {
@@ -123,6 +138,13 @@ export default function SandboxPage() {
     } catch (e: any) {
       console.error("getSafeToSpend failed:", e);
       setSafeToSpend(null);
+    }
+
+    try {
+      const c = await getCurrentCycle();
+      setCycle(c);
+    } catch {
+      setCycle(null);
     }
   }, []);
 
@@ -238,18 +260,33 @@ export default function SandboxPage() {
   };
 
   if (showSplash) return <SplashScreen onComplete={() => setShowSplash(false)} />;
-  if (isAuthLoading) return <div className="min-h-[100dvh]" />;
+  if (isAuthLoading) return <div className="min-h-[100dvh]" style={{ background: "var(--bg)" }} />;
   if (!session) return <AuthScreen />;
   if (isLoading) return <HomeSkeleton />;
 
   const m = metrics ?? ZERO_METRICS;
   const netAcrossAccounts = m.net_worth_minor / 100;
-  const totalSpentNGN = m.total_spent_minor / 100;
-  const totalIncomeNGN = m.total_income_minor / 100;
+  const spentThisMonth = m.total_spent_minor / 100;
+  const incomeThisMonth = m.total_income_minor / 100;
+  const budgetLimit = m.budget_limit_minor / 100;
   const showChecklist = !!setupStatus && !setupStatus.is_complete && !checklistDismissed;
+  const periodLabel = getPeriodLabel(cycle);
+  const daysUntilIncome = safeToSpend?.days_until_next_income ?? 0;
+  const nextIncomeDateRaw = safeToSpend?.next_income_date ?? "";
+  const nextIncomeDate = nextIncomeDateRaw
+    ? new Date(nextIncomeDateRaw).toLocaleDateString("en-NG", { day: "numeric", month: "short" })
+    : "";
+
+  const visibleTransactions = transactions.filter((t) => {
+    if (txnFilter === "all") return true;
+    if (txnFilter === "credit") return t.direction === "credit";
+    if (txnFilter === "debit") return t.direction === "debit";
+    if (txnFilter === "transfers") return t.category_name === "Transfers";
+    return true;
+  });
 
   return (
-    <main className="min-h-[100dvh] relative overflow-x-hidden flex flex-col">
+    <main className="relative flex min-h-[100dvh] flex-col overflow-x-hidden" style={{ background: "var(--bg)" }}>
       <PullToRefresh onRefresh={refreshData}>
         <ScreenTransition id={activeScreen}>
           {activeScreen === "analytics" ? (
@@ -270,247 +307,201 @@ export default function SandboxPage() {
             <BankChargeScreen onBack={() => setActiveScreen("home")} />
           ) : (
             <div className="flex-1 overflow-y-auto pb-32">
+              {/* Sticky header */}
               <div
-                className="relative pt-[calc(env(safe-area-inset-top)+12px)] pb-5 px-5 rounded-b-[36px]"
+                className="sticky top-0 z-30 flex items-center justify-between px-5 pb-3"
                 style={{
-                  background: "linear-gradient(160deg, #7a0e0e 0%, #b3391f 35%, #e87a1a 75%, #ffb347 100%)",
+                  paddingTop: "calc(env(safe-area-inset-top) + 12px)",
+                  background: "color-mix(in srgb, var(--bg) 82%, transparent)",
+                  backdropFilter: "blur(20px)",
+                  WebkitBackdropFilter: "blur(20px)",
                 }}
               >
-                <div className="flex justify-between items-center mb-4">
+                <button
+                  onClick={() => setWsOpen((v) => !v)}
+                  className="flex items-center gap-1"
+                >
+                  <span className="text-[26px] font-bold tracking-tight text-[var(--text-1)]">
+                    {activeWs?.name ?? "Home"}
+                  </span>
+                  <ChevronDown size={18} className="text-[var(--text-3)]" />
+                </button>
+                <div className="flex gap-2">
                   <button
-                    onClick={() => setWsOpen((v) => !v)}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-md border border-white/30"
+                    onClick={toggleHidden}
+                    aria-label={hidden ? "Show balances" : "Hide balances"}
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--line)] bg-[var(--fill-1)] text-[var(--text-2)]"
                   >
-                    <div className="w-6 h-6 rounded-full bg-white/30 flex items-center justify-center text-[10px] font-bold text-white">
-                      {(activeWs?.name ?? "P").charAt(0).toUpperCase()}
-                    </div>
-                    <span className="text-[13px] font-medium text-white max-w-[120px] truncate">
-                      {activeWs?.name ?? "Personal"}
-                    </span>
-                    <ChevronDown size={14} className="text-white/70" />
+                    {hidden ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={toggleHidden}
-                      className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30"
-                    >
-                      {hidden ? <EyeOff size={14} className="text-white" /> : <Eye size={14} className="text-white" />}
-                    </button>
-                    <button
-                      onClick={() => setIsSettingsOpen(true)}
-                      className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30"
-                    >
-                      <Bell size={14} className="text-white" />
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => setIsSettingsOpen(true)}
+                    aria-label="Settings"
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--line)] bg-[var(--fill-1)] text-[12px] font-semibold text-[var(--text-1)]"
+                  >
+                    {session.user?.email?.charAt(0).toUpperCase() ?? "A"}
+                  </button>
                 </div>
+              </div>
 
-                {wsOpen && (
-                  <div className="absolute top-14 left-4 z-50 bg-[var(--surface-2)] border border-[var(--line-strong)] rounded-2xl shadow-2xl p-2 w-64">
-                    {workspaces.map((w) => {
-                      const isActive = w.id === activeWs?.id;
-                      const canDelete = workspaces.length > 1;
-                      return (
-                        <div
-                          key={w.id}
-                          className={`flex items-center justify-between px-3 py-2 rounded-lg text-[14px] ${
-                            isActive ? "bg-[var(--brand)]/20 text-[var(--brand)]" : "hover:bg-white/5 text-white"
-                          }`}
+              {/* Workspace dropdown */}
+              {wsOpen && (
+                <div className="absolute left-4 right-4 top-16 z-40 rounded-2xl border border-[var(--line-strong)] bg-[var(--surface-3)] p-2 shadow-xl">
+                  {workspaces.map((w) => {
+                    const isActive = w.id === activeWs?.id;
+                    const canDelete = workspaces.length > 1;
+                    return (
+                      <div
+                        key={w.id}
+                        className={`flex items-center justify-between rounded-lg px-3 py-2 text-[14px] ${
+                          isActive ? "bg-[var(--brand-soft)] text-[var(--brand)]" : "text-[var(--text-1)]"
+                        }`}
+                      >
+                        <button
+                          onClick={() => handleSwitchWorkspace(w.id)}
+                          className="flex-1 truncate text-left"
                         >
-                          <button onClick={() => handleSwitchWorkspace(w.id)} className="flex-1 text-left truncate">
-                            {w.name}
+                          {w.name}
+                        </button>
+                        {canDelete && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDeleteWorkspace(w); }}
+                            className="ml-2 p-1 text-[var(--danger)]"
+                            aria-label={`Delete ${w.name}`}
+                          >
+                            <Trash2 size={14} />
                           </button>
-                          {canDelete && (
-                            <button
-                              onClick={(e) => { e.stopPropagation(); handleDeleteWorkspace(w); }}
-                              className="p-1 text-[var(--danger)] hover:bg-[var(--danger)]/20 rounded ml-2"
-                              aria-label={`Delete ${w.name}`}
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          )}
-                        </div>
-                      );
-                    })}
-                    <div className="h-px bg-white/10 my-1" />
-                    <button
-                      onClick={() => { setWsOpen(false); setWsCreateOpen(true); }}
-                      className="w-full flex items-center gap-1.5 px-3 py-2 rounded-lg text-[14px] text-[var(--brand)] hover:bg-white/5"
-                    >
-                      <Plus size={14} /> Create workspace
-                    </button>
-                  </div>
-                )}
-
-                <SafeToSpendHero
-                  data={safeToSpend}
-                  netAcross={netAcrossAccounts}
-                  hasAccounts={(safeToSpend?.liquid_minor ?? 0) > 0}
-                />
-
-                <div className="flex gap-2.5 mt-4">
+                        )}
+                      </div>
+                    );
+                  })}
+                  <div className="my-1 h-px bg-[var(--line)]" />
                   <button
-                    onClick={() => setActiveScreen("budget")}
-                    className="flex-1 py-2.5 bg-white/20 backdrop-blur-xl border border-white/30 rounded-2xl text-[13px] font-semibold text-white flex items-center justify-center gap-2 hover:bg-white/30 transition-colors"
+                    onClick={() => { setWsOpen(false); setWsCreateOpen(true); }}
+                    className="flex w-full items-center gap-1.5 rounded-lg px-3 py-2 text-[14px] text-[var(--brand)]"
                   >
-                    <TrendingUp size={15} /> Budget
+                    <Plus size={14} /> Create workspace
                   </button>
-                  <button
-                    onClick={() => setIsImportOpen(true)}
-                    className="flex-1 py-2.5 bg-white/20 backdrop-blur-xl border border-white/30 rounded-2xl text-[13px] font-semibold text-white flex items-center justify-center gap-2 hover:bg-white/30 transition-colors"
-                  >
-                    <ArrowLeftRight size={15} /> Import
-                  </button>
-                </div>
-              </div>
-
-              <div className="px-4 mt-4">
-                <RunwayCards
-                  safe={safeToSpend}
-                  metrics={metrics}
-                  onOpenUpcoming={() => setIsUpcomingOpen(true)}
-                  onOpenBudget={() => setActiveScreen("budget")}
-                />
-              </div>
-
-              {setupError && (
-                <div className="px-4 mt-2">
-                  <p className="text-[11px] text-[var(--danger)]">Setup status failed: {setupError}</p>
                 </div>
               )}
 
-              {showChecklist && (
-                <div className="px-4 mt-4">
+              {/* Content */}
+              <div className="flex flex-col gap-6 px-5 pt-2">
+                {/* Hero card */}
+                <SafeToSpendHero
+                  data={safeToSpend}
+                  netAcross={netAcrossAccounts}
+                  spentThisMonth={spentThisMonth}
+                  incomeThisMonth={incomeThisMonth}
+                  budgetLimit={budgetLimit}
+                  periodLabel={periodLabel}
+                  daysUntilIncome={daysUntilIncome}
+                  nextIncomeDate={nextIncomeDate}
+                />
+
+                {/* Quick action tiles */}
+                <div className="grid grid-cols-3 gap-3">
+                  <button
+                    onClick={() => setActiveScreen("budget")}
+                    aria-label="Budget"
+                    className="press flex h-14 items-center justify-center rounded-[18px] border border-[var(--line)] bg-[var(--surface-2)] text-[var(--text-1)]"
+                  >
+                    <Wallet size={20} />
+                  </button>
+                  <button
+                    onClick={() => setActiveScreen("analytics")}
+                    aria-label="Analytics"
+                    className="press flex h-14 items-center justify-center rounded-[18px] border border-[var(--line)] bg-[var(--surface-2)] text-[var(--text-1)]"
+                  >
+                    <PieChart size={20} />
+                  </button>
+                  <button
+                    onClick={() => setIsImportOpen(true)}
+                    aria-label="Import statement"
+                    className="press flex h-14 items-center justify-center rounded-[18px] border border-[var(--line)] bg-[var(--surface-2)] text-[var(--text-1)]"
+                  >
+                    <ArrowLeftRight size={20} />
+                  </button>
+                </div>
+
+                {/* Setup checklist */}
+                {setupError && (
+                  <p className="px-1 text-[11px] text-[var(--danger)]">
+                    Setup status failed: {setupError}
+                  </p>
+                )}
+                {showChecklist && (
                   <SetupChecklist
                     status={setupStatus!}
                     onStartStep={handleStartSetupStep}
                     onDismiss={handleDismissChecklist}
                   />
-                </div>
-              )}
+                )}
 
-              <div className="px-4 mt-4 grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => setActiveScreen("commitments")}
-                  className="rounded-3xl bg-gradient-to-b from-[#3a1a0a] to-[#0a0a0a] border border-white/10 p-4 flex flex-col justify-between text-left hover:border-[#e87a1a]/50 transition-colors aspect-[4/3]"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
-                    <CalendarDays size={20} className="text-white/80" />
-                  </div>
-                  <div>
-                    <p className="text-[15px] font-semibold text-white">Commitments</p>
-                    <p className="text-[11px] text-white/50 mt-1 leading-snug">Bills & funds.</p>
-                  </div>
-                </button>
-                <button
-                  onClick={() => setActiveScreen("tax")}
-                  className="rounded-3xl bg-gradient-to-b from-[#3a1a0a] to-[#0a0a0a] border border-white/10 p-4 flex flex-col justify-between text-left hover:border-[#e87a1a]/50 transition-colors aspect-[4/3]"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
-                    <FileText size={20} className="text-white/80" />
-                  </div>
-                  <div>
-                    <p className="text-[15px] font-semibold text-white">Tax Estimator</p>
-                    <p className="text-[11px] text-white/50 mt-1 leading-snug">PIT & LIRS.</p>
-                  </div>
-                </button>
-                <button
-                  onClick={() => setActiveScreen("ajo")}
-                  className="rounded-3xl bg-gradient-to-b from-[#3a1a0a] to-[#0a0a0a] border border-white/10 p-4 flex flex-col justify-between text-left hover:border-[#e87a1a]/50 transition-colors aspect-[4/3]"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
-                    <Users size={20} className="text-white/80" />
-                  </div>
-                  <div>
-                    <p className="text-[15px] font-semibold text-white">Ajo Tracker</p>
-                    <p className="text-[11px] text-white/50 mt-1 leading-snug">Cooperative groups.</p>
-                  </div>
-                </button>
-                <button
-                  onClick={() => setActiveScreen("bank-charge")}
-                  className="rounded-3xl bg-gradient-to-b from-[#3a1a0a] to-[#0a0a0a] border border-white/10 p-4 flex flex-col justify-between text-left hover:border-[#e87a1a]/50 transition-colors aspect-[4/3]"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
-                    <ShieldAlert size={20} className="text-white/80" />
-                  </div>
-                  <div>
-                    <p className="text-[15px] font-semibold text-white">Bank Charges</p>
-                    <p className="text-[11px] text-white/50 mt-1 leading-snug">Fee auditor.</p>
-                  </div>
-                </button>
-              </div>
+                {/* Category scroller */}
+                <CategoryScroller
+                  rows={categoryRows}
+                  onSeeAll={() => setActiveScreen("analytics")}
+                />
 
-              <div className="px-4 mt-4">
-                <div className="flex items-center justify-between mb-3 px-1">
-                  <h3 className="text-[17px] font-semibold text-white">Monthly expenses</h3>
-                  <span className="text-[13px] font-medium text-[var(--brand)]">↓ {fmt(totalSpentNGN)}</span>
-                </div>
-                <div className="flex justify-between items-center bg-[#17191A] rounded-3xl p-5 border border-white/5">
-                  <div className="text-center">
-                    <p className="text-[11px] text-white/50 mb-1">Spent</p>
-                    <p className="text-[15px] font-semibold text-white">{fmt(totalSpentNGN)}</p>
-                  </div>
-                  <div className="w-px h-8 bg-white/10" />
-                  <div className="text-center">
-                    <p className="text-[11px] text-white/50 mb-1">Income</p>
-                    <p className="text-[15px] font-semibold text-white">{fmt(totalIncomeNGN)}</p>
-                  </div>
-                  <div className="w-px h-8 bg-white/10" />
-                  <div className="text-center">
-                    <p className="text-[11px] text-white/50 mb-1">Net</p>
-                    <p
-                      className={`text-[15px] font-semibold ${
-                        totalIncomeNGN - totalSpentNGN >= 0 ? "text-[var(--gain)]" : "text-[var(--danger)]"
-                      }`}
-                    >
-                      {fmt(totalIncomeNGN - totalSpentNGN)}
-                    </p>
-                  </div>
-                </div>
-              </div>
+                {/* Tools scroller */}
+                <ToolsScroller onNavigate={(key) => setActiveScreen(key)} />
 
-              {m.uncategorized_count > 0 && (
-                <div className="px-4 mt-4">
+                {/* Needs review */}
+                {m.uncategorized_count > 0 && (
                   <motion.button
-                    whileHover={{ y: -3 }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={() => setActiveScreen("needs-review")}
-                    className="w-full flex items-center justify-between p-4 bg-[var(--warn)]/10 border border-[var(--warn)]/20 rounded-2xl group transition-colors"
+                    className="flex w-full items-center justify-between rounded-2xl border border-[var(--warn)]/25 bg-[var(--warn)]/10 p-4 text-left"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-[var(--warn)]/20 flex items-center justify-center">
-                        <span className="text-[var(--warn)] font-semibold text-[14px]">{m.uncategorized_count}</span>
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--warn)]/20">
+                        <span className="text-[13px] font-semibold text-[var(--warn)]">
+                          {m.uncategorized_count}
+                        </span>
                       </div>
-                      <span className="text-[15px] font-medium text-white">Transactions need review</span>
+                      <span className="text-[14px] font-medium text-[var(--text-1)]">
+                        Transactions need review
+                      </span>
                     </div>
-                    <ChevronRight size={20} className="text-[var(--warn)] group-hover:translate-x-1 transition-transform" />
+                    <ChevronRight size={18} className="text-[var(--warn)]" />
                   </motion.button>
-                </div>
-              )}
+                )}
 
-              <div className="px-4 mt-4">
-                <div className="flex items-center justify-between mb-3 px-1">
-                  <h3 className="text-[17px] font-semibold text-white">Recent</h3>
-                  <button
-                    onClick={() => setActiveScreen("analytics")}
-                    className="text-[13px] text-[var(--brand)] font-medium"
-                  >
-                    See all
-                  </button>
-                </div>
-                <div className="group-list">
-                  {transactions.length === 0 ? (
-                    <EmptyState
-                      icon={Receipt}
-                      title="No transactions yet"
-                      body="Once you add an account and log a transaction, it will appear here."
-                      action="Add transaction"
-                      onAction={() => setIsAddTxnOpen(true)}
-                    />
-                  ) : (
-                    transactions.map((t) => (
-                      <TransactionRow key={t.id} txn={t} onOpen={setSelectedTxn} onDelete={handleDeleteTxn} />
-                    ))
-                  )}
+                {/* Transactions */}
+                <div>
+                  <div className="mb-3 flex items-center justify-between px-1">
+                    <h3 className="text-[15px] font-semibold text-[var(--text-1)]">Transactions</h3>
+                    <button
+                      onClick={() => setActiveScreen("analytics")}
+                      className="text-[12px] font-medium text-[var(--brand)]"
+                    >
+                      See all
+                    </button>
+                  </div>
+                  <TransactionFilterChips active={txnFilter} onChange={setTxnFilter} />
+                  <div className="group-list">
+                    {visibleTransactions.length === 0 ? (
+                      <EmptyState
+                        icon={Receipt}
+                        title="No transactions yet"
+                        body="Add one or import a statement to get started."
+                        action="Add transaction"
+                        onAction={() => setIsAddTxnOpen(true)}
+                      />
+                    ) : (
+                      visibleTransactions
+                        .slice(0, 20)
+                        .map((t) => (
+                          <TransactionRow
+                            key={t.id}
+                            txn={t}
+                            onOpen={setSelectedTxn}
+                            onDelete={handleDeleteTxn}
+                          />
+                        ))
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -562,35 +553,6 @@ export default function SandboxPage() {
           />
           <Button loading={wsBusy} onClick={handleCreateWorkspace} disabled={!wsNewName.trim()}>
             Create
-          </Button>
-        </div>
-      </Modal>
-
-      <Modal open={isUpcomingOpen} onClose={() => setIsUpcomingOpen(false)} title="Upcoming bills">
-        <div className="space-y-2">
-          {(safeToSpend?.upcoming_bills ?? []).length === 0 ? (
-            <p className="text-[14px] text-[var(--text-3)] text-center py-6">
-              No bills set up. Add them in Commitments.
-            </p>
-          ) : (
-            safeToSpend!.upcoming_bills.map((b, i) => (
-              <div
-                key={i}
-                className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-[var(--surface-1)]"
-              >
-                <div>
-                  <p className="text-[14px] font-medium">{b.name}</p>
-                  <p className="text-[11px] text-[var(--text-3)]">Day {b.day}</p>
-                </div>
-                <p className="tabular font-semibold">{fmt(b.amount_minor / 100)}</p>
-              </div>
-            ))
-          )}
-          <Button
-            variant="ghost"
-            onClick={() => { setIsUpcomingOpen(false); setActiveScreen("commitments"); }}
-          >
-            Manage in Commitments
           </Button>
         </div>
       </Modal>
