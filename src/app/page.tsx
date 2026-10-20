@@ -13,7 +13,7 @@ import type { Txn, HomeMetrics } from "@/lib/types";
 import { AuthScreen } from "@/components/screens/auth-screen";
 import { SplashScreen } from "@/components/ui/splash-screen";
 import { HomeSkeleton } from "@/components/ui/skeleton-loader";
-import { FloatingTabBar } from "@/components/ui/floating-tab-bar";
+import { FloatingTabBar, type TabId } from "@/components/ui/floating-tab-bar";
 import { TransactionRow } from "@/components/ui/transaction-row";
 import { SetupChecklist } from "@/components/screens/setup-checklist";
 import { SetupWizard } from "@/components/screens/setup-wizard";
@@ -56,6 +56,9 @@ const ZERO_METRICS: HomeMetrics = {
   uncategorized_count: 0,
 };
 
+// Define the union of all possible screens (including sub-screens)
+type ScreenId = TabId | "budget" | "commitments" | "tax" | "needs-review" | "ajo" | "bank-charge";
+
 export default function SandboxPage() {
   const [session, setSession] = useState<any>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
@@ -66,7 +69,7 @@ export default function SandboxPage() {
 
   const [showSplash, setShowSplash] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeScreen, setActiveScreen] = useState("home");
+  const [activeScreen, setActiveScreen] = useState<ScreenId>("home");
 
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isAdvisorOpen, setIsAdvisorOpen] = useState(false);
@@ -178,8 +181,11 @@ export default function SandboxPage() {
     window.scrollTo(0, 0);
   }, [activeScreen]);
 
-  const handleTabChange = (tabId: string) => {
-    if (tabId === "advisor") { setIsAdvisorOpen(true); return; }
+  const handleTabChange = (tabId: TabId) => {
+    if (tabId === "ai") {
+      setIsAdvisorOpen(true);
+      return;
+    }
     setActiveScreen(tabId);
   };
 
@@ -253,7 +259,7 @@ export default function SandboxPage() {
     try {
       await completeOnboarding();
       setChecklistDismissed(true);
-      toast("Setup skipped â you can finish any time from Accounts or Commitments");
+      toast("Setup skipped — you can finish any time from Accounts or Commitments");
     } catch {
       setChecklistDismissed(true);
     }
@@ -445,7 +451,7 @@ export default function SandboxPage() {
                 />
 
                 {/* Tools scroller */}
-                <ToolsScroller onNavigate={(key) => setActiveScreen(key)} />
+                <ToolsScroller onNavigate={(key) => setActiveScreen(key as ScreenId)} />
 
                 {/* Needs review */}
                 {m.uncategorized_count > 0 && (
@@ -510,7 +516,7 @@ export default function SandboxPage() {
       </PullToRefresh>
 
       <FloatingTabBar
-        activeTab={activeScreen === "budget" ? "home" : activeScreen}
+        activeTab={activeScreen === "budget" ? "home" : (activeScreen as TabId)}
         onTabChange={handleTabChange}
         onAddClick={handleAddClick}
         isHidden={navHidden}

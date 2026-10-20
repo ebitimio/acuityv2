@@ -1,13 +1,11 @@
 // src/lib/format.ts
 
-// 1. Helper to get the active currency on the client
 function getActiveCurrency(): "NGN" | "USD" {
   if (typeof window === "undefined") return "NGN";
   const stored = localStorage.getItem("acuity-currency") || localStorage.getItem("currency");
   return stored === "USD" ? "USD" : "NGN";
 }
 
-// 2. The main formatter
 export function formatCurrency(
   amount: number | string,
   overrideCurrency?: "NGN" | "USD"
@@ -25,7 +23,6 @@ export function formatCurrency(
   return currency === "NGN" ? `₦${formattedNumber}` : `$${formattedNumber}`;
 }
 
-// 3. The missing input formatters
 export function formatNumberInput(value: string | number): string {
   if (value === "" || value === null || value === undefined) return "";
   const num = typeof value === "string" ? parseFloat(value.replace(/,/g, "")) : value;
