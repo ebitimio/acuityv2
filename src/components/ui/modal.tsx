@@ -41,7 +41,10 @@ export function Modal({ open, onClose, title, children }: { open: boolean; onClo
     update();
     v.addEventListener("resize", update);
     v.addEventListener("scroll", update);
-    return () => { v.removeEventListener("resize", update); v.removeEventListener("scroll", update); };
+    return () => {
+      v.removeEventListener("resize", update);
+      v.removeEventListener("scroll", update);
+    };
   }, []);
 
   if (!mounted) return null;
@@ -53,29 +56,62 @@ export function Modal({ open, onClose, title, children }: { open: boolean; onClo
   return createPortal(
     <AnimatePresence>
       {open && (
-        <div key={id} className="z-[200] flex items-end justify-center sm:items-center sm:p-6" style={frame} role="dialog" aria-modal="true" aria-label={title}>
+        <div
+          key={id}
+          className="z-[200] flex items-end justify-center sm:items-center sm:p-6"
+          style={frame}
+          role="dialog"
+          aria-modal="true"
+          aria-label={title}
+        >
           <motion.div
-            className="absolute inset-0 bg-black/45 backdrop-blur-sm"
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="absolute inset-0 backdrop-blur-sm"
+            style={{ background: "var(--scrim)" }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             onClick={onClose}
           />
           <motion.div
-            className="glass glass-thick relative flex max-h-full w-full max-w-md flex-col overflow-hidden rounded-t-[32px] sm:max-h-[88dvh] sm:rounded-[32px]"
-            initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={spring.sheet}
-            drag="y" dragControls={controls} dragListener={false}
-            dragConstraints={{ top: 0, bottom: 0 }} dragElastic={{ top: 0, bottom: 0.5 }}
-            onDragEnd={(_, info) => { if (info.offset.y > 110 || info.velocity.y > 700) onClose(); }}
+            className="glass glass-thick relative flex max-h-full w-full max-w-md flex-col overflow-hidden"
+            style={{ borderRadius: "var(--r-sheet) var(--r-sheet) 0 0" }}
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={spring.sheet}
+            drag="y"
+            dragControls={controls}
+            dragListener={false}
+            dragConstraints={{ top: 0, bottom: 0 }}
+            dragElastic={{ top: 0, bottom: 0.5 }}
+            onDragEnd={(_, info) => {
+              if (info.offset.y > 110 || info.velocity.y > 700) onClose();
+            }}
           >
-            <div className="px-5 pb-2 pt-3" style={{ touchAction: "none" }} onPointerDown={(e) => controls.start(e)}>
-              <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-white/25" />
+            <div
+              className="px-5 pb-2 pt-3"
+              style={{ touchAction: "none" }}
+              onPointerDown={(e) => controls.start(e)}
+            >
+              <div
+                className="mx-auto mb-3 h-1.5 w-10 rounded-full"
+                style={{ background: "var(--fill-3)" }}
+              />
               <div className="flex items-center justify-between">
-                <h2 className="text-[19px] font-bold">{title}</h2>
-                <button aria-label="Close" onClick={onClose} className="press flex h-9 w-9 items-center justify-center rounded-full bg-white/[0.1] text-[var(--text-2)] hover:text-white">
+                <h2 className="text-[18px] font-bold text-[var(--text-1)]">{title}</h2>
+                <button
+                  aria-label="Close"
+                  onClick={onClose}
+                  className="press flex h-9 w-9 items-center justify-center rounded-full text-[var(--text-2)]"
+                  style={{ background: "var(--fill-1)" }}
+                >
                   <X size={18} />
                 </button>
               </div>
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-[calc(20px+env(safe-area-inset-bottom))] pt-2">{children}</div>
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-[calc(20px+env(safe-area-inset-bottom))] pt-2">
+              {children}
+            </div>
           </motion.div>
         </div>
       )}

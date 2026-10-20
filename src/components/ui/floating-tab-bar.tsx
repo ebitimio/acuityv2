@@ -30,13 +30,20 @@ export function FloatingTabBar({ activeTab, onTabChange, onAddClick, isHidden }:
       className="pointer-events-none fixed bottom-0 left-0 right-0 z-[60] flex justify-center px-4 pt-6"
       style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 6px)" }}
     >
-      <div className="absolute inset-x-0 bottom-0 -z-10 h-32 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+      {/* Theme-aware fade */}
+      <div
+        className="absolute inset-x-0 bottom-0 -z-10 h-32"
+        style={{
+          background:
+            "linear-gradient(to top, var(--bg) 0%, color-mix(in srgb, var(--bg) 60%, transparent) 55%, transparent 100%)",
+        }}
+      />
 
       <div className="pointer-events-auto flex w-full max-w-[420px] items-center gap-3">
         <GlassSurface
           tier="thick"
           rim
-          className="flex h-[64px] flex-1 items-center p-1.5"
+          className="flex h-[56px] flex-1 items-center p-1.5"
         >
           {TABS.map((tab) => {
             const active = activeTab === tab.id;
@@ -45,46 +52,45 @@ export function FloatingTabBar({ activeTab, onTabChange, onAddClick, isHidden }:
               <motion.button
                 key={tab.id}
                 onClick={() => onTabChange(tab.id)}
+                aria-label={tab.label}
                 aria-current={active ? "page" : undefined}
                 whileTap={{ scale: 0.88 }}
                 transition={spring.snappy}
                 className={cn(
-                  "relative flex h-full flex-1 flex-col items-center justify-center gap-0.5 rounded-full transition-colors",
-                  active ? "text-[var(--brand)]" : "text-white/55 hover:text-white"
+                  "relative flex h-full flex-1 items-center justify-center rounded-full transition-colors",
+                  active ? "text-[var(--text-1)]" : "text-[var(--text-3)] hover:text-[var(--text-2)]"
                 )}
               >
                 {active && (
                   <motion.span
                     layoutId="tab-lens"
-                    className="absolute inset-0 rounded-full border border-[var(--brand)]/70"
+                    className="absolute inset-0 rounded-full border"
                     style={{
-                      background:
-                        "radial-gradient(circle at 50% 100%, rgba(249,115,22,0.35) 0%, rgba(249,115,22,0.08) 70%, transparent 100%)",
-                      boxShadow:
-                        "0 0 16px rgba(249,115,22,0.35), inset 0 0 12px rgba(249,115,22,0.15)",
+                      background: "var(--fill-2)",
+                      borderColor: "var(--line-strong)",
                     }}
                     transition={spring.liquid}
                   />
                 )}
-                <Icon size={21} strokeWidth={active ? 2.5 : 2} className="relative" />
-                <span className="relative text-[10px] font-semibold">{tab.label}</span>
+                <Icon size={21} strokeWidth={active ? 2.25 : 2} className="relative" />
               </motion.button>
             );
           })}
         </GlassSurface>
 
-        <GlassSurface
-          as="button"
-          interactive
-          tier="thick"
-          rim
+        <button
+          type="button"
           onClick={onAddClick}
-          className="flex h-[64px] w-[64px] shrink-0 items-center justify-center text-white"
-          tint="rgba(249,115,22,0.75)"
           aria-label="Add"
+          className="press flex h-[56px] w-[56px] shrink-0 items-center justify-center rounded-full"
+          style={{
+            background: "var(--ink)",
+            color: "var(--ink-on)",
+            boxShadow: "var(--glass-shadow)",
+          }}
         >
-          <Plus size={30} strokeWidth={2.5} />
-        </GlassSurface>
+          <Plus size={26} strokeWidth={2.25} />
+        </button>
       </div>
     </motion.nav>
   );

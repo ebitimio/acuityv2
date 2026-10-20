@@ -7,7 +7,13 @@ import { UploadCloud } from "lucide-react";
 import { importStatement } from "@/lib/supabase/database";
 import { useToast } from "./toast";
 
-export function ImportSheet({ isOpen, onClose, onImportSuccess }: { isOpen: boolean; onClose: () => void; onImportSuccess: () => void }) {
+export function ImportSheet({
+  isOpen, onClose, onImportSuccess,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onImportSuccess: () => void;
+}) {
   const [busy, setBusy] = useState(false);
   const toast = useToast();
 
@@ -26,13 +32,13 @@ export function ImportSheet({ isOpen, onClose, onImportSuccess }: { isOpen: bool
   return (
     <Modal open={isOpen} onClose={onClose} title="Import Statement">
       <div className="space-y-4">
-        <div className="w-full h-48 rounded-3xl border-2 border-dashed border-white/20 flex flex-col items-center justify-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-[var(--brand)]/20 flex items-center justify-center text-[var(--brand)]">
+        <div className="flex h-48 w-full flex-col items-center justify-center gap-4 rounded-3xl border-2 border-dashed border-[var(--line-strong)]">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--brand-soft)] text-[var(--brand)]">
             <UploadCloud size={32} />
           </div>
-          <div className="text-center px-4">
-            <p className="text-[17px] font-medium">Statement Scan</p>
-            <p className="text-[13px] text-[var(--text-3)] mt-1 leading-snug">
+          <div className="px-4 text-center">
+            <p className="text-[16px] font-medium text-[var(--text-1)]">Statement Scan</p>
+            <p className="mt-1 text-[12px] leading-snug text-[var(--text-3)]">
               Coming in Step 5. Until then, use Quick Add on the dashboard.
             </p>
           </div>
