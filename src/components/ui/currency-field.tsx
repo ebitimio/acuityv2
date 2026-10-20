@@ -22,7 +22,7 @@ export function CurrencyField({
   value,
   onChange,
   placeholder = "0",
-  prefix = "â¦",
+  prefix = "₦",
   className,
 }: CurrencyFieldProps) {
   const [text, setText] = useState<string>(value ? formatNumberInput(String(value)) : "");

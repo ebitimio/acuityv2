@@ -120,7 +120,7 @@ export function QuickAddSheet({
 
         <div className="text-center py-2">
           <p className="text-[13px] text-[var(--text-3)]">{direction === "credit" ? "Received" : "Spent"}</p>
-          <p className="text-[44px] font-bold tabular tracking-tight">â¦{displayed || "0"}</p>
+          <p className="text-[44px] font-bold tabular tracking-tight">₦| "0"}</p>
         </div>
 
         <div className="flex gap-2 overflow-x-auto pb-1">
