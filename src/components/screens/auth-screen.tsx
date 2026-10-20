@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import { Mail, Lock, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/toast";
-import { cn } from "@/lib/utils";
 
 export function AuthScreen() {
   const [mode, setMode] = useState<"login" | "signup">("login");
@@ -58,13 +57,6 @@ export function AuthScreen() {
   return (
     <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-[#0b0b0c] px-6 py-12 relative overflow-hidden">
       
-      {/* Ambient Background Dots */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-[15%] left-[20%] h-1.5 w-1.5 rounded-full bg-green-500 blur-[1px]" />
-        <div className="absolute top-[25%] left-[10%] h-1 w-1 rounded-full bg-green-500 blur-[1px]" />
-        <div className="absolute top-[35%] left-[15%] h-1 w-1 rounded-full bg-green-500 blur-[1px]" />
-      </div>
-
       {/* The Black Card with Logo and Welcome Text */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
