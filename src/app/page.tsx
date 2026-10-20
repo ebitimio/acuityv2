@@ -400,26 +400,26 @@ export default function SandboxPage() {
                   nextIncomeDate={nextIncomeDate}
                 />
 
-                {/* Quick action tiles - Changed icon colors to orange */}
+                {/* Quick action tiles - Hardcoded dark background */}
                 <div className="grid grid-cols-3 gap-3">
                   <button
                     onClick={() => setActiveScreen("budget")}
                     aria-label="Budget"
-                    className="press flex h-14 items-center justify-center rounded-[18px] border border-[var(--line)] bg-[var(--surface-2)]"
+                    className="press flex h-14 items-center justify-center rounded-[18px] border border-white/5 bg-[#1c1c1e]"
                   >
                     <Wallet size={20} color="#DE3121" />
                   </button>
                   <button
                     onClick={() => setActiveScreen("analytics")}
                     aria-label="Analytics"
-                    className="press flex h-14 items-center justify-center rounded-[18px] border border-[var(--line)] bg-[var(--surface-2)]"
+                    className="press flex h-14 items-center justify-center rounded-[18px] border border-white/5 bg-[#1c1c1e]"
                   >
                     <PieChart size={20} color="#DE3121" />
                   </button>
                   <button
                     onClick={() => setIsImportOpen(true)}
                     aria-label="Import statement"
-                    className="press flex h-14 items-center justify-center rounded-[18px] border border-[var(--line)] bg-[var(--surface-2)]"
+                    className="press flex h-14 items-center justify-center rounded-[18px] border border-white/5 bg-[#1c1c1e]"
                   >
                     <ArrowLeftRight size={20} color="#DE3121" />
                   </button>

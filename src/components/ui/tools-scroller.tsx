@@ -28,14 +28,16 @@ export function ToolsScroller({ onNavigate }: { onNavigate: (key: string) => voi
           <button
             key={tool.key}
             onClick={() => onNavigate(tool.key)}
-            className="press flex min-w-[140px] flex-col items-start gap-3 rounded-[18px] border border-[var(--line)] bg-[var(--surface-2)] p-4 text-left"
+            // Force dark background and border
+            className="press flex min-w-[140px] flex-col items-start gap-3 rounded-[18px] border border-white/5 bg-[#1c1c1e] p-4 text-left"
           >
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--fill-2)]">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10">
               <tool.icon size={20} color="#DE3121" />
             </div>
             <div>
-              <p className="text-[14px] font-semibold text-[var(--text-1)]">{tool.label}</p>
-              <p className="text-[11px] text-[var(--text-3)]">{tool.desc}</p>
+              {/* Force white text */}
+              <p className="text-[14px] font-semibold text-white">{tool.label}</p>
+              <p className="text-[11px] text-white/50">{tool.desc}</p>
             </div>
           </button>
         ))}
