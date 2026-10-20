@@ -197,3 +197,31 @@ select {
     animation: none !important;
   }
 }
+/* Hide the native scrollbar everywhere. The app never needs a visible bar. */
+html,
+body {
+  scrollbar-width: none;          /* Firefox */
+  -ms-overflow-style: none;       /* IE and Edge */
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+
+* {
+  scrollbar-width: none;
+}
+
+/* Every scrollable region inside the app */
+.overflow-y-auto,
+.overflow-auto {
+  scrollbar-width: none;
+}
+.overflow-y-auto::-webkit-scrollbar,
+.overflow-auto::-webkit-scrollbar {
+  display: none;
+}

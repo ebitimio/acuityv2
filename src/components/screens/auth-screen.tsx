@@ -55,42 +55,41 @@ export function AuthScreen() {
 
   return (
     <div
-      className="w-full flex flex-col items-center justify-start px-6 overflow-y-auto"
+      className="w-full h-[100dvh] overflow-hidden flex flex-col items-center justify-center px-6"
       style={{
-        minHeight: "calc(100dvh + env(safe-area-inset-bottom) + env(safe-area-inset-top))",
-        marginTop: "calc(-1 * env(safe-area-inset-top))",
-        paddingTop: "calc(env(safe-area-inset-top) + 72px)",
-        paddingBottom: "calc(env(safe-area-inset-bottom) + 32px)",
         background:
           "linear-gradient(160deg, #7a0e0e 0%, #b3391f 35%, #e87a1a 75%, #ffb347 100%)",
+        paddingTop: "calc(env(safe-area-inset-top) + 16px)",
+        paddingBottom: "calc(env(safe-area-inset-bottom) + 16px)",
       }}
     >
-      {/* ATM cards — pushed further down so they clear the notch */}
-      <div className="relative w-full h-[220px] flex items-center justify-center pointer-events-none shrink-0 mt-4">
+      {/* ATM cards */}
+      <div className="relative w-full h-[160px] flex items-center justify-center pointer-events-none shrink-0">
         <motion.div
           animate={{ rotate: -12, x: -25, y: 10 }}
           transition={{ duration: 4, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-          className="absolute top-14 w-64 h-40 bg-gradient-to-tr from-[#2a0a0a] to-[#4a0e0e] rounded-3xl border border-white/10 shadow-2xl"
+          className="absolute top-6 w-56 h-36 bg-gradient-to-tr from-[#2a0a0a] to-[#4a0e0e] rounded-3xl border border-white/10 shadow-2xl"
         />
         <motion.div
           animate={{ rotate: 8, x: 25, y: -10 }}
           transition={{ duration: 4, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-          className="absolute top-10 w-64 h-40 bg-gradient-to-tr from-[#5a1a1a] to-[#8b1a1a] rounded-3xl border border-white/20 shadow-2xl z-10 overflow-hidden"
+          className="absolute top-2 w-56 h-36 bg-gradient-to-tr from-[#5a1a1a] to-[#8b1a1a] rounded-3xl border border-white/20 shadow-2xl z-10 overflow-hidden"
         >
-          <div className="absolute top-5 left-5 text-white/80 font-bold italic text-sm z-10">VISA</div>
-          <div className="absolute bottom-8 left-5 text-white/90 font-mono text-base tracking-widest z-10">
+          <div className="absolute top-4 left-4 text-white/80 font-bold italic text-sm z-10">VISA</div>
+          <div className="absolute bottom-6 left-4 text-white/90 font-mono text-sm tracking-widest z-10">
             •••• 4291
           </div>
         </motion.div>
       </div>
 
+      {/* ACUITY wordmark */}
       <motion.h1
         initial={{ opacity: 0, scale: 0.92 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ ...spring.soft, delay: 0.1 }}
-        className="text-black font-black mt-2 mb-4 shrink-0"
+        className="text-black font-black shrink-0 mt-1"
         style={{
-          fontSize: "clamp(40px, 12vw, 64px)",
+          fontSize: "clamp(32px, 10vw, 52px)",
           lineHeight: 1,
           letterSpacing: "-0.045em",
           fontWeight: 900,
@@ -99,28 +98,25 @@ export function AuthScreen() {
         ACUITY
       </motion.h1>
 
+      {/* Title */}
+      <div className="flex flex-col items-center mt-2 mb-3 shrink-0">
+        <h2 className="text-[18px] font-bold text-white text-center">
+          {mode === "login" ? "Welcome back." : mode === "signup" ? "Create Acuity." : "Verify Email."}
+        </h2>
+        <p className="text-[12px] text-white/80 mt-1 text-center">
+          {mode === "login" ? "Sign in to access your AI wealth manager." : "Start tracking your finances today."}
+        </p>
+      </div>
+
+      {/* Form card */}
       <motion.div
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ ...spring.smooth, delay: 0.2 }}
         className="w-full max-w-[340px] shrink-0"
       >
-        <div className="flex flex-col items-center mb-5">
-          <h2 className="text-[22px] font-bold text-white text-center">
-            {mode === "login" ? "Welcome back." : mode === "signup" ? "Create Acuity." : "Verify Email."}
-          </h2>
-          <p className="text-[13px] text-white/80 mt-1 text-center">
-            {mode === "login" ? "Sign in to access your AI wealth manager." : "Start tracking your finances today."}
-          </p>
-        </div>
-
-        <GlassSurface
-          tier="thick"
-          radius={24}
-          tint="rgba(10, 8, 6, 0.72)"
-          className="p-5"
-        >
-          <form onSubmit={submit} className="flex flex-col gap-3">
+        <GlassSurface tier="thick" radius={24} tint="rgba(10, 8, 6, 0.72)" className="p-4">
+          <form onSubmit={submit} className="flex flex-col gap-2.5">
             {mode !== "otp" ? (
               <>
                 <label className="field">
@@ -154,7 +150,7 @@ export function AuthScreen() {
             )}
 
             {message && (
-              <p className={`text-[12px] text-center ${message.includes("Check") ? "text-[var(--gain)]" : "text-[var(--warn)]"}`}>
+              <p className={`text-[11px] text-center ${message.includes("Check") ? "text-[var(--gain)]" : "text-[var(--warn)]"}`}>
                 {message}
               </p>
             )}
@@ -164,7 +160,7 @@ export function AuthScreen() {
               disabled={loading}
               whileTap={{ scale: 0.97 }}
               transition={spring.snappy}
-              className="btn btn-primary mt-1"
+              className="btn btn-primary mt-1 !h-[46px] !text-[14px]"
             >
               {loading ? "…" : mode === "login" ? "Sign In" : mode === "signup" ? "Create Account" : "Verify Code"}
             </motion.button>
@@ -172,9 +168,9 @@ export function AuthScreen() {
 
           {mode !== "otp" && (
             <>
-              <div className="flex items-center gap-4 my-3">
+              <div className="flex items-center gap-3 my-2.5">
                 <div className="h-px bg-white/15 flex-1" />
-                <span className="text-[11px] text-white/50">or</span>
+                <span className="text-[10px] text-white/50">or</span>
                 <div className="h-px bg-white/15 flex-1" />
               </div>
               <motion.button
@@ -182,7 +178,7 @@ export function AuthScreen() {
                 disabled={loading}
                 whileTap={{ scale: 0.97 }}
                 transition={spring.snappy}
-                className="w-full py-3 bg-white/10 border border-white/15 text-white rounded-full font-medium text-[14px] flex items-center justify-center gap-2 hover:bg-white/20 transition-colors"
+                className="w-full py-2.5 bg-white/10 border border-white/15 text-white rounded-full font-medium text-[13px] flex items-center justify-center gap-2 hover:bg-white/20 transition-colors"
               >
                 <svg className="w-4 h-4" viewBox="0 0 24 24">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
@@ -195,13 +191,13 @@ export function AuthScreen() {
             </>
           )}
 
-          <div className="text-center mt-3">
+          <div className="text-center mt-2.5">
             {mode === "otp" ? (
-              <button onClick={() => setMode("signup")} className="text-[12px] text-white/60 flex items-center justify-center gap-1 mx-auto">
-                <ArrowLeft size={12} /> Back
+              <button onClick={() => setMode("signup")} className="text-[11px] text-white/60 flex items-center justify-center gap-1 mx-auto">
+                <ArrowLeft size={11} /> Back
               </button>
             ) : (
-              <button onClick={() => setMode(mode === "login" ? "signup" : "login")} className="text-[12px] text-white/60">
+              <button onClick={() => setMode(mode === "login" ? "signup" : "login")} className="text-[11px] text-white/60">
                 {mode === "login" ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
               </button>
             )}

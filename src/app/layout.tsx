@@ -14,7 +14,9 @@ export const metadata: Metadata = {
   description: "AI-driven personal wealth command center",
   manifest: "/manifest.json",
   icons: {
-    icon: "/icon.png",
+    icon: [
+      { url: "/icon.png", type: "image/png" },
+    ],
     apple: "/icon.png",
     shortcut: "/icon.png",
   },

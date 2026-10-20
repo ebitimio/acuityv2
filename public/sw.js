@@ -1,4 +1,4 @@
-const CACHE = "acuity-v11";
+const CACHE = "acuity-v12";
 
 self.addEventListener("install", () => self.skipWaiting());
 
