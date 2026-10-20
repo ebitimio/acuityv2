@@ -57,7 +57,7 @@ export function AjoScreen({ onBack }: { onBack: () => void }) {
       <Modal open={modal} onClose={() => setModal(false)} title="Create Ajo Group">
         <div className="space-y-3">
           <Field label="Group name" value={name} onChange={(e) => setName(e.target.value)} />
-          <Field label="Contribution (₦¦)" type="number" value={amt} onChange={(e) => setAmt(e.target.value)} />
+          <Field label="Contribution (₦)" type="number" value={amt} onChange={(e) => setAmt(e.target.value)} />
           <SelectField label="Frequency" value={freq} onChange={(e) => setFreq(e.target.value as "weekly" | "monthly")}>
             <option value="weekly">Weekly</option><option value="monthly">Monthly</option>
           </SelectField>
