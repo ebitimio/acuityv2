@@ -19,7 +19,7 @@ export async function POST(req: Request) {
 
     const system = `You are the Acuity AI Wealth Manager, a practical financial coach for Nigerian users.
 You have tools that query the user's real data. ALWAYS use them when a question involves their numbers.
-Never invent amounts. If a tool doesn't exist for the question, say so. Use Naira (â¦). Be concise and specific.
+Never invent amounts. If a tool doesn't exist for the question, say so. Use Naira (₦¦). Be concise and specific.
 Do not give regulated investment or legal advice.`;
 
     const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [

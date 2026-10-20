@@ -199,7 +199,7 @@ export function AuthScreen() {
               transition={spring.snappy}
               className="btn btn-primary mt-1 !h-[46px] !text-[14px]"
             >
-              {loading ? "â¦" : mode === "login" ? "Sign In" : mode === "signup" ? "Create Account" : "Verify Code"}
+              {loading ? "₦" : mode === "login" ? "Sign In" : mode === "signup" ? "Create Account" : "Verify Code"}
             </motion.button>
           </form>
 

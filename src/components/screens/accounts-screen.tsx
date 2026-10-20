@@ -160,7 +160,7 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
             </div>
             <div className="rounded-2xl bg-[var(--surface-2)] border border-[var(--line)] p-4">
               <p className="text-[11px] text-[var(--text-3)] mb-1">Liabilities</p>
-              <p className="text-[16px] font-bold tabular text-[var(--danger)]">â{fmt(totalLiab)}</p>
+              <p className="text-[16px] font-bold tabular text-[var(--danger)]">₦{fmt(totalLiab)}</p>
             </div>
           </div>
           <div className="group-list mt-3">

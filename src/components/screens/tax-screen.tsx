@@ -24,11 +24,11 @@ export function TaxScreen({ onBack }: { onBack: () => void }) {
 
   const exportPdf = () => {
     const html = `<h1>Acuity Tax Summary</h1><p class="sub">${new Date().toLocaleDateString("en-NG", { year: "numeric", month: "long" })}</p>
-      <table><tr><td>Gross income</td><td>â¦${gross.toLocaleString()}</td></tr>
-      <tr><td>Deductions</td><td>ââ¦${(result.deductions - result.rentRelief).toLocaleString()}</td></tr>
-      <tr><td>Rent relief</td><td>ââ¦${result.rentRelief.toLocaleString()}</td></tr>
-      <tr><td>Taxable income</td><td>â¦${result.taxable.toLocaleString()}</td></tr>
-      <tr class="total"><td>Estimated PIT</td><td>â¦${result.tax.toLocaleString()}</td></tr></table>
+      <table><tr><td>Gross income</td><td>₦¦${gross.toLocaleString()}</td></tr>
+      <tr><td>Deductions</td><td>₦₦¦${(result.deductions - result.rentRelief).toLocaleString()}</td></tr>
+      <tr><td>Rent relief</td><td>₦₦¦${result.rentRelief.toLocaleString()}</td></tr>
+      <tr><td>Taxable income</td><td>₦¦${result.taxable.toLocaleString()}</td></tr>
+      <tr class="total"><td>Estimated PIT</td><td>₦¦${result.tax.toLocaleString()}</td></tr></table>
       <p class="note">Estimate only. Consult a tax professional before filing.</p>`;
     if (!printDocument("Acuity Tax Summary", html)) toast("Pop-up blocked", "err");
   };

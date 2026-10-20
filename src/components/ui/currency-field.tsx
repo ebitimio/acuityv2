@@ -12,7 +12,7 @@ interface CurrencyFieldProps {
   onChange: (value: number) => void;
   /** Optional placeholder */
   placeholder?: string;
-  /** Optional prefix (â¦ by default) */
+  /** Optional prefix (₦¦ by default) */
   prefix?: string;
   className?: string;
 }

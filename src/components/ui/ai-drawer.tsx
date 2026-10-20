@@ -50,7 +50,7 @@ export function AIDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
           {
             id: Date.now().toString(),
             role: "assistant",
-            content: "Based on the last 30 days, you spent â¦45,000 at Shoprite. If you switch to bulk buying at the local market, you could save roughly â¦12,000/month.",
+            content: "Based on the last 30 days, you spent ₦¦45,000 at Shoprite. If you switch to bulk buying at the local market, you could save roughly ₦¦12,000/month.",
           },
         ];
       });

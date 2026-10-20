@@ -37,7 +37,7 @@ export function BankChargeScreen({ onBack }: { onBack: () => void }) {
             {audit.charges.map((c) => (
               <div key={c.id} className="px-4 py-4">
                 <div className="flex justify-between items-start mb-1">
-                  <div><p className="text-[14px] font-medium">{c.description}</p><p className="text-[11px] text-[var(--text-3)]">{new Date(c.date).toLocaleDateString("en-NG")} Â· {c.type}</p></div>
+                  <div><p className="text-[14px] font-medium">{c.description}</p><p className="text-[11px] text-[var(--text-3)]">{new Date(c.date).toLocaleDateString("en-NG")} ₦· {c.type}</p></div>
                   <p className="tabular font-bold">{fmt(c.amount)}</p>
                 </div>
                 {c.flag && <div className="flex items-center gap-1 text-[var(--danger)] text-[12px] mt-2"><AlertTriangle size={12} /> {c.flag}</div>}

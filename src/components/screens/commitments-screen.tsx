@@ -116,7 +116,7 @@ export function CommitmentsScreen({ onBack }: { onBack: () => void }) {
               {visibleSuggestions.map((s) => (
                 <div key={s.key} className="rounded-2xl bg-[var(--brand)]/10 border border-[var(--brand)]/25 p-4">
                   <p className="text-[14px] font-semibold truncate">{s.name}</p>
-                  <p className="text-[11px] text-[var(--text-2)] mb-3">{fmt(s.amount_minor / 100)} Â· {s.cadence} Â· seen {s.occurrences}Ã</p>
+                  <p className="text-[11px] text-[var(--text-2)] mb-3">{fmt(s.amount_minor / 100)} ₦· {s.cadence} ₦· seen {s.occurrences}₦</p>
                   <div className="flex gap-2">
                     <button onClick={() => acceptSuggestion(s)} className="flex-1 py-2 rounded-lg bg-[var(--brand)] text-[var(--text-1)] text-[13px] font-semibold flex items-center justify-center gap-1">
                       <Check size={14} /> Save as bill
@@ -191,7 +191,7 @@ export function CommitmentsScreen({ onBack }: { onBack: () => void }) {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 ml-4">
-                  <button onClick={async () => { const v = prompt("Add â¦ to fund:"); if (v) { await addToFund(f, parseFloat(v.replace(/,/g, ""))); load(); } }} className="text-[var(--brand)] text-[12px]">+</button>
+                  <button onClick={async () => { const v = prompt("Add ₦¦ to fund:"); if (v) { await addToFund(f, parseFloat(v.replace(/,/g, ""))); load(); } }} className="text-[var(--brand)] text-[12px]">+</button>
                   <button onClick={async () => { await deleteFund(f.id); load(); }} className="text-[var(--danger)]"><Trash2 size={14} /></button>
                 </div>
               </div>

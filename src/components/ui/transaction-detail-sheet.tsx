@@ -69,7 +69,7 @@ export function TransactionDetailSheet({ isOpen, onClose, onSaved, transaction }
             </div>
             <p className="text-[17px] font-medium">{transaction.description_clean || transaction.description_raw}</p>
             <p className={`text-[32px] font-bold tabular ${transaction.direction === "credit" ? "text-[var(--gain)]" : ""}`}>
-              {transaction.direction === "credit" ? "+" : "â"}{fmt(transaction.amount_minor / 100)}
+              {transaction.direction === "credit" ? "+" : "₦"}{fmt(transaction.amount_minor / 100)}
             </p>
           </div>
 
@@ -84,7 +84,7 @@ export function TransactionDetailSheet({ isOpen, onClose, onSaved, transaction }
         </div>
       ) : (
         <div className="space-y-4">
-          <p className="text-[13px] text-[var(--text-2)]">Split â¦{(transaction.amount_minor / 100).toLocaleString()} across two categories. Total must match exactly.</p>
+          <p className="text-[13px] text-[var(--text-2)]">Split ₦¦{(transaction.amount_minor / 100).toLocaleString()} across two categories. Total must match exactly.</p>
           <div className="grid grid-cols-2 gap-2">
             <SelectField label="Part 1" value={splitA.category} onChange={(e) => setSplitA({ ...splitA, category: e.target.value })}>
               {CATEGORY_NAMES.map((c) => <option key={c}>{c}</option>)}

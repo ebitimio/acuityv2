@@ -71,7 +71,7 @@ export function TransactionRow({
               income ? "text-[var(--gain)]" : "text-[var(--text-1)]"
             }`}
           >
-            {income ? "+" : "â"}
+            {income ? "+" : "₦"}
             {fmt(txn.amount_minor / 100)}
           </p>
           <p className="text-[11px] text-[var(--text-3)]">{shortDate(txn.date)}</p>

@@ -142,7 +142,7 @@ export function AddTransactionSheet({
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--fill-1)] text-left text-[var(--brand)]"
           >
             <Plus size={16} />
-            <span className="text-[15px] font-semibold">Other / create new categoryâ¦</span>
+            <span className="text-[15px] font-semibold">Other / create new category₦</span>
           </button>
         </div>
       </Modal>

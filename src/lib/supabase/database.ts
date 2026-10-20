@@ -264,7 +264,7 @@ export async function updateCycleStartDay(day: number): Promise<void> {
 
 /**
  * Get budgets filtered by account.
- * - `null` (or `"all"`) returns master budgets (account_id is null) â "All accounts" view
+ * - `null` (or `"all"`) returns master budgets (account_id is null) ₦ "All accounts" view
  * - a UUID returns only that account's budgets
  */
 export async function getBudgets(accountId?: string | null): Promise<Budget[]> {

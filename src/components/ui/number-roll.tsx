@@ -31,10 +31,10 @@ export function NumberRoll({ value, className, duration = 0.8, showDecimals = tr
 
   return (
     <span className={cn("inline-flex items-baseline tabular", className)} aria-label={hidden ? "Balance hidden" : undefined}>
-      {display < 0 && !hidden && <span className="mr-1">â</span>}
+      {display < 0 && !hidden && <span className="mr-1">-</span>}
       <span className="mr-1 text-[0.6em] opacity-80">{symbol}</span>
       {hidden ? (
-        <span>â¢â¢â¢â¢â¢â¢</span>
+        <span>••••••</span>
       ) : (
         <>
           <span>{main}</span>
