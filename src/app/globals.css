@@ -23,8 +23,10 @@
   --text-2: rgba(245, 245, 246, 0.6);
   --text-3: rgba(245, 245, 246, 0.38);
 
-  --brand: #46a3b0;
-  --brand-soft: rgba(70, 163, 176, 0.14);
+  /* CHANGED: Teal to Orange-Red */
+  --brand: #DE3121;
+  --brand-soft: rgba(222, 49, 33, 0.14);
+  
   --ink: #f5f5f6;
   --ink-on: #0b0b0c;
 
@@ -70,8 +72,10 @@
   --text-2: rgba(15, 17, 21, 0.62);
   --text-3: rgba(15, 17, 21, 0.4);
 
-  --brand: #2b7f8c;
-  --brand-soft: rgba(43, 127, 140, 0.12);
+  /* CHANGED: Teal to Orange-Red */
+  --brand: #DE3121;
+  --brand-soft: rgba(222, 49, 33, 0.12);
+  
   --ink: #0f1115;
   --ink-on: #ffffff;
 
