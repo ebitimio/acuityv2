@@ -1,65 +1,109 @@
 "use client";
 
-import { useState, useRef, ReactNode } from "react";
-import { motion, useMotionValue, useTransform } from "framer-motion";
+import { useState, useRef, ReactNode, useEffect } from "react";
 import { RefreshCw } from "lucide-react";
 
-export function PullToRefresh({ children, onRefresh }: { children: ReactNode; onRefresh: () => Promise<void> | void }) {
+export function PullToRefresh({
+  children,
+  onRefresh,
+}: {
+  children: ReactNode;
+  onRefresh: () => Promise<void> | void;
+}) {
+  const [pullY, setPullY] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isPulling, setIsPulling] = useState(false);
-  const y = useMotionValue(0);
-  const rotate = useTransform(y, [0, 80], [0, 360]);
-  const opacity = useTransform(y, [0, 60], [0, 1]);
+  const startY = useRef<number | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  const onDragStart = () => {
-    // Only allow pulling if the user is at the very top of the page
-    if (window.scrollY <= 0 && !isRefreshing) {
-      setIsPulling(true);
-    }
+  // Allow pull-to-refresh only when the page is scrolled to the top
+  const isAtTop = () => {
+    return (window.scrollY || document.documentElement.scrollTop) <= 0;
   };
 
-  const handleDragEnd = async () => {
-    if (!isPulling) return;
-    setIsPulling(false);
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
 
-    if (y.get() > 70 && !isRefreshing) {
-      setIsRefreshing(true);
-      y.set(50);
-      try {
-        await onRefresh();
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setIsRefreshing(false);
-        y.set(0);
+    const handleTouchStart = (e: TouchEvent) => {
+      if (isAtTop() && !isRefreshing) {
+        startY.current = e.touches[0].clientY;
+      } else {
+        startY.current = null;
       }
-    } else {
-      y.set(0);
-    }
-  };
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (startY.current === null || isRefreshing) return;
+      const delta = e.touches[0].clientY - startY.current;
+      if (delta > 0) {
+        // Only prevent scroll when the pull is meaningful
+        if (delta > 5) e.preventDefault();
+        setPullY(Math.min(delta * 0.5, 90));
+      }
+    };
+
+    const handleTouchEnd = async () => {
+      if (startY.current === null) return;
+      const shouldRefresh = pullY > 60 && !isRefreshing;
+      startY.current = null;
+
+      if (shouldRefresh) {
+        setIsRefreshing(true);
+        setPullY(50);
+        try {
+          await onRefresh();
+        } finally {
+          setIsRefreshing(false);
+          setPullY(0);
+        }
+      } else {
+        setPullY(0);
+      }
+    };
+
+    el.addEventListener("touchstart", handleTouchStart, { passive: true });
+    el.addEventListener("touchmove", handleTouchMove, { passive: false });
+    el.addEventListener("touchend", handleTouchEnd);
+
+    return () => {
+      el.removeEventListener("touchstart", handleTouchStart);
+      el.removeEventListener("touchmove", handleTouchMove);
+      el.removeEventListener("touchend", handleTouchEnd);
+    };
+  }, [pullY, isRefreshing, onRefresh]);
 
   return (
-    <div className="relative min-h-[100dvh]">
-      <motion.div
-        style={{ opacity, y }}
-        className="absolute inset-x-0 top-0 z-50 flex justify-center pt-6 pointer-events-none"
+    <div ref={containerRef} className="relative">
+      {/* Spinner that appears as you pull */}
+      <div
+        className="absolute inset-x-0 top-0 z-50 flex justify-center transition-opacity duration-200"
+        style={{
+          height: pullY,
+          opacity: pullY > 10 ? 1 : 0,
+          paddingTop: 16,
+        }}
       >
-        <motion.div style={{ rotate }} className="bg-[var(--surface-3)] p-2 rounded-full shadow-lg">
-          <RefreshCw size={20} className={isRefreshing ? "animate-spin" : ""} />
-        </motion.div>
-      </motion.div>
+        <div className="bg-[var(--surface-3)] p-2 rounded-full shadow-lg">
+          <RefreshCw
+            size={20}
+            className={isRefreshing ? "animate-spin" : ""}
+            style={{
+              transform: `rotate(${pullY * 4}deg)`,
+              transition: isRefreshing ? undefined : "transform 0.05s",
+            }}
+          />
+        </div>
+      </div>
 
-      <motion.div
-        drag={isPulling ? "y" : false}
-        dragConstraints={{ top: 0, bottom: 0 }}
-        dragElastic={{ top: 0.5, bottom: 0 }}
-        onDragStart={onDragStart}
-        onDragEnd={handleDragEnd}
-        style={{ y }}
-        className="min-h-[100dvh]"
+      {/* Content wrapper — translated down as you pull */}
+      <div
+        style={{
+          transform: `translateY(${pullY}px)`,
+          transition: pullY === 0 ? "transform 0.25s ease-out" : "none",
+        }}
       >
         {children}
-      </motion.div>
+      </div>
     </div>
   );
 }
