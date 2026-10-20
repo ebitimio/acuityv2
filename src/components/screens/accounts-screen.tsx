@@ -37,7 +37,6 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
     const [a, s] = await Promise.all([getAccounts(), getAssets()]);
     setAccounts(a);
     setAssets(s);
-    // Refresh the check-in account with the latest balance
     if (checkinAccount) {
       const refreshed = a.find((x) => x.id === checkinAccount.id);
       if (refreshed) setCheckinAccount(refreshed);
@@ -90,7 +89,8 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
 
   const total = accounts.reduce((s, a) => s + (a.current_minor ?? a.balance_minor), 0) / 100;
   const totalAssets = assets.filter((a) => a.type === "asset").reduce((s, a) => s + a.value_minor, 0) / 100;
-  const totalLiab = assets.filter((a) => a.type === "liability").reduce((s, a) => s + a.value_minor, 0) / 100;
+  // Force liabilities to be a negative number for formatting
+  const totalLiab = -(assets.filter((a) => a.type === "liability").reduce((s, a) => s + a.value_minor, 0) / 100);
 
   return (
     <div className="min-h-[100dvh] pb-32">
@@ -160,7 +160,8 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
             </div>
             <div className="rounded-2xl bg-[var(--surface-2)] border border-[var(--line)] p-4">
               <p className="text-[11px] text-[var(--text-3)] mb-1">Liabilities</p>
-              <p className="text-[16px] font-bold tabular text-[var(--danger)]">₦{fmt(totalLiab)}</p>
+              {/* FIXED: Removed the manual ₦ symbol so it just uses fmt() */}
+              <p className="text-[16px] font-bold tabular text-[var(--danger)]">{fmt(totalLiab)}</p>
             </div>
           </div>
           <div className="group-list mt-3">

@@ -64,20 +64,21 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
       const v = convert(n);
       const d = o?.decimals ?? currency === "USD";
       
-      // Calculate absolute value for formatting the number itself
-      const absV = Math.abs(v);
+      // 1. Determine if it's negative
+      const isNegative = v < 0;
       
+      // 2. Format the absolute value (without the sign)
       const s = new Intl.NumberFormat("en-NG", {
         minimumFractionDigits: d ? 2 : 0,
         maximumFractionDigits: d ? 2 : 0,
-      }).format(absV);
+      }).format(Math.abs(v));
       
-      // Determine the correct sign
-      let sign = "";
-      if (v < 0) sign = "-";
-      else if (o?.sign && v > 0) sign = "+";
+      // 3. Put the sign in front if needed
+      let prefix = "";
+      if (isNegative) prefix = "-";
+      else if (o?.sign && v > 0) prefix = "+";
       
-      return `${sign}${symbol}${s}`;
+      return `${prefix}${symbol}${s}`;
     };
     
     return { currency, setCurrency, rate, symbol, hidden, toggleHidden, convert, fmt };
