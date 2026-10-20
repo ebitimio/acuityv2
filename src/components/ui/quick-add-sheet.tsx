@@ -31,21 +31,26 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
   const { active: activeWs } = useWorkspace();
   const supabase = createClient();
 
-  // Build the categories list using your lib function
-  const categories = useMemo(() => buildCategoryList(CATEGORIES), []);
+  // buildCategoryList expects string[] and returns string[]
+  const categoryNames = useMemo(() => {
+    // Map CATEGORIES to an array of strings (assuming it's an array of objects or strings)
+    const rawStrings = Array.isArray(CATEGORIES) 
+      ? CATEGORIES.map((c: any) => typeof c === 'string' ? c : c.name || c.label || c.value)
+      : [];
+    return buildCategoryList(rawStrings);
+  }, []);
 
-  // Reset state when opened
   useEffect(() => {
     if (isOpen) {
       setAmount("");
       setDirection("debit");
-      setCategory("Groceries");
+      setCategory(categoryNames[0] || "Groceries");
       setIsCatOpen(false);
       setDate(new Date().toISOString().split("T")[0]);
       setError(null);
       setIsSaving(false);
     }
-  }, [isOpen]);
+  }, [isOpen, categoryNames]);
 
   const handleKeyPress = (key: string) => {
     if (key === "backspace") {
@@ -102,8 +107,9 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
   ];
 
   return (
-    <Modal open={isOpen} onClose={onClose} title="Quick add" fullScreen>
-      <div className="flex flex-col h-full bg-[var(--bg)]">
+    // Removed fullScreen prop
+    <Modal open={isOpen} onClose={onClose} title="Quick add">
+      <div className="flex flex-col h-full bg-[var(--bg)] -mx-6 -my-6">
         {/* Header area */}
         <div className="flex-1 overflow-y-auto px-6 pt-4 pb-6">
           
@@ -149,22 +155,23 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
               
               {isCatOpen && (
                 <div className="absolute left-0 right-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-xl border border-[var(--line)] bg-[var(--surface-3)] p-1 shadow-xl">
-                  {categories.map((c) => (
+                  {/* categoryNames is now string[] based on the TS error */}
+                  {categoryNames.map((c) => (
                     <button
-                      key={c.value}
+                      key={c}
                       onClick={() => {
-                        setCategory(c.value);
+                        setCategory(c);
                         setIsCatOpen(false);
                       }}
                       className={cn(
                         "flex w-full items-center justify-between rounded-lg px-3 py-2 text-[14px]",
-                        category === c.value
+                        category === c
                           ? "bg-[var(--brand)]/10 text-[var(--brand)]"
                           : "text-[var(--text-1)] hover:bg-[var(--fill-1)]"
                       )}
                     >
-                      {c.label}
-                      {category === c.value && <Check size={14} />}
+                      {c}
+                      {category === c && <Check size={14} />}
                     </button>
                   ))}
                 </div>
