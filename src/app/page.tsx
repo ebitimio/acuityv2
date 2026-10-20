@@ -56,7 +56,6 @@ const ZERO_METRICS: HomeMetrics = {
   uncategorized_count: 0,
 };
 
-// Define the union of all possible screens (including sub-screens)
 type ScreenId = TabId | "budget" | "commitments" | "tax" | "needs-review" | "ajo" | "bank-charge";
 
 export default function SandboxPage() {
@@ -86,7 +85,6 @@ export default function SandboxPage() {
   const [safeToSpend, setSafeToSpend] = useState<SafeToSpend | null>(null);
   const [cycle, setCycle] = useState<{ cycle_start: string; cycle_end: string } | null>(null);
   const [setupWizardOpen, setSetupWizardOpen] = useState(false);
-  // Removed "budget" from the setup steps
   const [setupWizardStep, setSetupWizardStep] = useState<"account" | "income" | "bills">("account");
   const [checklistDismissed, setChecklistDismissed] = useState(false);
   const [txnFilter, setTxnFilter] = useState<TransactionFilter>("all");
@@ -314,7 +312,6 @@ export default function SandboxPage() {
             <BankChargeScreen onBack={() => setActiveScreen("home")} />
           ) : (
             <div className="flex-1 overflow-y-auto pb-32">
-              {/* Sticky header */}
               <div
                 className="sticky top-0 z-30 flex items-center justify-between px-5 pb-3"
                 style={{
@@ -351,7 +348,6 @@ export default function SandboxPage() {
                 </div>
               </div>
 
-              {/* Workspace dropdown */}
               {wsOpen && (
                 <div className="absolute left-4 right-4 top-16 z-40 rounded-2xl border border-[var(--line-strong)] bg-[var(--surface-3)] p-2 shadow-xl">
                   {workspaces.map((w) => {
@@ -392,9 +388,7 @@ export default function SandboxPage() {
                 </div>
               )}
 
-              {/* Content */}
               <div className="flex flex-col gap-6 px-5 pt-2">
-                {/* Hero card */}
                 <SafeToSpendHero
                   data={safeToSpend}
                   netAcross={netAcrossAccounts}
@@ -406,32 +400,31 @@ export default function SandboxPage() {
                   nextIncomeDate={nextIncomeDate}
                 />
 
-                {/* Quick action tiles */}
+                {/* Quick action tiles - Changed icon colors to orange */}
                 <div className="grid grid-cols-3 gap-3">
                   <button
                     onClick={() => setActiveScreen("budget")}
                     aria-label="Budget"
-                    className="press flex h-14 items-center justify-center rounded-[18px] border border-[var(--line)] bg-[var(--surface-2)] text-[var(--text-1)]"
+                    className="press flex h-14 items-center justify-center rounded-[18px] border border-[var(--line)] bg-[var(--surface-2)]"
                   >
-                    <Wallet size={20} />
+                    <Wallet size={20} color="#DE3121" />
                   </button>
                   <button
                     onClick={() => setActiveScreen("analytics")}
                     aria-label="Analytics"
-                    className="press flex h-14 items-center justify-center rounded-[18px] border border-[var(--line)] bg-[var(--surface-2)] text-[var(--text-1)]"
+                    className="press flex h-14 items-center justify-center rounded-[18px] border border-[var(--line)] bg-[var(--surface-2)]"
                   >
-                    <PieChart size={20} />
+                    <PieChart size={20} color="#DE3121" />
                   </button>
                   <button
                     onClick={() => setIsImportOpen(true)}
                     aria-label="Import statement"
-                    className="press flex h-14 items-center justify-center rounded-[18px] border border-[var(--line)] bg-[var(--surface-2)] text-[var(--text-1)]"
+                    className="press flex h-14 items-center justify-center rounded-[18px] border border-[var(--line)] bg-[var(--surface-2)]"
                   >
-                    <ArrowLeftRight size={20} />
+                    <ArrowLeftRight size={20} color="#DE3121" />
                   </button>
                 </div>
 
-                {/* Setup checklist */}
                 {setupError && (
                   <p className="px-1 text-[11px] text-[var(--danger)]">
                     Setup status failed: {setupError}
@@ -445,16 +438,13 @@ export default function SandboxPage() {
                   />
                 )}
 
-                {/* Category scroller */}
                 <CategoryScroller
                   rows={categoryRows}
                   onSeeAll={() => setActiveScreen("analytics")}
                 />
 
-                {/* Tools scroller */}
                 <ToolsScroller onNavigate={(key) => setActiveScreen(key as ScreenId)} />
 
-                {/* Needs review */}
                 {m.uncategorized_count > 0 && (
                   <motion.button
                     whileTap={{ scale: 0.98 }}
@@ -475,7 +465,6 @@ export default function SandboxPage() {
                   </motion.button>
                 )}
 
-                {/* Transactions */}
                 <div>
                   <div className="mb-3 flex items-center justify-between px-1">
                     <h3 className="text-[15px] font-semibold text-[var(--text-1)]">Transactions</h3>
