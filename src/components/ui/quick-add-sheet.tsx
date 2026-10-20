@@ -83,7 +83,6 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
     setError(null);
     
     try {
-      // 1. Fetch the user's default/active account to satisfy the `account_id` requirement
       const { data: accounts, error: accErr } = await supabase
         .from("accounts")
         .select("id")
@@ -97,13 +96,13 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
 
       const accountId = accounts[0].id;
 
-      // 2. Insert using the EXACT schema columns you provided
       const { error: dbError } = await supabase.from("transactions").insert({
         account_id: accountId,
         amount_minor: Math.round(parsedAmount * 100),
         direction: direction,
         category_name: finalCategory,
-        date: new Date(date).toISOString(), // Schema uses 'date', not 'transaction_date'
+        date: new Date(date).toISOString(),
+        status: "posted",
       });
       
       if (dbError) throw dbError;
@@ -127,8 +126,6 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
   return (
     <Modal open={isOpen} onClose={onClose} title="Quick add">
       <div className="flex flex-col h-[75dvh] min-h-0">
-        
-        {/* Scrollable top */}
         <div className="flex-1 overflow-y-auto min-h-0">
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2 rounded-full bg-[var(--brand)]/10 px-3 py-1.5 text-[13px] font-medium text-[var(--brand)]">
@@ -202,7 +199,6 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
           </div>
         </div>
 
-        {/* Fixed bottom: keypad + save */}
         <div className="shrink-0 pt-3 mt-2 border-t border-[var(--line)]">
           {error && (
             <p className="mb-2 text-center text-[12px] font-medium text-[var(--danger)]">

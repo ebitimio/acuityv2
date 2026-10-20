@@ -68,10 +68,9 @@ export function TransactionRow({
         <div className="shrink-0 text-right">
           <p
             className={`tabular text-[15px] font-bold ${
-              income ? "text-[var(--gain)]" : "text-[var(--text-1)]"
+              income ? "text-[var(--gain)]" : "text-[var(--danger)]"
             }`}
           >
-            {/* FIX: Debits get a "-" prefix, credits get a "+" prefix */}
             {income ? "+" : "-"}
             {fmt(txn.amount_minor / 100)}
           </p>

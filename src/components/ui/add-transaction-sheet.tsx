@@ -89,6 +89,7 @@ export function AddTransactionSheet({ isOpen, onClose, onSaved }: AddTransaction
         direction: direction,
         category_name: finalCategory,
         date: new Date(date).toISOString(),
+        status: "posted",
       });
       
       if (dbError) throw dbError;
