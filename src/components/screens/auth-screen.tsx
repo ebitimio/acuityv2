@@ -57,25 +57,25 @@ export function AuthScreen() {
     <div
       className="w-full flex flex-col items-center justify-start px-6 overflow-y-auto"
       style={{
-        /* Extend past the safe area so the gradient fills it */
         minHeight: "calc(100dvh + env(safe-area-inset-bottom) + env(safe-area-inset-top))",
         marginTop: "calc(-1 * env(safe-area-inset-top))",
-        paddingTop: "calc(env(safe-area-inset-top) + 32px)",
+        paddingTop: "calc(env(safe-area-inset-top) + 72px)",
         paddingBottom: "calc(env(safe-area-inset-bottom) + 32px)",
         background:
           "linear-gradient(160deg, #7a0e0e 0%, #b3391f 35%, #e87a1a 75%, #ffb347 100%)",
       }}
     >
-      <div className="relative w-full h-[180px] flex items-center justify-center pointer-events-none shrink-0">
+      {/* ATM cards — pushed further down so they clear the notch */}
+      <div className="relative w-full h-[220px] flex items-center justify-center pointer-events-none shrink-0 mt-4">
         <motion.div
           animate={{ rotate: -12, x: -25, y: 10 }}
           transition={{ duration: 4, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-          className="absolute top-4 w-64 h-40 bg-gradient-to-tr from-[#2a0a0a] to-[#4a0e0e] rounded-3xl border border-white/10 shadow-2xl"
+          className="absolute top-14 w-64 h-40 bg-gradient-to-tr from-[#2a0a0a] to-[#4a0e0e] rounded-3xl border border-white/10 shadow-2xl"
         />
         <motion.div
           animate={{ rotate: 8, x: 25, y: -10 }}
           transition={{ duration: 4, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-          className="absolute top-0 w-64 h-40 bg-gradient-to-tr from-[#5a1a1a] to-[#8b1a1a] rounded-3xl border border-white/20 shadow-2xl z-10 overflow-hidden"
+          className="absolute top-10 w-64 h-40 bg-gradient-to-tr from-[#5a1a1a] to-[#8b1a1a] rounded-3xl border border-white/20 shadow-2xl z-10 overflow-hidden"
         >
           <div className="absolute top-5 left-5 text-white/80 font-bold italic text-sm z-10">VISA</div>
           <div className="absolute bottom-8 left-5 text-white/90 font-mono text-base tracking-widest z-10">

@@ -13,7 +13,11 @@ export const metadata: Metadata = {
   title: "Acuity",
   description: "AI-driven personal wealth command center",
   manifest: "/manifest.json",
-  icons: { icon: "/icon.svg" },
+  icons: {
+    icon: "/icon.png",
+    apple: "/icon.png",
+    shortcut: "/icon.png",
+  },
   appleWebApp: {
     capable: true,
     title: "Acuity",
