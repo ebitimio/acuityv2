@@ -38,7 +38,7 @@ export function BalanceCheckinSheet({ isOpen, onClose, onSaved, account }: Props
     try {
       const result = await submitBalanceCheckin(account.id, reported, { logAdjustment });
       if (Math.abs(result.difference_minor) > 100) {
-        toast(`Recorded — ₦${Math.abs(result.difference_minor / 100).toLocaleString()} difference ${logAdjustment ? "logged as adjustment" : "resolved by re-anchor"}`);
+        toast(`Recorded â â¦${Math.abs(result.difference_minor / 100).toLocaleString()} difference ${logAdjustment ? "logged as adjustment" : "resolved by re-anchor"}`);
       } else {
         toast("Balance confirmed");
       }
@@ -53,7 +53,7 @@ export function BalanceCheckinSheet({ isOpen, onClose, onSaved, account }: Props
   };
 
   return (
-    <Modal open={isOpen} onClose={onClose} title={`Check balance · ${account.name}`}>
+    <Modal open={isOpen} onClose={onClose} title={`Check balance Â· ${account.name}`}>
       <div className="space-y-4">
         <div className="rounded-2xl bg-[var(--surface-1)] border border-[var(--line)] p-4">
           <p className="text-[12px] text-[var(--text-3)] mb-1">Acuity's expected balance</p>
@@ -82,7 +82,7 @@ export function BalanceCheckinSheet({ isOpen, onClose, onSaved, account }: Props
               </p>
             </div>
             <p className={`text-[18px] font-bold tabular ${diff > 0 ? "text-[var(--gain)]" : "text-[var(--danger)]"}`}>
-              {diff > 0 ? "+" : "−"}{fmt(Math.abs(diff))}
+              {diff > 0 ? "+" : "â"}{fmt(Math.abs(diff))}
             </p>
             <p className="text-[11px] text-[var(--text-3)] mt-2 leading-snug">
               {diff < 0

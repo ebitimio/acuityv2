@@ -89,7 +89,7 @@ export function QuickAddSheet({
         category,
         date: new Date(date + "T12:00:00").toISOString(),
       });
-      toast(`${direction === "credit" ? "Received" : "Spent"} ₦${amount.toLocaleString()}`);
+      toast(`${direction === "credit" ? "Received" : "Spent"} â¦${amount.toLocaleString()}`);
       onSaved();
       onClose();
       setDigitString("");
@@ -120,7 +120,7 @@ export function QuickAddSheet({
 
         <div className="text-center py-2">
           <p className="text-[13px] text-[var(--text-3)]">{direction === "credit" ? "Received" : "Spent"}</p>
-          <p className="text-[44px] font-bold tabular tracking-tight">₦{displayed || "0"}</p>
+          <p className="text-[44px] font-bold tabular tracking-tight">â¦{displayed || "0"}</p>
         </div>
 
         <div className="flex gap-2 overflow-x-auto pb-1">
@@ -133,7 +133,7 @@ export function QuickAddSheet({
               }}
               className="px-3 py-1.5 rounded-full bg-[var(--fill-1)] border border-[var(--line)] text-[12px] whitespace-nowrap"
             >
-              {u.label} ₦{u.amount.toLocaleString()}
+              {u.label} â¦{u.amount.toLocaleString()}
             </button>
           ))}
         </div>
@@ -206,7 +206,7 @@ export function QuickAddSheet({
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--fill-1)] text-left text-[var(--brand)]"
           >
             <Plus size={16} />
-            <span className="text-[15px] font-semibold">Other / create new category…</span>
+            <span className="text-[15px] font-semibold">Other / create new categoryâ¦</span>
           </button>
         </div>
       </Modal>

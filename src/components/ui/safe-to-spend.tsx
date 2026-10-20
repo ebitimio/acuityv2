@@ -40,7 +40,7 @@ export function SafeToSpendHero({
         {periodLabel}
       </p>
 
-      {/* Net across accounts — hero figure */}
+      {/* Net across accounts â hero figure */}
       <div className="mt-3">
         <p className="text-[12px] text-[var(--text-3)]">Net across accounts</p>
         <div

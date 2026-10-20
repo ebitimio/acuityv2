@@ -37,7 +37,7 @@ export function AjoScreen({ onBack }: { onBack: () => void }) {
           return (
             <div key={g.id} className="rounded-3xl bg-[var(--surface-2)] border border-[var(--line)] p-5">
               <div className="flex justify-between items-start mb-3">
-                <div><p className="text-[16px] font-bold">{g.name}</p><p className="text-[12px] text-[var(--text-2)]">{g.members} members · {g.frequency}</p></div>
+                <div><p className="text-[16px] font-bold">{g.name}</p><p className="text-[12px] text-[var(--text-2)]">{g.members} members Â· {g.frequency}</p></div>
                 <button onClick={async () => { if (confirm("Delete group?")) { await deleteAjoGroup(g.id); load(); } }} className="text-[var(--danger)]"><Trash2 size={16} /></button>
               </div>
               <div className="flex justify-between text-[13px] mb-3">
@@ -57,7 +57,7 @@ export function AjoScreen({ onBack }: { onBack: () => void }) {
       <Modal open={modal} onClose={() => setModal(false)} title="Create Ajo Group">
         <div className="space-y-3">
           <Field label="Group name" value={name} onChange={(e) => setName(e.target.value)} />
-          <Field label="Contribution (₦)" type="number" value={amt} onChange={(e) => setAmt(e.target.value)} />
+          <Field label="Contribution (â¦)" type="number" value={amt} onChange={(e) => setAmt(e.target.value)} />
           <SelectField label="Frequency" value={freq} onChange={(e) => setFreq(e.target.value as "weekly" | "monthly")}>
             <option value="weekly">Weekly</option><option value="monthly">Monthly</option>
           </SelectField>

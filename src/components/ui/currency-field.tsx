@@ -12,7 +12,7 @@ interface CurrencyFieldProps {
   onChange: (value: number) => void;
   /** Optional placeholder */
   placeholder?: string;
-  /** Optional prefix (₦ by default) */
+  /** Optional prefix (â¦ by default) */
   prefix?: string;
   className?: string;
 }
@@ -22,7 +22,7 @@ export function CurrencyField({
   value,
   onChange,
   placeholder = "0",
-  prefix = "₦",
+  prefix = "â¦",
   className,
 }: CurrencyFieldProps) {
   const [text, setText] = useState<string>(value ? formatNumberInput(String(value)) : "");

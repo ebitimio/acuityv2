@@ -66,7 +66,7 @@ export function detectRecurring(txns: Txn[], knownBillNames: Set<string> = new S
     const medInterval = median(intervals);
     if (medInterval < 6 || medInterval > 40) continue; // ignore daily noise and yearly
 
-    // Consistent cadence (within ±4 days of the median)
+    // Consistent cadence (within Â±4 days of the median)
     const consistent = intervals.filter((d) => Math.abs(d - medInterval) <= 4);
     if (consistent.length / intervals.length < 0.6) continue;
 

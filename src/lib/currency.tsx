@@ -56,17 +56,17 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = useMemo<Ctx>(() => {
-    const symbol = currency === "USD" ? "$" : "₦";
+    const symbol = currency === "USD" ? "$" : "â¦";
     const convert = (n: number) => (currency === "USD" ? n / rate : n);
     const fmt = (n: number, o?: FmtOpts) => {
-      if (hidden && !o?.force) return "••••";
+      if (hidden && !o?.force) return "â¢â¢â¢â¢";
       const v = convert(n);
       const d = o?.decimals ?? currency === "USD";
       const s = new Intl.NumberFormat("en-NG", {
         minimumFractionDigits: d ? 2 : 0,
         maximumFractionDigits: d ? 2 : 0,
       }).format(Math.abs(v));
-      const sign = v < 0 ? "−" : o?.sign && v > 0 ? "+" : "";
+      const sign = v < 0 ? "â" : o?.sign && v > 0 ? "+" : "";
       return `${sign}${symbol}${s}`;
     };
     return { currency, setCurrency, rate, symbol, hidden, toggleHidden, convert, fmt };

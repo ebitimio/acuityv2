@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 
-const naira = (minor: number) => `₦${Math.round(minor / 100).toLocaleString("en-NG")}`;
+const naira = (minor: number) => `â¦${Math.round(minor / 100).toLocaleString("en-NG")}`;
 
 function monthStartISO() {
   const d = new Date();
@@ -150,7 +150,7 @@ export function buildTools(supabase: Awaited<ReturnType<typeof createClient>>): 
           .filter((a) => a.type === "checking" || a.type === "wallet")
           .map((a) => ({ name: a.name, type: a.type, balance: Number(map.get(a.id) ?? 0) }))
           .filter((a) => a.balance >= threshold);
-        return idle.map((a) => ({ account: a.name, balance: naira(a.balance), suggestion: "Move to a Money Market Fund earning ~15–18% p.a." }));
+        return idle.map((a) => ({ account: a.name, balance: naira(a.balance), suggestion: "Move to a Money Market Fund earning ~15â18% p.a." }));
       },
     },
   ];

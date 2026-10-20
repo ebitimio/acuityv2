@@ -38,4 +38,4 @@ export function TransactionFilterChips({
   );
 }
 
-export type { Filter as TransactionFilter };
+export type { Filter as TransactionFilter }

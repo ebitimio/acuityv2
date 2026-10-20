@@ -35,14 +35,14 @@ export function auditCharges(txs: Txn[]) {
 
     if (type === "Stamp duty") {
       c.expected = STAMP_DUTY;
-      if (amount !== STAMP_DUTY) { c.flag = `Stamp duty is ₦${STAMP_DUTY}`; c.over = Math.max(amount - STAMP_DUTY, 0); }
+      if (amount !== STAMP_DUTY) { c.flag = `Stamp duty is â¦${STAMP_DUTY}`; c.over = Math.max(amount - STAMP_DUTY, 0); }
     } else if (type === "Transfer fee") {
       const ms = new Date(t.date).getTime();
       const match = others.find((o) => o.account_id === t.account_id && Math.abs(new Date(o.date).getTime() - ms) <= 10 * 60_000 && o.amount_minor > t.amount_minor);
       if (match) {
         c.expected = transferFeeFor(match.amount_minor / 100);
-        if (amount !== c.expected) { c.flag = `A ₦${(match.amount_minor / 100).toLocaleString()} transfer should cost ₦${c.expected}`; c.over = Math.max(amount - c.expected, 0); }
-      } else if (![10, 25, 50].includes(amount)) { c.flag = "Does not match a standard transfer fee (₦10, ₦25 or ₦50)"; }
+        if (amount !== c.expected) { c.flag = `A â¦${(match.amount_minor / 100).toLocaleString()} transfer should cost â¦${c.expected}`; c.over = Math.max(amount - c.expected, 0); }
+      } else if (![10, 25, 50].includes(amount)) { c.flag = "Does not match a standard transfer fee (â¦10, â¦25 or â¦50)"; }
     }
 
     const key = `${t.account_id}|${desc}|${t.amount_minor}`;

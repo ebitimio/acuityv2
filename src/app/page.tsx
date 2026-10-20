@@ -253,7 +253,7 @@ export default function SandboxPage() {
     try {
       await completeOnboarding();
       setChecklistDismissed(true);
-      toast("Setup skipped — you can finish any time from Accounts or Commitments");
+      toast("Setup skipped â you can finish any time from Accounts or Commitments");
     } catch {
       setChecklistDismissed(true);
     }

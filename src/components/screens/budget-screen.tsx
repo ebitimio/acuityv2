@@ -173,7 +173,7 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
       />
 
       <div className="px-4 pt-6 space-y-5">
-        {/* Account chips — real accounts only, no "All" */}
+        {/* Account chips Â— real accounts only, no "All" */}
         <div className="flex gap-2 overflow-x-auto pb-1">
           {accounts.map((a) => (
             <button
@@ -232,7 +232,7 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
                   <div className="flex-1 min-w-0">
                     <p className="text-[14px] font-medium truncate">{row.name}</p>
                     <p className="text-[11px] text-[var(--text-3)] tabular">
-                      {fmt(row.spent)} {row.limit > 0 ? `of ${fmt(row.limit)}` : "· no limit set"}
+                      {fmt(row.spent)} {row.limit > 0 ? `of ${fmt(row.limit)}` : "Â· no limit set"}
                     </p>
                   </div>
                   <p className="tabular font-semibold text-[14px]">
@@ -241,7 +241,7 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
                     ) : row.limit > 0 ? (
                       <span className="text-[var(--gain)]">{fmt(row.limit - row.spent)} left</span>
                     ) : (
-                      <span className="text-[var(--text-3)]">—</span>
+                      <span className="text-[var(--text-3)]">Â—</span>
                     )}
                   </p>
                 </div>
