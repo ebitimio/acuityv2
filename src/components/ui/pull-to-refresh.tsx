@@ -1,63 +1,51 @@
 "use client";
 
-import { useRef, useState, type ReactNode } from "react";
-import { motion, useMotionValue, animate } from "framer-motion";
+import { useState, ReactNode } from "react";
+import { motion, useMotionValue, useTransform } from "framer-motion";
 import { RefreshCw } from "lucide-react";
-import { spring } from "@/lib/motion";
 
-export function PullToRefresh({ onRefresh, children }: { onRefresh: () => Promise<void>; children: ReactNode }) {
+export function PullToRefresh({ children, onRefresh }: { children: ReactNode; onRefresh: () => Promise<void> | void }) {
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const y = useMotionValue(0);
-  const [refreshing, setRefreshing] = useState(false);
-  const startY = useRef(0);
-  const pulling = useRef(false);
+  const rotate = useTransform(y, [0, 80], [0, 360]);
+  const opacity = useTransform(y, [0, 60], [0, 1]);
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (window.scrollY > 0) return;
-    startY.current = e.touches[0].clientY;
-    pulling.current = true;
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!pulling.current || refreshing) return;
-    const delta = e.touches[0].clientY - startY.current;
-    if (delta > 0) {
-      // Resistance: pulls slower the further you go
-      y.set(Math.min(delta * 0.55, 100));
-    }
-  };
-
-  const handleTouchEnd = async () => {
-    if (!pulling.current) return;
-    pulling.current = false;
-    if (y.get() > 60 && !refreshing) {
-      setRefreshing(true);
-      animate(y, 60, spring.snappy);
+  const handleDragEnd = async () => {
+    if (y.get() > 70 && !isRefreshing) {
+      setIsRefreshing(true);
+      y.set(50);
       try {
         await onRefresh();
+      } catch (e) {
+        console.error("Refresh failed", e);
       } finally {
-        setRefreshing(false);
-        animate(y, 0, spring.snappy);
+        setIsRefreshing(false);
+        y.set(0);
       }
     } else {
-      animate(y, 0, spring.snappy);
+      y.set(0);
     }
   };
 
   return (
-    <div onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} className="relative flex-1 flex flex-col">
+    <div className="relative min-h-[100dvh] overflow-hidden">
       <motion.div
-        style={{ y }}
-        className="pointer-events-none absolute top-2 left-1/2 -translate-x-1/2 z-[5] flex items-center justify-center"
+        style={{ opacity, y }}
+        className="absolute inset-x-0 top-0 z-50 flex justify-center pt-6 pointer-events-none"
       >
-        {y.get() > 20 && (
-          <RefreshCw
-            size={20}
-            className={`text-[var(--brand)] transition-transform ${refreshing ? "animate-spin" : ""}`}
-            style={{ transform: refreshing ? undefined : `rotate(${y.get() * 3}deg)` }}
-          />
-        )}
+        <motion.div style={{ rotate }} className="bg-[var(--surface-3)] p-2 rounded-full shadow-lg">
+          <RefreshCw size={20} className={isRefreshing ? "animate-spin" : ""} />
+        </motion.div>
       </motion.div>
-      <motion.div style={{ y }} className="flex-1 flex flex-col">
+
+      <motion.div
+        drag="y"
+        dragConstraints={{ top: 0, bottom: 0 }}
+        dragElastic={{ top: 0.5, bottom: 0 }}
+        onDragEnd={handleDragEnd}
+        style={{ y }}
+        className="min-h-[100dvh]"
+      >
         {children}
       </motion.div>
     </div>

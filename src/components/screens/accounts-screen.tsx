@@ -13,6 +13,7 @@ import { CurrencyField } from "@/components/ui/currency-field";
 import { BalanceCheckinSheet } from "@/components/ui/balance-checkin-sheet";
 import { useCurrency } from "@/lib/currency";
 import { useToast } from "@/components/ui/toast";
+import { PullToRefresh } from "@/components/ui/pull-to-refresh";
 import type { Account, Asset } from "@/lib/types";
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
@@ -89,143 +90,143 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
 
   const total = accounts.reduce((s, a) => s + (a.current_minor ?? a.balance_minor), 0) / 100;
   const totalAssets = assets.filter((a) => a.type === "asset").reduce((s, a) => s + a.value_minor, 0) / 100;
-  // Force liabilities to be a negative number for formatting
   const totalLiab = -(assets.filter((a) => a.type === "liability").reduce((s, a) => s + a.value_minor, 0) / 100);
 
   return (
-    <div className="min-h-[100dvh] pb-32">
-      <ScreenHeader
-        title="Accounts"
-        onBack={onBack}
-        right={<IconButton label="Add" onClick={() => setModal("account")}><Plus size={18} /></IconButton>}
-      />
+    <PullToRefresh onRefresh={load}>
+      <div className="min-h-[100dvh] pb-32">
+        <ScreenHeader
+          title="Accounts"
+          onBack={onBack}
+          right={<IconButton label="Add" onClick={() => setModal("account")}><Plus size={18} /></IconButton>}
+        />
 
-      <div className="px-4 pt-6 space-y-6">
-        <div className="rounded-3xl bg-[var(--surface-2)] border border-[var(--line)] p-6 text-center">
-          <p className="text-[13px] text-[var(--text-2)] mb-1">Liquid assets</p>
-          <p className="text-[32px] font-bold tabular">{fmt(total)}</p>
-        </div>
+        <div className="px-4 pt-6 space-y-6">
+          <div className="rounded-3xl bg-[var(--surface-2)] border border-[var(--line)] p-6 text-center">
+            <p className="text-[13px] text-[var(--text-2)] mb-1">Liquid assets</p>
+            <p className="text-[32px] font-bold tabular">{fmt(total)}</p>
+          </div>
 
-        <div>
-          <h3 className="text-[15px] font-semibold mb-3 px-1">Accounts</h3>
-          <div className="group-list">
-            {accounts.map((a) => {
-              const balance = (a.current_minor ?? a.balance_minor) / 100;
-              return (
-                <div key={a.id} className="flex items-start gap-3 px-4 py-4">
-                  <AccountCard account={a} onClick={() => {}} compact />
-                  <div className="flex flex-col items-end gap-1 shrink-0 pt-1">
-                    <p className={`tabular font-semibold text-[15px] ${balance < 0 ? "text-[var(--danger)]" : ""}`}>
-                      {fmt(balance)}
-                    </p>
-                    <p className="text-[10px] text-[var(--text-3)] whitespace-nowrap">
-                      Checked {a.balance_as_of}
-                    </p>
-                    <div className="flex items-center gap-1 mt-1">
-                      <button
-                        onClick={() => setCheckinAccount(a)}
-                        className="text-[var(--brand)] p-1"
-                        aria-label={`Check ${a.name} balance`}
-                        title="Check balance"
-                      >
-                        <RefreshCw size={14} />
-                      </button>
-                      <button
-                        onClick={() => delAcc(a)}
-                        className="text-[var(--danger)] p-1"
-                        aria-label={`Delete ${a.name}`}
-                      >
-                        <Trash2 size={14} />
-                      </button>
+          <div>
+            <h3 className="text-[15px] font-semibold mb-3 px-1">Accounts</h3>
+            <div className="group-list">
+              {accounts.map((a) => {
+                const balance = (a.current_minor ?? a.balance_minor) / 100;
+                return (
+                  <div key={a.id} className="flex items-start gap-3 px-4 py-4">
+                    <AccountCard account={a} onClick={() => {}} compact />
+                    <div className="flex flex-col items-end gap-1 shrink-0 pt-1">
+                      <p className={`tabular font-semibold text-[15px] ${balance < 0 ? "text-[var(--danger)]" : ""}`}>
+                        {fmt(balance)}
+                      </p>
+                      <p className="text-[10px] text-[var(--text-3)] whitespace-nowrap">
+                        Checked {a.balance_as_of}
+                      </p>
+                      <div className="flex items-center gap-1 mt-1">
+                        <button
+                          onClick={() => setCheckinAccount(a)}
+                          className="text-[var(--brand)] p-1"
+                          aria-label={`Check ${a.name} balance`}
+                          title="Check balance"
+                        >
+                          <RefreshCw size={14} />
+                        </button>
+                        <button
+                          onClick={() => delAcc(a)}
+                          className="text-[var(--danger)] p-1"
+                          aria-label={`Delete ${a.name}`}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-            {accounts.length === 0 && (
-              <p className="px-4 py-6 text-center text-[14px] text-[var(--text-3)]">No accounts. Tap + to add one.</p>
-            )}
+                );
+              })}
+              {accounts.length === 0 && (
+                <p className="px-4 py-6 text-center text-[14px] text-[var(--text-3)]">No accounts. Tap + to add one.</p>
+              )}
+            </div>
           </div>
-        </div>
 
-        <div>
-          <div className="flex items-center justify-between mb-3 px-1">
-            <h3 className="text-[15px] font-semibold">Offline assets & liabilities</h3>
-            <button onClick={() => setModal("asset")} className="text-[13px] text-[var(--brand)]">+ Add</button>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-2xl bg-[var(--surface-2)] border border-[var(--line)] p-4">
-              <p className="text-[11px] text-[var(--text-3)] mb-1">Assets</p>
-              <p className="text-[16px] font-bold tabular">{fmt(totalAssets)}</p>
+          <div>
+            <div className="flex items-center justify-between mb-3 px-1">
+              <h3 className="text-[15px] font-semibold">Offline assets & liabilities</h3>
+              <button onClick={() => setModal("asset")} className="text-[13px] text-[var(--brand)]">+ Add</button>
             </div>
-            <div className="rounded-2xl bg-[var(--surface-2)] border border-[var(--line)] p-4">
-              <p className="text-[11px] text-[var(--text-3)] mb-1">Liabilities</p>
-              {/* FIXED: Removed the manual ₦ symbol so it just uses fmt() */}
-              <p className="text-[16px] font-bold tabular text-[var(--danger)]">{fmt(totalLiab)}</p>
-            </div>
-          </div>
-          <div className="group-list mt-3">
-            {assets.map((a) => (
-              <div key={a.id} className="flex items-center justify-between px-4 py-3">
-                <div>
-                  <p className="text-[14px] font-medium">{a.name}</p>
-                  <p className="text-[11px] text-[var(--text-3)] capitalize">{a.type}</p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="tabular font-semibold">{fmt(a.value_minor / 100)}</span>
-                  <button onClick={() => delA(a)} className="text-[var(--danger)]"><Trash2 size={14} /></button>
-                </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-2xl bg-[var(--surface-2)] border border-[var(--line)] p-4">
+                <p className="text-[11px] text-[var(--text-3)] mb-1">Assets</p>
+                <p className="text-[16px] font-bold tabular">{fmt(totalAssets)}</p>
               </div>
-            ))}
-            {assets.length === 0 && (
-              <p className="px-4 py-6 text-center text-[14px] text-[var(--text-3)]">No offline assets yet.</p>
-            )}
+              <div className="rounded-2xl bg-[var(--surface-2)] border border-[var(--line)] p-4">
+                <p className="text-[11px] text-[var(--text-3)] mb-1">Liabilities</p>
+                <p className="text-[16px] font-bold tabular text-[var(--danger)]">{fmt(totalLiab)}</p>
+              </div>
+            </div>
+            <div className="group-list mt-3">
+              {assets.map((a) => (
+                <div key={a.id} className="flex items-center justify-between px-4 py-3">
+                  <div>
+                    <p className="text-[14px] font-medium">{a.name}</p>
+                    <p className="text-[11px] text-[var(--text-3)] capitalize">{a.type}</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="tabular font-semibold">{fmt(a.value_minor / 100)}</span>
+                    <button onClick={() => delA(a)} className="text-[var(--danger)]"><Trash2 size={14} /></button>
+                  </div>
+                </div>
+              ))}
+              {assets.length === 0 && (
+                <p className="px-4 py-6 text-center text-[14px] text-[var(--text-3)]">No offline assets yet.</p>
+              )}
+            </div>
           </div>
         </div>
+
+        <Modal open={modal === "account"} onClose={() => setModal(null)} title="Add Account">
+          <div className="space-y-3">
+            <Field label="Account name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Main Checking" />
+            <Field label="Bank / institution" value={institution} onChange={(e) => setInstitution(e.target.value)} placeholder="e.g. GTBank" />
+            <SelectField label="Type" value={type} onChange={(e) => setType(e.target.value)}>
+              <option value="checking">Current</option>
+              <option value="savings">Savings</option>
+              <option value="wallet">Wallet</option>
+              <option value="dom">Domiciliary</option>
+            </SelectField>
+            <CurrencyField label="How much is in it right now?" value={balance} onChange={setBalance} />
+            <Field label="As of date" type="date" value={balanceAsOf} onChange={(e) => setBalanceAsOf(e.target.value)} />
+            <Button onClick={addAcc} disabled={!name || !institution || !balance}>Create account</Button>
+          </div>
+        </Modal>
+
+        <Modal open={modal === "asset"} onClose={() => setModal(null)} title="Add Asset / Liability">
+          <div className="space-y-3">
+            <SelectField label="Type" value={assetType} onChange={(e) => setAssetType(e.target.value as "asset" | "liability")}>
+              <option value="asset">Asset (adds to net)</option>
+              <option value="liability">Liability (subtracts from net)</option>
+            </SelectField>
+            <Field label="Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Land in Lekki" />
+            <CurrencyField label="Value" value={balance} onChange={setBalance} />
+            <Button onClick={addA}>Save</Button>
+          </div>
+        </Modal>
+
+        <BalanceCheckinSheet
+          isOpen={!!checkinAccount}
+          onClose={() => setCheckinAccount(null)}
+          onSaved={load}
+          account={
+            checkinAccount
+              ? {
+                  id: checkinAccount.id,
+                  name: checkinAccount.name,
+                  current_minor: checkinAccount.current_minor ?? checkinAccount.balance_minor,
+                }
+              : null
+          }
+        />
       </div>
-
-      <Modal open={modal === "account"} onClose={() => setModal(null)} title="Add Account">
-        <div className="space-y-3">
-          <Field label="Account name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Main Checking" />
-          <Field label="Bank / institution" value={institution} onChange={(e) => setInstitution(e.target.value)} placeholder="e.g. GTBank" />
-          <SelectField label="Type" value={type} onChange={(e) => setType(e.target.value)}>
-            <option value="checking">Current</option>
-            <option value="savings">Savings</option>
-            <option value="wallet">Wallet</option>
-            <option value="dom">Domiciliary</option>
-          </SelectField>
-          <CurrencyField label="How much is in it right now?" value={balance} onChange={setBalance} />
-          <Field label="As of date" type="date" value={balanceAsOf} onChange={(e) => setBalanceAsOf(e.target.value)} />
-          <Button onClick={addAcc} disabled={!name || !institution || !balance}>Create account</Button>
-        </div>
-      </Modal>
-
-      <Modal open={modal === "asset"} onClose={() => setModal(null)} title="Add Asset / Liability">
-        <div className="space-y-3">
-          <SelectField label="Type" value={assetType} onChange={(e) => setAssetType(e.target.value as "asset" | "liability")}>
-            <option value="asset">Asset (adds to net)</option>
-            <option value="liability">Liability (subtracts from net)</option>
-          </SelectField>
-          <Field label="Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Land in Lekki" />
-          <CurrencyField label="Value" value={balance} onChange={setBalance} />
-          <Button onClick={addA}>Save</Button>
-        </div>
-      </Modal>
-
-      <BalanceCheckinSheet
-        isOpen={!!checkinAccount}
-        onClose={() => setCheckinAccount(null)}
-        onSaved={load}
-        account={
-          checkinAccount
-            ? {
-                id: checkinAccount.id,
-                name: checkinAccount.name,
-                current_minor: checkinAccount.current_minor ?? checkinAccount.balance_minor,
-              }
-            : null
-        }
-      />
-    </div>
+    </PullToRefresh>
   );
 }

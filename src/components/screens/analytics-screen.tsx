@@ -9,13 +9,19 @@ import { BarPairChart } from "@/components/ui/bar-pair-chart";
 import type { Txn } from "@/lib/types";
 import { EmptyState } from "@/components/ui/empty-state";
 import { BarChart3 } from "lucide-react";
+import { PullToRefresh } from "@/components/ui/pull-to-refresh";
 
 export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
   const [txns, setTxns] = useState<Txn[]>([]);
   const { fmt } = useCurrency();
 
+  const load = async () => {
+    const data = await getTransactionsSince(startOfMonthISO());
+    setTxns(data || []);
+  };
+
   useEffect(() => {
-    getTransactionsSince(startOfMonthISO()).then(setTxns);
+    load();
   }, []);
 
   const income = txns.filter((t) => t.direction === "credit").reduce((s, t) => s + t.amount_minor / 100, 0);
@@ -42,36 +48,38 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
   const top = [...byCat.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
 
   return (
-    <div className="min-h-[100dvh] pb-32">
-      <ScreenHeader title="Analytics" onBack={onBack} />
-      <div className="space-y-5 px-4 pt-6">
-        <div className="card p-6">
-          <p className="mb-1 text-[13px] text-[var(--text-2)]">Cashflow this month</p>
-          <p className={`text-[32px] font-bold tabular ${net >= 0 ? "text-[var(--gain)]" : "text-[var(--danger)]"}`}>
-            {net >= 0 ? "+" : ""}
-            {fmt(net)}
-          </p>
-          <div className="mt-4">
-            <BarPairChart data={weeks} />
+    <PullToRefresh onRefresh={load}>
+      <div className="min-h-[100dvh] pb-32">
+        <ScreenHeader title="Analytics" onBack={onBack} />
+        <div className="space-y-5 px-4 pt-6">
+          <div className="card p-6">
+            <p className="mb-1 text-[13px] text-[var(--text-2)]">Cashflow this month</p>
+            <p className={`text-[32px] font-bold tabular ${net >= 0 ? "text-[var(--gain)]" : "text-[var(--danger)]"}`}>
+              {net >= 0 ? "+" : ""}
+              {fmt(net)}
+            </p>
+            <div className="mt-4">
+              <BarPairChart data={weeks} />
+            </div>
+          </div>
+
+          <div className="card p-6">
+            <p className="mb-3 text-[15px] font-semibold text-[var(--text-1)]">Spending by category</p>
+            {top.length === 0 ? (
+              <EmptyState icon={BarChart3} title="No data yet" body="Import a statement to see spending analytics." />
+            ) : (
+              <div className="space-y-2">
+                {top.map(([name, amt]) => (
+                  <div key={name} className="flex justify-between text-[14px]">
+                    <span className="text-[var(--text-1)]">{name}</span>
+                    <span className="tabular font-semibold text-[var(--text-1)]">{fmt(amt)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
-
-        <div className="card p-6">
-          <p className="mb-3 text-[15px] font-semibold text-[var(--text-1)]">Spending by category</p>
-          {top.length === 0 ? (
-            <EmptyState icon={BarChart3} title="No data yet" body="Import a statement to see spending analytics." />
-          ) : (
-            <div className="space-y-2">
-              {top.map(([name, amt]) => (
-                <div key={name} className="flex justify-between text-[14px]">
-                  <span className="text-[var(--text-1)]">{name}</span>
-                  <span className="tabular font-semibold text-[var(--text-1)]">{fmt(amt)}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
       </div>
-    </div>
+    </PullToRefresh>
   );
 }
