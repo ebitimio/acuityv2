@@ -1,16 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Modal } from "./modal";
 import { Button } from "./form";
 import { useCurrency } from "@/lib/currency";
 import { createClient } from "@/lib/supabase/client";
-import { formatNumberInput, parseNumberInput } from "@/lib/format";
+import { parseNumberInput } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { Check, ChevronRight, Delete } from "lucide-react";
+import { Check, Delete } from "lucide-react";
 import { useWorkspace } from "@/lib/workspace";
-import { CategoryOptions } from "@/lib/category-options";
-import type { Txn } from "@/lib/types";
+import { buildCategoryList } from "@/lib/category-options";
+import { CATEGORIES } from "@/lib/categories";
 
 interface QuickAddSheetProps {
   isOpen: boolean;
@@ -27,9 +27,12 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { currency, fmt } = useCurrency();
+  const { fmt } = useCurrency();
   const { active: activeWs } = useWorkspace();
   const supabase = createClient();
+
+  // Build the categories list using your lib function
+  const categories = useMemo(() => buildCategoryList(CATEGORIES), []);
 
   // Reset state when opened
   useEffect(() => {
@@ -146,7 +149,7 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
               
               {isCatOpen && (
                 <div className="absolute left-0 right-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-xl border border-[var(--line)] bg-[var(--surface-3)] p-1 shadow-xl">
-                  {CategoryOptions.map((c) => (
+                  {categories.map((c) => (
                     <button
                       key={c.value}
                       onClick={() => {
