@@ -86,7 +86,8 @@ export default function SandboxPage() {
   const [safeToSpend, setSafeToSpend] = useState<SafeToSpend | null>(null);
   const [cycle, setCycle] = useState<{ cycle_start: string; cycle_end: string } | null>(null);
   const [setupWizardOpen, setSetupWizardOpen] = useState(false);
-  const [setupWizardStep, setSetupWizardStep] = useState<"account" | "income" | "bills" | "budget">("account");
+  // Removed "budget" from the setup steps
+  const [setupWizardStep, setSetupWizardStep] = useState<"account" | "income" | "bills">("account");
   const [checklistDismissed, setChecklistDismissed] = useState(false);
   const [txnFilter, setTxnFilter] = useState<TransactionFilter>("all");
 
@@ -250,7 +251,7 @@ export default function SandboxPage() {
     }
   };
 
-  const handleStartSetupStep = (step: "account" | "income" | "bills" | "budget") => {
+  const handleStartSetupStep = (step: "account" | "income" | "bills") => {
     setSetupWizardStep(step);
     setSetupWizardOpen(true);
   };

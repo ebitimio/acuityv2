@@ -5,7 +5,7 @@ import type { SetupStatus } from "@/lib/supabase/database";
 
 interface Props {
   status: SetupStatus;
-  onStartStep: (step: "account" | "income" | "bills" | "budget") => void;
+  onStartStep: (step: "account" | "income" | "bills") => void;
   onDismiss: () => void;
 }
 
@@ -13,7 +13,6 @@ const STEPS = [
   { key: "account" as const, label: "Add an account", desc: "Start with a bank or wallet", field: "has_account" as const },
   { key: "income" as const, label: "Add income", desc: "Salary, freelance, or allowance", field: "has_income" as const },
   { key: "bills" as const, label: "Add bills", desc: "Rent, data, subscriptions", field: "has_bills" as const },
-  { key: "budget" as const, label: "Set a budget", desc: "How much will you spend this month?", field: "has_budget" as const },
 ];
 
 export function SetupChecklist({ status, onStartStep, onDismiss }: Props) {
