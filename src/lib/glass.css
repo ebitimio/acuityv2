@@ -2,11 +2,13 @@
   /* ---------- Liquid glass ---------- */
   .glass {
     --glass-blur: 24px;
-    --glass-fill: rgba(22, 17, 14, 0.42);
+    /* much lower alpha than before */
+    --glass-fill: rgba(20, 16, 14, 0.18);
     position: relative;
     isolation: isolate;
+    /* very light overlay so specular reads but tint stays minimal */
     background:
-      linear-gradient(160deg, rgba(255,255,255,.15), rgba(255,255,255,.04) 55%, rgba(255,255,255,.09)),
+      linear-gradient(160deg, rgba(255,255,255,.08), rgba(255,255,255,.02) 55%, rgba(255,255,255,.05)),
       var(--glass-fill);
     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(190%) brightness(1.08);
     backdrop-filter: blur(var(--glass-blur)) saturate(190%) brightness(1.08);
@@ -16,38 +18,38 @@
       inset 0 0 24px rgba(255,255,255,.04),
       0 12px 40px rgba(0,0,0,.40);
   }
-  .glass-thin    { --glass-blur: 16px; --glass-fill: rgba(22,17,14,.28); }
-  .glass-regular { --glass-blur: 24px; --glass-fill: rgba(22,17,14,.42); }
-  .glass-thick   { --glass-blur: 40px; --glass-fill: rgba(22,17,14,.62); }
+  .glass-thin    { --glass-blur: 16px; --glass-fill: rgba(20,16,14,0.10); }
+  .glass-regular { --glass-blur: 24px; --glass-fill: rgba(20,16,14,0.18); }
+  .glass-thick   { --glass-blur: 28px; --glass-fill: rgba(20,16,14,0.22); }
 
-  /* bright 1px edge, brightest top-left like light catching bevelled glass */
+  /* bright 1px edge */
   .glass::before {
     content: "";
     position: absolute; inset: 0; z-index: -1;
     border-radius: inherit; padding: 1px; pointer-events: none;
-    background: linear-gradient(135deg, rgba(255,255,255,.60), rgba(255,255,255,.06) 40%, rgba(255,255,255,.20));
+    background: linear-gradient(135deg, rgba(255,255,255,.55), rgba(255,255,255,.06) 40%, rgba(255,255,255,.18));
     -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
   }
   .glass-norim::before { display: none; }
 
-  /* specular highlight that follows the finger / cursor (--mx/--my set by GlassSurface) */
+  /* specular highlight */
   .glass::after {
     content: "";
     position: absolute; inset: 0; z-index: -1;
     border-radius: inherit; pointer-events: none;
-    background: radial-gradient(200px circle at var(--mx, 25%) var(--my, 0%), rgba(255,255,255,.26), transparent 62%);
-    opacity: var(--spec, .5);
+    background: radial-gradient(200px circle at var(--mx, 25%) var(--my, 0%), rgba(255,255,255,.16), transparent 62%);
+    opacity: var(--spec, .4);
     transition: opacity .3s ease;
   }
-  .glass:hover, .glass:active { --spec: .95; }
+  .glass:hover, .glass:active { --spec: .8; }
 
-  /* pressed glass squishes and rebounds */
+  /* pressed glass squish */
   .glass-press { transition: transform .38s cubic-bezier(.3, 1.6, .5, 1); }
   .glass-press:active { transform: scale(.965); transition-duration: .12s; }
 
-  /* ---------- Ambient background (gives glass something to refract) ---------- */
+  /* ambient orbs stay as before */
   .ambient-orb { position: absolute; border-radius: 9999px; will-change: transform; }
   .ambient-a { top: -18%; left: -25%; width: 90vmax; height: 90vmax;
     background: radial-gradient(closest-side, rgba(232,122,26,.38), transparent 70%);

@@ -26,7 +26,6 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
           style={{
             background:
               "linear-gradient(160deg, #7a0e0e 0%, #b3391f 35%, #e87a1a 75%, #ffb347 100%)",
-            /* Extend the fixed box past every safe area */
             marginTop: "calc(-1 * env(safe-area-inset-top))",
             marginBottom: "calc(-1 * env(safe-area-inset-bottom))",
             paddingTop: "env(safe-area-inset-top)",

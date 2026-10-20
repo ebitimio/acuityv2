@@ -30,7 +30,7 @@ export function FloatingTabBar({ activeTab, onTabChange, onAddClick, isHidden }:
       className="pointer-events-none fixed bottom-0 left-0 right-0 z-[60] flex justify-center px-4 pt-6"
       style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 6px)" }}
     >
-      <div className="absolute inset-x-0 bottom-0 -z-10 h-32 bg-gradient-to-t from-black via-black/80 to-transparent" />
+      <div className="absolute inset-x-0 bottom-0 -z-10 h-32 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
 
       <div className="pointer-events-auto flex w-full max-w-[420px] items-center gap-3">
         <GlassSurface
