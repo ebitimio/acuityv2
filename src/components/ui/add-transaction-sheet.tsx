@@ -20,6 +20,8 @@ export function AddTransactionSheet({ isOpen, onClose, onSaved }: AddTransaction
   const [amount, setAmount] = useState("");
   const [direction, setDirection] = useState<"debit" | "credit">("debit");
   const [category, setCategory] = useState("Groceries");
+  const [customCategory, setCustomCategory] = useState("");
+  const [isCustom, setIsCustom] = useState(false);
   const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,6 +41,8 @@ export function AddTransactionSheet({ isOpen, onClose, onSaved }: AddTransaction
       setAmount("");
       setDirection("debit");
       setCategory(categoryNames[0] || "Groceries");
+      setCustomCategory("");
+      setIsCustom(false);
       setDate(new Date().toISOString().split("T")[0]);
       setError(null);
       setIsSaving(false);
@@ -47,25 +51,48 @@ export function AddTransactionSheet({ isOpen, onClose, onSaved }: AddTransaction
 
   const handleSave = async () => {
     const parsedAmount = parseNumberInput(amount);
+    const finalCategory = isCustom ? customCategory.trim() : category;
+
     if (parsedAmount <= 0) {
       setError("Enter an amount greater than 0");
+      return;
+    }
+    if (!finalCategory) {
+      setError("Enter a category name");
       return;
     }
     if (!activeWs) {
       setError("No active workspace");
       return;
     }
+    
     setIsSaving(true);
     setError(null);
+    
     try {
+      const { data: accounts, error: accErr } = await supabase
+        .from("accounts")
+        .select("id")
+        .eq("workspace_id", activeWs.id)
+        .limit(1);
+
+      if (accErr) throw accErr;
+      if (!accounts || accounts.length === 0) {
+        throw new Error("No bank account found. Please create an account first.");
+      }
+
+      const accountId = accounts[0].id;
+
       const { error: dbError } = await supabase.from("transactions").insert({
-        workspace_id: activeWs.id,
+        account_id: accountId,
         amount_minor: Math.round(parsedAmount * 100),
         direction: direction,
-        category_name: category,
-        transaction_date: date,
+        category_name: finalCategory,
+        date: new Date(date).toISOString(),
       });
+      
       if (dbError) throw dbError;
+      
       onSaved();
       onClose();
     } catch (err: any) {
@@ -101,16 +128,33 @@ export function AddTransactionSheet({ isOpen, onClose, onSaved }: AddTransaction
             <div>
               <p className="mb-1.5 px-1 text-[13px] font-medium text-[var(--text-3)]">Category</p>
               <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
+                value={isCustom ? "__custom__" : category}
+                onChange={(e) => {
+                  if (e.target.value === "__custom__") {
+                    setIsCustom(true);
+                  } else {
+                    setIsCustom(false);
+                    setCategory(e.target.value);
+                  }
+                }}
                 className="w-full rounded-xl border border-[var(--line-strong)] bg-[var(--surface-2)] px-4 py-3 text-[15px] text-[var(--text-1)] focus:border-[var(--brand)] outline-none appearance-none"
               >
                 {categoryNames.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
+                  <option key={c} value={c}>{c}</option>
                 ))}
+                <option value="__custom__">+ Create custom category</option>
               </select>
+              
+              {isCustom && (
+                <input
+                  type="text"
+                  value={customCategory}
+                  onChange={(e) => setCustomCategory(e.target.value)}
+                  placeholder="Enter category name"
+                  className="mt-2 w-full rounded-xl border border-[var(--line-strong)] bg-[var(--surface-2)] px-4 py-3 text-[15px] text-[var(--text-1)] focus:border-[var(--brand)] outline-none"
+                  autoFocus
+                />
+              )}
             </div>
 
             <div>
