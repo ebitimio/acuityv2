@@ -63,14 +63,20 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
       if (hidden && !o?.force) return "₦";
       const v = convert(n);
       const d = o?.decimals ?? currency === "USD";
+      
+      // Calculate absolute value for formatting the number itself
+      const absV = Math.abs(v);
+      
       const s = new Intl.NumberFormat("en-NG", {
         minimumFractionDigits: d ? 2 : 0,
         maximumFractionDigits: d ? 2 : 0,
-      }).format(Math.abs(v));
+      }).format(absV);
       
-      // FIXED: Removed the hardcoded ₦ from the negative sign logic.
-      // It now outputs "-₦50,000" instead of "₦₦50,000"
-      const sign = v < 0 ? "-" : o?.sign && v > 0 ? "+" : "";
+      // Determine the correct sign
+      let sign = "";
+      if (v < 0) sign = "-";
+      else if (o?.sign && v > 0) sign = "+";
+      
       return `${sign}${symbol}${s}`;
     };
     
