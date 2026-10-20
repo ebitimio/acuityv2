@@ -1,15 +1,13 @@
 // src/lib/format.ts
 
-// --- 1. Helper to get the active currency outside of React components ---
-// We assume your app stores the currency in localStorage (e.g., 'acuity-currency' or similar).
-// If it's stored somewhere else, adjust the key below.
+// 1. Helper to get the active currency on the client
 function getActiveCurrency(): "NGN" | "USD" {
-  if (typeof window === "undefined") return "NGN"; // Default for server-side
+  if (typeof window === "undefined") return "NGN";
   const stored = localStorage.getItem("acuity-currency") || localStorage.getItem("currency");
   return stored === "USD" ? "USD" : "NGN";
 }
 
-// --- 2. The Formatter ---
+// 2. The main formatter
 export function formatCurrency(
   amount: number | string,
   overrideCurrency?: "NGN" | "USD"
@@ -19,12 +17,28 @@ export function formatCurrency(
 
   const currency = overrideCurrency || getActiveCurrency();
 
-  // Format numbers (no decimals)
   const formattedNumber = new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 0,
     minimumFractionDigits: 0,
   }).format(num);
 
-  // Prepend the correct symbol
   return currency === "NGN" ? `₦${formattedNumber}` : `$${formattedNumber}`;
+}
+
+// 3. The missing input formatters
+export function formatNumberInput(value: string | number): string {
+  if (value === "" || value === null || value === undefined) return "";
+  const num = typeof value === "string" ? parseFloat(value.replace(/,/g, "")) : value;
+  if (isNaN(num)) return "";
+  return new Intl.NumberFormat("en-US", {
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 0,
+  }).format(num);
+}
+
+export function parseNumberInput(value: string): number {
+  if (!value) return 0;
+  const cleaned = value.replace(/[^0-9.-]+/g, "");
+  const n = parseFloat(cleaned);
+  return isNaN(n) ? 0 : n;
 }
