@@ -1,67 +1,48 @@
 import type { Metadata, Viewport } from "next";
-import { Manrope } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 
-const manrope = Manrope({
+const geistSans = Geist({
+  variable: "--font-geist-sans",
   subsets: ["latin"],
-  variable: "--font-ui",
-  display: "swap",
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
   title: "Acuity",
-  description: "AI-driven personal wealth command center",
-  manifest: "/manifest.json",
-  icons: {
-    icon: "/icon.png",
-    apple: "/icon.png",
-    shortcut: "/icon.png",
-  },
+  description: "Personal finance workspace",
   appleWebApp: {
     capable: true,
+    statusBarStyle: "black-translucent",
     title: "Acuity",
-    statusBarStyle: "default",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#0b0b0c" },
-    { media: "(prefers-color-scheme: light)", color: "#f7f7f9" },
-  ],
+  themeColor: "#000000",
   width: "device-width",
   initialScale: 1,
-  viewportFit: "cover",
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover", // <-- FIXES THE SAFE AREA
 };
-
-// Sets data-theme before paint to avoid a flash of the wrong theme.
-const themeScript = `
-(function() {
-  try {
-    var stored = localStorage.getItem("acuity:theme");
-    var resolved = stored;
-    if (!resolved || resolved === "system") {
-      resolved = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-    }
-    document.documentElement.dataset.theme = resolved;
-  } catch (e) {
-    document.documentElement.dataset.theme = "dark";
-  }
-})();
-`;
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
-    <html lang="en" className={manrope.variable} suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-      </head>
-      <body className="overflow-x-hidden text-[var(--text-1)] antialiased">
+    <html lang="en" className="dark">
+      {/* Added bg-black to kill the white safe area */}
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-black text-white min-h-screen`}
+      >
         <Providers>{children}</Providers>
       </body>
     </html>
