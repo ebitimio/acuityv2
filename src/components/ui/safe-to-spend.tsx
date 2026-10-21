@@ -6,11 +6,11 @@ import { useCurrency } from "@/lib/currency";
 import type { SafeToSpend as SafeToSpendData } from "@/lib/supabase/database";
 import { useEffect, useState } from "react";
 import { getRecurringItems, getFamilySupport } from "@/lib/supabase/database";
-import type { RecurringItem } from "@/lib/types";
 
 interface Props {
   data: SafeToSpendData | null;
   netAcross: number;
+  liquidAssets: number; // <-- NEW
   spentThisMonth: number;
   incomeThisMonth: number;
   budgetLimit: number;
@@ -22,6 +22,7 @@ interface Props {
 export function SafeToSpendHero({
   data,
   netAcross,
+  liquidAssets,
   spentThisMonth,
   incomeThisMonth,
   budgetLimit,
@@ -38,7 +39,6 @@ export function SafeToSpendHero({
   const dailySafe = data?.daily_safe_minor ? data.daily_safe_minor / 100 : 0;
   const hasIncome = data?.has_income ?? false;
 
-  // New state for expected income vs actual liquid
   const [expectedIncome, setExpectedIncome] = useState(0);
   const [totalObligations, setTotalObligations] = useState(0);
 
@@ -95,16 +95,15 @@ export function SafeToSpendHero({
       <div className="mt-4 grid grid-cols-2 gap-3">
         <div>
           <p className="text-[11px] text-black/70">Income</p>
-          {/* Uses expected income minus obligations */}
           <p className="mt-0.5 text-[15px] font-semibold" style={{ color: "#22c55e" }}>
             {fmt(actualIncome > 0 ? actualIncome : 0)}
           </p>
         </div>
         <div>
-          <p className="text-[11px] text-black/70">Net Liquid</p>
-          {/* Uses only liquid cash, not total net worth */}
+          <p className="text-[11px] text-black/70">Net liquid assets</p>
+          {/* Uses the new liquidAssets prop */}
           <p className="mt-0.5 text-[15px] font-semibold text-black">
-            {fmt(netAcross)}
+            {fmt(liquidAssets)}
           </p>
         </div>
       </div>

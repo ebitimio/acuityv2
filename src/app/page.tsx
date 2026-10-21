@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import {
   getHomeMetrics, getRecentTransactions, deleteTransaction, clearDataCache,
   getSetupStatus, completeOnboarding, getSafeToSpend,
-  getCurrentCycle, getCategorySpend, getPeriodLabel,
+  getCurrentCycle, getCategorySpend, getPeriodLabel, getAccounts,
   type SetupStatus, type SafeToSpend, type CategorySpendRow,
 } from "@/lib/supabase/database";
 import { useWorkspace } from "@/lib/workspace";
@@ -63,6 +63,7 @@ export default function SandboxPage() {
   const [session, setSession] = useState<any>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [profileName, setProfileName] = useState<string>("there");
+  const [liquidAssets, setLiquidAssets] = useState(0);
   const supabase = createClient();
   const toast = useToast();
   const { hidden, toggleHidden, fmt } = useCurrency();
@@ -116,7 +117,6 @@ export default function SandboxPage() {
   }, [session, supabase]);
 
   const refreshData = useCallback(async () => {
-    // CRITICAL: Clear cache at the top so we always pull fresh balances
     clearDataCache();
     
     try {
@@ -127,6 +127,16 @@ export default function SandboxPage() {
       console.error("refreshData failed:", e);
       setMetrics(ZERO_METRICS);
       setTransactions([]);
+    }
+
+    // Fetch liquid assets
+    try {
+      const accounts = await getAccounts();
+      const total = accounts.reduce((s, a) => s + (a.current_minor ?? a.balance_minor), 0) / 100;
+      setLiquidAssets(total);
+    } catch (e) {
+      console.error("getAccounts failed:", e);
+      setLiquidAssets(0);
     }
 
     try {
@@ -414,6 +424,7 @@ export default function SandboxPage() {
                 <SafeToSpendHero
                   data={safeToSpend}
                   netAcross={netAcrossAccounts}
+                  liquidAssets={liquidAssets}
                   spentThisMonth={spentThisMonth}
                   incomeThisMonth={incomeThisMonth}
                   budgetLimit={budgetLimit}
