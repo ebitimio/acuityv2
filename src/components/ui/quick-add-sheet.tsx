@@ -128,8 +128,7 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
 
   return (
     <Modal open={isOpen} onClose={onClose} title="Quick add">
-      {/* Removed -mx-6 and -mb-[...] to prevent content from clipping outside the Modal */}
-      <div className="flex flex-col h-[78dvh] min-h-0">
+      <div className="flex flex-col h-[75dvh] min-h-0">
         
         {/* Account Selector */}
         <div className="pt-2 pb-2 shrink-0">
@@ -216,7 +215,7 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
         </div>
 
         {/* Keypad & Save (Anchored to bottom) */}
-        <div className="mt-auto pb-6 pt-4 shrink-0">
+        <div className="mt-auto pb-2 pt-4 shrink-0">
           {error && (
             <p className="mb-2 text-center text-[12px] font-medium text-[var(--danger)]">
               {error}
