@@ -6,7 +6,7 @@ import { getTransactionsSince, getAccounts, getAssets, getBudgets } from "@/lib/
 import { startOfMonthISO } from "@/lib/dates";
 import { useCurrency } from "@/lib/currency";
 import type { Txn, Account, Asset, Budget } from "@/lib/types";
-import { TrendingDown, Wallet, Landmark, Scale, ChevronRight, Sparkles, Lightbulb, DollarSign } from "lucide-react";
+import { TrendingDown, Wallet, Landmark, Scale, ChevronRight, Sparkles, Lightbulb, DollarSign, Info } from "lucide-react";
 import { PullToRefresh } from "@/components/ui/pull-to-refresh";
 import { GaugeArc } from "@/components/ui/gauge-arc";
 import { cn } from "@/lib/utils";
@@ -19,28 +19,31 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"spending" | "networth">("spending");
   
-  // Account Filter
   const [selectedAccountId, setSelectedAccountId] = useState<string>("all");
   
   const { fmt } = useCurrency();
   const exchangeRate = 1500;
 
   const load = async () => {
-    const [t, a, s, b] = await Promise.all([
+    // We fetch ALL budgets (not just master) so the deep dive matches the Budget screen
+    const { data: allBudgets } = await (await import("@/lib/supabase/client")).createClient()
+      .from("budgets")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    const [t, a, s] = await Promise.all([
       getTransactionsSince(startOfMonthISO()),
       getAccounts(),
       getAssets(),
-      getBudgets(null) // Load budgets for the workspace
     ]);
     setTxns(t || []);
     setAccounts(a || []);
     setAssets(s || []);
-    setBudgets(b || []);
+    setBudgets((allBudgets as Budget[]) || []);
   };
 
   useEffect(() => { load(); }, []);
 
-  // --- FILTER DATA BY ACCOUNT ---
   const filteredTxns = useMemo(() => {
     if (selectedAccountId === "all") return txns;
     return txns.filter(t => t.account_id === selectedAccountId);
@@ -53,7 +56,6 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
   const liabilities = assets.filter(a => a.type === "liability").reduce((s, a) => s + a.value_minor, 0) / 100;
   const netWorth = liquid + nonLiquid - liabilities;
 
-  // Group by Category
   const byCat = new Map<string, number>();
   filteredTxns.filter(t => t.direction === "debit").forEach(t => {
     const k = t.category_name || "Uncategorized";
@@ -61,7 +63,6 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
   });
   const sortedCats = [...byCat.entries()].sort((a, b) => b[1] - a[1]);
 
-  // Heatmap data (last 30 days) - Now Strictly Black/Grey
   const heatmap = useMemo(() => {
     const days = [];
     for (let i = 29; i >= 0; i--) {
@@ -75,17 +76,16 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
     return { days, max };
   }, [filteredTxns]);
 
-  // --- CATEGORY DEEP DIVE ---
   if (selectedCategory) {
     const catTxns = filteredTxns.filter(t => (t.category_name || "Uncategorized") === selectedCategory && t.direction === "debit");
     const total = catTxns.reduce((s, t) => s + t.amount_minor, 0) / 100;
     
-    // Get Real Budget
-    const catBudget = budgets.find(b => b.category === selectedCategory)?.limit_minor ?? 0;
-    const budgetLimit = catBudget / 100;
-    const pct = budgetLimit > 0 ? Math.min((total / budgetLimit) * 100, 100) : 0;
+    // Find the budget limit across ALL accounts for this category
+    const catBudgets = budgets.filter(b => b.category === selectedCategory);
+    const totalCatBudget = catBudgets.reduce((sum, b) => sum + b.limit_minor, 0) / 100;
+    
+    const pct = totalCatBudget > 0 ? Math.min((total / totalCatBudget) * 100, 100) : 0;
 
-    // Real Sub-category breakdown
     const subCats = new Map<string, { amount: number, count: number }>();
     catTxns.forEach(t => {
       const k = t.description_clean || "Other";
@@ -94,7 +94,6 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
     });
     const sortedSub = [...subCats.entries()].sort((a, b) => b[1].amount - a[1].amount).slice(0, 5);
 
-    // Real Bar Chart Data (Last 6 Months)
     const barData = [];
     for (let i = 5; i >= 0; i--) {
       const d = new Date();
@@ -121,14 +120,15 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
           onBack={() => setSelectedCategory(null)} 
         />
         <div className="space-y-4 px-4 pt-6">
-          {/* Gauge Card */}
           <div className="card p-6">
             <div className="flex items-center justify-between mb-4">
               <GaugeArc percentage={pct} />
               <div className="text-right">
                 <p className="text-[28px] font-bold tabular text-[var(--text-1)]">{fmt(total)}</p>
-                <p className="text-[13px] text-[var(--text-3)]">of {budgetLimit > 0 ? fmt(budgetLimit) : "no limit"}</p>
-                {budgetLimit > 0 && (
+                <p className="text-[13px] text-[var(--text-3)]">
+                  {totalCatBudget > 0 ? `of ${fmt(totalCatBudget)}` : "no limit"}
+                </p>
+                {totalCatBudget > 0 && (
                   <span className="inline-block mt-1 rounded-md bg-[#DE3121]/10 px-2 py-0.5 text-[11px] font-bold text-[#DE3121]">
                     {pct > 90 ? "Too fast" : "On track"}
                   </span>
@@ -136,13 +136,12 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
               </div>
             </div>
             
-            {/* Real Bar Chart (Last 6 Months) */}
             <div className="mt-6 border-t border-[var(--line)] pt-4">
               <div className="flex items-end justify-between h-24 gap-2">
                 {barData.map((d) => (
                   <div key={d.label} className="flex flex-col items-center flex-1 gap-2">
                     <div 
-                      className="w-full rounded-t-sm bg-[#DE3121]/40 hover:bg-[#DE3121] transition-colors" 
+                      className="w-full rounded-t-sm bg-[#DE3121] transition-colors" 
                       style={{ height: `${(d.value / maxBar) * 100}%`, minHeight: '4px' }} 
                     />
                     <span className="text-[10px] text-[var(--text-3)]">{d.label}</span>
@@ -152,7 +151,6 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
             </div>
           </div>
 
-          {/* Subcategory Breakdown */}
           <div className="card p-6">
             <p className="mb-4 text-[15px] font-semibold text-[var(--text-1)]">Subcategory Breakdown</p>
             <div className="space-y-4">
@@ -173,7 +171,6 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
             </div>
           </div>
 
-          {/* AI Insight */}
           <div className="relative overflow-hidden rounded-2xl border border-[#DE3121]/20 bg-[#DE3121]/5 p-5">
             <div className="flex items-start gap-3">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#DE3121] text-white">
@@ -195,7 +192,6 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
     );
   }
 
-  // --- MAIN ANALYTICS HUB ---
   return (
     <PullToRefresh onRefresh={load}>
       <div className="min-h-[100dvh] pb-32">
@@ -203,7 +199,6 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
         
         <div className="space-y-5 px-4 pt-6">
           
-          {/* Top Tabs */}
           <div className="flex rounded-full bg-[var(--surface-2)] p-1">
             <button 
               onClick={() => setActiveTab("spending")}
@@ -223,7 +218,6 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
 
           {activeTab === "spending" ? (
             <>
-              {/* Account Selector */}
               <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
                 <button
                   onClick={() => setSelectedAccountId("all")}
@@ -248,15 +242,13 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
                 ))}
               </div>
 
-              {/* Total Expenses Card */}
               <div className="card p-5">
                 <div className="flex items-center justify-between mb-4">
                   <p className="text-[14px] text-[var(--text-2)]">Total expenses</p>
                   <span className="text-[14px] font-semibold text-[var(--text-1)]">{fmt(totalExpense)}</span>
                 </div>
                 
-                {/* Heatmap - Fixed to Black/Grey */}
-                <div className="grid grid-cols-10 gap-1.5 mb-4">
+                <div className="grid grid-cols-10 gap-1.5 mb-2">
                   {heatmap.days.map((d, i) => {
                     const intensity = d.spent / heatmap.max;
                     return (
@@ -266,13 +258,16 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
                         className="aspect-square rounded-[3px] cursor-pointer hover:ring-1 hover:ring-white/50"
                         style={{ 
                           backgroundColor: d.spent === 0 
-                            ? "rgba(0,0,0,0.2)" // Empty day
-                            : `rgba(0,0,0, ${0.4 + (intensity * 0.6)})` // Black intensity
+                            ? "rgba(255,255,255,0.05)" // Empty day (dark)
+                            : `rgba(222, 49, 33, ${Math.max(intensity, 0.3)})` // Orange-Red intensity
                         }}
                       />
                     );
                   })}
                 </div>
+                <p className="text-[11px] text-[var(--text-3)] mb-4 flex items-center gap-1">
+                  <Info size={12} /> Tap a square to see daily spend. Darker red = more spent.
+                </p>
 
                 <div className="grid grid-cols-3 gap-2 border-t border-[var(--line)] pt-4">
                   <div>
@@ -292,7 +287,6 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
                 </div>
               </div>
 
-              {/* Spending by Category */}
               <div>
                 <p className="mb-3 px-1 text-[15px] font-semibold text-[var(--text-1)]">Spending by Category</p>
                 <div className="group-list">
@@ -322,8 +316,7 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
             </>
           ) : (
             <>
-              {/* NET WORTH DEEP DIVE */}
-              <div className="card p-6 bg-gradient-to-br from-[var(--surface-2)] to-[#1c1c1e]">
+              <div className="card p-6 bg-[#0b0b0c]">
                 <p className="text-[14px] text-[var(--text-2)] mb-1">Net Worth</p>
                 <p className="text-[32px] font-bold tabular text-[var(--text-1)] mb-2">{fmt(netWorth)}</p>
                 

@@ -45,7 +45,7 @@ import { Field, Button } from "@/components/ui/form";
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
 import {
   Eye, EyeOff, ChevronRight, Receipt, ChevronDown, Plus, Trash2,
-  Wallet, PieChart, ArrowLeftRight,
+  PiggyBank, PieChart, ArrowLeftRight,
 } from "lucide-react";
 
 const ZERO_METRICS: HomeMetrics = {
@@ -104,7 +104,6 @@ export default function SandboxPage() {
     else setNavHidden(false);
   });
 
-  // Fetch Profile Name
   useEffect(() => {
     if (session?.user?.id) {
       supabase.from("profiles").select("full_name").eq("id", session.user.id).single()
@@ -419,7 +418,8 @@ export default function SandboxPage() {
                     aria-label="Budget"
                     className="press flex h-14 items-center justify-center rounded-[18px] border border-white/5 bg-[#1c1c1e]"
                   >
-                    <Wallet size={20} color="#DE3121" />
+                    {/* Changed from Wallet to PiggyBank */}
+                    <PiggyBank size={20} color="#DE3121" />
                   </button>
                   <button
                     onClick={() => setActiveScreen("analytics")}
