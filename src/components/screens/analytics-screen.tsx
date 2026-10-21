@@ -10,8 +10,10 @@ import { TrendingDown, Wallet, Landmark, Scale, ChevronRight, Sparkles, Lightbul
 import { PullToRefresh } from "@/components/ui/pull-to-refresh";
 import { GaugeArc } from "@/components/ui/gauge-arc";
 import { cn } from "@/lib/utils";
+import { TransactionsScreen } from "./transactions-screen";
 
-export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
+export function AnalyticsScreen({ onBack, onNavigateTransactions }: { onBack: () => void; onNavigateTransactions: () => void }) {
+  // Added onNavigateTransactions prop
   const [txns, setTxns] = useState<Txn[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
@@ -158,15 +160,18 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
           </div>
 
           <div className="card p-0">
-            <div className="px-4 py-4 border-b border-[var(--line)]">
+            <div className="px-4 py-4 border-b border-[var(--line)] flex items-center justify-between">
               <p className="text-[15px] font-semibold text-[var(--text-1)]">Transactions</p>
+              {/* NEW: See all button */}
+              <button onClick={onNavigateTransactions} className="text-[12px] font-medium text-[var(--brand)]">
+                See all
+              </button>
             </div>
             <div className="divide-y divide-[var(--line)]">
               {catTxns.slice(0, 10).map(t => (
                 <div key={t.id} className="flex items-center justify-between px-4 py-3">
                   <div>
                     <p className="text-[14px] font-medium text-[var(--text-1)]">
-                      {/* Added fallback to category_name so it never says "Unnamed" */}
                       {t.description_clean || t.description_raw || t.category_name || "Transaction"}
                     </p>
                     <p className="text-[11px] text-[var(--text-3)]">

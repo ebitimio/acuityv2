@@ -47,6 +47,7 @@ import {
   Eye, EyeOff, ChevronRight, Receipt, ChevronDown, Plus, Trash2,
   PiggyBank, PieChart, ArrowLeftRight,
 } from "lucide-react";
+import { TransactionsScreen } from "@/components/screens/transactions-screen"; // NEW IMPORT
 
 const ZERO_METRICS: HomeMetrics = {
   net_worth_minor: 0,
@@ -56,7 +57,7 @@ const ZERO_METRICS: HomeMetrics = {
   uncategorized_count: 0,
 };
 
-type ScreenId = TabId | "budget" | "commitments" | "tax" | "needs-review" | "ajo" | "bank-charge";
+type ScreenId = TabId | "budget" | "commitments" | "tax" | "needs-review" | "ajo" | "bank-charge" | "transactions";
 
 export default function SandboxPage() {
   const [session, setSession] = useState<any>(null);
@@ -307,7 +308,15 @@ export default function SandboxPage() {
       <PullToRefresh onRefresh={refreshData}>
         <ScreenTransition id={activeScreen}>
           {activeScreen === "analytics" ? (
-            <AnalyticsScreen onBack={() => setActiveScreen("home")} />
+            <AnalyticsScreen 
+              onBack={() => setActiveScreen("home")} 
+              onNavigateTransactions={() => setActiveScreen("transactions")} 
+            />
+          ) : activeScreen === "transactions" ? (
+            <TransactionsScreen 
+              onBack={() => setActiveScreen("home")} 
+              onDataChanged={refreshData}
+            />
           ) : activeScreen === "budget" ? (
             <BudgetScreen onBack={() => setActiveScreen("home")} />
           ) : activeScreen === "accounts" ? (
@@ -418,7 +427,6 @@ export default function SandboxPage() {
                     aria-label="Budget"
                     className="press flex h-14 items-center justify-center rounded-[18px] border border-white/5 bg-[#1c1c1e]"
                   >
-                    {/* Changed from Wallet to PiggyBank */}
                     <PiggyBank size={20} color="#DE3121" />
                   </button>
                   <button
@@ -481,7 +489,7 @@ export default function SandboxPage() {
                   <div className="mb-3 flex items-center justify-between px-1">
                     <h3 className="text-[15px] font-semibold text-[var(--text-1)]">Transactions</h3>
                     <button
-                      onClick={() => setActiveScreen("analytics")}
+                      onClick={() => setActiveScreen("transactions")}
                       className="text-[12px] font-medium text-[var(--brand)]"
                     >
                       See all
@@ -499,7 +507,7 @@ export default function SandboxPage() {
                       />
                     ) : (
                       visibleTransactions
-                        .slice(0, 20)
+                        .slice(0, 10) // LIMITED TO 10
                         .map((t) => (
                           <TransactionRow
                             key={t.id}
