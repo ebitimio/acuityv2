@@ -128,14 +128,11 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
 
   return (
     <Modal open={isOpen} onClose={onClose} title="Quick add">
-      {/* 
-        Using flex-col with NO overflow-hidden on the outer wrapper.
-        The Modal itself will limit the height, and we use flex-1 on the top and shrink-0 on the bottom.
-      */}
-      <div className="flex flex-col h-[78dvh] min-h-0 -mx-6 -mb-[calc(20px+env(safe-area-inset-bottom))]">
+      {/* Removed -mx-6 and -mb-[...] to prevent content from clipping outside the Modal */}
+      <div className="flex flex-col h-[78dvh] min-h-0">
         
         {/* Account Selector */}
-        <div className="px-6 pt-2 pb-2 shrink-0">
+        <div className="pt-2 pb-2 shrink-0">
           <select
             value={selectedAccount}
             onChange={(e) => setSelectedAccount(e.target.value)}
@@ -161,7 +158,7 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
         </div>
 
         {/* Quick Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto px-6 pb-2 mt-2 shrink-0 no-scrollbar justify-center w-full">
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 mt-2 shrink-0 no-scrollbar justify-center w-full">
           {quickPills.map((p) => (
             <button
               key={p.label}
@@ -174,7 +171,7 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
         </div>
 
         {/* Inputs (Category & Date) */}
-        <div className="px-6 space-y-3 mt-2 shrink-0">
+        <div className="space-y-3 mt-2 shrink-0">
           <div>
             <p className="mb-1.5 px-1 text-[13px] font-medium text-[var(--text-3)]">Category</p>
             <select
@@ -219,7 +216,7 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
         </div>
 
         {/* Keypad & Save (Anchored to bottom) */}
-        <div className="mt-auto px-6 pb-6 pt-4 shrink-0">
+        <div className="mt-auto pb-6 pt-4 shrink-0">
           {error && (
             <p className="mb-2 text-center text-[12px] font-medium text-[var(--danger)]">
               {error}
