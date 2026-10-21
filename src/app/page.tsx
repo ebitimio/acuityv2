@@ -116,8 +116,10 @@ export default function SandboxPage() {
   }, [session, supabase]);
 
   const refreshData = useCallback(async () => {
+    // CRITICAL: Clear cache at the top so we always pull fresh balances
+    clearDataCache();
+    
     try {
-      clearDataCache();
       const [m, t] = await Promise.all([getHomeMetrics(), getRecentTransactions(20)]);
       setMetrics(m ?? ZERO_METRICS);
       setTransactions(t ?? []);
@@ -295,7 +297,6 @@ export default function SandboxPage() {
     ? new Date(nextIncomeDateRaw).toLocaleDateString("en-NG", { day: "numeric", month: "short" })
     : "";
 
-  // Removed "transfers" case since button is gone
   const visibleTransactions = transactions.filter((t) => {
     if (txnFilter === "all") return true;
     if (txnFilter === "credit") return t.direction === "credit";

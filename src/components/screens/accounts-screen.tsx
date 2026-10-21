@@ -36,7 +36,7 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
   const toast = useToast();
 
   const load = async () => {
-    // FIX 1: Clear cache so balances reflect the new transfer
+    // CRITICAL FIX: Clear cache so balances reflect the new transfer
     clearDataCache();
     const [a, s] = await Promise.all([getAccounts(), getAssets()]);
     setAccounts(a);

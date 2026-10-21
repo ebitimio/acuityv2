@@ -84,13 +84,17 @@ export function TransferSheet({ isOpen, onClose, onSuccess, accounts }: Transfer
           </div>
           <div>
             <p className="text-[11px] font-medium text-[var(--text-3)] mb-1">To</p>
-            {/* FIX: Removed the filter so all accounts can be selected as destination */}
+            {/* Show all accounts, disable the one selected in "From" */}
             <select
               value={toId}
               onChange={(e) => setToId(e.target.value)}
               className="w-full bg-transparent text-[15px] font-semibold text-[var(--text-1)] outline-none appearance-none"
             >
-              {accounts.map((acc) => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
+              {accounts.map((acc) => (
+                <option key={acc.id} value={acc.id} disabled={acc.id === fromId}>
+                  {acc.name}
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -121,7 +125,6 @@ export function TransferSheet({ isOpen, onClose, onSuccess, accounts }: Transfer
           />
         </div>
 
-        {/* FIX: Added error message if user selects same account */}
         {fromId === toId && (
           <p className="text-[12px] text-[var(--danger)] text-center">
             Select a different destination account

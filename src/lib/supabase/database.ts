@@ -199,29 +199,36 @@ export async function splitTransaction(
 
 /* ---------- NEW: TRANSFERS ---------- */
 
-export async function transferFunds(fromAccountId: string, toAccountId: string, amountMinor: number, description: string, dateISO: string) {
+export async function transferFunds(fromAccountId: string, toAccountId: string, amountMinor: number, note: string, dateISO: string) {
   const { sb } = await ctx();
   
-  // 1. Debit from source
+  // 1. Get account names for the description
+  const { data: accs } = await sb.from("accounts").select("id, name").in("id", [fromAccountId, toAccountId]);
+  const fromName = accs?.find(a => a.id === fromAccountId)?.name || "Account";
+  const toName = accs?.find(a => a.id === toAccountId)?.name || "Account";
+  
+  const desc = note ? `${note} (${fromName} to ${toName})` : `Transfer from ${fromName} to ${toName}`;
+
+  // 2. Debit from source
   const { error: e1 } = await sb.from("transactions").insert({
     account_id: fromAccountId,
     amount_minor: amountMinor,
     direction: "debit",
-    description_clean: description || "Transfer Out",
-    description_raw: description || "Transfer Out",
+    description_clean: desc,
+    description_raw: desc,
     category_name: "Transfer",
     date: dateISO,
     status: "posted",
   });
   if (e1) throw e1;
 
-  // 2. Credit to destination
+  // 3. Credit to destination
   const { error: e2 } = await sb.from("transactions").insert({
     account_id: toAccountId,
     amount_minor: amountMinor,
     direction: "credit",
-    description_clean: description || "Transfer In",
-    description_raw: description || "Transfer In",
+    description_clean: desc,
+    description_raw: desc,
     category_name: "Transfer",
     date: dateISO,
     status: "posted",
@@ -470,7 +477,6 @@ export async function submitBalanceCheckin(
 ): Promise<BalanceCheckinResult> {
   const { sb, workspaceId } = await ctx();
 
-  // Get current balance for the account
   const { data: bal } = await sb.rpc("get_account_balances");
   const map = new Map<string, number>(
     ((bal ?? []) as { account_id: string; current_minor: number }[]).map((b) => [
@@ -482,11 +488,9 @@ export async function submitBalanceCheckin(
   const reported = toMinor(reportedAmount);
   const diff = reported - expected;
 
-  // Get account name for the result
   const { data: acc } = await sb.from("accounts").select("name").eq("id", accountId).single();
   const accountName = acc?.name ?? "Account";
 
-  // Optional: log an adjustment transaction to make the balance match
   let adjustment_txn_id: string | null = null;
   if (options.logAdjustment && diff !== 0) {
     const { data: inserted, error: txnErr } = await sb
@@ -508,7 +512,6 @@ export async function submitBalanceCheckin(
     adjustment_txn_id = inserted?.id ?? null;
   }
 
-  // Record the checkin
   const resolution: BalanceCheckinResult["difference_minor"] extends never ? never : "reanchor_only" | "reanchor_and_log" | "dismissed" =
     options.logAdjustment ? "reanchor_and_log" : "reanchor_only";
 
@@ -527,7 +530,6 @@ export async function submitBalanceCheckin(
     .single();
   if (chkErr) throw chkErr;
 
-  // Re-anchor the account so future transactions are relative to the reported balance
   const { error: reanchorErr } = await sb.rpc("reanchor_account", {
     p_account_id: accountId,
     p_new_balance_minor: reported,
