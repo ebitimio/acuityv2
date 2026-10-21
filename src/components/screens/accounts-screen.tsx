@@ -16,7 +16,8 @@ import { StackedAccountCard } from "@/components/ui/stacked-account-card";
 import { useCurrency } from "@/lib/currency";
 import { useToast } from "@/components/ui/toast";
 import type { Account, Asset } from "@/lib/types";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
@@ -122,34 +123,48 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
         {/* Stacked ATM Cards */}
         <div>
           <h3 className="text-[15px] font-semibold mb-3 px-1 text-[var(--text-1)]">Your Accounts</h3>
-          <div className="relative flex flex-col items-center -space-y-6">
-            {accounts.map((a) => {
+          <div className="relative flex flex-col">
+            {accounts.map((a, index) => {
               const bal = (a.current_minor ?? a.balance_minor) / 100;
               const isExpanded = expandedCard === a.id;
+              const isAnyExpanded = expandedCard !== null;
+              
               return (
-                <div key={a.id} className="w-full px-2">
+                <div 
+                  key={a.id} 
+                  className={cn(
+                    "w-full px-2 transition-all duration-300",
+                    // Only apply negative top margin if this is not the first card AND no card is expanded
+                    index > 0 && !isAnyExpanded ? "-mt-14" : "mt-0"
+                  )}
+                  style={{ zIndex: isExpanded ? 20 : 10 - index }}
+                >
                   <StackedAccountCard 
                     account={a} 
                     balance={bal} 
                     fmt={fmt} 
-                    isExpanded={isExpanded || expandedCard === null}
+                    isExpanded={isExpanded || !isAnyExpanded}
                     onClick={() => setExpandedCard(isExpanded ? null : a.id)}
                   />
-                  {/* Actions now inside the same container, below the card */}
-                  {isExpanded && (
-                    <motion.div 
-                      initial={{ opacity: 0, y: -10 }} 
-                      animate={{ opacity: 1, y: 0 }}
-                      className="flex justify-end gap-3 mt-2 px-4 mb-4"
-                    >
-                      <button onClick={() => setCheckinAccount(a)} className="flex items-center gap-1 text-[12px] font-medium text-[#DE3121]">
-                        <RefreshCw size={12} /> Check Balance
-                      </button>
-                      <button onClick={() => delAcc(a)} className="flex items-center gap-1 text-[12px] font-medium text-[#DE3121]/60">
-                        <Trash2 size={12} /> Delete
-                      </button>
-                    </motion.div>
-                  )}
+                  
+                  {/* Actions shown INSIDE the expanded card area */}
+                  <AnimatePresence>
+                    {isExpanded && (
+                      <motion.div 
+                        initial={{ opacity: 0, height: 0 }} 
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="flex justify-end gap-4 px-4 py-3 overflow-hidden"
+                      >
+                        <button onClick={() => setCheckinAccount(a)} className="flex items-center gap-1.5 text-[12px] font-semibold text-[#DE3121]">
+                          <RefreshCw size={13} /> Check Balance
+                        </button>
+                        <button onClick={() => delAcc(a)} className="flex items-center gap-1.5 text-[12px] font-semibold text-[var(--danger)]">
+                          <Trash2 size={13} /> Delete
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               );
             })}
