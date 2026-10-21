@@ -32,8 +32,15 @@ export function FloatingTabBar({ activeTab, onTabChange, onAddClick, isHidden }:
     >
       <div className="relative flex w-full max-w-md items-center justify-between px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pointer-events-auto">
         
-        {/* Main Nav Pill - Restored to normal width */}
-        <div className="flex flex-1 items-center justify-around rounded-full border border-white/10 bg-[#1c1c1e]/95 px-2 py-2 shadow-2xl shadow-black/60 backdrop-blur-xl">
+        {/* Main Nav Pill - Animates between full width and shrink to Home */}
+        <motion.div 
+          layout
+          className={cn(
+            "flex items-center rounded-full border border-white/10 bg-[#1c1c1e]/95 px-2 py-2 shadow-2xl shadow-black/60 backdrop-blur-xl transition-all",
+            isHome ? "flex-1 justify-around" : "w-auto justify-center"
+          )}
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        >
           <AnimatePresence mode="popLayout">
             {tabs.map(({ id, label, icon: Icon }) => {
               // Hide other tabs when not on home
@@ -67,7 +74,7 @@ export function FloatingTabBar({ activeTab, onTabChange, onAddClick, isHidden }:
               );
             })}
           </AnimatePresence>
-        </div>
+        </motion.div>
 
         {/* Floating Add Button */}
         {onAddClick && (
