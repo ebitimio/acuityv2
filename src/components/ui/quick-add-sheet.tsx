@@ -128,93 +128,98 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
 
   return (
     <Modal open={isOpen} onClose={onClose} title="Quick add">
-      {/* Removed negative margins (-mx-6) that pushed content off screen */}
-      <div className="flex flex-col h-[75dvh] min-h-0 overflow-hidden">
+      {/* 
+        Using flex-col with NO overflow-hidden on the outer wrapper.
+        The Modal itself will limit the height, and we use flex-1 on the top and shrink-0 on the bottom.
+      */}
+      <div className="flex flex-col h-[78dvh] min-h-0 -mx-6 -mb-[calc(20px+env(safe-area-inset-bottom))]">
         
-        <div className="flex-1 overflow-y-auto min-h-0">
-          
-          <div className="mb-4 flex items-center justify-between">
-            <select
-              value={selectedAccount}
-              onChange={(e) => setSelectedAccount(e.target.value)}
-              className="flex items-center gap-2 rounded-full bg-[var(--brand)]/10 px-3 py-1.5 text-[13px] font-medium text-[var(--brand)] outline-none appearance-none cursor-pointer"
-            >
-              {accounts.map((acc) => (
-                <option key={acc.id} value={acc.id}>
-                  {acc.name}
-                </option>
-              ))}
-              {accounts.length === 0 && <option value="">No accounts</option>}
-            </select>
-          </div>
-
-          <div className="flex flex-col items-center justify-center py-2">
-            <p className="text-[14px] font-medium text-[var(--text-3)] mb-1">
-              {direction === "credit" ? "Received" : "Spent"}
-            </p>
-            <p className="text-[44px] font-bold tabular tracking-tight text-[var(--text-1)] leading-none">
-              ₦{amount || "0"}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 mt-3 no-scrollbar justify-center w-full">
-            {quickPills.map((p) => (
-              <button
-                key={p.label}
-                onClick={() => setAmount(p.amount.toString())}
-                className="whitespace-nowrap rounded-full border border-[var(--line)] bg-[var(--surface-2)] px-3 py-1.5 text-[12px] font-medium text-[var(--text-2)]"
-              >
-                {p.label} ₦{p.amount.toLocaleString()}
-              </button>
+        {/* Account Selector */}
+        <div className="px-6 pt-2 pb-2 shrink-0">
+          <select
+            value={selectedAccount}
+            onChange={(e) => setSelectedAccount(e.target.value)}
+            className="inline-flex items-center gap-2 rounded-full bg-[var(--brand)]/10 px-3 py-1.5 text-[13px] font-medium text-[var(--brand)] outline-none appearance-none cursor-pointer"
+          >
+            {accounts.map((acc) => (
+              <option key={acc.id} value={acc.id}>
+                {acc.name}
+              </option>
             ))}
+            {accounts.length === 0 && <option value="">No accounts</option>}
+          </select>
+        </div>
+
+        {/* Amount Display */}
+        <div className="flex flex-col items-center justify-center py-2 shrink-0">
+          <p className="text-[14px] font-medium text-[var(--text-3)] mb-1">
+            {direction === "credit" ? "Received" : "Spent"}
+          </p>
+          <p className="text-[44px] font-bold tabular tracking-tight text-[var(--text-1)] leading-none">
+            ₦{amount || "0"}
+          </p>
+        </div>
+
+        {/* Quick Pills */}
+        <div className="flex items-center gap-2 overflow-x-auto px-6 pb-2 mt-2 shrink-0 no-scrollbar justify-center w-full">
+          {quickPills.map((p) => (
+            <button
+              key={p.label}
+              onClick={() => setAmount(p.amount.toString())}
+              className="whitespace-nowrap rounded-full border border-[var(--line)] bg-[var(--surface-2)] px-3 py-1.5 text-[12px] font-medium text-[var(--text-2)]"
+            >
+              {p.label} ₦{p.amount.toLocaleString()}
+            </button>
+          ))}
+        </div>
+
+        {/* Inputs (Category & Date) */}
+        <div className="px-6 space-y-3 mt-2 shrink-0">
+          <div>
+            <p className="mb-1.5 px-1 text-[13px] font-medium text-[var(--text-3)]">Category</p>
+            <select
+              value={isCustom ? "__custom__" : category}
+              onChange={(e) => {
+                if (e.target.value === "__custom__") {
+                  setIsCustom(true);
+                } else {
+                  setIsCustom(false);
+                  setCategory(e.target.value);
+                }
+              }}
+              className="w-full rounded-xl border border-[var(--line-strong)] bg-[var(--surface-2)] px-4 py-3 text-[15px] text-[var(--text-1)] focus:border-[var(--brand)] outline-none appearance-none"
+            >
+              {categoryNames.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+              <option value="__custom__">+ Create custom category</option>
+            </select>
+            
+            {isCustom && (
+              <input
+                type="text"
+                value={customCategory}
+                onChange={(e) => setCustomCategory(e.target.value)}
+                placeholder="Enter category name"
+                className="mt-2 w-full rounded-xl border border-[var(--line-strong)] bg-[var(--surface-2)] px-4 py-3 text-[15px] text-[var(--text-1)] focus:border-[var(--brand)] outline-none"
+                autoFocus
+              />
+            )}
           </div>
 
-          <div className="mt-4 space-y-3">
-            <div>
-              <p className="mb-1.5 px-1 text-[13px] font-medium text-[var(--text-3)]">Category</p>
-              <select
-                value={isCustom ? "__custom__" : category}
-                onChange={(e) => {
-                  if (e.target.value === "__custom__") {
-                    setIsCustom(true);
-                  } else {
-                    setIsCustom(false);
-                    setCategory(e.target.value);
-                  }
-                }}
-                className="w-full rounded-xl border border-[var(--line-strong)] bg-[var(--surface-2)] px-4 py-3 text-[15px] text-[var(--text-1)] focus:border-[var(--brand)] outline-none appearance-none"
-              >
-                {categoryNames.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-                <option value="__custom__">+ Create custom category</option>
-              </select>
-              
-              {isCustom && (
-                <input
-                  type="text"
-                  value={customCategory}
-                  onChange={(e) => setCustomCategory(e.target.value)}
-                  placeholder="Enter category name"
-                  className="mt-2 w-full rounded-xl border border-[var(--line-strong)] bg-[var(--surface-2)] px-4 py-3 text-[15px] text-[var(--text-1)] focus:border-[var(--brand)] outline-none"
-                  autoFocus
-                />
-              )}
-            </div>
-
-            <div>
-              <p className="mb-1.5 px-1 text-[13px] font-medium text-[var(--text-3)]">Date</p>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full rounded-xl border border-[var(--line-strong)] bg-[var(--surface-2)] px-4 py-3 text-[15px] text-[var(--text-1)] focus:border-[var(--brand)] outline-none"
-              />
-            </div>
+          <div>
+            <p className="mb-1.5 px-1 text-[13px] font-medium text-[var(--text-3)]">Date</p>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="w-full rounded-xl border border-[var(--line-strong)] bg-[var(--surface-2)] px-4 py-3 text-[15px] text-[var(--text-1)] focus:border-[var(--brand)] outline-none"
+            />
           </div>
         </div>
 
-        <div className="shrink-0 pt-3 mt-2 border-t border-[var(--line)]">
+        {/* Keypad & Save (Anchored to bottom) */}
+        <div className="mt-auto px-6 pb-6 pt-4 shrink-0">
           {error && (
             <p className="mb-2 text-center text-[12px] font-medium text-[var(--danger)]">
               {error}
@@ -226,7 +231,7 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
               <button
                 key={key}
                 onClick={() => handleKeyPress(key)}
-                className="flex h-11 items-center justify-center rounded-xl bg-[var(--surface-3)] text-[19px] font-medium text-[var(--text-1)] active:bg-[var(--fill-2)] transition-colors"
+                className="flex h-10 items-center justify-center rounded-xl bg-[var(--surface-3)] text-[19px] font-medium text-[var(--text-1)] active:bg-[var(--fill-2)] transition-colors"
               >
                 {key === "backspace" ? <Delete size={20} className="text-[var(--text-2)]" /> : key}
               </button>
@@ -237,7 +242,7 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
             <button
               onClick={() => setDirection("debit")}
               className={cn(
-                "flex h-10 items-center justify-center rounded-xl text-[13px] font-medium transition-colors",
+                "flex h-9 items-center justify-center rounded-xl text-[13px] font-medium transition-colors",
                 direction === "debit"
                   ? "bg-[var(--text-1)] text-[var(--bg)]"
                   : "bg-[var(--surface-3)] text-[var(--text-3)]"
@@ -248,7 +253,7 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
             <button
               onClick={() => setDirection("credit")}
               className={cn(
-                "flex h-10 items-center justify-center rounded-xl text-[13px] font-medium transition-colors",
+                "flex h-9 items-center justify-center rounded-xl text-[13px] font-medium transition-colors",
                 direction === "credit"
                   ? "bg-[var(--brand)] text-white"
                   : "bg-[var(--surface-3)] text-[var(--text-3)]"
@@ -262,7 +267,7 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
             onClick={handleSave}
             loading={isSaving}
             disabled={parseNumberInput(amount) <= 0 || !selectedAccount}
-            className="w-full h-12 rounded-xl text-[15px]"
+            className="w-full h-11 rounded-xl text-[15px]"
           >
             Save
           </Button>
