@@ -591,6 +591,6 @@ export async function getCategorySpend(sinceISO: string): Promise<CategorySpendR
 }
 
 export function getPeriodLabel(cycle: { cycle_start: string; cycle_end: string } | null): string {
-  const ref = cycle ? new Date(cycle.cycle_start) : new Date();
-  return ref.toLocaleDateString("en-NG", { month: "long", year: "numeric" });
+  // Always show the current month, not the cycle start month
+  return new Date().toLocaleDateString("en-NG", { month: "long", year: "numeric" });
 }

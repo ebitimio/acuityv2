@@ -52,7 +52,14 @@ export function StackedAccountCard({
                 <p className="text-[10px] text-[#DE3121]/60 uppercase">{account.type}</p>
               </div>
             </div>
-            <p className="text-[16px] font-bold tabular text-[#DE3121]">{fmt(balance)}</p>
+            
+            {/* CARDHOLDER NAME (ATM style) */}
+            <div className="text-right">
+              <p className="text-[9px] uppercase tracking-widest text-[#DE3121]/60 font-semibold">Cardholder</p>
+              <p className="text-[14px] font-mono tracking-wider text-[#DE3121] uppercase">
+                {account.name.replace(/\s+/g, " ")}
+              </p>
+            </div>
           </div>
 
           <div className="mt-8 flex items-end justify-between">
