@@ -44,8 +44,12 @@ export function AnalyticsScreen({ onBack, onNavigateTransactions }: { onBack: ()
   useEffect(() => { load(); }, []);
 
   const filteredTxns = useMemo(() => {
-    if (selectedAccountId === "all") return txns;
-    return txns.filter(t => t.account_id === selectedAccountId);
+    let base = txns;
+    if (selectedAccountId !== "all") {
+      base = base.filter(t => t.account_id === selectedAccountId);
+    }
+    // EXCLUDE transfers from analytics so they don't count as spending
+    return base.filter(t => t.category_name !== "Transfer");
   }, [txns, selectedAccountId]);
 
   const totalExpense = filteredTxns.filter(t => t.direction === "debit").reduce((s, t) => s + t.amount_minor, 0) / 100;

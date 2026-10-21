@@ -569,3 +569,34 @@ export function getPeriodLabel(cycle: { cycle_start: string; cycle_end: string }
   const ref = cycle ? new Date(cycle.cycle_start) : new Date();
   return ref.toLocaleDateString("en-NG", { month: "long", year: "numeric" });
 }
+export async function transferFunds(fromAccountId: string, toAccountId: string, amountMinor: number, description: string, dateISO: string) {
+  const { sb, workspaceId } = await ctx();
+  
+  // 1. Debit from source
+  const { error: e1 } = await sb.from("transactions").insert({
+    workspace_id: workspaceId,
+    account_id: fromAccountId,
+    amount_minor: amountMinor,
+    direction: "debit",
+    description_clean: description || "Transfer Out",
+    description_raw: description || "Transfer Out",
+    category_name: "Transfer",
+    date: dateISO,
+    status: "posted",
+  });
+  if (e1) throw e1;
+
+  // 2. Credit to destination
+  const { error: e2 } = await sb.from("transactions").insert({
+    workspace_id: workspaceId,
+    account_id: toAccountId,
+    amount_minor: amountMinor,
+    direction: "credit",
+    description_clean: description || "Transfer In",
+    description_raw: description || "Transfer In",
+    category_name: "Transfer",
+    date: dateISO,
+    status: "posted",
+  });
+  if (e2) throw e2;
+}
