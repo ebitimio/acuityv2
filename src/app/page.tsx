@@ -330,7 +330,10 @@ export default function SandboxPage() {
           ) : activeScreen === "budget" ? (
             <BudgetScreen onBack={() => setActiveScreen("home")} />
           ) : activeScreen === "accounts" ? (
-            <AccountsScreen onBack={() => setActiveScreen("home")} />
+            <AccountsScreen 
+              onBack={() => setActiveScreen("home")} 
+              userName={profileName}
+            />
           ) : activeScreen === "commitments" ? (
             <CommitmentsScreen onBack={() => setActiveScreen("home")} />
           ) : activeScreen === "tax" ? (
@@ -514,7 +517,7 @@ export default function SandboxPage() {
                         title="No transactions yet"
                         body="Add one or import a statement to get started."
                         action="Add transaction"
-                        onAction={() => setIsQuickAddOpen(true)} // <-- CHANGED: Opens Quick Add now
+                        onAction={() => setIsQuickAddOpen(true)}
                       />
                     ) : (
                       visibleTransactions

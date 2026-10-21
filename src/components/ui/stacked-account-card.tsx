@@ -13,6 +13,7 @@ interface StackedAccountCardProps {
   fmt: (n: number) => string;
   onCheckBalance: () => void;
   onDelete: () => void;
+  cardholderName: string;
 }
 
 export function StackedAccountCard({ 
@@ -23,6 +24,7 @@ export function StackedAccountCard({
   fmt,
   onCheckBalance,
   onDelete,
+  cardholderName,
 }: StackedAccountCardProps) {
   return (
     <motion.div
@@ -37,12 +39,21 @@ export function StackedAccountCard({
         "bg-gradient-to-br from-[#1c1c1e] to-[#0b0b0c] border border-[#DE3121]/30"
       )}
     >
-      <div onClick={onClick} className="relative p-5 cursor-pointer">
+      <div onClick={onClick} className="relative p-5 cursor-pointer overflow-hidden">
+        
+        {/* WATERMARK: Very faint ACUITY. in the middle */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <p className="text-[48px] font-black tracking-tighter text-[#DE3121]/[0.04] select-none">
+            ACUITY<span className="text-[#DE3121]/[0.08]">.</span>
+          </p>
+        </div>
+
+        {/* Decorative circles */}
         <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full border-[12px] border-[#DE3121]/10" />
         <div className="absolute -bottom-10 -left-10 h-32 w-32 rounded-full border-[12px] border-[#DE3121]/10" />
 
         <div className="relative z-10 flex flex-col h-full justify-between">
-          <div className="flex items-center justify-between">
+          <div className="flex items-start justify-between">
             <div className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#DE3121]/20">
                 <span className="text-[14px] font-bold text-[#DE3121]">{account.name.charAt(0)}</span>
@@ -56,8 +67,8 @@ export function StackedAccountCard({
             {/* CARDHOLDER NAME (ATM style) */}
             <div className="text-right">
               <p className="text-[9px] uppercase tracking-widest text-[#DE3121]/60 font-semibold">Cardholder</p>
-              <p className="text-[14px] font-mono tracking-wider text-[#DE3121] uppercase">
-                {account.name.replace(/\s+/g, " ")}
+              <p className="text-[13px] font-mono tracking-wider text-[#DE3121] uppercase">
+                {cardholderName || "CARDHOLDER"}
               </p>
             </div>
           </div>

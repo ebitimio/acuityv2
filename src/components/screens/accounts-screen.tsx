@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
-export function AccountsScreen({ onBack }: { onBack: () => void }) {
+export function AccountsScreen({ onBack, userName = "there" }: { onBack: () => void, userName?: string }) {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [modal, setModal] = useState<"account" | "asset" | null>(null);
@@ -160,6 +160,7 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
                     onClick={() => setExpandedCard(isExpanded ? null : a.id)}
                     onCheckBalance={() => setCheckinAccount(a)}
                     onDelete={() => delAcc(a)}
+                    cardholderName={userName} // <-- PASS THE NAME HERE
                   />
                 </div>
               );
@@ -204,7 +205,6 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-[14px] font-semibold tabular text-[var(--text-1)]">{fmt(a.value_minor / 100)}</span>
-                  {/* EDIT BUTTON FOR OFFLINE ASSETS ONLY */}
                   <button onClick={() => openEditAsset(a)} className="text-[var(--brand)]"><Pencil size={14} /></button>
                   <button onClick={() => delA(a)} className="text-[var(--danger)]"><Trash2 size={14} /></button>
                 </div>
