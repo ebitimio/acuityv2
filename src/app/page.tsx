@@ -47,7 +47,7 @@ import {
   Eye, EyeOff, ChevronRight, Receipt, ChevronDown, Plus, Trash2,
   PiggyBank, PieChart, ArrowLeftRight,
 } from "lucide-react";
-import { TransactionsScreen } from "@/components/screens/transactions-screen"; // NEW IMPORT
+import { TransactionsScreen } from "@/components/screens/transactions-screen";
 
 const ZERO_METRICS: HomeMetrics = {
   net_worth_minor: 0,
@@ -295,11 +295,11 @@ export default function SandboxPage() {
     ? new Date(nextIncomeDateRaw).toLocaleDateString("en-NG", { day: "numeric", month: "short" })
     : "";
 
+  // Removed "transfers" case since button is gone
   const visibleTransactions = transactions.filter((t) => {
     if (txnFilter === "all") return true;
     if (txnFilter === "credit") return t.direction === "credit";
     if (txnFilter === "debit") return t.direction === "debit";
-    if (txnFilter === "transfers") return t.category_name === "Transfers";
     return true;
   });
 
@@ -507,7 +507,7 @@ export default function SandboxPage() {
                       />
                     ) : (
                       visibleTransactions
-                        .slice(0, 10) // LIMITED TO 10
+                        .slice(0, 10)
                         .map((t) => (
                           <TransactionRow
                             key={t.id}
