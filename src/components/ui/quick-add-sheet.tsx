@@ -29,7 +29,6 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  // Added accounts state
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccount, setSelectedAccount] = useState<string>("");
 
@@ -43,7 +42,6 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
     return buildCategoryList(rawStrings);
   }, []);
 
-  // Fetch accounts when the sheet opens
   useEffect(() => {
     if (isOpen && activeWs) {
       getAccounts().then((accs) => {
@@ -130,11 +128,11 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
 
   return (
     <Modal open={isOpen} onClose={onClose} title="Quick add">
-      {/* Added overflow-hidden here to stop horizontal scrolling */}
+      {/* Removed negative margins (-mx-6) that pushed content off screen */}
       <div className="flex flex-col h-[75dvh] min-h-0 overflow-hidden">
+        
         <div className="flex-1 overflow-y-auto min-h-0">
           
-          {/* Account Selector instead of Workspace Name */}
           <div className="mb-4 flex items-center justify-between">
             <select
               value={selectedAccount}

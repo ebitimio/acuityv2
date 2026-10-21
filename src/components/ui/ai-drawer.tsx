@@ -89,29 +89,23 @@ export function AIDrawer({ isOpen, onClose, fullName = "there" }: { isOpen: bool
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
         transition={{ type: "spring", damping: 25, stiffness: 200 }}
-        className="fixed inset-0 z-[100] flex flex-col h-[100dvh] bg-[#0b0b0c]"
+        // The whole page now uses the animated gradient background
+        className="fixed inset-0 z-[100] flex flex-col h-[100dvh] animated-gradient-bg"
       >
-        {/* 
-          Seamless gradient header. 
-          The radial-gradient ensures it bleeds smoothly into the black background below without a hard line.
-        */}
         <style>{`
-          @keyframes gradientFlow {
-            0% { transform: scale(1) translate(0, 0); opacity: 0.9; }
-            50% { transform: scale(1.1) translate(2%, 2%); opacity: 1; }
-            100% { transform: scale(1) translate(0, 0); opacity: 0.9; }
+          @keyframes flowBackground {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
           }
-          .flowing-blob {
-            background: radial-gradient(circle at 30% 20%, #DE3121 0%, transparent 60%);
-            animation: gradientFlow 10s ease-in-out infinite;
-            filter: blur(40px);
+          .animated-gradient-bg {
+            background: linear-gradient(135deg, #DE3121 0%, #4a0d06 30%, #0b0b0c 60%, #0b0b0c 100%);
+            background-size: 200% 200%;
+            animation: flowBackground 12s ease infinite;
           }
         `}</style>
 
-        <div className="relative shrink-0 flex flex-col px-6 pt-[calc(env(safe-area-inset-top)+20px)] pb-10 overflow-hidden">
-          {/* Animated background blob */}
-          <div className="absolute inset-0 flowing-blob pointer-events-none" />
-          
+        <div className="relative shrink-0 flex flex-col px-6 pt-[calc(env(safe-area-inset-top)+20px)] pb-6">
           <button 
             onClick={onClose}
             className="absolute right-5 top-[calc(env(safe-area-inset-top)+16px)] flex h-9 w-9 items-center justify-center rounded-full bg-black/20 text-white z-50 hover:bg-black/40 transition-colors"
@@ -135,7 +129,7 @@ export function AIDrawer({ isOpen, onClose, fullName = "there" }: { isOpen: bool
             <div className="grid grid-cols-2 gap-3">
               <button 
                 onClick={() => send("How much can I safely spend this week?")}
-                className="flex flex-col justify-between rounded-2xl bg-[#1c1c1e] p-4 text-left border border-white/5 shadow-lg h-40"
+                className="flex flex-col justify-between rounded-2xl bg-black/60 backdrop-blur-md p-4 text-left border border-white/10 shadow-lg h-40"
               >
                 <span className="text-[14px] text-white leading-snug">How much can I safely spend this week?</span>
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white">
@@ -145,7 +139,7 @@ export function AIDrawer({ isOpen, onClose, fullName = "there" }: { isOpen: bool
               
               <button 
                 onClick={() => send("Where am I wasting the most money?")}
-                className="flex flex-col justify-between rounded-2xl bg-[#1c1c1e] p-4 text-left border border-white/5 shadow-lg h-40"
+                className="flex flex-col justify-between rounded-2xl bg-black/60 backdrop-blur-md p-4 text-left border border-white/10 shadow-lg h-40"
               >
                 <span className="text-[14px] text-white leading-snug">Where am I wasting the most money?</span>
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white">
@@ -172,7 +166,7 @@ export function AIDrawer({ isOpen, onClose, fullName = "there" }: { isOpen: bool
                       "max-w-[85%] rounded-3xl p-4 text-[15px] leading-relaxed shadow-sm",
                       msg.role === "user"
                         ? "rounded-tr-md bg-white text-black"
-                        : "rounded-tl-md bg-[#1c1c1e] text-white border border-white/5"
+                        : "rounded-tl-md bg-black text-white border border-white/10"
                     )}
                   >
                     {msg.role === "assistant" ? formatMessage(msg.content) : msg.content}
@@ -182,7 +176,7 @@ export function AIDrawer({ isOpen, onClose, fullName = "there" }: { isOpen: bool
 
               {isThinking && (
                 <div className="flex justify-start">
-                  <div className="flex gap-1.5 rounded-3xl rounded-tl-md bg-[#1c1c1e] p-5 border border-white/5">
+                  <div className="flex gap-1.5 rounded-3xl rounded-tl-md bg-black p-5 border border-white/10">
                     <span className="h-2 w-2 animate-bounce rounded-full bg-white/50" />
                     <span className="h-2 w-2 animate-bounce rounded-full bg-white/50" style={{ animationDelay: "120ms" }} />
                     <span className="h-2 w-2 animate-bounce rounded-full bg-white/50" style={{ animationDelay: "240ms" }} />
@@ -194,9 +188,9 @@ export function AIDrawer({ isOpen, onClose, fullName = "there" }: { isOpen: bool
           </div>
         )}
 
-        {/* Input Area - Removed Mic and Image buttons */}
-        <div className="shrink-0 px-4 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-2 bg-[#0b0b0c]">
-          <div className="flex items-end gap-2 rounded-3xl bg-[#1c1c1e] p-2 border border-white/10 shadow-2xl">
+        {/* Input Area */}
+        <div className="shrink-0 px-4 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-2">
+          <div className="flex items-end gap-2 rounded-3xl bg-black/80 backdrop-blur-xl p-2 border border-white/10 shadow-2xl">
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
