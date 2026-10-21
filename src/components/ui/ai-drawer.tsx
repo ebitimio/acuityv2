@@ -11,12 +11,23 @@ interface Message {
   content: string;
 }
 
+// Simple helper to render bold text (**text**) and line breaks
+function formatMessage(content: string) {
+  const parts = content.split(/(\*\*.*?\*\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={i} className="font-bold">{part.slice(2, -2)}</strong>;
+    }
+    return <span key={i}>{part}</span>;
+  });
+}
+
 export function AIDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
       role: "assistant",
-      content: "Hi! I'm your Acuity Advisor. I can see your real transactions and budget. Ask me anything — like 'How much did I spend on food this month?' or 'Can I afford a ₦50,000 watch?'",
+      content: "Hi! I'm your Acuity Advisor. I can see your real transactions, budgets, assets, and commitments. Ask me anything — like 'Can I afford a ₦32 million car in December?' or 'What are my total assets?'",
     },
   ]);
   const [input, setInput] = useState("");
@@ -113,7 +124,7 @@ export function AIDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
                     : "rounded-tl-md border border-[var(--line)] bg-[var(--surface-2)] text-[var(--text-1)]"
                 )}
               >
-                {msg.content}
+                {msg.role === "assistant" ? formatMessage(msg.content) : msg.content}
               </div>
             </motion.div>
           ))}

@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 
-const naira = (minor: number) => `₦¦${Math.round(minor / 100).toLocaleString("en-NG")}`;
+// Fixed the corrupted Naira symbol
+const naira = (minor: number) => `₦${Math.round(minor / 100).toLocaleString("en-NG")}`;
 
 function monthStartISO() {
   const d = new Date();
@@ -22,6 +23,61 @@ export interface ToolDef {
 export function buildTools(supabase: Awaited<ReturnType<typeof createClient>>): ToolDef[] {
   return [
     {
+      name: "get_financial_context",
+      description: "CRITICAL: Call this first before answering any question about the user's finances. Returns their full net worth, offline assets (land, cars), liabilities (loans), liquid cash, budgets, and recurring commitments.",
+      parameters: { type: "object", properties: {}, additionalProperties: false },
+      run: async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return { error: "not logged in" };
+
+        const [
+          { data: ws },
+          { data: accounts },
+          { data: balances },
+          { data: assets },
+          { data: commitments },
+          { data: ajo }
+        ] = await Promise.all([
+          supabase.from("workspaces").select("id, budget_limit_minor").eq("owner_id", user.id).single(),
+          supabase.from("accounts").select("id,name,type,institution"),
+          supabase.rpc("get_account_balances"),
+          supabase.from("assets").select("name,type,value_minor"),
+          supabase.from("recurring_items").select("name,kind,amount_minor,frequency"),
+          supabase.from("ajo_groups").select("name,contribution_minor,frequency")
+        ]);
+
+        const balanceMap = new Map<string, number>(
+          (balances ?? []).map((b: { account_id: string; current_minor: number }) => [b.account_id, Number(b.current_minor)])
+        );
+
+        let liquidCash = 0;
+        const accountList = (accounts ?? []).map((a) => {
+          const bal = balanceMap.get(a.id) ?? 0;
+          liquidCash += bal;
+          return { name: a.name, institution: a.institution, type: a.type, balance: naira(bal) };
+        });
+
+        let totalAssets = 0;
+        let totalLiabilities = 0;
+        const assetList = (assets ?? []).map((a) => {
+          if (a.type === "asset") totalAssets += a.value_minor;
+          else totalLiabilities += a.value_minor;
+          return { name: a.name, type: a.type, value: naira(a.value_minor) };
+        });
+
+        return {
+          liquid_cash: naira(liquidCash),
+          connected_accounts: accountList,
+          offline_assets: assetList.filter(a => a.type === "asset"),
+          offline_liabilities: assetList.filter(a => a.type === "liability"),
+          total_net_worth: naira(liquidCash + totalAssets - totalLiabilities),
+          monthly_budget_limit: ws?.budget_limit_minor ? naira(ws.budget_limit_minor) : "Not set",
+          recurring_commitments: (commitments ?? []).map(c => ({ name: c.name, amount: naira(c.amount_minor), frequency: c.frequency })),
+          ajo_groups: (ajo ?? []).map(a => ({ name: a.name, contribution: naira(a.contribution_minor), frequency: a.frequency }))
+        };
+      },
+    },
+    {
       name: "get_month_summary",
       description: "Get this month's income, spending, and net cash flow.",
       parameters: { type: "object", properties: {}, additionalProperties: false },
@@ -34,7 +90,7 @@ export function buildTools(supabase: Awaited<ReturnType<typeof createClient>>): 
     },
     {
       name: "get_spend_by_category",
-      description: "Get spend per category for a given month offset (0 = this month, 1 = last month, etc). Returns ranked list.",
+      description: "Get spend per category for a given month offset (0 = this month, 1 = last month).",
       parameters: {
         type: "object",
         properties: { month_offset: { type: "number", description: "0 for this month, 1 for last month" } },
@@ -73,21 +129,6 @@ export function buildTools(supabase: Awaited<ReturnType<typeof createClient>>): 
       },
     },
     {
-      name: "get_account_balances",
-      description: "List all connected accounts with their current balance.",
-      parameters: { type: "object", properties: {}, additionalProperties: false },
-      run: async () => {
-        const [{ data: accounts }, { data: balances }] = await Promise.all([
-          supabase.from("accounts").select("id,name,institution"),
-          supabase.rpc("get_account_balances"),
-        ]);
-        const map = new Map<string, number>(
-          (balances ?? []).map((b: { account_id: string; current_minor: number }) => [b.account_id, Number(b.current_minor)])
-        );
-        return (accounts ?? []).map((a) => ({ name: a.name, institution: a.institution, balance: naira(Number(map.get(a.id) ?? 0)) }));
-      },
-    },
-    {
       name: "get_budget_status",
       description: "Get this month's budget, spend so far, and how much is left.",
       parameters: { type: "object", properties: {}, additionalProperties: false },
@@ -108,50 +149,6 @@ export function buildTools(supabase: Awaited<ReturnType<typeof createClient>>): 
           percent_used: budget ? `${Math.round((spent / budget) * 100)}%` : "n/a",
         };
       },
-    },
-    {
-      name: "get_runway_months",
-      description: "Calculate how many months the user's liquid reserves can sustain current lifestyle if all income stops. Uses the average of the last 3 months' outflow.",
-      parameters: { type: "object", properties: {}, additionalProperties: false },
-      run: async () => {
-        const threeMonthsAgo = monthStartISOAgo(2);
-        const [{ data: accs }, { data: txs }] = await Promise.all([
-          supabase.rpc("get_account_balances"),
-          supabase.from("transactions").select("amount_minor").or(NOT_SPLIT).eq("direction", "debit").gte("date", threeMonthsAgo),
-        ]);
-        const liquid = (accs ?? []).reduce((s: number, a: { current_minor: number }) => s + Number(a.current_minor), 0);
-        const avgMonthlyOutflow = (txs ?? []).reduce((s, t) => s + t.amount_minor, 0) / 3;
-        const months = avgMonthlyOutflow > 0 ? liquid / avgMonthlyOutflow : Infinity;
-        return {
-          liquid_reserves: naira(liquid),
-          avg_monthly_outflow: naira(avgMonthlyOutflow),
-          runway_months: Number.isFinite(months) ? Math.round(months * 10) / 10 : "no spending recorded",
-        };
-      },
-    },
-    {
-      name: "find_idle_cash",
-      description: "Identify accounts where the user has significant money that could earn interest (e.g. Money Market Fund). Assumes current savings accounts earn nothing.",
-      parameters: {
-        type: "object",
-        properties: { threshold_naira: { type: "number", description: "Only flag accounts above this amount. Default 500000." } },
-        additionalProperties: false,
-      },
-      run: async (args) => {
-        const threshold = Number(args.threshold_naira ?? 500000) * 100;
-        const [{ data: accounts }, { data: balances }] = await Promise.all([
-          supabase.from("accounts").select("id,name,type"),
-          supabase.rpc("get_account_balances"),
-        ]);
-        const map = new Map<string, number>(
-          (balances ?? []).map((b: { account_id: string; current_minor: number }) => [b.account_id, Number(b.current_minor)])
-        );
-        const idle = (accounts ?? [])
-          .filter((a) => a.type === "checking" || a.type === "wallet")
-          .map((a) => ({ name: a.name, type: a.type, balance: Number(map.get(a.id) ?? 0) }))
-          .filter((a) => a.balance >= threshold);
-        return idle.map((a) => ({ account: a.name, balance: naira(a.balance), suggestion: "Move to a Money Market Fund earning ~15₦18% p.a." }));
-      },
-    },
+    }
   ];
 }
