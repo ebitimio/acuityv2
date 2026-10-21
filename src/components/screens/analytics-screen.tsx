@@ -10,10 +10,8 @@ import { TrendingDown, Wallet, Landmark, Scale, ChevronRight, Sparkles, Lightbul
 import { PullToRefresh } from "@/components/ui/pull-to-refresh";
 import { GaugeArc } from "@/components/ui/gauge-arc";
 import { cn } from "@/lib/utils";
-import { TransactionsScreen } from "./transactions-screen";
 
 export function AnalyticsScreen({ onBack, onNavigateTransactions }: { onBack: () => void; onNavigateTransactions: () => void }) {
-  // Added onNavigateTransactions prop
   const [txns, setTxns] = useState<Txn[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
@@ -121,14 +119,15 @@ export function AnalyticsScreen({ onBack, onNavigateTransactions }: { onBack: ()
             </div>
           </div>
 
-          <div className="card p-6">
-            <p className="mb-4 text-[15px] font-semibold text-[var(--text-1)]">
+          {/* HARDCODED DARK CALENDAR CARD */}
+          <div className="p-6 rounded-[24px] bg-[#1c1c1e] border border-white/5 shadow-xl">
+            <p className="mb-4 text-[15px] font-semibold text-white">
               {today.toLocaleDateString("en-NG", { month: "long", year: "numeric" })}
             </p>
             
             <div className="grid grid-cols-7 gap-1 mb-2 text-center">
               {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(d => (
-                <div key={d} className="text-[10px] font-medium text-[var(--text-3)]">{d[0]}</div>
+                <div key={d} className="text-[10px] font-medium text-white/40">{d[0]}</div>
               ))}
             </div>
             
@@ -145,8 +144,8 @@ export function AnalyticsScreen({ onBack, onNavigateTransactions }: { onBack: ()
                     key={day}
                     className={cn(
                       "flex items-center justify-center aspect-square rounded-full text-[13px] font-medium transition-colors",
-                      hasSpend ? "bg-[#DE3121] text-white" : "bg-[var(--fill-1)] text-[var(--text-2)]",
-                      isToday && "ring-2 ring-[#DE3121] ring-offset-2 ring-offset-[var(--surface-2)]"
+                      hasSpend ? "bg-[#DE3121] text-white" : "bg-white/5 text-white/60",
+                      isToday && "ring-2 ring-[#DE3121] ring-offset-2 ring-offset-[#1c1c1e]"
                     )}
                   >
                     {day}
@@ -154,7 +153,7 @@ export function AnalyticsScreen({ onBack, onNavigateTransactions }: { onBack: ()
                 );
               })}
             </div>
-            <p className="mt-4 text-[11px] text-[var(--text-3)] flex items-center gap-1">
+            <p className="mt-4 text-[11px] text-white/40 flex items-center gap-1">
               <Info size={12} /> Days highlighted in red are days you spent money.
             </p>
           </div>
@@ -162,7 +161,6 @@ export function AnalyticsScreen({ onBack, onNavigateTransactions }: { onBack: ()
           <div className="card p-0">
             <div className="px-4 py-4 border-b border-[var(--line)] flex items-center justify-between">
               <p className="text-[15px] font-semibold text-[var(--text-1)]">Transactions</p>
-              {/* NEW: See all button */}
               <button onClick={onNavigateTransactions} className="text-[12px] font-medium text-[var(--brand)]">
                 See all
               </button>
