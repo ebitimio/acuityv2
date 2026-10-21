@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ScreenHeader, IconButton } from "@/components/ui/screen-header";
-import { Plus, Trash2, RefreshCw, ArrowRightLeft, Landmark, TrendingUp, Scale } from "lucide-react";
+import { Plus, Trash2, RefreshCw, ArrowRightLeft, TrendingUp, Scale, Coins } from "lucide-react";
 import {
   getAccounts, createAccount, deleteAccount, getAssets, addAsset, deleteAsset, clearDataCache,
 } from "@/lib/supabase/database";
@@ -11,9 +11,12 @@ import { Field, SelectField, Button } from "@/components/ui/form";
 import { CurrencyField } from "@/components/ui/currency-field";
 import { BalanceCheckinSheet } from "@/components/ui/balance-checkin-sheet";
 import { TransferSheet } from "@/components/ui/transfer-sheet";
+import { CryptoSheet } from "@/components/ui/crypto-sheet";
+import { StackedAccountCard } from "@/components/ui/stacked-account-card";
 import { useCurrency } from "@/lib/currency";
 import { useToast } from "@/components/ui/toast";
 import type { Account, Asset } from "@/lib/types";
+import { motion } from "framer-motion";
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
@@ -23,8 +26,10 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
   const [modal, setModal] = useState<"account" | "asset" | null>(null);
   const [checkinAccount, setCheckinAccount] = useState<Account | null>(null);
   const [isTransferOpen, setIsTransferOpen] = useState(false);
+  const [isCryptoOpen, setIsCryptoOpen] = useState(false);
+  
+  const [expandedCard, setExpandedCard] = useState<string | null>(null);
 
-  // Form state
   const [name, setName] = useState("");
   const [institution, setInstitution] = useState("");
   const [type, setType] = useState("checking");
@@ -36,7 +41,6 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
   const toast = useToast();
 
   const load = async () => {
-    // CRITICAL FIX: Clear cache so balances reflect the new transfer
     clearDataCache();
     const [a, s] = await Promise.all([getAccounts(), getAssets()]);
     setAccounts(a);
@@ -109,42 +113,45 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
 
       <div className="px-4 pt-6 space-y-6">
         
-        {/* Hero Net Worth Card */}
-        <div className="p-6 rounded-[24px] bg-[#1c1c1e] border border-white/5 shadow-xl text-center">
-          <p className="text-[13px] text-white/60 mb-1">Total Net Worth</p>
-          <p className="text-[36px] font-bold tabular text-white">{fmt(netWorth)}</p>
+        {/* Total Net Worth Hero */}
+        <div className="p-6 rounded-[24px] bg-[#DE3121] shadow-xl text-center">
+          <p className="text-[13px] text-black/70 mb-1 font-medium">Total Net Worth</p>
+          <p className="text-[36px] font-bold tabular text-black">{fmt(netWorth)}</p>
         </div>
 
-        {/* Accounts List */}
+        {/* Stacked ATM Cards */}
         <div>
           <h3 className="text-[15px] font-semibold mb-3 px-1 text-[var(--text-1)]">Your Accounts</h3>
-          <div className="space-y-3">
+          <div className="relative flex flex-col items-center -space-y-6">
             {accounts.map((a) => {
               const bal = (a.current_minor ?? a.balance_minor) / 100;
+              const isExpanded = expandedCard === a.id;
               return (
-                <div key={a.id} className="p-4 rounded-2xl bg-[var(--surface-2)] border border-[var(--line)] flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--brand)]/10 text-[var(--brand)]">
-                      <Landmark size={18} />
-                    </div>
-                    <div>
-                      <p className="text-[15px] font-semibold text-[var(--text-1)]">{a.name}</p>
-                      <p className="text-[11px] text-[var(--text-3)]">{a.institution} · {a.type}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[15px] font-bold tabular text-[var(--text-1)]">{fmt(bal)}</p>
-                    <div className="flex gap-2 justify-end mt-1">
-                      <button onClick={() => setCheckinAccount(a)} className="text-[var(--brand)]"><RefreshCw size={12} /></button>
-                      <button onClick={() => delAcc(a)} className="text-[var(--danger)]"><Trash2 size={12} /></button>
-                    </div>
-                  </div>
+                <div key={a.id} className="w-full px-2">
+                  <StackedAccountCard 
+                    account={a} 
+                    balance={bal} 
+                    fmt={fmt} 
+                    isExpanded={isExpanded || expandedCard === null}
+                    onClick={() => setExpandedCard(isExpanded ? null : a.id)}
+                  />
+                  {isExpanded && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: -10 }} 
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex justify-end gap-3 mt-2 px-2"
+                    >
+                      <button onClick={() => setCheckinAccount(a)} className="flex items-center gap-1 text-[12px] font-medium text-[var(--brand)]">
+                        <RefreshCw size={12} /> Check Balance
+                      </button>
+                      <button onClick={() => delAcc(a)} className="flex items-center gap-1 text-[12px] font-medium text-[var(--danger)]">
+                        <Trash2 size={12} /> Delete
+                      </button>
+                    </motion.div>
+                  )}
                 </div>
               );
             })}
-            {accounts.length === 0 && (
-              <p className="text-center py-6 text-[14px] text-[var(--text-3)]">No accounts yet.</p>
-            )}
           </div>
         </div>
 
@@ -152,7 +159,6 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
         <div>
           <div className="flex items-center justify-between mb-3 px-1">
             <h3 className="text-[15px] font-semibold text-[var(--text-1)]">Offline Assets & Liabilities</h3>
-            <button onClick={() => setModal("asset")} className="text-[13px] text-[var(--brand)] font-medium">+ Add</button>
           </div>
           
           <div className="grid grid-cols-2 gap-3 mb-4">
@@ -175,9 +181,14 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
           <div className="group-list">
             {assets.map((a) => (
               <div key={a.id} className="flex items-center justify-between px-4 py-3">
-                <div>
-                  <p className="text-[14px] font-medium text-[var(--text-1)]">{a.name}</p>
-                  <p className="text-[11px] capitalize text-[var(--text-3)]">{a.type}</p>
+                <div className="flex items-center gap-2">
+                  {a.name.toLowerCase() === "bitcoin" || a.name.toLowerCase() === "ethereum" ? (
+                    <Coins size={16} className="text-[var(--brand)]" />
+                  ) : null}
+                  <div>
+                    <p className="text-[14px] font-medium text-[var(--text-1)]">{a.name}</p>
+                    <p className="text-[11px] capitalize text-[var(--text-3)]">{a.type}</p>
+                  </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-[14px] font-semibold tabular text-[var(--text-1)]">{fmt(a.value_minor / 100)}</span>
@@ -189,6 +200,15 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
               <p className="text-center py-6 text-[14px] text-[var(--text-3)]">No offline assets yet.</p>
             )}
           </div>
+
+          <div className="flex gap-2 mt-3">
+            <Button variant="ghost" onClick={() => setModal("asset")} className="flex-1 h-11 text-[13px]">
+              + Add Asset / Liability
+            </Button>
+            <Button variant="ghost" onClick={() => setIsCryptoOpen(true)} className="flex-1 h-11 text-[13px] border-[#DE3121]/20 text-[#DE3121]">
+              <Coins size={14} className="mr-1" /> Add Crypto
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -198,6 +218,12 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
         onClose={() => setIsTransferOpen(false)}
         onSuccess={load}
         accounts={accounts}
+      />
+
+      <CryptoSheet
+        isOpen={isCryptoOpen}
+        onClose={() => setIsCryptoOpen(false)}
+        onSuccess={load}
       />
 
       <Modal open={modal === "account"} onClose={() => setModal(null)} title="Add Account">

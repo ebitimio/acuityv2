@@ -197,19 +197,17 @@ export async function splitTransaction(
   if (e2) throw e2;
 }
 
-/* ---------- NEW: TRANSFERS ---------- */
+/* ---------- TRANSFERS ---------- */
 
 export async function transferFunds(fromAccountId: string, toAccountId: string, amountMinor: number, note: string, dateISO: string) {
   const { sb } = await ctx();
   
-  // 1. Get account names for the description
   const { data: accs } = await sb.from("accounts").select("id, name").in("id", [fromAccountId, toAccountId]);
   const fromName = accs?.find(a => a.id === fromAccountId)?.name || "Account";
   const toName = accs?.find(a => a.id === toAccountId)?.name || "Account";
   
   const desc = note ? `${note} (${fromName} to ${toName})` : `Transfer from ${fromName} to ${toName}`;
 
-  // 2. Debit from source
   const { error: e1 } = await sb.from("transactions").insert({
     account_id: fromAccountId,
     amount_minor: amountMinor,
@@ -222,7 +220,6 @@ export async function transferFunds(fromAccountId: string, toAccountId: string, 
   });
   if (e1) throw e1;
 
-  // 3. Credit to destination
   const { error: e2 } = await sb.from("transactions").insert({
     account_id: toAccountId,
     amount_minor: amountMinor,
@@ -266,7 +263,11 @@ export async function deleteAccount(id: string) {
 /* ---------- assets & liabilities ---------- */
 
 export const getAssets = () => list<Asset>("assets");
-export const addAsset = (name: string, type: "asset" | "liability", value: number) => insertRow("assets", { name, type, value_minor: toMinor(value) });
+
+// UPDATED: now accepts optional meta for crypto data
+export const addAsset = (name: string, type: "asset" | "liability", value: number, meta?: any) =>
+  insertRow("assets", { name, type, value_minor: toMinor(value), meta });
+
 export const deleteAsset = (id: string) => removeRow("assets", id);
 
 /* ---------- workspace budget ---------- */

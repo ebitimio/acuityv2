@@ -4,10 +4,10 @@ export interface Account {
   name: string;
   institution: string;
   type: "checking" | "savings" | "dom" | "wallet";
-  balance_minor: number;       // balance at anchor
-  balance_as_of: string;        // ISO date
+  balance_minor: number;
+  balance_as_of: string;
   include_in_safe_to_spend?: boolean;
-  current_minor?: number;       // anchor + posted txns after anchor
+  current_minor?: number;
   currency?: string;
   created_at?: string;
 }
@@ -34,6 +34,7 @@ export interface Asset {
   name: string;
   type: "asset" | "liability";
   value_minor: number;
+  meta?: any;
 }
 
 export interface RecurringItem {
@@ -105,6 +106,7 @@ export interface StatementLine {
   bank_ref: string | null;
   category: string | null;
 }
+
 export interface CustomCategory {
   id: string;
   name: string;
@@ -123,6 +125,7 @@ export interface CycleBounds {
   cycle_start: string;
   cycle_end: string;
 }
+
 export interface BalanceCheckin {
   id: string;
   account_id: string;
