@@ -10,6 +10,8 @@ import { Delete } from "lucide-react";
 import { useWorkspace } from "@/lib/workspace";
 import { buildCategoryList } from "@/lib/category-options";
 import { CATEGORIES } from "@/lib/categories";
+import { getAccounts } from "@/lib/supabase/database";
+import type { Account } from "@/lib/types";
 
 interface QuickAddSheetProps {
   isOpen: boolean;
@@ -26,6 +28,10 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
   const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Added accounts state
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [selectedAccount, setSelectedAccount] = useState<string>("");
 
   const { active: activeWs } = useWorkspace();
   const supabase = createClient();
@@ -36,6 +42,18 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
       : [];
     return buildCategoryList(rawStrings);
   }, []);
+
+  // Fetch accounts when the sheet opens
+  useEffect(() => {
+    if (isOpen && activeWs) {
+      getAccounts().then((accs) => {
+        setAccounts(accs);
+        if (accs.length > 0 && !selectedAccount) {
+          setSelectedAccount(accs[0].id);
+        }
+      });
+    }
+  }, [isOpen, activeWs]);
 
   useEffect(() => {
     if (isOpen) {
@@ -74,8 +92,8 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
       setError("Enter a category name");
       return;
     }
-    if (!activeWs) {
-      setError("No active workspace");
+    if (!selectedAccount) {
+      setError("Please select an account");
       return;
     }
     
@@ -83,21 +101,8 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
     setError(null);
     
     try {
-      const { data: accounts, error: accErr } = await supabase
-        .from("accounts")
-        .select("id")
-        .eq("workspace_id", activeWs.id)
-        .limit(1);
-
-      if (accErr) throw accErr;
-      if (!accounts || accounts.length === 0) {
-        throw new Error("No bank account found. Please create an account first.");
-      }
-
-      const accountId = accounts[0].id;
-
       const { error: dbError } = await supabase.from("transactions").insert({
-        account_id: accountId,
+        account_id: selectedAccount,
         amount_minor: Math.round(parsedAmount * 100),
         direction: direction,
         category_name: finalCategory,
@@ -125,12 +130,24 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
 
   return (
     <Modal open={isOpen} onClose={onClose} title="Quick add">
-      <div className="flex flex-col h-[75dvh] min-h-0">
+      {/* Added overflow-hidden here to stop horizontal scrolling */}
+      <div className="flex flex-col h-[75dvh] min-h-0 overflow-hidden">
         <div className="flex-1 overflow-y-auto min-h-0">
+          
+          {/* Account Selector instead of Workspace Name */}
           <div className="mb-4 flex items-center justify-between">
-            <div className="flex items-center gap-2 rounded-full bg-[var(--brand)]/10 px-3 py-1.5 text-[13px] font-medium text-[var(--brand)]">
-              {activeWs?.name || "Main Acc"}
-            </div>
+            <select
+              value={selectedAccount}
+              onChange={(e) => setSelectedAccount(e.target.value)}
+              className="flex items-center gap-2 rounded-full bg-[var(--brand)]/10 px-3 py-1.5 text-[13px] font-medium text-[var(--brand)] outline-none appearance-none cursor-pointer"
+            >
+              {accounts.map((acc) => (
+                <option key={acc.id} value={acc.id}>
+                  {acc.name}
+                </option>
+              ))}
+              {accounts.length === 0 && <option value="">No accounts</option>}
+            </select>
           </div>
 
           <div className="flex flex-col items-center justify-center py-2">
@@ -142,7 +159,7 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
             </p>
           </div>
 
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 mt-3 no-scrollbar justify-center">
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 mt-3 no-scrollbar justify-center w-full">
             {quickPills.map((p) => (
               <button
                 key={p.label}
@@ -246,7 +263,7 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
           <Button
             onClick={handleSave}
             loading={isSaving}
-            disabled={parseNumberInput(amount) <= 0}
+            disabled={parseNumberInput(amount) <= 0 || !selectedAccount}
             className="w-full h-12 rounded-xl text-[15px]"
           >
             Save

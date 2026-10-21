@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Home, PieChart, Wallet, Sparkles, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +21,8 @@ interface FloatingTabBarProps {
 }
 
 export function FloatingTabBar({ activeTab, onTabChange, onAddClick, isHidden }: FloatingTabBarProps) {
+  const isHome = activeTab === "home";
+
   return (
     <motion.div
       initial={false}
@@ -31,37 +33,50 @@ export function FloatingTabBar({ activeTab, onTabChange, onAddClick, isHidden }:
       <div className="relative flex w-full max-w-md items-center justify-between px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pointer-events-auto">
         
         {/* Main Nav Pill */}
-        <div className="flex flex-1 items-center justify-around rounded-full border border-white/10 bg-[#1c1c1e]/95 px-2 py-2 shadow-2xl shadow-black/60 backdrop-blur-xl">
-          {tabs.map(({ id, label, icon: Icon }) => {
-            const isActive = activeTab === id;
-            return (
-              <button
-                key={id}
-                onClick={() => onTabChange(id)}
-                aria-label={label}
-                className={cn(
-                  "relative flex h-12 w-14 items-center justify-center rounded-full transition-colors",
-                  isActive ? "text-white" : "text-white/40 hover:text-white/70"
-                )}
-              >
-                {isActive && (
-                  <motion.div
-                    layoutId="tab-pill"
-                    className="absolute inset-0 rounded-full bg-white/10"
-                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                  />
-                )}
-                <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
-              </button>
-            );
-          })}
-        </div>
+        <motion.div 
+          layout
+          className="flex items-center rounded-full border border-white/10 bg-[#1c1c1e]/95 px-2 py-2 shadow-2xl shadow-black/60 backdrop-blur-xl overflow-hidden"
+        >
+          <AnimatePresence mode="popLayout">
+            {tabs.map(({ id, label, icon: Icon }) => {
+              // Hide other tabs when not on home
+              if (!isHome && id !== "home") return null;
+              
+              const isActive = activeTab === id;
+              return (
+                <motion.button
+                  key={id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  onClick={() => onTabChange(id)}
+                  aria-label={label}
+                  className={cn(
+                    "relative flex h-12 w-14 items-center justify-center rounded-full transition-colors shrink-0",
+                    isActive ? "text-white" : "text-white/40 hover:text-white/70"
+                  )}
+                >
+                  {isActive && (
+                    <motion.div
+                      layoutId="tab-pill"
+                      className="absolute inset-0 rounded-full bg-white/10"
+                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    />
+                  )}
+                  <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
+                </motion.button>
+              );
+            })}
+          </AnimatePresence>
+        </motion.div>
 
-        {/* Floating Add Button - Orange background, Black icon */}
+        {/* Floating Add Button */}
         {onAddClick && (
           <button
             onClick={onAddClick}
-            className="ml-3 flex h-14 w-14 items-center justify-center rounded-full shadow-xl shadow-black/40 transition-transform active:scale-95"
+            className="ml-3 flex h-14 w-14 shrink-0 items-center justify-center rounded-full shadow-xl shadow-black/40 transition-transform active:scale-95"
             style={{ backgroundColor: "#DE3121" }}
             aria-label="Quick add"
           >
