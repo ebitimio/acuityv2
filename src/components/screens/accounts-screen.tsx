@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { ScreenHeader, IconButton } from "@/components/ui/screen-header";
-import { Plus, Trash2, RefreshCw, ArrowRightLeft, Landmark, Wallet, TrendingUp, Scale } from "lucide-react";
+import { Plus, Trash2, RefreshCw, ArrowRightLeft, Landmark, TrendingUp, Scale } from "lucide-react";
 import {
-  getAccounts, createAccount, deleteAccount, getAssets, addAsset, deleteAsset,
+  getAccounts, createAccount, deleteAccount, getAssets, addAsset, deleteAsset, clearDataCache,
 } from "@/lib/supabase/database";
 import { Modal } from "@/components/ui/modal";
 import { Field, SelectField, Button } from "@/components/ui/form";
@@ -36,6 +36,8 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
   const toast = useToast();
 
   const load = async () => {
+    // FIX 1: Clear cache so balances reflect the new transfer
+    clearDataCache();
     const [a, s] = await Promise.all([getAccounts(), getAssets()]);
     setAccounts(a);
     setAssets(s);

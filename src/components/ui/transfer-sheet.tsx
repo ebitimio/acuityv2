@@ -84,12 +84,13 @@ export function TransferSheet({ isOpen, onClose, onSuccess, accounts }: Transfer
           </div>
           <div>
             <p className="text-[11px] font-medium text-[var(--text-3)] mb-1">To</p>
+            {/* FIX: Removed the filter so all accounts can be selected as destination */}
             <select
               value={toId}
               onChange={(e) => setToId(e.target.value)}
               className="w-full bg-transparent text-[15px] font-semibold text-[var(--text-1)] outline-none appearance-none"
             >
-              {accounts.filter((acc) => acc.id !== fromId).map((acc) => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
+              {accounts.map((acc) => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
             </select>
           </div>
         </div>
@@ -119,6 +120,13 @@ export function TransferSheet({ isOpen, onClose, onSuccess, accounts }: Transfer
             className="w-full h-11 px-4 rounded-xl border border-[var(--line-strong)] bg-[var(--surface-1)] text-[15px] text-[var(--text-1)] outline-none focus:border-[var(--brand)]"
           />
         </div>
+
+        {/* FIX: Added error message if user selects same account */}
+        {fromId === toId && (
+          <p className="text-[12px] text-[var(--danger)] text-center">
+            Select a different destination account
+          </p>
+        )}
 
         <Button onClick={handleTransfer} loading={isSaving} disabled={!amount || fromId === toId} className="w-full h-12">
           Move {amount ? fmt(parseNumberInput(amount)) : "Funds"}
