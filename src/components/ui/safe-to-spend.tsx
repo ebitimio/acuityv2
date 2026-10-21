@@ -4,6 +4,9 @@ import { NumberRoll } from "./number-roll";
 import { RingProgress } from "./ring-progress";
 import { useCurrency } from "@/lib/currency";
 import type { SafeToSpend as SafeToSpendData } from "@/lib/supabase/database";
+import { useEffect, useState } from "react";
+import { getRecurringItems, getFamilySupport } from "@/lib/supabase/database";
+import type { RecurringItem } from "@/lib/types";
 
 interface Props {
   data: SafeToSpendData | null;
@@ -34,6 +37,31 @@ export function SafeToSpendHero({
 
   const dailySafe = data?.daily_safe_minor ? data.daily_safe_minor / 100 : 0;
   const hasIncome = data?.has_income ?? false;
+
+  // New state for expected income vs actual liquid
+  const [expectedIncome, setExpectedIncome] = useState(0);
+  const [totalObligations, setTotalObligations] = useState(0);
+
+  useEffect(() => {
+    async function loadCommitments() {
+      try {
+        const items = await getRecurringItems();
+        const family = await getFamilySupport();
+        
+        const incomeSum = items.filter(i => i.kind === "income").reduce((s, i) => s + i.amount_minor / 100, 0);
+        const billsSum = items.filter(i => i.kind === "bill").reduce((s, i) => s + i.amount_minor / 100, 0);
+        const familySum = family.amount_minor / 100;
+
+        setExpectedIncome(incomeSum);
+        setTotalObligations(billsSum + familySum);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    loadCommitments();
+  }, []);
+
+  const actualIncome = expectedIncome - totalObligations;
 
   const heroBg = "#DE3121";
 
@@ -67,12 +95,14 @@ export function SafeToSpendHero({
       <div className="mt-4 grid grid-cols-2 gap-3">
         <div>
           <p className="text-[11px] text-black/70">Income</p>
+          {/* Uses expected income minus obligations */}
           <p className="mt-0.5 text-[15px] font-semibold" style={{ color: "#22c55e" }}>
-            {fmt(incomeThisMonth)}
+            {fmt(actualIncome > 0 ? actualIncome : 0)}
           </p>
         </div>
         <div>
-          <p className="text-[11px] text-black/70">Balance</p>
+          <p className="text-[11px] text-black/70">Net Liquid</p>
+          {/* Uses only liquid cash, not total net worth */}
           <p className="mt-0.5 text-[15px] font-semibold text-black">
             {fmt(netAcross)}
           </p>
@@ -80,7 +110,6 @@ export function SafeToSpendHero({
       </div>
 
       <div className="mt-4 grid grid-cols-[44px_1fr] gap-3">
-        {/* Ring is now independently styled and handles its own color */}
         <RingProgress
           percentage={hasBudget ? budgetUsedPct : 0}
           label={hasBudget ? `${Math.round(budgetUsedPct)}%` : "—"}
