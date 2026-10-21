@@ -35,7 +35,6 @@ export function SafeToSpendHero({
   const dailySafe = data?.daily_safe_minor ? data.daily_safe_minor / 100 : 0;
   const hasIncome = data?.has_income ?? false;
 
-  // The exact orange-red requested
   const heroBg = "#DE3121";
 
   return (
@@ -44,11 +43,9 @@ export function SafeToSpendHero({
         {periodLabel}
       </p>
 
-      {/* Net across accounts hero */}
       <div className="mt-3">
         <p className="text-[12px] text-black/70">Net across accounts</p>
         <div className="mt-1 text-[38px] font-bold leading-none tracking-tight text-black">
-          {/* Overriding NumberRoll's text color with a wrapper class */}
           <span className="[&_span]:!text-black">
             <NumberRoll value={netAcross} showDecimals={false} />
           </span>
@@ -58,7 +55,6 @@ export function SafeToSpendHero({
         </p>
       </div>
 
-      {/* Safe to spend today — black pill with white text */}
       {hasIncome && (
         <div className="mt-3 flex items-center justify-between rounded-xl bg-black px-3 py-2">
           <span className="text-[11px] font-medium text-white">Safe to spend today</span>
@@ -68,7 +64,6 @@ export function SafeToSpendHero({
         </div>
       )}
 
-      {/* Income / Balance columns */}
       <div className="mt-4 grid grid-cols-2 gap-3">
         <div>
           <p className="text-[11px] text-black/70">Income</p>
@@ -84,14 +79,12 @@ export function SafeToSpendHero({
         </div>
       </div>
 
-      {/* Ring + progress bars — black accent */}
       <div className="mt-4 grid grid-cols-[44px_1fr] gap-3">
-        <div className="[&_svg]:!text-black [&_circle]:!stroke-black">
-          <RingProgress
-            percentage={hasBudget ? budgetUsedPct : 0}
-            label={hasBudget ? `${Math.round(budgetUsedPct)}%` : "—"}
-          />
-        </div>
+        {/* Ring is now independently styled and handles its own color */}
+        <RingProgress
+          percentage={hasBudget ? budgetUsedPct : 0}
+          label={hasBudget ? `${Math.round(budgetUsedPct)}%` : "—"}
+        />
         <div className="min-w-0">
           <div className="flex items-baseline justify-between gap-2">
             <p className="truncate text-[11px] text-black/70">Monthly budget</p>
@@ -99,7 +92,6 @@ export function SafeToSpendHero({
               {hasBudget ? `${fmt(budgetRemaining)} left` : "Not set"}
             </p>
           </div>
-          {/* Black progress bar */}
           <div className="mt-1 h-[3px] w-full overflow-hidden rounded-full bg-black/20">
             <div
               className="h-full rounded-full bg-black"
@@ -113,7 +105,6 @@ export function SafeToSpendHero({
               {daysUntilIncome > 0 ? `${daysUntilIncome}d until ${nextIncomeDate}` : "No income set"}
             </p>
           </div>
-          {/* Black cycle progress bar */}
           <div className="mt-1 h-[3px] w-full overflow-hidden rounded-full bg-black/20">
             <div
               className="h-full rounded-full bg-black"

@@ -1,64 +1,52 @@
 "use client";
 
-import { motion } from "framer-motion";
-
-interface Props {
+interface RingProgressProps {
   percentage: number;
-  tone?: string;
-  size?: number;
-  stroke?: number;
   label?: string;
 }
 
-export function RingProgress({
-  percentage,
-  tone = "var(--brand)",
-  size = 44,
-  stroke = 4,
-  label,
-}: Props) {
-  const clamped = Math.max(0, Math.min(percentage, 100));
-  const r = (size - stroke) / 2;
-  const circumference = 2 * Math.PI * r;
-  const offset = circumference - (circumference * clamped) / 100;
+export function RingProgress({ percentage, label }: RingProgressProps) {
+  // Ensure percentage is between 0 and 100
+  const validPct = Math.max(0, Math.min(percentage, 100));
+  
+  const size = 44;
+  const strokeWidth = 4;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  
+  // Calculate the offset based on the percentage
+  const offset = circumference - (validPct / 100) * circumference;
 
   return (
-    <div
-      className="relative flex shrink-0 items-center justify-center"
-      style={{ width: size, height: size }}
-    >
-      <svg width={size} height={size} className="-rotate-90">
+    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="transform -rotate-90">
+        {/* Background track */}
         <circle
           cx={size / 2}
           cy={size / 2}
-          r={r}
-          fill="none"
-          stroke="var(--fill-2)"
-          strokeWidth={stroke}
+          r={radius}
+          fill="transparent"
+          stroke="rgba(0, 0, 0, 0.15)" // Subtle black track
+          strokeWidth={strokeWidth}
         />
-        <motion.circle
+        {/* Progress fill */}
+        <circle
           cx={size / 2}
           cy={size / 2}
-          r={r}
-          fill="none"
-          stroke={tone}
-          strokeWidth={stroke}
-          strokeLinecap="round"
+          r={radius}
+          fill="transparent"
+          stroke="#000000" // Obsidian black progress
+          strokeWidth={strokeWidth}
           strokeDasharray={circumference}
-          initial={{ strokeDashoffset: circumference }}
-          animate={{ strokeDashoffset: offset }}
-          transition={{ type: "spring", stiffness: 90, damping: 18 }}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          className="transition-all duration-500 ease-in-out"
         />
       </svg>
-      {label !== undefined ? (
-        <span className="absolute text-[10px] font-semibold text-[var(--text-1)]">
-          {label}
-        </span>
-      ) : (
-        <span className="absolute text-[10px] font-semibold text-[var(--text-1)]">
-          {Math.round(clamped)}%
-        </span>
-      )}
+      {/* Percentage text */}
+      <span className="absolute text-[12px] font-bold text-black">
+        {label ?? `${Math.round(validPct)}%`}
+      </span>
     </div>
   );
 }
