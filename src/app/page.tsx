@@ -129,7 +129,6 @@ export default function SandboxPage() {
       setTransactions([]);
     }
 
-    // Fetch liquid assets
     try {
       const accounts = await getAccounts();
       const total = accounts.reduce((s, a) => s + (a.current_minor ?? a.balance_minor), 0) / 100;
@@ -515,7 +514,7 @@ export default function SandboxPage() {
                         title="No transactions yet"
                         body="Add one or import a statement to get started."
                         action="Add transaction"
-                        onAction={() => setIsAddTxnOpen(true)}
+                        onAction={() => setIsQuickAddOpen(true)} // <-- CHANGED: Opens Quick Add now
                       />
                     ) : (
                       visibleTransactions
