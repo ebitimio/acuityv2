@@ -25,7 +25,6 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
   const exchangeRate = 1500;
 
   const load = async () => {
-    // We fetch ALL budgets (not just master) so the deep dive matches the Budget screen
     const { data: allBudgets } = await (await import("@/lib/supabase/client")).createClient()
       .from("budgets")
       .select("*")
@@ -63,6 +62,7 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
   });
   const sortedCats = [...byCat.entries()].sort((a, b) => b[1] - a[1]);
 
+  // Heatmap Logic
   const heatmap = useMemo(() => {
     const days = [];
     for (let i = 29; i >= 0; i--) {
@@ -80,7 +80,6 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
     const catTxns = filteredTxns.filter(t => (t.category_name || "Uncategorized") === selectedCategory && t.direction === "debit");
     const total = catTxns.reduce((s, t) => s + t.amount_minor, 0) / 100;
     
-    // Find the budget limit across ALL accounts for this category
     const catBudgets = budgets.filter(b => b.category === selectedCategory);
     const totalCatBudget = catBudgets.reduce((sum, b) => sum + b.limit_minor, 0) / 100;
     
@@ -242,10 +241,11 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
                 ))}
               </div>
 
-              <div className="card p-5">
+              {/* HARDCODED DARK CARD */}
+              <div className="p-5 rounded-[24px] bg-[#1c1c1e] border border-white/5 shadow-xl">
                 <div className="flex items-center justify-between mb-4">
-                  <p className="text-[14px] text-[var(--text-2)]">Total expenses</p>
-                  <span className="text-[14px] font-semibold text-[var(--text-1)]">{fmt(totalExpense)}</span>
+                  <p className="text-[14px] text-white/60">Total expenses</p>
+                  <span className="text-[14px] font-semibold text-white">{fmt(totalExpense)}</span>
                 </div>
                 
                 <div className="grid grid-cols-10 gap-1.5 mb-2">
@@ -258,28 +258,28 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
                         className="aspect-square rounded-[3px] cursor-pointer hover:ring-1 hover:ring-white/50"
                         style={{ 
                           backgroundColor: d.spent === 0 
-                            ? "rgba(255,255,255,0.05)" // Empty day (dark)
-                            : `rgba(222, 49, 33, ${Math.max(intensity, 0.3)})` // Orange-Red intensity
+                            ? "rgba(255,255,255,0.05)" 
+                            : `rgba(222, 49, 33, ${Math.max(intensity, 0.3)})` 
                         }}
                       />
                     );
                   })}
                 </div>
-                <p className="text-[11px] text-[var(--text-3)] mb-4 flex items-center gap-1">
+                <p className="text-[11px] text-white/40 mb-4 flex items-center gap-1">
                   <Info size={12} /> Tap a square to see daily spend. Darker red = more spent.
                 </p>
 
-                <div className="grid grid-cols-3 gap-2 border-t border-[var(--line)] pt-4">
+                <div className="grid grid-cols-3 gap-2 border-t border-white/10 pt-4">
                   <div>
-                    <p className="text-[11px] text-[var(--text-3)]">Today</p>
-                    <p className="text-[14px] font-semibold text-[var(--text-1)]">{fmt(heatmap.days[29]?.spent || 0)}</p>
+                    <p className="text-[11px] text-white/40">Today</p>
+                    <p className="text-[14px] font-semibold text-white">{fmt(heatmap.days[29]?.spent || 0)}</p>
                   </div>
                   <div>
-                    <p className="text-[11px] text-[var(--text-3)]">Average</p>
-                    <p className="text-[14px] font-semibold text-[var(--text-1)]">{fmt(totalExpense / 30)}</p>
+                    <p className="text-[11px] text-white/40">Average</p>
+                    <p className="text-[14px] font-semibold text-white">{fmt(totalExpense / 30)}</p>
                   </div>
                   <div>
-                    <p className="text-[11px] text-[var(--text-3)]">Vs Last Month</p>
+                    <p className="text-[11px] text-white/40">Vs Last Month</p>
                     <p className="text-[14px] font-semibold text-[var(--gain)] flex items-center gap-1">
                       <TrendingDown size={14} /> 12%
                     </p>
@@ -316,37 +316,38 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
             </>
           ) : (
             <>
-              <div className="card p-6 bg-[#0b0b0c]">
-                <p className="text-[14px] text-[var(--text-2)] mb-1">Net Worth</p>
-                <p className="text-[32px] font-bold tabular text-[var(--text-1)] mb-2">{fmt(netWorth)}</p>
+              {/* HARDCODED DARK CARD */}
+              <div className="p-6 rounded-[24px] bg-[#1c1c1e] border border-white/5 shadow-xl">
+                <p className="text-[14px] text-white/60 mb-1">Net Worth</p>
+                <p className="text-[32px] font-bold tabular text-white mb-2">{fmt(netWorth)}</p>
                 
-                <div className="flex items-center gap-2 mb-4 rounded-xl bg-[var(--fill-1)] p-3">
+                <div className="flex items-center gap-2 mb-4 rounded-xl bg-white/5 p-3">
                   <DollarSign size={16} className="text-[var(--gain)]" />
-                  <p className="text-[13px] text-[var(--text-1)]">
+                  <p className="text-[13px] text-white">
                     ≈ <span className="font-bold">${(netWorth / exchangeRate).toLocaleString("en-US", { maximumFractionDigits: 0 })}</span> USD
                   </p>
-                  <span className="ml-auto text-[11px] text-[var(--text-3)]">@ ₦{exchangeRate}/$</span>
+                  <span className="ml-auto text-[11px] text-white/40">@ ₦{exchangeRate}/$</span>
                 </div>
 
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--gain)]/10 text-[var(--gain)]"><Wallet size={14} /></div>
-                      <span className="text-[14px] text-[var(--text-1)]">Liquid Assets</span>
+                      <span className="text-[14px] text-white">Liquid Assets</span>
                     </div>
-                    <span className="text-[14px] font-semibold text-[var(--text-1)]">{fmt(liquid)}</span>
+                    <span className="text-[14px] font-semibold text-white">{fmt(liquid)}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#DE3121]/10 text-[#DE3121]"><Landmark size={14} /></div>
-                      <span className="text-[14px] text-[var(--text-1)]">Non-Liquid Assets</span>
+                      <span className="text-[14px] text-white">Non-Liquid Assets</span>
                     </div>
-                    <span className="text-[14px] font-semibold text-[var(--text-1)]">{fmt(nonLiquid)}</span>
+                    <span className="text-[14px] font-semibold text-white">{fmt(nonLiquid)}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--danger)]/10 text-[var(--danger)]"><Scale size={14} /></div>
-                      <span className="text-[14px] text-[var(--text-1)]">Liabilities</span>
+                      <span className="text-[14px] text-white">Liabilities</span>
                     </div>
                     <span className="text-[14px] font-semibold text-[var(--danger)]">-{fmt(liabilities)}</span>
                   </div>
