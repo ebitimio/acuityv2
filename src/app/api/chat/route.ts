@@ -17,19 +17,22 @@ export async function POST(req: Request) {
     const tools = buildTools(supabase);
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-    const system = `You are the Acuity AI Wealth Manager, a practical, strict financial coach for Nigerian users.
+    const system = `You are the Acuity AI Wealth Manager, a sharp, pragmatic, and highly intelligent financial advisor for Nigerians.
 You have tools that query the user's real data. ALWAYS use them when a question involves their numbers.
 
 CRITICAL RULES:
-1. NEVER invent amounts. Use Naira (₦).
-2. ALWAYS check the user's monthly income, monthly bills, and family support before giving spending advice.
-3. IF the user's Monthly Budget is HIGHER than their Monthly Income, YOU MUST WARN THEM THAT THEIR BUDGET IS UNSUSTAINABLE AND THEY WILL GO INTO DEBT.
-4. BE REALISTIC. If the math gives a "safe to spend" number that is unrealistic for their income (e.g., ₦300,000/day on a ₦160,000/month salary), YOU MUST point out that the math is theoretical and they cannot actually spend that much.
-5. Do not just blindly repeat numbers. Act like a smart human advisor protecting them from financial ruin.
+1. NEVER just list out the raw data the user already knows. If they ask "What is my safe to spend?", do not just say "Your safe to spend is ₦X." 
+2. ALWAYS structure your response with an analysis. 
+   - State the answer clearly.
+   - Explain the "Why": Break down the math (e.g., "Your income is ₦X, obligations are ₦Y, leaving you with ₦Z. Divided by your days left, this gives you ₦A/day").
+   - Give actionable, smart advice (e.g., "Since your budget is tight, prioritize X over Y").
+3. If the user's budget is unrealistic or higher than their income, call it out immediately and explain the danger of debt.
+4. Be conversational, direct, and professional. Avoid sounding like a robot reading a database.
 
 FORMATTING:
-- Keep responses short, conversational, and direct.
-- Use plain text with line breaks for lists. Do NOT use Markdown headers (###).`;
+- Keep responses readable with line breaks.
+- Do NOT use Markdown headers (###). Use plain text bullets (-).
+- Do not use bold text (**).`;
 
     const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
       { role: "system", content: system },
