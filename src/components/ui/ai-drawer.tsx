@@ -11,11 +11,9 @@ interface Message {
   content: string;
 }
 
-// Improved Markdown parser for ### headers and **bold**
 function formatMessage(content: string) {
   const lines = content.split("\n");
   return lines.map((line, i) => {
-    // Handle headers (###)
     if (line.startsWith("###")) {
       return (
         <p key={i} className="mt-3 mb-1 text-[15px] font-bold text-white first:mt-0">
@@ -24,7 +22,6 @@ function formatMessage(content: string) {
       );
     }
 
-    // Handle inline bold (**text**)
     const parts = line.split(/(\*\*.*?\*\*)/g);
     const renderedParts = parts.map((part, j) => {
       if (part.startsWith("**") && part.endsWith("**")) {
@@ -33,7 +30,6 @@ function formatMessage(content: string) {
       return <span key={j}>{part}</span>;
     });
 
-    // Regular line
     if (line.trim() === "") return <div key={i} className="h-2" />;
     return <p key={i} className="text-[15px] leading-relaxed">{renderedParts}</p>;
   });
@@ -50,6 +46,18 @@ export function AIDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
   const [input, setInput] = useState("");
   const [isThinking, setIsThinking] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
+
+  // LOCK BODY SCROLL when the drawer is open to prevent the page jump
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -102,10 +110,10 @@ export function AIDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
         transition={{ type: "spring", damping: 25, stiffness: 200 }}
-        // h-[100dvh] ensures it fits the screen exactly, even with the keyboard open
-        className="fixed inset-0 z-[100] flex flex-col h-[100dvh] bg-[var(--bg)]"
+        // Fixed height, flex-col, no page scrolling
+        className="fixed inset-0 z-[100] flex flex-col h-[100dvh] bg-[var(--bg)] overflow-hidden"
       >
-        {/* Modern Header */}
+        {/* Header - Fixed */}
         <div className="relative z-10 flex shrink-0 items-center justify-between border-b border-[var(--line)] bg-gradient-to-b from-[var(--surface-2)] to-[var(--bg)] p-5 pt-[calc(env(safe-area-inset-top)+20px)]">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#DE3121]/10 text-[#DE3121] shadow-sm">
@@ -125,8 +133,8 @@ export function AIDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
           </button>
         </div>
 
-        {/* Chat Area - flex-1 allows it to shrink when keyboard opens */}
-        <div className="relative z-10 flex-1 overflow-y-auto p-6 pb-24">
+        {/* Chat Area - Only this scrolls */}
+        <div className="relative z-10 flex-1 overflow-y-auto p-6 pb-6">
           <div className="flex flex-col gap-5">
             {messages.map((msg) => (
               <motion.div 
@@ -165,7 +173,7 @@ export function AIDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
           </div>
         </div>
 
-        {/* Input Area - fixed at the bottom, doesn't move with keyboard */}
+        {/* Input Area - Fixed at bottom */}
         <div className="shrink-0 border-t border-[var(--line)] bg-[var(--bg)] p-4 pb-[calc(env(safe-area-inset-bottom)+16px)]">
           <div className="mx-auto flex max-w-2xl items-center gap-2 rounded-full border border-[var(--line-strong)] bg-[var(--surface-1)] p-2 shadow-lg">
             <input
