@@ -135,16 +135,17 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
                     isExpanded={isExpanded || expandedCard === null}
                     onClick={() => setExpandedCard(isExpanded ? null : a.id)}
                   />
+                  {/* Actions now inside the same container, below the card */}
                   {isExpanded && (
                     <motion.div 
                       initial={{ opacity: 0, y: -10 }} 
                       animate={{ opacity: 1, y: 0 }}
-                      className="flex justify-end gap-3 mt-2 px-2"
+                      className="flex justify-end gap-3 mt-2 px-4 mb-4"
                     >
-                      <button onClick={() => setCheckinAccount(a)} className="flex items-center gap-1 text-[12px] font-medium text-[var(--brand)]">
+                      <button onClick={() => setCheckinAccount(a)} className="flex items-center gap-1 text-[12px] font-medium text-[#DE3121]">
                         <RefreshCw size={12} /> Check Balance
                       </button>
-                      <button onClick={() => delAcc(a)} className="flex items-center gap-1 text-[12px] font-medium text-[var(--danger)]">
+                      <button onClick={() => delAcc(a)} className="flex items-center gap-1 text-[12px] font-medium text-[#DE3121]/60">
                         <Trash2 size={12} /> Delete
                       </button>
                     </motion.div>
