@@ -1,6 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
 
-// Fixed the corrupted Naira symbol
 const naira = (minor: number) => `₦${Math.round(minor / 100).toLocaleString("en-NG")}`;
 
 function monthStartISO() {
@@ -24,26 +23,31 @@ export function buildTools(supabase: Awaited<ReturnType<typeof createClient>>): 
   return [
     {
       name: "get_financial_context",
-      description: "CRITICAL: Call this first before answering any question about the user's finances. Returns their full net worth, offline assets (land, cars), liabilities (loans), liquid cash, budgets, and recurring commitments.",
+      description: "CRITICAL: Call this first before answering any question about the user's finances. Returns their full net worth, offline assets (land, cars), liabilities (loans), liquid cash, and budgets.",
       parameters: { type: "object", properties: {}, additionalProperties: false },
       run: async () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return { error: "not logged in" };
 
+        // Get the user's active workspace
+        const { data: ws } = await supabase.from("workspaces").select("id").eq("owner_id", user.id).limit(1).single();
+        const wsId = ws?.id;
+
         const [
-          { data: ws },
           { data: accounts },
           { data: balances },
           { data: assets },
+          { data: budgets },
           { data: commitments },
           { data: ajo }
         ] = await Promise.all([
-          supabase.from("workspaces").select("id, budget_limit_minor").eq("owner_id", user.id).single(),
-          supabase.from("accounts").select("id,name,type,institution"),
+          supabase.from("accounts").select("id,name,type,institution").eq("workspace_id", wsId),
           supabase.rpc("get_account_balances"),
-          supabase.from("assets").select("name,type,value_minor"),
-          supabase.from("recurring_items").select("name,kind,amount_minor,frequency"),
-          supabase.from("ajo_groups").select("name,contribution_minor,frequency")
+          supabase.from("assets").select("name,type,value_minor").eq("workspace_id", wsId),
+          // Read from the actual budgets table, not the workspaces table
+          supabase.from("budgets").select("limit_minor").eq("workspace_id", wsId),
+          supabase.from("recurring_items").select("name,kind,amount_minor,frequency").eq("workspace_id", wsId),
+          supabase.from("ajo_groups").select("name,contribution_minor,frequency").eq("workspace_id", wsId)
         ]);
 
         const balanceMap = new Map<string, number>(
@@ -65,15 +69,62 @@ export function buildTools(supabase: Awaited<ReturnType<typeof createClient>>): 
           return { name: a.name, type: a.type, value: naira(a.value_minor) };
         });
 
+        // Calculate the actual total budget from the budgets table
+        const totalBudget = (budgets ?? []).reduce((sum, b) => sum + Number(b.limit_minor), 0);
+
         return {
           liquid_cash: naira(liquidCash),
           connected_accounts: accountList,
           offline_assets: assetList.filter(a => a.type === "asset"),
           offline_liabilities: assetList.filter(a => a.type === "liability"),
           total_net_worth: naira(liquidCash + totalAssets - totalLiabilities),
-          monthly_budget_limit: ws?.budget_limit_minor ? naira(ws.budget_limit_minor) : "Not set",
+          monthly_budget_limit: totalBudget > 0 ? naira(totalBudget) : "Not set",
           recurring_commitments: (commitments ?? []).map(c => ({ name: c.name, amount: naira(c.amount_minor), frequency: c.frequency })),
           ajo_groups: (ajo ?? []).map(a => ({ name: a.name, contribution: naira(a.contribution_minor), frequency: a.frequency }))
+        };
+      },
+    },
+    {
+      name: "get_safe_to_spend_status",
+      description: "Get the exact 'Safe to Spend' calculation the app uses on the home screen. Returns daily safe amount, days until payday, and total safe cash.",
+      parameters: { type: "object", properties: {}, additionalProperties: false },
+      run: async () => {
+        // Use the same RPC the dashboard uses
+        const { data, error } = await supabase.rpc("get_safe_to_spend");
+        if (error) return { error: error.message };
+        return {
+          daily_safe_to_spend: naira(data.daily_safe_minor),
+          total_safe_cash: naira(data.total_safe_minor),
+          days_until_next_income: data.days_until_next_income,
+          next_income_date: data.next_income_date ? new Date(data.next_income_date).toLocaleDateString("en-NG") : "Not set"
+        };
+      },
+    },
+    {
+      name: "get_budget_status",
+      description: "Get this month's real budget, spend so far, and how much is left.",
+      parameters: { type: "object", properties: {}, additionalProperties: false },
+      run: async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return { error: "not logged in" };
+        
+        const { data: ws } = await supabase.from("workspaces").select("id").eq("owner_id", user.id).limit(1).single();
+        
+        // Get both the budgets table AND the transactions
+        const [{ data: budgets }, { data: txs }] = await Promise.all([
+          supabase.from("budgets").select("limit_minor").eq("workspace_id", ws?.id),
+          supabase.from("transactions").select("amount_minor").or(NOT_SPLIT).eq("direction", "debit").gte("date", monthStartISO()),
+        ]);
+        
+        const totalBudget = (budgets ?? []).reduce((s, b) => s + Number(b.limit_minor), 0);
+        const spent = (txs ?? []).reduce((s, t) => s + t.amount_minor, 0);
+        const remaining = Math.max(totalBudget - spent, 0);
+        
+        return {
+          budget: totalBudget > 0 ? naira(totalBudget) : "not set",
+          spent: naira(spent),
+          remaining: totalBudget > 0 ? naira(remaining) : "n/a",
+          percent_used: totalBudget ? `${Math.round((spent / totalBudget) * 100)}%` : "n/a",
         };
       },
     },
@@ -126,28 +177,6 @@ export function buildTools(supabase: Awaited<ReturnType<typeof createClient>>): 
           category: t.category_name,
           amount: `${t.direction === "credit" ? "+" : "-"}${naira(t.amount_minor)}`,
         }));
-      },
-    },
-    {
-      name: "get_budget_status",
-      description: "Get this month's budget, spend so far, and how much is left.",
-      parameters: { type: "object", properties: {}, additionalProperties: false },
-      run: async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return { error: "not logged in" };
-        const [{ data: ws }, { data: txs }] = await Promise.all([
-          supabase.from("workspaces").select("budget_limit_minor").eq("owner_id", user.id).single(),
-          supabase.from("transactions").select("amount_minor").or(NOT_SPLIT).eq("direction", "debit").gte("date", monthStartISO()),
-        ]);
-        const budget = Number(ws?.budget_limit_minor ?? 0);
-        const spent = (txs ?? []).reduce((s, t) => s + t.amount_minor, 0);
-        const remaining = Math.max(budget - spent, 0);
-        return {
-          budget: budget ? naira(budget) : "not set",
-          spent: naira(spent),
-          remaining: budget ? naira(remaining) : "n/a",
-          percent_used: budget ? `${Math.round((spent / budget) * 100)}%` : "n/a",
-        };
       },
     }
   ];
