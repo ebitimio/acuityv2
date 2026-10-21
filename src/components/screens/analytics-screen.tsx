@@ -5,6 +5,7 @@ import { ScreenHeader } from "@/components/ui/screen-header";
 import { getTransactionsSince, getAccounts, getAssets } from "@/lib/supabase/database";
 import { startOfMonthISO } from "@/lib/dates";
 import { useCurrency } from "@/lib/currency";
+import { useToast } from "@/components/ui/toast";
 import type { Txn, Account, Asset, Budget } from "@/lib/types";
 import { TrendingDown, Wallet, Landmark, Scale, ChevronRight, Sparkles, Lightbulb, DollarSign, Info } from "lucide-react";
 import { PullToRefresh } from "@/components/ui/pull-to-refresh";
@@ -22,6 +23,7 @@ export function AnalyticsScreen({ onBack, onNavigateTransactions }: { onBack: ()
   const [selectedAccountId, setSelectedAccountId] = useState<string>("all");
   
   const { fmt } = useCurrency();
+  const toast = useToast();
   const exchangeRate = 1500;
 
   const load = async () => {
@@ -48,7 +50,6 @@ export function AnalyticsScreen({ onBack, onNavigateTransactions }: { onBack: ()
     if (selectedAccountId !== "all") {
       base = base.filter(t => t.account_id === selectedAccountId);
     }
-    // EXCLUDE transfers from analytics so they don't count as spending
     return base.filter(t => t.category_name !== "Transfer");
   }, [txns, selectedAccountId]);
 
@@ -66,18 +67,40 @@ export function AnalyticsScreen({ onBack, onNavigateTransactions }: { onBack: ()
   });
   const sortedCats = [...byCat.entries()].sort((a, b) => b[1] - a[1]);
 
+  // Heatmap - uses local date strings to avoid timezone issues
   const heatmap = useMemo(() => {
     const days = [];
     for (let i = 29; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      const dateStr = d.toISOString().split("T")[0];
-      const spent = filteredTxns.filter(t => t.direction === "debit" && t.date.startsWith(dateStr)).reduce((s, t) => s + t.amount_minor, 0) / 100;
-      days.push({ date: d, spent, dateStr });
+      // Build local YYYY-MM-DD string (not UTC)
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const dd = String(d.getDate()).padStart(2, "0");
+      const localDateStr = `${yyyy}-${mm}-${dd}`;
+      
+      // Sum all debits that happened on this local date
+      const spent = filteredTxns
+        .filter(t => t.direction === "debit")
+        .filter(t => {
+          const txnDate = new Date(t.date);
+          const txnY = txnDate.getFullYear();
+          const txnM = String(txnDate.getMonth() + 1).padStart(2, "0");
+          const txnD = String(txnDate.getDate()).padStart(2, "0");
+          return `${txnY}-${txnM}-${txnD}` === localDateStr;
+        })
+        .reduce((s, t) => s + t.amount_minor, 0) / 100;
+      
+      days.push({ date: d, spent, localDateStr });
     }
     const max = Math.max(...days.map(d => d.spent), 1);
     return { days, max };
   }, [filteredTxns]);
+
+  const handleSquareTap = (day: { date: Date; spent: number }) => {
+    const label = day.date.toLocaleDateString("en-NG", { weekday: "short", day: "numeric", month: "short" });
+    toast(`${label}: ${fmt(day.spent)} spent`);
+  };
 
   if (selectedCategory) {
     const catTxns = filteredTxns.filter(t => (t.category_name || "Uncategorized") === selectedCategory && t.direction === "debit");
@@ -90,7 +113,10 @@ export function AnalyticsScreen({ onBack, onNavigateTransactions }: { onBack: ()
 
     const daysWithSpending = new Set(
       catTxns
-        .filter(t => new Date(t.date).getMonth() === new Date().getMonth())
+        .filter(t => {
+          const d = new Date(t.date);
+          return d.getMonth() === new Date().getMonth() && d.getFullYear() === new Date().getFullYear();
+        })
         .map(t => new Date(t.date).getDate())
     );
 
@@ -123,7 +149,6 @@ export function AnalyticsScreen({ onBack, onNavigateTransactions }: { onBack: ()
             </div>
           </div>
 
-          {/* HARDCODED DARK CALENDAR CARD */}
           <div className="p-6 rounded-[24px] bg-[#1c1c1e] border border-white/5 shadow-xl">
             <p className="mb-4 text-[15px] font-semibold text-white">
               {today.toLocaleDateString("en-NG", { month: "long", year: "numeric" })}
@@ -272,15 +297,16 @@ export function AnalyticsScreen({ onBack, onNavigateTransactions }: { onBack: ()
                   {heatmap.days.map((d, i) => {
                     const intensity = d.spent / heatmap.max;
                     return (
-                      <div 
-                        key={i} 
-                        title={`${d.date.toLocaleDateString("en-NG", { month: "short", day: "numeric" })}: ${fmt(d.spent)}`}
-                        className="aspect-square rounded-[3px] cursor-pointer hover:ring-1 hover:ring-white/50"
+                      <button
+                        key={i}
+                        onClick={() => handleSquareTap(d)}
+                        className="aspect-square rounded-[3px] cursor-pointer hover:ring-1 hover:ring-white/50 active:scale-95 transition-transform"
                         style={{ 
                           backgroundColor: d.spent === 0 
                             ? "rgba(255,255,255,0.05)" 
                             : `rgba(222, 49, 33, ${Math.max(intensity, 0.3)})` 
                         }}
+                        aria-label={`${d.date.toLocaleDateString()} - ${fmt(d.spent)}`}
                       />
                     );
                   })}
