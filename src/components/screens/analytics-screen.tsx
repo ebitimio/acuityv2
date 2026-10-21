@@ -84,14 +84,12 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
     
     const pct = totalCatBudget > 0 ? Math.min((total / totalCatBudget) * 100, 100) : 0;
 
-    // Get days with spending for the current month calendar
     const daysWithSpending = new Set(
       catTxns
         .filter(t => new Date(t.date).getMonth() === new Date().getMonth())
         .map(t => new Date(t.date).getDate())
     );
 
-    // Calendar logic
     const today = new Date();
     const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
     const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).getDay();
@@ -104,7 +102,6 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
           onBack={() => setSelectedCategory(null)} 
         />
         <div className="space-y-4 px-4 pt-6">
-          {/* Gauge Card */}
           <div className="card p-6">
             <div className="flex items-center justify-between mb-4">
               <GaugeArc percentage={pct} />
@@ -122,27 +119,22 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
             </div>
           </div>
 
-          {/* NEW: Calendar View */}
           <div className="card p-6">
             <p className="mb-4 text-[15px] font-semibold text-[var(--text-1)]">
               {today.toLocaleDateString("en-NG", { month: "long", year: "numeric" })}
             </p>
             
-            {/* Day Headers */}
             <div className="grid grid-cols-7 gap-1 mb-2 text-center">
               {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(d => (
                 <div key={d} className="text-[10px] font-medium text-[var(--text-3)]">{d[0]}</div>
               ))}
             </div>
             
-            {/* Calendar Grid */}
             <div className="grid grid-cols-7 gap-1.5">
-              {/* Empty slots for days before the 1st */}
               {Array.from({ length: firstDayOfMonth }).map((_, i) => (
                 <div key={`empty-${i}`} className="aspect-square" />
               ))}
               
-              {/* Actual days */}
               {calendarDays.map(day => {
                 const hasSpend = daysWithSpending.has(day);
                 const isToday = day === today.getDate();
@@ -165,7 +157,6 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
             </p>
           </div>
 
-          {/* NEW: Transaction List */}
           <div className="card p-0">
             <div className="px-4 py-4 border-b border-[var(--line)]">
               <p className="text-[15px] font-semibold text-[var(--text-1)]">Transactions</p>
@@ -175,7 +166,8 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
                 <div key={t.id} className="flex items-center justify-between px-4 py-3">
                   <div>
                     <p className="text-[14px] font-medium text-[var(--text-1)]">
-                      {t.description_clean || "Unnamed"}
+                      {/* Added fallback to category_name so it never says "Unnamed" */}
+                      {t.description_clean || t.description_raw || t.category_name || "Transaction"}
                     </p>
                     <p className="text-[11px] text-[var(--text-3)]">
                       {new Date(t.date).toLocaleDateString("en-NG", { day: "numeric", month: "short" })}
@@ -192,7 +184,6 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
             </div>
           </div>
 
-          {/* Insight */}
           <div className="relative overflow-hidden rounded-2xl border border-[#DE3121]/20 bg-[#DE3121]/5 p-5">
             <div className="flex items-start gap-3">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#DE3121] text-white">

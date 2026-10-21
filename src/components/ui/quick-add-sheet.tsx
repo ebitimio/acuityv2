@@ -104,6 +104,9 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
         amount_minor: Math.round(parsedAmount * 100),
         direction: direction,
         category_name: finalCategory,
+        // Save the category as the description so it's not "Unnamed"
+        description_clean: finalCategory,
+        description_raw: finalCategory,
         date: new Date(date).toISOString(),
         status: "posted",
       });
@@ -130,7 +133,6 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
     <Modal open={isOpen} onClose={onClose} title="Quick add">
       <div className="flex flex-col h-[75dvh] min-h-0">
         
-        {/* Account Selector */}
         <div className="pt-2 pb-2 shrink-0">
           <select
             value={selectedAccount}
@@ -146,7 +148,6 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
           </select>
         </div>
 
-        {/* Amount Display */}
         <div className="flex flex-col items-center justify-center py-2 shrink-0">
           <p className="text-[14px] font-medium text-[var(--text-3)] mb-1">
             {direction === "credit" ? "Received" : "Spent"}
@@ -156,7 +157,6 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
           </p>
         </div>
 
-        {/* Quick Pills */}
         <div className="flex items-center gap-2 overflow-x-auto pb-2 mt-2 shrink-0 no-scrollbar justify-center w-full">
           {quickPills.map((p) => (
             <button
@@ -169,7 +169,6 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
           ))}
         </div>
 
-        {/* Inputs (Category & Date) */}
         <div className="space-y-3 mt-2 shrink-0">
           <div>
             <p className="mb-1.5 px-1 text-[13px] font-medium text-[var(--text-3)]">Category</p>
@@ -205,7 +204,6 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
 
           <div>
             <p className="mb-1.5 px-1 text-[13px] font-medium text-[var(--text-3)]">Date</p>
-            {/* Wrapping the date input to force it to fit within the category's width */}
             <div className="w-full overflow-hidden rounded-xl border border-[var(--line-strong)] bg-[var(--surface-2)]">
               <input
                 type="date"
@@ -218,7 +216,6 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
           </div>
         </div>
 
-        {/* Keypad & Save */}
         <div className="mt-auto pb-2 pt-4 shrink-0">
           {error && (
             <p className="mb-2 text-center text-[12px] font-medium text-[var(--danger)]">
