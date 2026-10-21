@@ -11,14 +11,31 @@ interface Message {
   content: string;
 }
 
-// Simple helper to render bold text (**text**) and line breaks
+// Improved Markdown parser for ### headers and **bold**
 function formatMessage(content: string) {
-  const parts = content.split(/(\*\*.*?\*\*)/g);
-  return parts.map((part, i) => {
-    if (part.startsWith("**") && part.endsWith("**")) {
-      return <strong key={i} className="font-bold">{part.slice(2, -2)}</strong>;
+  const lines = content.split("\n");
+  return lines.map((line, i) => {
+    // Handle headers (###)
+    if (line.startsWith("###")) {
+      return (
+        <p key={i} className="mt-3 mb-1 text-[15px] font-bold text-white first:mt-0">
+          {line.replace(/^###\s*/, "")}
+        </p>
+      );
     }
-    return <span key={i}>{part}</span>;
+
+    // Handle inline bold (**text**)
+    const parts = line.split(/(\*\*.*?\*\*)/g);
+    const renderedParts = parts.map((part, j) => {
+      if (part.startsWith("**") && part.endsWith("**")) {
+        return <strong key={j} className="font-bold text-white">{part.slice(2, -2)}</strong>;
+      }
+      return <span key={j}>{part}</span>;
+    });
+
+    // Regular line
+    if (line.trim() === "") return <div key={i} className="h-2" />;
+    return <p key={i} className="text-[15px] leading-relaxed">{renderedParts}</p>;
   });
 }
 
@@ -85,10 +102,11 @@ export function AIDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
         transition={{ type: "spring", damping: 25, stiffness: 200 }}
-        className="fixed inset-0 z-[100] flex flex-col bg-[var(--bg)]"
+        // h-[100dvh] ensures it fits the screen exactly, even with the keyboard open
+        className="fixed inset-0 z-[100] flex flex-col h-[100dvh] bg-[var(--bg)]"
       >
         {/* Modern Header */}
-        <div className="relative z-10 flex items-center justify-between border-b border-[var(--line)] bg-gradient-to-b from-[var(--surface-2)] to-[var(--bg)] p-5 pt-[calc(env(safe-area-inset-top)+20px)]">
+        <div className="relative z-10 flex shrink-0 items-center justify-between border-b border-[var(--line)] bg-gradient-to-b from-[var(--surface-2)] to-[var(--bg)] p-5 pt-[calc(env(safe-area-inset-top)+20px)]">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#DE3121]/10 text-[#DE3121] shadow-sm">
               <Sparkles size={20} />
@@ -107,46 +125,48 @@ export function AIDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
           </button>
         </div>
 
-        {/* Chat Area */}
-        <div className="relative z-10 flex flex-1 flex-col gap-5 overflow-y-auto p-6 pb-24">
-          {messages.map((msg) => (
-            <motion.div 
-              key={msg.id} 
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-            >
-              <div
-                className={cn(
-                  "max-w-[85%] whitespace-pre-wrap rounded-3xl p-4 text-[15px] leading-relaxed shadow-sm",
-                  msg.role === "user"
-                    ? "rounded-tr-md bg-[#DE3121] text-white"
-                    : "rounded-tl-md border border-[var(--line)] bg-[var(--surface-2)] text-[var(--text-1)]"
-                )}
+        {/* Chat Area - flex-1 allows it to shrink when keyboard opens */}
+        <div className="relative z-10 flex-1 overflow-y-auto p-6 pb-24">
+          <div className="flex flex-col gap-5">
+            {messages.map((msg) => (
+              <motion.div 
+                key={msg.id} 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
               >
-                {msg.role === "assistant" ? formatMessage(msg.content) : msg.content}
-              </div>
-            </motion.div>
-          ))}
+                <div
+                  className={cn(
+                    "max-w-[85%] rounded-3xl p-4 text-[15px] leading-relaxed shadow-sm",
+                    msg.role === "user"
+                      ? "rounded-tr-md bg-[#DE3121] text-white"
+                      : "rounded-tl-md border border-[var(--line)] bg-[var(--surface-2)] text-[var(--text-1)]"
+                  )}
+                >
+                  {msg.role === "assistant" ? formatMessage(msg.content) : msg.content}
+                </div>
+              </motion.div>
+            ))}
 
-          {isThinking && (
-            <motion.div 
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex justify-start"
-            >
-              <div className="flex gap-1.5 rounded-3xl rounded-tl-md border border-[var(--line)] bg-[var(--surface-2)] p-5">
-                <span className="h-2 w-2 animate-bounce rounded-full bg-[var(--text-3)]" />
-                <span className="h-2 w-2 animate-bounce rounded-full bg-[var(--text-3)]" style={{ animationDelay: "120ms" }} />
-                <span className="h-2 w-2 animate-bounce rounded-full bg-[var(--text-3)]" style={{ animationDelay: "240ms" }} />
-              </div>
-            </motion.div>
-          )}
-          <div ref={endRef} />
+            {isThinking && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex justify-start"
+              >
+                <div className="flex gap-1.5 rounded-3xl rounded-tl-md border border-[var(--line)] bg-[var(--surface-2)] p-5">
+                  <span className="h-2 w-2 animate-bounce rounded-full bg-[var(--text-3)]" />
+                  <span className="h-2 w-2 animate-bounce rounded-full bg-[var(--text-3)]" style={{ animationDelay: "120ms" }} />
+                  <span className="h-2 w-2 animate-bounce rounded-full bg-[var(--text-3)]" style={{ animationDelay: "240ms" }} />
+                </div>
+              </motion.div>
+            )}
+            <div ref={endRef} />
+          </div>
         </div>
 
-        {/* Input Area */}
-        <div className="absolute inset-x-0 bottom-0 z-20 border-t border-[var(--line)] bg-[var(--bg)]/90 p-4 pb-[calc(env(safe-area-inset-bottom)+16px)] backdrop-blur-xl">
+        {/* Input Area - fixed at the bottom, doesn't move with keyboard */}
+        <div className="shrink-0 border-t border-[var(--line)] bg-[var(--bg)] p-4 pb-[calc(env(safe-area-inset-bottom)+16px)]">
           <div className="mx-auto flex max-w-2xl items-center gap-2 rounded-full border border-[var(--line-strong)] bg-[var(--surface-1)] p-2 shadow-lg">
             <input
               type="text"
