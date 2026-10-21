@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ArrowUp, Sparkles, Loader2 } from "lucide-react";
+import { Modal } from "./modal"; // Using your existing Modal
 import { cn } from "@/lib/utils";
 
 interface Message {
@@ -47,18 +48,6 @@ export function AIDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
   const [isThinking, setIsThinking] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
 
-  // LOCK BODY SCROLL when the drawer is open to prevent the page jump
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [isOpen]);
-
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isThinking]);
@@ -101,41 +90,18 @@ export function AIDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <AnimatePresence>
-      <motion.div 
-        initial={{ y: "100%" }}
-        animate={{ y: 0 }}
-        exit={{ y: "100%" }}
-        transition={{ type: "spring", damping: 25, stiffness: 200 }}
-        // Fixed height, flex-col, no page scrolling
-        className="fixed inset-0 z-[100] flex flex-col h-[100dvh] bg-[var(--bg)] overflow-hidden"
-      >
-        {/* Header - Fixed */}
-        <div className="relative z-10 flex shrink-0 items-center justify-between border-b border-[var(--line)] bg-gradient-to-b from-[var(--surface-2)] to-[var(--bg)] p-5 pt-[calc(env(safe-area-inset-top)+20px)]">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#DE3121]/10 text-[#DE3121] shadow-sm">
-              <Sparkles size={20} />
-            </div>
-            <div>
-              <h2 className="text-[17px] font-bold text-[var(--text-1)]">Acuity Advisor</h2>
-              <p className="text-[12px] font-medium text-[#DE3121]">Active AI Copilot</p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            aria-label="Close"
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--fill-1)] text-[var(--text-2)] transition-colors hover:bg-[var(--fill-2)]"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
+    <Modal open={isOpen} onClose={onClose} title="Acuity Advisor">
+      {/* 
+        The Modal handles the background lock and safe areas.
+        We set a fixed height (70vh) so it acts as a bottom sheet.
+        The flex-col ensures the header stays top, chat scrolls, input stays bottom.
+      */}
+      <div className="flex flex-col h-[70dvh] min-h-0 overflow-hidden -mx-6 -mb-[calc(20px+env(safe-area-inset-bottom))]">
+        
         {/* Chat Area - Only this scrolls */}
-        <div className="relative z-10 flex-1 overflow-y-auto p-6 pb-6">
-          <div className="flex flex-col gap-5">
+        <div className="flex-1 overflow-y-auto px-6 pb-4">
+          <div className="flex flex-col gap-5 pt-2">
             {messages.map((msg) => (
               <motion.div 
                 key={msg.id} 
@@ -173,9 +139,9 @@ export function AIDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
           </div>
         </div>
 
-        {/* Input Area - Fixed at bottom */}
-        <div className="shrink-0 border-t border-[var(--line)] bg-[var(--bg)] p-4 pb-[calc(env(safe-area-inset-bottom)+16px)]">
-          <div className="mx-auto flex max-w-2xl items-center gap-2 rounded-full border border-[var(--line-strong)] bg-[var(--surface-1)] p-2 shadow-lg">
+        {/* Input Area - Fixed at bottom of the sheet */}
+        <div className="shrink-0 border-t border-[var(--line)] bg-[var(--bg)] p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <div className="flex items-center gap-2 rounded-full border border-[var(--line-strong)] bg-[var(--surface-1)] p-2 shadow-lg">
             <input
               type="text"
               value={input}
@@ -194,7 +160,7 @@ export function AIDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
             </button>
           </div>
         </div>
-      </motion.div>
-    </AnimatePresence>
+      </div>
+    </Modal>
   );
 }
