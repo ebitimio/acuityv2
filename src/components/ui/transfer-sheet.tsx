@@ -66,7 +66,6 @@ export function TransferSheet({ isOpen, onClose, onSuccess, accounts }: Transfer
   return (
     <Modal open={isOpen} onClose={onClose} title="Transfer Funds">
       <div className="space-y-4 pb-4">
-        {/* From / To Selectors */}
         <div className="bg-[var(--surface-2)] rounded-2xl p-4 space-y-3">
           <div>
             <p className="text-[11px] font-medium text-[var(--text-3)] mb-1">From</p>
@@ -75,7 +74,7 @@ export function TransferSheet({ isOpen, onClose, onSuccess, accounts }: Transfer
               onChange={(e) => setFromId(e.target.value)}
               className="w-full bg-transparent text-[15px] font-semibold text-[var(--text-1)] outline-none appearance-none"
             >
-              {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+              {accounts.map((acc) => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
             </select>
           </div>
           <div className="flex justify-center -my-2">
@@ -90,12 +89,11 @@ export function TransferSheet({ isOpen, onClose, onSuccess, accounts }: Transfer
               onChange={(e) => setToId(e.target.value)}
               className="w-full bg-transparent text-[15px] font-semibold text-[var(--text-1)] outline-none appearance-none"
             >
-              {accounts.filter(a => a.id !== fromId).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+              {accounts.filter((acc) => acc.id !== fromId).map((acc) => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
             </select>
           </div>
         </div>
 
-        {/* Amount */}
         <div>
           <p className="text-[13px] font-medium text-[var(--text-3)] mb-1.5">Amount</p>
           <div className="relative">
@@ -111,7 +109,6 @@ export function TransferSheet({ isOpen, onClose, onSuccess, accounts }: Transfer
           </div>
         </div>
 
-        {/* Note */}
         <div>
           <p className="text-[13px] font-medium text-[var(--text-3)] mb-1.5">Note (optional)</p>
           <input
@@ -129,4 +126,4 @@ export function TransferSheet({ isOpen, onClose, onSuccess, accounts }: Transfer
       </div>
     </Modal>
   );
-}a
+}
