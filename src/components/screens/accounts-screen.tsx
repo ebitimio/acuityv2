@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ScreenHeader, IconButton } from "@/components/ui/screen-header";
-import { Plus, Trash2, ArrowRightLeft, TrendingUp, Scale, Coins } from "lucide-react";
+import { Plus, Trash2, RefreshCw, ArrowRightLeft, TrendingUp, Scale, Coins } from "lucide-react";
 import {
   getAccounts, createAccount, deleteAccount, getAssets, addAsset, deleteAsset, clearDataCache,
 } from "@/lib/supabase/database";
@@ -16,6 +16,7 @@ import { StackedAccountCard } from "@/components/ui/stacked-account-card";
 import { useCurrency } from "@/lib/currency";
 import { useToast } from "@/components/ui/toast";
 import type { Account, Asset } from "@/lib/types";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
@@ -94,8 +95,6 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
   const totalLiab = -(assets.filter((a) => a.type === "liability").reduce((s, a) => s + a.value_minor, 0) / 100);
   const netWorth = totalLiquid + totalAssets + totalLiab;
 
-  const isAnyExpanded = expandedCard !== null;
-
   return (
     <div className="min-h-[100dvh] pb-32">
       <ScreenHeader
@@ -128,16 +127,17 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
             {accounts.map((a, index) => {
               const bal = (a.current_minor ?? a.balance_minor) / 100;
               const isExpanded = expandedCard === a.id;
+              const isAnyExpanded = expandedCard !== null;
               
               return (
                 <div 
                   key={a.id} 
                   className={cn(
                     "w-full px-2 transition-all duration-300",
-                    // Overlap only when NOT expanded, and only for cards after the first
-                    index > 0 && !isAnyExpanded ? "-mt-10" : "mt-3"
+                    // Only apply negative top margin if this is not the first card AND no card is expanded
+                    index > 0 && !isAnyExpanded ? "-mt-14" : "mt-0"
                   )}
-                  style={{ zIndex: isExpanded ? 50 : 10 - index }}
+                  style={{ zIndex: isExpanded ? 20 : 10 - index }}
                 >
                   <StackedAccountCard 
                     account={a} 
@@ -145,9 +145,26 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
                     fmt={fmt} 
                     isExpanded={isExpanded || !isAnyExpanded}
                     onClick={() => setExpandedCard(isExpanded ? null : a.id)}
-                    onCheckBalance={() => setCheckinAccount(a)}
-                    onDelete={() => delAcc(a)}
                   />
+                  
+                  {/* Actions shown INSIDE the expanded card area */}
+                  <AnimatePresence>
+                    {isExpanded && (
+                      <motion.div 
+                        initial={{ opacity: 0, height: 0 }} 
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="flex justify-end gap-4 px-4 py-3 overflow-hidden"
+                      >
+                        <button onClick={() => setCheckinAccount(a)} className="flex items-center gap-1.5 text-[12px] font-semibold text-[#DE3121]">
+                          <RefreshCw size={13} /> Check Balance
+                        </button>
+                        <button onClick={() => delAcc(a)} className="flex items-center gap-1.5 text-[12px] font-semibold text-[var(--danger)]">
+                          <Trash2 size={13} /> Delete
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               );
             })}
