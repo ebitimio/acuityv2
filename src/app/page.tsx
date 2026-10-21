@@ -61,6 +61,7 @@ type ScreenId = TabId | "budget" | "commitments" | "tax" | "needs-review" | "ajo
 export default function SandboxPage() {
   const [session, setSession] = useState<any>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [profileName, setProfileName] = useState<string>("there");
   const supabase = createClient();
   const toast = useToast();
   const { hidden, toggleHidden, fmt } = useCurrency();
@@ -102,6 +103,17 @@ export default function SandboxPage() {
     if (latest > previous && latest > 100) setNavHidden(true);
     else setNavHidden(false);
   });
+
+  // Fetch Profile Name
+  useEffect(() => {
+    if (session?.user?.id) {
+      supabase.from("profiles").select("full_name").eq("id", session.user.id).single()
+        .then(({ data }) => {
+          if (data?.full_name) setProfileName(data.full_name);
+          else if (session.user.email) setProfileName(session.user.email.split("@")[0]);
+        });
+    }
+  }, [session, supabase]);
 
   const refreshData = useCallback(async () => {
     try {
@@ -291,9 +303,6 @@ export default function SandboxPage() {
     return true;
   });
 
-  // Get username for AI greeting
-  const userName = session?.user?.email?.split("@")[0].split(".")[0] || "there";
-
   return (
     <main className="relative flex min-h-[100dvh] flex-col overflow-x-hidden" style={{ background: "var(--bg)" }}>
       <PullToRefresh onRefresh={refreshData}>
@@ -404,7 +413,6 @@ export default function SandboxPage() {
                   nextIncomeDate={nextIncomeDate}
                 />
 
-                {/* Quick action tiles - Hardcoded dark background */}
                 <div className="grid grid-cols-3 gap-3">
                   <button
                     onClick={() => setActiveScreen("budget")}
@@ -522,11 +530,10 @@ export default function SandboxPage() {
         onImportSuccess={() => { refreshData(); toast("Statement imported"); }}
       />
       
-      {/* Added userName prop */}
       <AIDrawer 
         isOpen={isAdvisorOpen} 
         onClose={() => setIsAdvisorOpen(false)} 
-        userName={userName}
+        fullName={profileName}
       />
       
       <SettingsSheet

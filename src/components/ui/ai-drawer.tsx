@@ -33,7 +33,7 @@ function formatMessage(content: string) {
   });
 }
 
-export function AIDrawer({ isOpen, onClose, userName = "there" }: { isOpen: boolean, onClose: () => void, userName?: string }) {
+export function AIDrawer({ isOpen, onClose, fullName = "there" }: { isOpen: boolean, onClose: () => void, fullName?: string }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isThinking, setIsThinking] = useState(false);
@@ -80,6 +80,9 @@ export function AIDrawer({ isOpen, onClose, userName = "there" }: { isOpen: bool
 
   if (!isOpen) return null;
 
+  // Get first name only for the greeting
+  const firstName = fullName.split(" ")[0];
+
   return (
     <AnimatePresence>
       <motion.div 
@@ -89,36 +92,39 @@ export function AIDrawer({ isOpen, onClose, userName = "there" }: { isOpen: bool
         transition={{ type: "spring", damping: 25, stiffness: 200 }}
         className="fixed inset-0 z-[100] flex flex-col h-[100dvh] bg-[#0b0b0c]"
       >
-        {/* Animated Gradient Header */}
+        {/* 
+          Animated Gradient Header 
+          Blends smoothly from Orange-Red to Black
+        */}
         <style>{`
-          @keyframes gradientShift {
+          @keyframes gradientFlow {
             0% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
           }
-          .animated-gradient {
-            background: linear-gradient(270deg, #DE3121, #8b1207, #0b0b0c, #0b0b0c);
-            background-size: 400% 400%;
-            animation: gradientShift 12s ease infinite;
+          .flowing-gradient {
+            background: linear-gradient(135deg, #DE3121 0%, #0b0b0c 60%, #0b0b0c 100%);
+            background-size: 200% 200%;
+            animation: gradientFlow 8s ease infinite;
           }
         `}</style>
-        
-        <div className="relative shrink-0 flex flex-col px-6 pt-[calc(env(safe-area-inset-top)+20px)] pb-8 animated-gradient">
+
+        <div className="relative shrink-0 flex flex-col px-6 pt-[calc(env(safe-area-inset-top)+20px)] pb-10 flowing-gradient">
           <button 
             onClick={onClose}
-            className="absolute right-5 top-[calc(env(safe-area-inset-top)+16px)] flex h-8 w-8 items-center justify-center rounded-full bg-black/20 text-white z-50 hover:bg-black/40 transition-colors"
+            className="absolute right-5 top-[calc(env(safe-area-inset-top)+16px)] flex h-9 w-9 items-center justify-center rounded-full bg-black/20 text-white z-50 hover:bg-black/40 transition-colors"
           >
             <X size={18} />
           </button>
 
           <h1 className="text-[34px] font-semibold text-white leading-tight mt-6">
-            Hello {userName}<br/>May I help you?
+            Hello {firstName}<br/>May I help you?
           </h1>
         </div>
 
         {/* Suggestion Chips */}
         {messages.length === 0 && (
-          <div className="flex-1 overflow-y-auto px-6 pt-4">
+          <div className="flex-1 overflow-y-auto px-6 pt-6">
             <div className="flex items-center gap-2 mb-4 text-white/90">
               <Sparkles size={18} />
               <span className="text-[16px] font-semibold">Acuity AI</span>
