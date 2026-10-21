@@ -44,7 +44,7 @@ export function FloatingTabBar({
         <div 
           className={cn(
             "flex items-center rounded-full border border-white/10 bg-[#1c1c1e]/95 px-2 py-2 shadow-2xl shadow-black/60 backdrop-blur-xl overflow-hidden transition-all duration-400 ease-in-out",
-            // The container shrinks to just fit the Home button when in mini mode
+            // Container shrinks to just fit the Home button when mini
             isMini ? "w-[60px]" : "flex-1"
           )}
         >
@@ -71,11 +71,12 @@ export function FloatingTabBar({
           <div 
             className={cn(
               "grid transition-all duration-400 ease-in-out",
-              // When mini, width is 0fr and it's clipped. When full, it's 1fr.
+              // Width is 0 when mini, 168px (3 x 56px) when expanded
               isMini ? "grid-cols-[0fr] opacity-0" : "grid-cols-[1fr] opacity-100"
             )}
           >
-            <div className="overflow-hidden flex items-center justify-around">
+            {/* Forced width ensures the icons distribute evenly */}
+            <div className="overflow-hidden flex items-center justify-around w-[168px]">
               {tabs.slice(1).map(({ id, label, icon: Icon }) => {
                 const isActive = activeTab === id;
                 return (
