@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { ScreenHeader, IconButton } from "@/components/ui/screen-header";
-import { Plus, Trash2, RefreshCw, ArrowRightLeft, TrendingUp, Scale, Coins } from "lucide-react";
+import { Plus, Trash2, ArrowRightLeft, TrendingUp, Scale, Coins, Pencil } from "lucide-react";
 import {
-  getAccounts, createAccount, deleteAccount, getAssets, addAsset, deleteAsset, clearDataCache,
+  getAccounts, createAccount, deleteAccount, getAssets, addAsset, updateAsset, deleteAsset, clearDataCache,
 } from "@/lib/supabase/database";
 import { Modal } from "@/components/ui/modal";
 import { Field, SelectField, Button } from "@/components/ui/form";
@@ -16,7 +16,6 @@ import { StackedAccountCard } from "@/components/ui/stacked-account-card";
 import { useCurrency } from "@/lib/currency";
 import { useToast } from "@/components/ui/toast";
 import type { Account, Asset } from "@/lib/types";
-import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
@@ -30,6 +29,7 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
   const [isCryptoOpen, setIsCryptoOpen] = useState(false);
   
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
+  const [editingAssetId, setEditingAssetId] = useState<string | null>(null);
 
   const [name, setName] = useState("");
   const [institution, setInstitution] = useState("");
@@ -67,15 +67,20 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
     } catch (e: any) { toast(e.message ?? "Could not create", "err"); }
   };
 
-  const addA = async () => {
+  const saveAsset = async () => {
     if (!name || !balance) { toast("Name and value required", "err"); return; }
     try {
-      await addAsset(name, assetType, balance);
-      toast("Added");
+      if (editingAssetId) {
+        await updateAsset(editingAssetId, name, assetType, balance);
+        toast("Asset updated");
+      } else {
+        await addAsset(name, assetType, balance);
+        toast("Asset added");
+      }
       setModal(null);
-      setName(""); setBalance(0);
+      setName(""); setBalance(0); setEditingAssetId(null);
       load();
-    } catch (e: any) { toast(e.message ?? "Could not add", "err"); }
+    } catch (e: any) { toast(e.message ?? "Could not save", "err"); }
   };
 
   const delAcc = async (a: Account) => {
@@ -90,10 +95,20 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
     load();
   };
 
+  const openEditAsset = (a: Asset) => {
+    setEditingAssetId(a.id);
+    setName(a.name);
+    setAssetType(a.type);
+    setBalance(a.value_minor / 100);
+    setModal("asset");
+  };
+
   const totalLiquid = accounts.reduce((s, a) => s + (a.current_minor ?? a.balance_minor), 0) / 100;
   const totalAssets = assets.filter((a) => a.type === "asset").reduce((s, a) => s + a.value_minor, 0) / 100;
   const totalLiab = -(assets.filter((a) => a.type === "liability").reduce((s, a) => s + a.value_minor, 0) / 100);
   const netWorth = totalLiquid + totalAssets + totalLiab;
+
+  const isAnyExpanded = expandedCard !== null;
 
   return (
     <div className="min-h-[100dvh] pb-32">
@@ -127,17 +142,15 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
             {accounts.map((a, index) => {
               const bal = (a.current_minor ?? a.balance_minor) / 100;
               const isExpanded = expandedCard === a.id;
-              const isAnyExpanded = expandedCard !== null;
               
               return (
                 <div 
                   key={a.id} 
                   className={cn(
                     "w-full px-2 transition-all duration-300",
-                    // Only apply negative top margin if this is not the first card AND no card is expanded
-                    index > 0 && !isAnyExpanded ? "-mt-14" : "mt-0"
+                    index > 0 && !isAnyExpanded ? "-mt-10" : "mt-3"
                   )}
-                  style={{ zIndex: isExpanded ? 20 : 10 - index }}
+                  style={{ zIndex: isExpanded ? 50 : 10 - index }}
                 >
                   <StackedAccountCard 
                     account={a} 
@@ -145,26 +158,9 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
                     fmt={fmt} 
                     isExpanded={isExpanded || !isAnyExpanded}
                     onClick={() => setExpandedCard(isExpanded ? null : a.id)}
+                    onCheckBalance={() => setCheckinAccount(a)}
+                    onDelete={() => delAcc(a)}
                   />
-                  
-                  {/* Actions shown INSIDE the expanded card area */}
-                  <AnimatePresence>
-                    {isExpanded && (
-                      <motion.div 
-                        initial={{ opacity: 0, height: 0 }} 
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="flex justify-end gap-4 px-4 py-3 overflow-hidden"
-                      >
-                        <button onClick={() => setCheckinAccount(a)} className="flex items-center gap-1.5 text-[12px] font-semibold text-[#DE3121]">
-                          <RefreshCw size={13} /> Check Balance
-                        </button>
-                        <button onClick={() => delAcc(a)} className="flex items-center gap-1.5 text-[12px] font-semibold text-[var(--danger)]">
-                          <Trash2 size={13} /> Delete
-                        </button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
                 </div>
               );
             })}
@@ -208,6 +204,8 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-[14px] font-semibold tabular text-[var(--text-1)]">{fmt(a.value_minor / 100)}</span>
+                  {/* EDIT BUTTON FOR OFFLINE ASSETS ONLY */}
+                  <button onClick={() => openEditAsset(a)} className="text-[var(--brand)]"><Pencil size={14} /></button>
                   <button onClick={() => delA(a)} className="text-[var(--danger)]"><Trash2 size={14} /></button>
                 </div>
               </div>
@@ -218,7 +216,7 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
           </div>
 
           <div className="flex gap-2 mt-3">
-            <Button variant="ghost" onClick={() => setModal("asset")} className="flex-1 h-11 text-[13px]">
+            <Button variant="ghost" onClick={() => { setEditingAssetId(null); setName(""); setBalance(0); setAssetType("asset"); setModal("asset"); }} className="flex-1 h-11 text-[13px]">
               + Add Asset / Liability
             </Button>
             <Button variant="ghost" onClick={() => setIsCryptoOpen(true)} className="flex-1 h-11 text-[13px] border-[#DE3121]/20 text-[#DE3121]">
@@ -258,7 +256,11 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
         </div>
       </Modal>
 
-      <Modal open={modal === "asset"} onClose={() => setModal(null)} title="Add Asset / Liability">
+      <Modal 
+        open={modal === "asset"} 
+        onClose={() => { setModal(null); setEditingAssetId(null); setName(""); setBalance(0); }} 
+        title={editingAssetId ? "Edit Asset / Liability" : "Add Asset / Liability"}
+      >
         <div className="space-y-3">
           <SelectField label="Type" value={assetType} onChange={(e) => setAssetType(e.target.value as "asset" | "liability")}>
             <option value="asset">Asset (adds to net)</option>
@@ -266,7 +268,7 @@ export function AccountsScreen({ onBack }: { onBack: () => void }) {
           </SelectField>
           <Field label="Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Land in Lekki" />
           <CurrencyField label="Value" value={balance} onChange={setBalance} />
-          <Button onClick={addA}>Save</Button>
+          <Button onClick={saveAsset}>{editingAssetId ? "Update Asset" : "Save"}</Button>
         </div>
       </Modal>
 

@@ -264,9 +264,11 @@ export async function deleteAccount(id: string) {
 
 export const getAssets = () => list<Asset>("assets");
 
-// UPDATED: now accepts optional meta for crypto data
 export const addAsset = (name: string, type: "asset" | "liability", value: number, meta?: any) =>
   insertRow("assets", { name, type, value_minor: toMinor(value), meta });
+
+export const updateAsset = (id: string, name: string, type: "asset" | "liability", value: number) =>
+  patchRow("assets", id, { name, type, value_minor: toMinor(value) });
 
 export const deleteAsset = (id: string) => removeRow("assets", id);
 
