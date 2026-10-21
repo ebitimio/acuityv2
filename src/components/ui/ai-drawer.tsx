@@ -2,8 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ArrowUp, Sparkles, Loader2 } from "lucide-react";
-import { Modal } from "./modal"; // Using your existing Modal
+import { X, ArrowUp, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Message {
@@ -46,7 +45,29 @@ export function AIDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
   ]);
   const [input, setInput] = useState("");
   const [isThinking, setIsThinking] = useState(false);
+  const [viewHeight, setViewHeight] = useState<number | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
+
+  // This handles the mobile keyboard height dynamically
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => setViewHeight(vv.height);
+    update();
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+    };
+  }, []);
+
+  // Lock body scroll when open
+  useEffect(() => {
+    if (isOpen) document.body.style.overflow = "hidden";
+    else document.body.style.overflow = "";
+    return () => { document.body.style.overflow = ""; };
+  }, [isOpen]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -72,9 +93,7 @@ export function AIDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
 
       const data = await res.json();
 
-      if (!res.ok) {
-        throw new Error(data.error || "The AI encountered an error.");
-      }
+      if (!res.ok) throw new Error(data.error || "The AI encountered an error.");
 
       setMessages((prev) => [
         ...prev,
@@ -91,76 +110,87 @@ export function AIDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () => 
   };
 
   return (
-    <Modal open={isOpen} onClose={onClose} title="Acuity Advisor">
-      {/* 
-        The Modal handles the background lock and safe areas.
-        We set a fixed height (70vh) so it acts as a bottom sheet.
-        The flex-col ensures the header stays top, chat scrolls, input stays bottom.
-      */}
-      <div className="flex flex-col h-[70dvh] min-h-0 overflow-hidden -mx-6 -mb-[calc(20px+env(safe-area-inset-bottom))]">
-        
-        {/* Chat Area - Only this scrolls */}
-        <div className="flex-1 overflow-y-auto px-6 pb-4">
-          <div className="flex flex-col gap-5 pt-2">
-            {messages.map((msg) => (
-              <motion.div 
-                key={msg.id} 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-              >
-                <div
-                  className={cn(
-                    "max-w-[85%] rounded-3xl p-4 text-[15px] leading-relaxed shadow-sm",
-                    msg.role === "user"
-                      ? "rounded-tr-md bg-[#DE3121] text-white"
-                      : "rounded-tl-md border border-[var(--line)] bg-[var(--surface-2)] text-[var(--text-1)]"
-                  )}
-                >
-                  {msg.role === "assistant" ? formatMessage(msg.content) : msg.content}
-                </div>
-              </motion.div>
-            ))}
-
-            {isThinking && (
-              <motion.div 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex justify-start"
-              >
-                <div className="flex gap-1.5 rounded-3xl rounded-tl-md border border-[var(--line)] bg-[var(--surface-2)] p-5">
-                  <span className="h-2 w-2 animate-bounce rounded-full bg-[var(--text-3)]" />
-                  <span className="h-2 w-2 animate-bounce rounded-full bg-[var(--text-3)]" style={{ animationDelay: "120ms" }} />
-                  <span className="h-2 w-2 animate-bounce rounded-full bg-[var(--text-3)]" style={{ animationDelay: "240ms" }} />
-                </div>
-              </motion.div>
-            )}
-            <div ref={endRef} />
-          </div>
-        </div>
-
-        {/* Input Area - Fixed at bottom of the sheet */}
-        <div className="shrink-0 border-t border-[var(--line)] bg-[var(--bg)] p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-          <div className="flex items-center gap-2 rounded-full border border-[var(--line-strong)] bg-[var(--surface-1)] p-2 shadow-lg">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && send()}
-              placeholder="Ask about your money..."
-              className="flex-1 bg-transparent px-4 text-[15px] text-[var(--text-1)] outline-none placeholder:text-[var(--text-3)]"
-            />
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ y: "100%" }}
+          animate={{ y: 0 }}
+          exit={{ y: "100%" }}
+          transition={{ type: "spring", damping: 25, stiffness: 200 }}
+          // Fixed height based on visualViewport so keyboard doesn't push it
+          style={{ height: viewHeight ? `${viewHeight}px` : "100dvh", bottom: 0 }}
+          className="fixed inset-x-0 z-[100] flex flex-col bg-[var(--surface-3)] rounded-t-[32px] overflow-hidden shadow-2xl"
+        >
+          {/* Header */}
+          <div className="shrink-0 flex items-center justify-between border-b border-[var(--line)] bg-[var(--surface-3)] p-5 pt-[max(1.25rem,env(safe-area-inset-top))]">
+            <h2 className="text-[17px] font-bold text-[var(--text-1)]">Acuity Advisor</h2>
             <button
-              onClick={send}
-              disabled={!input.trim() || isThinking}
-              aria-label="Send"
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#DE3121] text-white transition-transform active:scale-95 disabled:opacity-40"
+              onClick={onClose}
+              aria-label="Close"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--fill-1)] text-[var(--text-2)]"
             >
-              {isThinking ? <Loader2 size={18} className="animate-spin" /> : <ArrowUp size={20} strokeWidth={3} />}
+              <X size={18} />
             </button>
           </div>
-        </div>
-      </div>
-    </Modal>
+
+          {/* Scrollable Chat Area */}
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex flex-col gap-5">
+              {messages.map((msg) => (
+                <motion.div
+                  key={msg.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                >
+                  <div
+                    className={cn(
+                      "max-w-[85%] rounded-3xl p-4 text-[15px] leading-relaxed",
+                      msg.role === "user"
+                        ? "rounded-tr-md bg-[#DE3121] text-white"
+                        : "rounded-tl-md border border-[var(--line)] bg-[var(--surface-2)] text-[var(--text-1)]"
+                    )}
+                  >
+                    {msg.role === "assistant" ? formatMessage(msg.content) : msg.content}
+                  </div>
+                </motion.div>
+              ))}
+              {isThinking && (
+                <div className="flex justify-start">
+                  <div className="flex gap-1.5 rounded-3xl rounded-tl-md border border-[var(--line)] bg-[var(--surface-2)] p-5">
+                    <span className="h-2 w-2 animate-bounce rounded-full bg-[var(--text-3)]" />
+                    <span className="h-2 w-2 animate-bounce rounded-full bg-[var(--text-3)]" style={{ animationDelay: "120ms" }} />
+                    <span className="h-2 w-2 animate-bounce rounded-full bg-[var(--text-3)]" style={{ animationDelay: "240ms" }} />
+                  </div>
+                </div>
+              )}
+              <div ref={endRef} />
+            </div>
+          </div>
+
+          {/* Input Area - Anchored to the bottom of the flex container (which is now the keyboard top) */}
+          <div className="shrink-0 border-t border-[var(--line)] bg-[var(--surface-3)] p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+            <div className="flex items-center gap-2 rounded-full border border-[var(--line-strong)] bg-[var(--surface-1)] p-2">
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && send()}
+                placeholder="Ask about your money..."
+                className="flex-1 bg-transparent px-4 text-[15px] text-[var(--text-1)] outline-none placeholder:text-[var(--text-3)]"
+              />
+              <button
+                onClick={send}
+                disabled={!input.trim() || isThinking}
+                aria-label="Send"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#DE3121] text-white disabled:opacity-40"
+              >
+                {isThinking ? <Loader2 size={18} className="animate-spin" /> : <ArrowUp size={20} strokeWidth={3} />}
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
