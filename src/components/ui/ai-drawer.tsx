@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ArrowUp, Loader2, Sparkles, Image as ImageIcon, Mic, ArrowUpRight } from "lucide-react";
+import { X, ArrowUp, Loader2, Sparkles, ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Message {
@@ -80,7 +80,6 @@ export function AIDrawer({ isOpen, onClose, fullName = "there" }: { isOpen: bool
 
   if (!isOpen) return null;
 
-  // Get first name only for the greeting
   const firstName = fullName.split(" ")[0];
 
   return (
@@ -93,23 +92,26 @@ export function AIDrawer({ isOpen, onClose, fullName = "there" }: { isOpen: bool
         className="fixed inset-0 z-[100] flex flex-col h-[100dvh] bg-[#0b0b0c]"
       >
         {/* 
-          Animated Gradient Header 
-          Blends smoothly from Orange-Red to Black
+          Seamless gradient header. 
+          The radial-gradient ensures it bleeds smoothly into the black background below without a hard line.
         */}
         <style>{`
           @keyframes gradientFlow {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+            0% { transform: scale(1) translate(0, 0); opacity: 0.9; }
+            50% { transform: scale(1.1) translate(2%, 2%); opacity: 1; }
+            100% { transform: scale(1) translate(0, 0); opacity: 0.9; }
           }
-          .flowing-gradient {
-            background: linear-gradient(135deg, #DE3121 0%, #0b0b0c 60%, #0b0b0c 100%);
-            background-size: 200% 200%;
-            animation: gradientFlow 8s ease infinite;
+          .flowing-blob {
+            background: radial-gradient(circle at 30% 20%, #DE3121 0%, transparent 60%);
+            animation: gradientFlow 10s ease-in-out infinite;
+            filter: blur(40px);
           }
         `}</style>
 
-        <div className="relative shrink-0 flex flex-col px-6 pt-[calc(env(safe-area-inset-top)+20px)] pb-10 flowing-gradient">
+        <div className="relative shrink-0 flex flex-col px-6 pt-[calc(env(safe-area-inset-top)+20px)] pb-10 overflow-hidden">
+          {/* Animated background blob */}
+          <div className="absolute inset-0 flowing-blob pointer-events-none" />
+          
           <button 
             onClick={onClose}
             className="absolute right-5 top-[calc(env(safe-area-inset-top)+16px)] flex h-9 w-9 items-center justify-center rounded-full bg-black/20 text-white z-50 hover:bg-black/40 transition-colors"
@@ -117,14 +119,14 @@ export function AIDrawer({ isOpen, onClose, fullName = "there" }: { isOpen: bool
             <X size={18} />
           </button>
 
-          <h1 className="text-[34px] font-semibold text-white leading-tight mt-6">
+          <h1 className="relative z-10 text-[34px] font-semibold text-white leading-tight mt-6">
             Hello {firstName}<br/>May I help you?
           </h1>
         </div>
 
         {/* Suggestion Chips */}
         {messages.length === 0 && (
-          <div className="flex-1 overflow-y-auto px-6 pt-6">
+          <div className="flex-1 overflow-y-auto px-6 pt-2">
             <div className="flex items-center gap-2 mb-4 text-white/90">
               <Sparkles size={18} />
               <span className="text-[16px] font-semibold">Acuity AI</span>
@@ -157,7 +159,7 @@ export function AIDrawer({ isOpen, onClose, fullName = "there" }: { isOpen: bool
         {/* Chat Area */}
         {messages.length > 0 && (
           <div className="flex-1 overflow-y-auto px-6 pb-4">
-            <div className="flex flex-col gap-5 pt-4">
+            <div className="flex flex-col gap-5 pt-2">
               {messages.map((msg) => (
                 <motion.div
                   key={msg.id}
@@ -192,13 +194,9 @@ export function AIDrawer({ isOpen, onClose, fullName = "there" }: { isOpen: bool
           </div>
         )}
 
-        {/* Input Area */}
+        {/* Input Area - Removed Mic and Image buttons */}
         <div className="shrink-0 px-4 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-2 bg-[#0b0b0c]">
           <div className="flex items-end gap-2 rounded-3xl bg-[#1c1c1e] p-2 border border-white/10 shadow-2xl">
-            <button className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white/50 hover:text-white transition-colors">
-              <ImageIcon size={20} />
-            </button>
-            
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -209,13 +207,9 @@ export function AIDrawer({ isOpen, onClose, fullName = "there" }: { isOpen: bool
                 }
               }}
               placeholder="Enter a prompt here"
-              className="flex-1 max-h-32 min-h-[40px] bg-transparent py-2.5 text-[15px] text-white outline-none placeholder:text-white/40 resize-none"
+              className="flex-1 max-h-32 min-h-[40px] bg-transparent px-4 py-2.5 text-[15px] text-white outline-none placeholder:text-white/40 resize-none"
               rows={1}
             />
-
-            <button className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white/50 hover:text-white transition-colors">
-              <Mic size={20} />
-            </button>
 
             <button
               onClick={() => send(input)}
