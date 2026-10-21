@@ -202,18 +202,14 @@ export async function splitTransaction(
 export async function transferFunds(fromAccountId: string, toAccountId: string, amountMinor: number, note: string, dateISO: string) {
   const { sb } = await ctx();
   
-  // 1. Get account names and current balances
-  const { data: accs } = await sb.from("accounts").select("id, name, balance_minor").in("id", [fromAccountId, toAccountId]);
-  const fromAcc = accs?.find(a => a.id === fromAccountId);
-  const toAcc = accs?.find(a => a.id === toAccountId);
+  // 1. Get account names for the description
+  const { data: accs } = await sb.from("accounts").select("id, name").in("id", [fromAccountId, toAccountId]);
+  const fromName = accs?.find(a => a.id === fromAccountId)?.name || "Account";
+  const toName = accs?.find(a => a.id === toAccountId)?.name || "Account";
   
-  if (!fromAcc || !toAcc) throw new Error("Account not found");
-
-  const fromName = fromAcc.name;
-  const toName = toAcc.name;
   const desc = note ? `${note} (${fromName} to ${toName})` : `Transfer from ${fromName} to ${toName}`;
 
-  // 2. Insert debit from source
+  // 2. Debit from source
   const { error: e1 } = await sb.from("transactions").insert({
     account_id: fromAccountId,
     amount_minor: amountMinor,
@@ -226,7 +222,7 @@ export async function transferFunds(fromAccountId: string, toAccountId: string, 
   });
   if (e1) throw e1;
 
-  // 3. Insert credit to destination
+  // 3. Credit to destination
   const { error: e2 } = await sb.from("transactions").insert({
     account_id: toAccountId,
     amount_minor: amountMinor,
@@ -238,13 +234,6 @@ export async function transferFunds(fromAccountId: string, toAccountId: string, 
     status: "posted",
   });
   if (e2) throw e2;
-
-  // 4. FORCE the accounts table to reflect the new balances immediately
-  const { error: e3 } = await sb.from("accounts").update({ balance_minor: fromAcc.balance_minor - amountMinor }).eq("id", fromAccountId);
-  if (e3) throw e3;
-
-  const { error: e4 } = await sb.from("accounts").update({ balance_minor: toAcc.balance_minor + amountMinor }).eq("id", toAccountId);
-  if (e4) throw e4;
 }
 
 /* ---------- accounts ---------- */
