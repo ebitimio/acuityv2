@@ -205,16 +205,20 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
 
           <div>
             <p className="mb-1.5 px-1 text-[13px] font-medium text-[var(--text-3)]">Date</p>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="w-full rounded-xl border border-[var(--line-strong)] bg-[var(--surface-2)] px-4 py-3 text-[15px] text-[var(--text-1)] focus:border-[var(--brand)] outline-none"
-            />
+            {/* Wrapping the date input to force it to fit within the category's width */}
+            <div className="w-full overflow-hidden rounded-xl border border-[var(--line-strong)] bg-[var(--surface-2)]">
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="w-full px-4 py-3 text-[15px] text-[var(--text-1)] bg-transparent outline-none focus:border-[var(--brand)] border-none box-border appearance-none"
+                style={{ WebkitAppearance: "none" }}
+              />
+            </div>
           </div>
         </div>
 
-        {/* Keypad & Save (Anchored to bottom) */}
+        {/* Keypad & Save */}
         <div className="mt-auto pb-2 pt-4 shrink-0">
           {error && (
             <p className="mb-2 text-center text-[12px] font-medium text-[var(--danger)]">
