@@ -89,31 +89,36 @@ export function AIDrawer({ isOpen, onClose, userName = "there" }: { isOpen: bool
         transition={{ type: "spring", damping: 25, stiffness: 200 }}
         className="fixed inset-0 z-[100] flex flex-col h-[100dvh] bg-[#0b0b0c]"
       >
-        {/* The Purple/Orange Gradient Header */}
-        <div className="relative shrink-0 flex flex-col px-6 pt-[calc(env(safe-area-inset-top)+20px)] pb-8 bg-gradient-to-b from-[#DE3121] to-[#0b0b0c]">
-          <div className="flex items-center justify-between mb-6">
-            <button className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white">
-               {/* Hamburger icon placeholder */}
-               <div className="w-5 h-0.5 bg-white mb-1 rounded-full" />
-               <div className="w-5 h-0.5 bg-white mb-1 rounded-full" />
-               <div className="w-5 h-0.5 bg-white rounded-full" />
-            </button>
-            <div className="h-10 w-10 rounded-full bg-black/20 border border-white/20 overflow-hidden">
-              {/* User Profile Avatar */}
-               <div className="flex h-full w-full items-center justify-center text-white font-bold text-[14px]">
-                 {userName.charAt(0).toUpperCase()}
-               </div>
-            </div>
-          </div>
+        {/* Animated Gradient Header */}
+        <style>{`
+          @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+          }
+          .animated-gradient {
+            background: linear-gradient(270deg, #DE3121, #8b1207, #0b0b0c, #0b0b0c);
+            background-size: 400% 400%;
+            animation: gradientShift 12s ease infinite;
+          }
+        `}</style>
+        
+        <div className="relative shrink-0 flex flex-col px-6 pt-[calc(env(safe-area-inset-top)+20px)] pb-8 animated-gradient">
+          <button 
+            onClick={onClose}
+            className="absolute right-5 top-[calc(env(safe-area-inset-top)+16px)] flex h-8 w-8 items-center justify-center rounded-full bg-black/20 text-white z-50 hover:bg-black/40 transition-colors"
+          >
+            <X size={18} />
+          </button>
 
-          <h1 className="text-[34px] font-semibold text-white leading-tight">
+          <h1 className="text-[34px] font-semibold text-white leading-tight mt-6">
             Hello {userName}<br/>May I help you?
           </h1>
         </div>
 
-        {/* Suggestion Chips (only show if no messages) */}
+        {/* Suggestion Chips */}
         {messages.length === 0 && (
-          <div className="flex-1 overflow-y-auto px-6 pt-2">
+          <div className="flex-1 overflow-y-auto px-6 pt-4">
             <div className="flex items-center gap-2 mb-4 text-white/90">
               <Sparkles size={18} />
               <span className="text-[16px] font-semibold">Acuity AI</span>
@@ -215,14 +220,6 @@ export function AIDrawer({ isOpen, onClose, userName = "there" }: { isOpen: bool
             </button>
           </div>
         </div>
-
-        {/* Close Button for Mobile Navigation (Absolute) */}
-        <button
-          onClick={onClose}
-          className="absolute right-4 top-[calc(env(safe-area-inset-top)+16px)] flex h-8 w-8 items-center justify-center rounded-full bg-black/30 text-white backdrop-blur-md z-50"
-        >
-          <X size={16} />
-        </button>
       </motion.div>
     </AnimatePresence>
   );
