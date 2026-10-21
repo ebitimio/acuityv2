@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { ScreenHeader } from "@/components/ui/screen-header";
-import { getTransactionsSince, getAccounts, getAssets, getBudgets } from "@/lib/supabase/database";
+import { getTransactionsSince, getAccounts, getAssets } from "@/lib/supabase/database";
 import { startOfMonthISO } from "@/lib/dates";
 import { useCurrency } from "@/lib/currency";
 import type { Txn, Account, Asset, Budget } from "@/lib/types";
@@ -62,7 +62,6 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
   });
   const sortedCats = [...byCat.entries()].sort((a, b) => b[1] - a[1]);
 
-  // Heatmap Logic
   const heatmap = useMemo(() => {
     const days = [];
     for (let i = 29; i >= 0; i--) {
@@ -85,32 +84,18 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
     
     const pct = totalCatBudget > 0 ? Math.min((total / totalCatBudget) * 100, 100) : 0;
 
-    const subCats = new Map<string, { amount: number, count: number }>();
-    catTxns.forEach(t => {
-      const k = t.description_clean || "Other";
-      const prev = subCats.get(k) || { amount: 0, count: 0 };
-      subCats.set(k, { amount: prev.amount + t.amount_minor / 100, count: prev.count + 1 });
-    });
-    const sortedSub = [...subCats.entries()].sort((a, b) => b[1].amount - a[1].amount).slice(0, 5);
+    // Get days with spending for the current month calendar
+    const daysWithSpending = new Set(
+      catTxns
+        .filter(t => new Date(t.date).getMonth() === new Date().getMonth())
+        .map(t => new Date(t.date).getDate())
+    );
 
-    const barData = [];
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date();
-      d.setMonth(d.getMonth() - i);
-      const monthLabel = d.toLocaleDateString("en-NG", { month: "short" });
-      const monthStart = new Date(d.getFullYear(), d.getMonth(), 1).toISOString();
-      const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString();
-      
-      const spent = txns.filter(t => 
-        (t.category_name || "Uncategorized") === selectedCategory && 
-        t.direction === "debit" &&
-        t.date >= monthStart && 
-        t.date <= monthEnd
-      ).reduce((s, t) => s + t.amount_minor, 0) / 100;
-
-      barData.push({ label: monthLabel, value: spent });
-    }
-    const maxBar = Math.max(...barData.map(d => d.value), 1);
+    // Calendar logic
+    const today = new Date();
+    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).getDay();
+    const calendarDays = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
     return (
       <div className="min-h-[100dvh] pb-32">
@@ -119,6 +104,7 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
           onBack={() => setSelectedCategory(null)} 
         />
         <div className="space-y-4 px-4 pt-6">
+          {/* Gauge Card */}
           <div className="card p-6">
             <div className="flex items-center justify-between mb-4">
               <GaugeArc percentage={pct} />
@@ -134,42 +120,79 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
                 )}
               </div>
             </div>
-            
-            <div className="mt-6 border-t border-[var(--line)] pt-4">
-              <div className="flex items-end justify-between h-24 gap-2">
-                {barData.map((d) => (
-                  <div key={d.label} className="flex flex-col items-center flex-1 gap-2">
-                    <div 
-                      className="w-full rounded-t-sm bg-[#DE3121] transition-colors" 
-                      style={{ height: `${(d.value / maxBar) * 100}%`, minHeight: '4px' }} 
-                    />
-                    <span className="text-[10px] text-[var(--text-3)]">{d.label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
 
+          {/* NEW: Calendar View */}
           <div className="card p-6">
-            <p className="mb-4 text-[15px] font-semibold text-[var(--text-1)]">Subcategory Breakdown</p>
-            <div className="space-y-4">
-              {sortedSub.map(([name, data]) => (
-                <div key={name}>
-                  <div className="flex justify-between text-[14px] mb-1">
-                    <span className="text-[var(--text-1)]">{name}</span>
-                    <span className="font-semibold tabular text-[var(--text-1)]">{fmt(data.amount)}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-[var(--fill-2)]">
-                      <div className="h-full rounded-full bg-[#DE3121]" style={{ width: `${(data.amount / total) * 100}%` }} />
-                    </div>
-                    <span className="text-[11px] text-[var(--text-3)] w-8 text-right">{Math.round((data.amount / total) * 100)}%</span>
-                  </div>
-                </div>
+            <p className="mb-4 text-[15px] font-semibold text-[var(--text-1)]">
+              {today.toLocaleDateString("en-NG", { month: "long", year: "numeric" })}
+            </p>
+            
+            {/* Day Headers */}
+            <div className="grid grid-cols-7 gap-1 mb-2 text-center">
+              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(d => (
+                <div key={d} className="text-[10px] font-medium text-[var(--text-3)]">{d[0]}</div>
               ))}
             </div>
+            
+            {/* Calendar Grid */}
+            <div className="grid grid-cols-7 gap-1.5">
+              {/* Empty slots for days before the 1st */}
+              {Array.from({ length: firstDayOfMonth }).map((_, i) => (
+                <div key={`empty-${i}`} className="aspect-square" />
+              ))}
+              
+              {/* Actual days */}
+              {calendarDays.map(day => {
+                const hasSpend = daysWithSpending.has(day);
+                const isToday = day === today.getDate();
+                return (
+                  <div 
+                    key={day}
+                    className={cn(
+                      "flex items-center justify-center aspect-square rounded-full text-[13px] font-medium transition-colors",
+                      hasSpend ? "bg-[#DE3121] text-white" : "bg-[var(--fill-1)] text-[var(--text-2)]",
+                      isToday && "ring-2 ring-[#DE3121] ring-offset-2 ring-offset-[var(--surface-2)]"
+                    )}
+                  >
+                    {day}
+                  </div>
+                );
+              })}
+            </div>
+            <p className="mt-4 text-[11px] text-[var(--text-3)] flex items-center gap-1">
+              <Info size={12} /> Days highlighted in red are days you spent money.
+            </p>
           </div>
 
+          {/* NEW: Transaction List */}
+          <div className="card p-0">
+            <div className="px-4 py-4 border-b border-[var(--line)]">
+              <p className="text-[15px] font-semibold text-[var(--text-1)]">Transactions</p>
+            </div>
+            <div className="divide-y divide-[var(--line)]">
+              {catTxns.slice(0, 10).map(t => (
+                <div key={t.id} className="flex items-center justify-between px-4 py-3">
+                  <div>
+                    <p className="text-[14px] font-medium text-[var(--text-1)]">
+                      {t.description_clean || "Unnamed"}
+                    </p>
+                    <p className="text-[11px] text-[var(--text-3)]">
+                      {new Date(t.date).toLocaleDateString("en-NG", { day: "numeric", month: "short" })}
+                    </p>
+                  </div>
+                  <span className="text-[14px] font-semibold tabular text-[var(--text-1)]">
+                    {fmt(t.amount_minor / 100)}
+                  </span>
+                </div>
+              ))}
+              {catTxns.length === 0 && (
+                <p className="px-4 py-6 text-center text-[14px] text-[var(--text-3)]">No transactions yet.</p>
+              )}
+            </div>
+          </div>
+
+          {/* Insight */}
           <div className="relative overflow-hidden rounded-2xl border border-[#DE3121]/20 bg-[#DE3121]/5 p-5">
             <div className="flex items-start gap-3">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#DE3121] text-white">
@@ -180,7 +203,7 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
                 <p className="mt-1 text-[13px] leading-relaxed text-[var(--text-2)]">
                   {pct > 90 
                     ? `You've used ${Math.round(pct)}% of your ${selectedCategory} budget. Consider slowing down to avoid going over.`
-                    : `You're on track with your ${selectedCategory} budget. Most of your spending here is on ${sortedSub[0]?.[0] || "recent items"}.`
+                    : `You're on track with your ${selectedCategory} budget.`
                   }
                 </p>
               </div>
@@ -241,7 +264,6 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
                 ))}
               </div>
 
-              {/* HARDCODED DARK CARD */}
               <div className="p-5 rounded-[24px] bg-[#1c1c1e] border border-white/5 shadow-xl">
                 <div className="flex items-center justify-between mb-4">
                   <p className="text-[14px] text-white/60">Total expenses</p>
@@ -316,7 +338,6 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
             </>
           ) : (
             <>
-              {/* HARDCODED DARK CARD */}
               <div className="p-6 rounded-[24px] bg-[#1c1c1e] border border-white/5 shadow-xl">
                 <p className="text-[14px] text-white/60 mb-1">Net Worth</p>
                 <p className="text-[32px] font-bold tabular text-white mb-2">{fmt(netWorth)}</p>
