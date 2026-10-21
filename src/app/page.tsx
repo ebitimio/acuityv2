@@ -291,6 +291,9 @@ export default function SandboxPage() {
     return true;
   });
 
+  // Get username for AI greeting
+  const userName = session?.user?.email?.split("@")[0].split(".")[0] || "there";
+
   return (
     <main className="relative flex min-h-[100dvh] flex-col overflow-x-hidden" style={{ background: "var(--bg)" }}>
       <PullToRefresh onRefresh={refreshData}>
@@ -518,7 +521,14 @@ export default function SandboxPage() {
         onClose={() => setIsImportOpen(false)}
         onImportSuccess={() => { refreshData(); toast("Statement imported"); }}
       />
-      <AIDrawer isOpen={isAdvisorOpen} onClose={() => setIsAdvisorOpen(false)} />
+      
+      {/* Added userName prop */}
+      <AIDrawer 
+        isOpen={isAdvisorOpen} 
+        onClose={() => setIsAdvisorOpen(false)} 
+        userName={userName}
+      />
+      
       <SettingsSheet
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
