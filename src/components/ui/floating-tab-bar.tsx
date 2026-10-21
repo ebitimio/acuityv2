@@ -26,25 +26,19 @@ export function FloatingTabBar({ activeTab, onTabChange, onAddClick, isHidden }:
   return (
     <motion.div
       initial={false}
+      // Slides down when scrolling down (isHidden), slides up when scrolling up
       animate={{ y: isHidden ? 120 : 0, opacity: isHidden ? 0 : 1 }}
       transition={{ type: "spring", stiffness: 260, damping: 25 }}
       className="fixed inset-x-0 bottom-0 z-50 flex justify-center pointer-events-none"
     >
       <div className="relative flex w-full max-w-md items-center justify-between px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pointer-events-auto">
         
-        {/* Main Nav Pill - Smoother animation */}
-        <motion.div 
-          layout
-          className={cn(
-            "flex items-center rounded-full border border-white/10 bg-[#1c1c1e]/95 px-2 py-2 shadow-2xl shadow-black/60 backdrop-blur-xl transition-all",
-            isHome ? "flex-1 justify-around" : "w-auto justify-center"
-          )}
-          // Smoother physics: lower stiffness, slightly higher damping for a glide effect
-          transition={{ type: "spring", stiffness: 180, damping: 28, mass: 0.8 }}
-        >
+        {/* Main Nav Pill - Fixed normal length */}
+        <div className="flex flex-1 items-center justify-around rounded-full border border-white/10 bg-[#1c1c1e]/95 px-2 py-2 shadow-2xl shadow-black/60 backdrop-blur-xl overflow-hidden">
           <AnimatePresence mode="popLayout">
             {tabs.map(({ id, label, icon: Icon }) => {
-              // Hide other tabs when not on home
+              // If we are not on home, hide the other tabs. 
+              // When we return home, they smoothly fade back in.
               if (!isHome && id !== "home") return null;
               
               const isActive = activeTab === id;
@@ -52,11 +46,10 @@ export function FloatingTabBar({ activeTab, onTabChange, onAddClick, isHidden }:
                 <motion.button
                   key={id}
                   layout
-                  initial={{ opacity: 0, scale: 0.85, filter: "blur(4px)" }}
-                  animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-                  exit={{ opacity: 0, scale: 0.85, filter: "blur(4px)" }}
-                  // Smoother fade/scale transition for the icons
-                  transition={{ type: "spring", stiffness: 200, damping: 25 }}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
                   onClick={() => onTabChange(id)}
                   aria-label={label}
                   className={cn(
@@ -68,7 +61,7 @@ export function FloatingTabBar({ activeTab, onTabChange, onAddClick, isHidden }:
                     <motion.div
                       layoutId="tab-pill"
                       className="absolute inset-0 rounded-full bg-white/10"
-                      transition={{ type: "spring", stiffness: 200, damping: 25 }}
+                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
                     />
                   )}
                   <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
@@ -76,7 +69,7 @@ export function FloatingTabBar({ activeTab, onTabChange, onAddClick, isHidden }:
               );
             })}
           </AnimatePresence>
-        </motion.div>
+        </div>
 
         {/* Floating Add Button */}
         {onAddClick && (
