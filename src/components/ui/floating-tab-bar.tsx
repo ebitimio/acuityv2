@@ -18,18 +18,9 @@ interface FloatingTabBarProps {
   onTabChange: (id: TabId) => void;
   onAddClick?: () => void;
   isHidden?: boolean;
-  forceMiniMode?: boolean;
 }
 
-export function FloatingTabBar({ 
-  activeTab, 
-  onTabChange, 
-  onAddClick, 
-  isHidden,
-  forceMiniMode = false
-}: FloatingTabBarProps) {
-  const isHome = activeTab === "home";
-
+export function FloatingTabBar({ activeTab, onTabChange, onAddClick, isHidden }: FloatingTabBarProps) {
   return (
     <motion.div
       initial={false}
@@ -39,41 +30,31 @@ export function FloatingTabBar({
     >
       <div className="relative flex w-full max-w-md items-center justify-between px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pointer-events-auto">
         
-        {/* Main Nav Pill - Restored to full width with even spacing */}
-        <div className="flex flex-1 items-center justify-around rounded-full border border-white/10 bg-[#1c1c1e]/95 px-2 py-2 shadow-2xl shadow-black/60 backdrop-blur-xl overflow-hidden">
-          <AnimatePresence mode="popLayout">
-            {tabs.map(({ id, label, icon: Icon }) => {
-              // When in mini mode on a sub-page, only show Home
-              if (!isHome && forceMiniMode && id !== "home") return null;
-              
-              const isActive = activeTab === id;
-              return (
-                <motion.button
-                  key={id}
-                  layout
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                  onClick={() => onTabChange(id)}
-                  aria-label={label}
-                  className={cn(
-                    "relative flex h-12 w-14 items-center justify-center rounded-full transition-colors shrink-0",
-                    isActive ? "text-white" : "text-white/40 hover:text-white/70"
-                  )}
-                >
-                  {isActive && (
-                    <motion.div
-                      layoutId="tab-pill"
-                      className="absolute inset-0 rounded-full bg-white/10"
-                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                    />
-                  )}
-                  <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
-                </motion.button>
-              );
-            })}
-          </AnimatePresence>
+        {/* Main Nav Pill */}
+        <div className="flex flex-1 items-center justify-around rounded-full border border-white/10 bg-[#1c1c1e]/95 px-2 py-2 shadow-2xl shadow-black/60 backdrop-blur-xl">
+          {tabs.map(({ id, label, icon: Icon }) => {
+            const isActive = activeTab === id;
+            return (
+              <button
+                key={id}
+                onClick={() => onTabChange(id)}
+                aria-label={label}
+                className={cn(
+                  "relative flex h-12 w-14 items-center justify-center rounded-full transition-colors",
+                  isActive ? "text-white" : "text-white/40 hover:text-white/70"
+                )}
+              >
+                {isActive && (
+                  <motion.div
+                    layoutId="tab-pill"
+                    className="absolute inset-0 rounded-full bg-white/10"
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  />
+                )}
+                <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
+              </button>
+            );
+          })}
         </div>
 
         {/* Floating Add Button */}

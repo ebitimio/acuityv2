@@ -90,8 +90,6 @@ export default function SandboxPage() {
   const [txnFilter, setTxnFilter] = useState<TransactionFilter>("all");
 
   const [navHidden, setNavHidden] = useState(false);
-  // Tracks if the user has scrolled up on a sub-page to trigger mini nav
-  const [hasScrolledUp, setHasScrolledUp] = useState(false); 
 
   const [wsOpen, setWsOpen] = useState(false);
   const [wsCreateOpen, setWsCreateOpen] = useState(false);
@@ -101,27 +99,9 @@ export default function SandboxPage() {
   const { scrollY } = useScroll();
   useMotionValueEvent(scrollY, "change", (latest) => {
     const previous = scrollY.getPrevious() || 0;
-    
-    // Scrolling down -> hide nav
-    if (latest > previous && latest > 100) {
-      setNavHidden(true);
-      setHasScrolledUp(false); // Reset mini mode trigger
-    } 
-    // Scrolling up -> show nav
-    else if (latest < previous) {
-      setNavHidden(false);
-      // If we are on a sub-page and the nav was hidden, trigger mini mode
-      if (activeScreen !== "home") {
-        setHasScrolledUp(true);
-      }
-    }
+    if (latest > previous && latest > 100) setNavHidden(true);
+    else setNavHidden(false);
   });
-
-  // Reset mini mode whenever the user switches pages
-  useEffect(() => {
-    setHasScrolledUp(false);
-    setNavHidden(false);
-  }, [activeScreen]);
 
   const refreshData = useCallback(async () => {
     try {
@@ -531,7 +511,6 @@ export default function SandboxPage() {
         onTabChange={handleTabChange}
         onAddClick={handleAddClick}
         isHidden={navHidden}
-        forceMiniMode={hasScrolledUp}
       />
 
       <ImportSheet
