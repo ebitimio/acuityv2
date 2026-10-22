@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Bell, AlertTriangle, Calendar, TrendingDown, X } from "lucide-react";
+import { Bell, AlertTriangle, Calendar, TrendingDown } from "lucide-react";
 import { Modal } from "./modal";
 import { getSafeToSpend, getRecurringItems, getHomeMetrics } from "@/lib/supabase/database";
-import type { SafeToSpend, RecurringItem, HomeMetrics } from "@/lib/types";
+import type { RecurringItem, HomeMetrics } from "@/lib/types";
 
 interface NotificationsSheetProps {
   isOpen: boolean;
