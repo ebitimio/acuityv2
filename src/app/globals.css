@@ -23,7 +23,6 @@
   --text-2: rgba(245, 245, 246, 0.6);
   --text-3: rgba(245, 245, 246, 0.38);
 
-  /* CHANGED: Teal to Orange-Red */
   --brand: #DE3121;
   --brand-soft: rgba(222, 49, 33, 0.14);
   
@@ -72,7 +71,6 @@
   --text-2: rgba(15, 17, 21, 0.62);
   --text-3: rgba(15, 17, 21, 0.4);
 
-  /* CHANGED: Teal to Orange-Red */
   --brand: #DE3121;
   --brand-soft: rgba(222, 49, 33, 0.12);
   
@@ -139,16 +137,42 @@ input,
 textarea,
 select {
   font-size: 16px !important;
+  /* Kill default iOS glow and outline on inputs */
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+  box-shadow: none;
 }
 
-:focus,
-:focus-visible {
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+/* Kill focus ring for ALL elements except where we explicitly allow it */
+:focus {
   outline: none;
 }
 
 :focus-visible {
-  outline: 2px solid var(--text-1);
-  outline-offset: 2px;
+  outline: none;
+}
+
+/* Kill the tap highlight everywhere including modal containers */
+* {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+/* iOS Safari glows on focusable containers */
+div:focus,
+div:focus-visible,
+button:focus,
+button:focus-visible {
+  outline: none;
+  box-shadow: none;
 }
 
 /* Hide native scrollbars everywhere */
