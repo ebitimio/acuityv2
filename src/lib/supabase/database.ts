@@ -14,9 +14,8 @@ const TX_FLAT =
   "id,amount_minor,direction,description_clean,description_raw,category_name,date,account_id";
 const NOT_SPLIT = 'category_name.is.null,category_name.neq."Split Parent"';
 
-// No more module-level cache — every call validates workspace from localStorage
 export function clearDataCache() {
-  // No-op now. Workspace is always read fresh from localStorage.
+  // No-op. Workspace is always read fresh from localStorage.
 }
 
 async function ctx() {
@@ -25,21 +24,15 @@ async function ctx() {
   const user = session?.user;
   if (!user) throw new Error("Not logged in");
 
-  // Read from localStorage EVERY time
   let stored: string | null = null;
   try { stored = typeof window !== "undefined" ? localStorage.getItem(KEY) : null; } catch {}
 
   if (stored) {
-    // Verify it belongs to this user
     const { data } = await sb.from("workspaces").select("id").eq("id", stored).eq("owner_id", user.id).maybeSingle();
-    if (data) {
-      return { sb, user, workspaceId: data.id };
-    }
-    // Stored workspace doesn't belong to user — clear it
+    if (data) return { sb, user, workspaceId: data.id };
     try { localStorage.removeItem(KEY); } catch {}
   }
 
-  // No valid stored workspace — fetch the user's first one
   const { data: ws, error } = await sb.from("workspaces").select("id").eq("owner_id", user.id).order("created_at").limit(1).single();
   if (error || !ws) throw new Error("Workspace not found");
   

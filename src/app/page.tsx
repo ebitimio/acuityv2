@@ -69,7 +69,7 @@ export default function SandboxPage() {
   const supabase = createClient();
   const toast = useToast();
   const { fmt } = useCurrency();
-  const { workspaces, active: activeWs, setActive: setActiveWs, createWorkspace, deleteWorkspace } = useWorkspace();
+  const { workspaces, active: activeWs, setActive: setActiveWs, createWorkspace, deleteWorkspace, loading: wsLoading } = useWorkspace();
 
   const [showSplash, setShowSplash] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
@@ -120,6 +120,18 @@ export default function SandboxPage() {
   }, [session, supabase]);
 
   const refreshData = useCallback(async () => {
+    const activeId = activeWs?.id;
+    if (!activeId) {
+      return;
+    }
+
+    try {
+      const stored = localStorage.getItem("acuity:activeWorkspace");
+      if (stored !== activeId) {
+        localStorage.setItem("acuity:activeWorkspace", activeId);
+      }
+    } catch {}
+
     clearDataCache();
     
     try {
@@ -175,7 +187,7 @@ export default function SandboxPage() {
     } catch {
       setCycle(null);
     }
-  }, []);
+  }, [activeWs?.id]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -189,7 +201,7 @@ export default function SandboxPage() {
   }, [supabase.auth]);
 
   useEffect(() => {
-    if (session) refreshData();
+    if (session && activeWs?.id) refreshData();
   }, [session, refreshData, activeWs?.id]);
 
   useEffect(() => {
@@ -234,7 +246,14 @@ export default function SandboxPage() {
     try { localStorage.setItem("acuity:activeWorkspace", id); } catch {}
     setActiveWs(id);
     clearDataCache();
-    window.location.href = "/";
+    // Reset local state to avoid stale data flashing
+    setMetrics(ZERO_METRICS);
+    setTransactions([]);
+    setCategoryRows([]);
+    setSafeToSpend(null);
+    setLiquidAssets(0);
+    // Trigger refetch
+    setTimeout(() => refreshData(), 100);
   };
 
   const handleCreateWorkspace = async () => {
@@ -244,11 +263,18 @@ export default function SandboxPage() {
     try {
       const ws = await createWorkspace(name);
       try { localStorage.setItem("acuity:activeWorkspace", ws.id); } catch {}
+      setActiveWs(ws.id);
       clearDataCache();
       toast(`Workspace "${name}" created`);
       setWsCreateOpen(false);
       setWsNewName("");
-      window.location.href = "/";
+      // Reset state
+      setMetrics(ZERO_METRICS);
+      setTransactions([]);
+      setCategoryRows([]);
+      setSafeToSpend(null);
+      setLiquidAssets(0);
+      setTimeout(() => refreshData(), 100);
     } catch (err: any) {
       console.error("Workspace create error:", err);
       toast(`Could not create: ${err?.message ?? "Unknown error"}`, "err");
@@ -266,7 +292,12 @@ export default function SandboxPage() {
     try {
       await deleteWorkspace(w.id);
       toast(`Deleted "${w.name}"`);
-      if (w.id === activeWs?.id) window.location.href = "/";
+      if (w.id === activeWs?.id) {
+        const remaining = workspaces.filter(x => x.id !== w.id);
+        if (remaining.length > 0) {
+          handleSwitchWorkspace(remaining[0].id);
+        }
+      }
     } catch (err: any) {
       toast(`Could not delete: ${err?.message ?? "Unknown error"}`, "err");
     }
@@ -288,7 +319,7 @@ export default function SandboxPage() {
   };
 
   if (showSplash) return <SplashScreen onComplete={() => setShowSplash(false)} />;
-  if (isAuthLoading) return <div className="min-h-[100dvh]" style={{ background: "var(--bg)" }} />;
+  if (isAuthLoading || wsLoading) return <div className="min-h-[100dvh]" style={{ background: "var(--bg)" }} />;
   if (!session) return <AuthScreen />;
   if (isLoading) return <HomeSkeleton />;
 

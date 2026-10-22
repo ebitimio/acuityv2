@@ -2,7 +2,6 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { clearDataCache } from "@/lib/supabase/database";
 
 export interface Workspace {
   id: string;
@@ -14,6 +13,7 @@ export interface Workspace {
 interface Ctx {
   workspaces: Workspace[];
   active: Workspace | null;
+  loading: boolean;
   setActive: (id: string) => void;
   createWorkspace: (name: string) => Promise<Workspace>;
   deleteWorkspace: (id: string) => Promise<void>;
@@ -26,11 +26,18 @@ const KEY = "acuity:activeWorkspace";
 export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [active, setActiveState] = useState<Workspace | null>(null);
+  const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
   const reload = useCallback(async () => {
+    setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      setWorkspaces([]);
+      setActiveState(null);
+      setLoading(false);
+      return;
+    }
 
     const { data } = await supabase
       .from("workspaces")
@@ -43,22 +50,21 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 
     if (list.length === 0) {
       setActiveState(null);
+      setLoading(false);
       return;
     }
 
-    // Try to restore from localStorage
     let storedId: string | null = null;
     try { storedId = localStorage.getItem(KEY); } catch {}
     
     const stored = list.find(w => w.id === storedId);
     if (stored) {
       setActiveState(stored);
-      return;
+    } else {
+      setActiveState(list[0]);
+      try { localStorage.setItem(KEY, list[0].id); } catch {}
     }
-
-    // Fall back to first workspace
-    setActiveState(list[0]);
-    try { localStorage.setItem(KEY, list[0].id); } catch {}
+    setLoading(false);
   }, [supabase]);
 
   useEffect(() => {
@@ -70,7 +76,6 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     if (!ws) return;
     setActiveState(ws);
     try { localStorage.setItem(KEY, id); } catch {}
-    clearDataCache();
   }, [workspaces]);
 
   const createWorkspace = useCallback(async (name: string) => {
@@ -88,7 +93,6 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     setWorkspaces(prev => [...prev, ws]);
     setActiveState(ws);
     try { localStorage.setItem(KEY, ws.id); } catch {}
-    clearDataCache();
     return ws;
   }, [supabase]);
 
@@ -104,21 +108,22 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
           try { localStorage.setItem(KEY, next[0].id); } catch {}
         } else {
           setActiveState(null);
+          try { localStorage.removeItem(KEY); } catch {}
         }
       }
       return next;
     });
-    clearDataCache();
   }, [supabase, active?.id]);
 
   const value = useMemo(() => ({
     workspaces,
     active,
+    loading,
     setActive,
     createWorkspace,
     deleteWorkspace,
     reload,
-  }), [workspaces, active, setActive, createWorkspace, deleteWorkspace, reload]);
+  }), [workspaces, active, loading, setActive, createWorkspace, deleteWorkspace, reload]);
 
   return <C.Provider value={value}>{children}</C.Provider>;
 }
