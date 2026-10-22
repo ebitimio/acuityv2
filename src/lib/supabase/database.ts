@@ -282,8 +282,8 @@ export async function updateWorkspaceBudget(newLimitMinor: number) {
 /* ---------- payday cycle ---------- */
 
 export async function getCurrentCycle(): Promise<{ cycle_start: string; cycle_end: string }> {
-  const { sb } = await ctx();
-  const { data, error } = await sb.rpc("get_current_cycle");
+  const { sb, workspaceId } = await ctx();
+  const { data, error } = await sb.rpc("get_current_cycle", { p_workspace_id: workspaceId });
   if (error) throw error;
   return data as { cycle_start: string; cycle_end: string };
 }
