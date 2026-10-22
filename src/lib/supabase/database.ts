@@ -599,3 +599,8 @@ export async function updateProfile(fullName: string) {
   const { error } = await sb.from("profiles").update({ full_name: fullName.trim() }).eq("id", user.id);
   if (error) throw error;
 }
+export async function updatePassword(newPassword: string) {
+  const { sb } = await ctx();
+  const { error } = await sb.auth.updateUser({ password: newPassword });
+  if (error) throw error;
+}

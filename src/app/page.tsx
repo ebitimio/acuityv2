@@ -67,7 +67,7 @@ export default function SandboxPage() {
   const [liquidAssets, setLiquidAssets] = useState(0);
   const supabase = createClient();
   const toast = useToast();
-  const { hidden, toggleHidden, fmt } = useCurrency();
+  const { fmt } = useCurrency();
   const { workspaces, active: activeWs, setActive: setActiveWs, createWorkspace, deleteWorkspace } = useWorkspace();
 
   const [showSplash, setShowSplash] = useState(true);
@@ -564,7 +564,10 @@ export default function SandboxPage() {
       <SettingsSheet
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
-        user={session.user}
+        user={{ 
+          ...session.user, 
+          created_at: session.user.created_at,
+        }}
         onSignOut={handleSignOut}
         profileName={profileName}
         onNameUpdated={(name) => setProfileName(name)}

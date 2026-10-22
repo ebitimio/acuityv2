@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Bell, AlertTriangle, Calendar, TrendingDown } from "lucide-react";
+import { Bell, AlertTriangle, Calendar, TrendingDown, FileText } from "lucide-react";
 import { Modal } from "./modal";
-import { getSafeToSpend, getRecurringItems, getHomeMetrics } from "@/lib/supabase/database";
+import { getSafeToSpend, getRecurringItems, getHomeMetrics, getTransactionsSince } from "@/lib/supabase/database";
+import { useCurrency } from "@/lib/currency";
 
 interface NotificationsSheetProps {
   isOpen: boolean;
@@ -14,6 +15,7 @@ interface NotificationsSheetProps {
 export function NotificationsSheet({ isOpen, onClose }: NotificationsSheetProps) {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const { fmt } = useCurrency();
 
   useEffect(() => {
     if (!isOpen) return;
@@ -21,6 +23,8 @@ export function NotificationsSheet({ isOpen, onClose }: NotificationsSheetProps)
     const pushEnabled = localStorage.getItem("acuity:push_notifications") !== "0";
     const budgetAlerts = localStorage.getItem("acuity:budget_alerts") !== "0";
     const billReminders = localStorage.getItem("acuity:bill_reminders") !== "0";
+    const weeklySummary = localStorage.getItem("acuity:weekly_summary") !== "0";
+    const lastSummaryViewed = Number(localStorage.getItem("acuity:last_summary_viewed") || "0");
 
     if (!pushEnabled) {
       setNotifications([{
@@ -38,6 +42,38 @@ export function NotificationsSheet({ isOpen, onClose }: NotificationsSheetProps)
       setLoading(true);
       const list: any[] = [];
 
+      // WEEKLY SUMMARY (Option B - shows every 7 days)
+      if (weeklySummary) {
+        const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+        if (lastSummaryViewed < sevenDaysAgo) {
+          try {
+            const weekAgoISO = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+            const weekTxns = await getTransactionsSince(weekAgoISO);
+            const debits = weekTxns.filter(t => t.direction === "debit" && t.category_name !== "Transfer");
+            const totalSpent = debits.reduce((s, t) => s + t.amount_minor, 0) / 100;
+            
+            const byCat = new Map<string, number>();
+            debits.forEach(t => {
+              const k = t.category_name || "Uncategorized";
+              byCat.set(k, (byCat.get(k) ?? 0) + t.amount_minor / 100);
+            });
+            const topCat = [...byCat.entries()].sort((a, b) => b[1] - a[1])[0];
+
+            list.push({
+              id: "weekly-summary",
+              type: "summary",
+              title: "Weekly spending summary",
+              body: `You spent ${fmt(totalSpent)} this week.${topCat ? ` Top category: ${topCat[0]} (${fmt(topCat[1])}).` : ""}`,
+              time: "This week",
+            });
+            localStorage.setItem("acuity:last_summary_viewed", String(Date.now()));
+          } catch (e) {
+            console.error(e);
+          }
+        }
+      }
+
+      // UNCATEGORIZED
       try {
         const metrics = await getHomeMetrics();
         if (metrics.uncategorized_count > 0) {
@@ -68,6 +104,7 @@ export function NotificationsSheet({ isOpen, onClose }: NotificationsSheetProps)
         }
       } catch (e) {}
 
+      // BILL REMINDERS
       if (billReminders) {
         try {
           const items = await getRecurringItems();
@@ -80,13 +117,14 @@ export function NotificationsSheet({ isOpen, onClose }: NotificationsSheetProps)
               id: `bill-${i.id}`,
               type: "reminder",
               title: `${i.name} due in ${i.day - today} days`,
-              body: `${i.kind === "bill" ? "Bill" : "Income"} of ₦${(i.amount_minor / 100).toLocaleString()}.`,
+              body: `${i.kind === "bill" ? "Bill" : "Income"} of ${fmt(i.amount_minor / 100)}.`,
               time: "Upcoming",
             });
           });
         } catch (e) {}
       }
 
+      // PAYDAY SOON
       try {
         const sts = await getSafeToSpend();
         if (sts.has_income && sts.days_until_next_income <= 2) {
@@ -134,6 +172,7 @@ export function NotificationsSheet({ isOpen, onClose }: NotificationsSheetProps)
                 {n.type === "warning" ? <AlertTriangle size={16} /> :
                  n.type === "alert" ? <Bell size={16} /> :
                  n.type === "reminder" ? <Calendar size={16} /> :
+                 n.type === "summary" ? <FileText size={16} /> :
                  <TrendingDown size={16} />}
               </div>
               <div className="flex-1 min-w-0">

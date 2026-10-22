@@ -5,28 +5,32 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronRight, Eye, Bell, Shield, Wallet, Briefcase, HelpCircle,
   LogOut, Trash2, RefreshCw, Moon, FileText, MessageSquare, Info,
-  Pencil, ArrowLeft, Check
+  Pencil, ArrowLeft, Check, Sun, Lock, User
 } from "lucide-react";
 import { useCurrency } from "@/lib/currency";
 import { useWorkspace } from "@/lib/workspace";
+import { useTheme } from "@/lib/theme";
 import { useToast } from "./toast";
 import { cn } from "@/lib/utils";
 import { Modal } from "./modal";
-import { clearDataCache, updateProfile } from "@/lib/supabase/database";
+import { clearDataCache, updateProfile, updatePassword } from "@/lib/supabase/database";
 import { Button } from "./form";
 
 interface SettingsSheetProps {
   isOpen: boolean;
   onClose: () => void;
-  user: { email?: string; id?: string; user_metadata?: { full_name?: string } } | null;
+  user: { email?: string; id?: string; created_at?: string } | null;
   onSignOut: () => void;
   profileName: string;
   onNameUpdated: (name: string) => void;
 }
 
+type SubView = "main" | "edit-profile" | "change-password" | "privacy" | "terms" | "help";
+
 export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, onNameUpdated }: SettingsSheetProps) {
   const { currency, setCurrency, rate, hidden, toggleHidden } = useCurrency();
   const { active: activeWs, deleteWorkspace, workspaces } = useWorkspace();
+  const { theme, setTheme } = useTheme();
   const toast = useToast();
 
   const [pushEnabled, setPushEnabled] = useState(true);
@@ -35,11 +39,16 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
   const [billReminders, setBillReminders] = useState(true);
 
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [editingName, setEditingName] = useState(false);
-  const [newName, setNewName] = useState(profileName);
+  const [view, setView] = useState<SubView>("main");
+
+  // Edit profile
+  const [editName, setEditName] = useState(profileName);
   const [savingName, setSavingName] = useState(false);
-  
-  const [viewPolicy, setViewPolicy] = useState<"privacy" | "terms" | "help" | null>(null);
+
+  // Change password
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [savingPassword, setSavingPassword] = useState(false);
 
   useEffect(() => {
     try {
@@ -59,18 +68,49 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
     } catch {}
   }, [pushEnabled, weeklySummary, budgetAlerts, billReminders]);
 
+  useEffect(() => {
+    if (isOpen) {
+      setEditName(profileName);
+      setNewPassword("");
+      setConfirmPassword("");
+    }
+  }, [isOpen, profileName]);
+
   const handleSaveName = async () => {
-    if (!newName.trim()) return;
+    if (!editName.trim()) return;
     setSavingName(true);
     try {
-      await updateProfile(newName);
-      onNameUpdated(newName);
-      setEditingName(false);
-      toast("Name updated");
+      await updateProfile(editName);
+      onNameUpdated(editName);
+      toast("Profile updated");
+      setView("main");
     } catch (e: any) {
-      toast(e.message || "Could not update name", "err");
+      toast(e.message || "Could not update profile", "err");
     } finally {
       setSavingName(false);
+    }
+  };
+
+  const handleSavePassword = async () => {
+    if (newPassword.length < 6) {
+      toast("Password must be at least 6 characters", "err");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast("Passwords do not match", "err");
+      return;
+    }
+    setSavingPassword(true);
+    try {
+      await updatePassword(newPassword);
+      toast("Password updated");
+      setNewPassword("");
+      setConfirmPassword("");
+      setView("main");
+    } catch (e: any) {
+      toast(e.message || "Could not update password", "err");
+    } finally {
+      setSavingPassword(false);
     }
   };
 
@@ -96,18 +136,96 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
     }
   };
 
-  if (viewPolicy) {
+  const memberSince = user?.created_at
+    ? new Date(user.created_at).toLocaleDateString("en-NG", { month: "long", year: "numeric" })
+    : "Recently";
+
+  // ---------- SUB VIEWS ----------
+  if (view === "edit-profile") {
     return (
-      <Modal open={isOpen} onClose={() => setViewPolicy(null)} title={
-        viewPolicy === "privacy" ? "Privacy Policy" : 
-        viewPolicy === "terms" ? "Terms of Service" : "Help & FAQ"
+      <Modal open={isOpen} onClose={() => setView("main")} title="Edit Profile">
+        <div className="space-y-4 pb-6">
+          <button onClick={() => setView("main")} className="flex items-center gap-1 text-[var(--brand)] text-[13px] font-medium">
+            <ArrowLeft size={14} /> Back
+          </button>
+          <div className="flex justify-center">
+            <div className="flex h-24 w-24 items-center justify-center rounded-full bg-[#DE3121] text-white text-[36px] font-bold">
+              {editName.charAt(0).toUpperCase() || "U"}
+            </div>
+          </div>
+          <div>
+            <label className="text-[13px] font-medium text-[var(--text-3)]">Full Name</label>
+            <input
+              type="text"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              className="mt-1 w-full h-12 rounded-xl border border-[var(--line-strong)] bg-[var(--surface-2)] px-4 text-[15px] text-[var(--text-1)] outline-none focus:border-[#DE3121]"
+            />
+          </div>
+          <div>
+            <label className="text-[13px] font-medium text-[var(--text-3)]">Email</label>
+            <input
+              type="email"
+              value={user?.email ?? ""}
+              disabled
+              className="mt-1 w-full h-12 rounded-xl border border-[var(--line)] bg-[var(--surface-1)] px-4 text-[15px] text-[var(--text-3)] outline-none"
+            />
+          </div>
+          <Button onClick={handleSaveName} loading={savingName} className="w-full h-12">
+            Save Changes
+          </Button>
+        </div>
+      </Modal>
+    );
+  }
+
+  if (view === "change-password") {
+    return (
+      <Modal open={isOpen} onClose={() => setView("main")} title="Change Password">
+        <div className="space-y-4 pb-6">
+          <button onClick={() => setView("main")} className="flex items-center gap-1 text-[var(--brand)] text-[13px] font-medium">
+            <ArrowLeft size={14} /> Back
+          </button>
+          <div>
+            <label className="text-[13px] font-medium text-[var(--text-3)]">New Password</label>
+            <input
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="At least 6 characters"
+              className="mt-1 w-full h-12 rounded-xl border border-[var(--line-strong)] bg-[var(--surface-2)] px-4 text-[15px] text-[var(--text-1)] outline-none focus:border-[#DE3121]"
+            />
+          </div>
+          <div>
+            <label className="text-[13px] font-medium text-[var(--text-3)]">Confirm New Password</label>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Re-enter password"
+              className="mt-1 w-full h-12 rounded-xl border border-[var(--line-strong)] bg-[var(--surface-2)] px-4 text-[15px] text-[var(--text-1)] outline-none focus:border-[#DE3121]"
+            />
+          </div>
+          <Button onClick={handleSavePassword} loading={savingPassword} className="w-full h-12">
+            Update Password
+          </Button>
+        </div>
+      </Modal>
+    );
+  }
+
+  if (view === "privacy" || view === "terms" || view === "help") {
+    return (
+      <Modal open={isOpen} onClose={() => setView("main")} title={
+        view === "privacy" ? "Privacy Policy" : 
+        view === "terms" ? "Terms of Service" : "Help & FAQ"
       }>
-        <div className="prose prose-invert max-w-none pb-6 text-[13px] leading-relaxed text-[var(--text-2)]">
-          <button onClick={() => setViewPolicy(null)} className="mb-4 flex items-center gap-1 text-[var(--brand)] font-medium">
+        <div className="pb-6 text-[13px] leading-relaxed text-[var(--text-2)]">
+          <button onClick={() => setView("main")} className="mb-4 flex items-center gap-1 text-[var(--brand)] font-medium">
             <ArrowLeft size={14} /> Back to Settings
           </button>
           
-          {viewPolicy === "privacy" && (
+          {view === "privacy" && (
             <>
               <h3 className="text-[16px] font-bold text-[var(--text-1)] mb-2">1. Information We Collect</h3>
               <p className="mb-4">Acuity collects information you provide directly: your name, email, financial data (accounts, transactions, budgets), and usage data. We use Supabase for secure data storage.</p>
@@ -120,7 +238,7 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
             </>
           )}
 
-          {viewPolicy === "terms" && (
+          {view === "terms" && (
             <>
               <h3 className="text-[16px] font-bold text-[var(--text-1)] mb-2">1. Acceptance</h3>
               <p className="mb-4">By using Acuity, you agree to these terms. If you do not agree, please do not use the app.</p>
@@ -133,14 +251,14 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
             </>
           )}
 
-          {viewPolicy === "help" && (
+          {view === "help" && (
             <>
               <h3 className="text-[16px] font-bold text-[var(--text-1)] mb-2">Getting Started</h3>
               <p className="mb-4">Add a bank account, then set your monthly income and bills in the Setup checklist on the Home screen. Acuity will then calculate your daily Safe to Spend.</p>
               <h3 className="text-[16px] font-bold text-[var(--text-1)] mb-2">Managing Budgets</h3>
               <p className="mb-4">Go to the Budget screen to set category limits. Your total monthly budget is the sum of all categories.</p>
               <h3 className="text-[16px] font-bold text-[var(--text-1)] mb-2">The AI Advisor</h3>
-              <p className="mb-4">Tap the AI tab in the bottom nav. Ask it anything about your money. It can see your real transactions, budgets, and commitments.</p>
+              <p className="mb-4">Tap the AI tab in the bottom nav. Ask it anything about your money.</p>
               <h3 className="text-[16px] font-bold text-[var(--text-1)] mb-2">Need more help?</h3>
               <p>Email us at support@acuity.app</p>
             </>
@@ -150,49 +268,44 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
     );
   }
 
+  // ---------- MAIN VIEW ----------
   return (
     <Modal open={isOpen} onClose={onClose} title="Settings">
       <div className="space-y-6 pb-6 overflow-y-auto max-h-[75dvh]">
 
-        {/* PROFILE */}
+        {/* PROFILE CARD */}
         <div className="p-4 rounded-2xl bg-[var(--surface-2)] border border-[var(--line)]">
-          {editingName ? (
-            <div className="flex gap-2 items-center">
-              <input
-                type="text"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                placeholder="Your full name"
-                className="flex-1 bg-[var(--surface-1)] border border-[var(--line-strong)] rounded-lg px-3 py-2 text-[15px] text-[var(--text-1)] outline-none focus:border-[var(--brand)]"
-                autoFocus
-              />
-              <button
-                onClick={handleSaveName}
-                disabled={savingName}
-                className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#DE3121] text-white disabled:opacity-50"
-              >
-                {savingName ? <RefreshCw size={16} className="animate-spin" /> : <Check size={16} />}
-              </button>
+          <div className="flex items-center gap-4">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#DE3121] text-white text-[20px] font-bold">
+              {profileName.charAt(0).toUpperCase()}
             </div>
-          ) : (
+            <div className="flex-1 min-w-0">
+              <p className="text-[16px] font-bold text-[var(--text-1)] truncate capitalize">
+                {profileName}
+              </p>
+              <p className="text-[12px] text-[var(--text-3)] truncate">
+                {user?.email ?? "no email"}
+              </p>
+              <p className="text-[11px] text-[var(--text-3)] mt-0.5">
+                {activeWs?.name ?? "No workspace"} · Member since {memberSince}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-3 flex gap-2">
             <button
-              onClick={() => { setNewName(profileName); setEditingName(true); }}
-              className="flex w-full items-center gap-4 text-left"
+              onClick={() => setView("edit-profile")}
+              className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-[var(--fill-1)] py-2 text-[12px] font-semibold text-[var(--text-1)]"
             >
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#DE3121] text-white text-[20px] font-bold">
-                {profileName.charAt(0).toUpperCase()}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[16px] font-bold text-[var(--text-1)] truncate capitalize flex items-center gap-2">
-                  {profileName}
-                  <Pencil size={12} className="text-[var(--text-3)]" />
-                </p>
-                <p className="text-[12px] text-[var(--text-3)] truncate">
-                  {user?.email ?? "no email"}
-                </p>
-              </div>
+              <User size={13} /> Edit Profile
             </button>
-          )}
+            <button
+              onClick={() => setView("change-password")}
+              className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-[var(--fill-1)] py-2 text-[12px] font-semibold text-[var(--text-1)]"
+            >
+              <Lock size={13} /> Password
+            </button>
+          </div>
         </div>
 
         {/* MONEY & CURRENCY */}
@@ -250,15 +363,37 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
           />
         </Section>
 
+        {/* APPEARANCE */}
+        <Section title="Appearance">
+          <div className="px-4 py-3.5">
+            <div className="flex items-center gap-3 mb-3">
+              <Moon size={18} className="text-[#DE3121]" />
+              <span className="text-[14px] font-medium text-[var(--text-1)]">Theme</span>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {(["dark", "light", "system"] as const).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setTheme(t)}
+                  className={cn(
+                    "flex flex-col items-center gap-1.5 rounded-xl py-3 text-[11px] font-semibold capitalize transition-colors",
+                    theme === t
+                      ? "bg-[#DE3121]/10 text-[#DE3121] border border-[#DE3121]/30"
+                      : "bg-[var(--fill-1)] text-[var(--text-2)] border border-transparent"
+                  )}
+                >
+                  {t === "dark" && <Moon size={16} />}
+                  {t === "light" && <Sun size={16} />}
+                  {t === "system" && <RefreshCw size={16} />}
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+        </Section>
+
         {/* PRIVACY & SECURITY */}
         <Section title="Privacy & Security">
-          <Row
-            icon={Moon}
-            label="Theme"
-            value="Dark"
-            chevron
-            onClick={() => toast("Theme switching coming soon")}
-          />
           <Row
             icon={RefreshCw}
             label="Clear cache"
@@ -267,24 +402,13 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
           />
         </Section>
 
-        {/* FINANCIAL PREFERENCES */}
-        <Section title="Financial Preferences">
+        {/* WORKSPACE */}
+        <Section title="Workspace">
           <Row
-            icon={Wallet}
+            icon={Briefcase}
             label="Current workspace"
             value={activeWs?.name ?? "None"}
           />
-          <Row
-            icon={Briefcase}
-            label="Payday cycle"
-            value="Day 27"
-            chevron
-            onClick={() => toast("Manage on Budget screen")}
-          />
-        </Section>
-
-        {/* WORKSPACE */}
-        <Section title="Workspace">
           <Row
             icon={Trash2}
             label="Delete workspace"
@@ -300,19 +424,19 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
             icon={HelpCircle}
             label="Help & FAQ"
             chevron
-            onClick={() => setViewPolicy("help")}
+            onClick={() => setView("help")}
           />
           <Row
             icon={FileText}
             label="Terms of Service"
             chevron
-            onClick={() => setViewPolicy("terms")}
+            onClick={() => setView("terms")}
           />
           <Row
             icon={Shield}
             label="Privacy Policy"
             chevron
-            onClick={() => setViewPolicy("privacy")}
+            onClick={() => setView("privacy")}
           />
           <Row
             icon={MessageSquare}
@@ -339,7 +463,7 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
         </button>
       </div>
 
-      {/* Delete workspace confirmation */}
+      {/* Delete confirmation */}
       <AnimatePresence>
         {confirmDelete && (
           <motion.div
