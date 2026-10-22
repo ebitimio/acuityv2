@@ -1,8 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, Plus, Trash2, ChevronDown } from "lucide-react";
-import type { Workspace } from "@/lib/types";
+import { Check, Plus, Trash2 } from "lucide-react";
 
 interface WorkspaceSwitcherProps {
   isOpen: boolean;
