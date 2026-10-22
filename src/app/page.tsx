@@ -35,6 +35,7 @@ import { AjoScreen } from "@/components/screens/ajo-screen";
 import { BankChargeScreen } from "@/components/screens/bank-charge-screen";
 import { SettingsSheet } from "@/components/ui/settings-sheet";
 import { NotificationsSheet } from "@/components/ui/notifications-sheet";
+import { WorkspaceSwitcher } from "@/components/ui/workspace-switcher";
 import { ImportSheet } from "@/components/ui/import-sheet";
 import { TransactionDetailSheet } from "@/components/ui/transaction-detail-sheet";
 import { AIDrawer } from "@/components/ui/ai-drawer";
@@ -189,11 +190,7 @@ export default function SandboxPage() {
 
   useEffect(() => {
     if (session) refreshData();
-  }, [session, refreshData]);
-
-  useEffect(() => {
-    if (session && activeWs?.id) refreshData();
-  }, [activeWs?.id]);
+  }, [session, refreshData, activeWs?.id]);
 
   useEffect(() => {
     if (!showSplash && session) {
@@ -385,45 +382,15 @@ export default function SandboxPage() {
                 </div>
               </div>
 
-              {wsOpen && (
-                <div className="absolute left-4 right-4 top-16 z-40 rounded-2xl border border-[var(--line-strong)] bg-[var(--surface-3)] p-2 shadow-xl">
-                  {workspaces.map((w) => {
-                    const isActive = w.id === activeWs?.id;
-                    const canDelete = workspaces.length > 1;
-                    return (
-                      <div
-                        key={w.id}
-                        className={`flex items-center justify-between rounded-lg px-3 py-2 text-[14px] ${
-                          isActive ? "bg-[var(--brand-soft)] text-[var(--brand)]" : "text-[var(--text-1)]"
-                        }`}
-                      >
-                        <button
-                          onClick={() => handleSwitchWorkspace(w.id)}
-                          className="flex-1 truncate text-left"
-                        >
-                          {w.name}
-                        </button>
-                        {canDelete && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleDeleteWorkspace(w); }}
-                            className="ml-2 p-1 text-[var(--danger)]"
-                            aria-label={`Delete ${w.name}`}
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        )}
-                      </div>
-                    );
-                  })}
-                  <div className="my-1 h-px bg-[var(--line)]" />
-                  <button
-                    onClick={() => { setWsOpen(false); setWsCreateOpen(true); }}
-                    className="flex w-full items-center gap-1.5 rounded-lg px-3 py-2 text-[14px] text-[var(--brand)]"
-                  >
-                    <Plus size={14} /> Create workspace
-                  </button>
-                </div>
-              )}
+              <WorkspaceSwitcher
+                isOpen={wsOpen}
+                onClose={() => setWsOpen(false)}
+                workspaces={workspaces}
+                activeId={activeWs?.id}
+                onSwitch={handleSwitchWorkspace}
+                onCreate={() => setWsCreateOpen(true)}
+                onDelete={handleDeleteWorkspace}
+              />
 
               <div className="flex flex-col gap-6 px-5 pt-2">
                 <SafeToSpendHero

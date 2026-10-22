@@ -14,35 +14,35 @@ const TX_FLAT =
   "id,amount_minor,direction,description_clean,description_raw,category_name,date,account_id";
 const NOT_SPLIT = 'category_name.is.null,category_name.neq."Split Parent"';
 
-let cache: { userId: string; workspaceId: string } | null = null;
-export function clearDataCache() { cache = null; }
+// No more module-level cache — every call validates workspace from localStorage
+export function clearDataCache() {
+  // No-op now. Workspace is always read fresh from localStorage.
+}
 
 async function ctx() {
   const sb = createClient();
   const { data: { session } } = await sb.auth.getSession();
   const user = session?.user;
-  if (!user) { cache = null; throw new Error("Not logged in"); }
+  if (!user) throw new Error("Not logged in");
 
+  // Read from localStorage EVERY time
   let stored: string | null = null;
   try { stored = typeof window !== "undefined" ? localStorage.getItem(KEY) : null; } catch {}
 
-  const cacheKey = `${user.id}|${stored ?? ""}`;
-  if (cache && `${cache.userId}|${cache.workspaceId}` === cacheKey) {
-    return { sb, user, workspaceId: cache.workspaceId };
-  }
-
   if (stored) {
+    // Verify it belongs to this user
     const { data } = await sb.from("workspaces").select("id").eq("id", stored).eq("owner_id", user.id).maybeSingle();
     if (data) {
-      cache = { userId: user.id, workspaceId: data.id };
       return { sb, user, workspaceId: data.id };
     }
+    // Stored workspace doesn't belong to user — clear it
     try { localStorage.removeItem(KEY); } catch {}
   }
 
+  // No valid stored workspace — fetch the user's first one
   const { data: ws, error } = await sb.from("workspaces").select("id").eq("owner_id", user.id).order("created_at").limit(1).single();
   if (error || !ws) throw new Error("Workspace not found");
-  cache = { userId: user.id, workspaceId: ws.id };
+  
   try { if (typeof window !== "undefined") localStorage.setItem(KEY, ws.id); } catch {}
   return { sb, user, workspaceId: ws.id };
 }
@@ -591,14 +591,19 @@ export async function getCategorySpend(sinceISO: string): Promise<CategorySpendR
 }
 
 export function getPeriodLabel(cycle: { cycle_start: string; cycle_end: string } | null): string {
-  // Always show the current month, not the cycle start month
   return new Date().toLocaleDateString("en-NG", { month: "long", year: "numeric" });
 }
+
+/* ---------- profile ---------- */
+
 export async function updateProfile(fullName: string) {
-  const { sb, user } = await ctx();
+  const { sb } = await ctx();
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) throw new Error("Not logged in");
   const { error } = await sb.from("profiles").update({ full_name: fullName.trim() }).eq("id", user.id);
   if (error) throw error;
 }
+
 export async function updatePassword(newPassword: string) {
   const { sb } = await ctx();
   const { error } = await sb.auth.updateUser({ password: newPassword });

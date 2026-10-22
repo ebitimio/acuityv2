@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ArrowUp, Loader2, Sparkles, ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useWorkspace } from "@/lib/workspace";
 
 interface Message {
   id: string;
@@ -38,6 +39,7 @@ export function AIDrawer({ isOpen, onClose, fullName = "there" }: { isOpen: bool
   const [input, setInput] = useState("");
   const [isThinking, setIsThinking] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
+  const { active: activeWs } = useWorkspace();
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -58,6 +60,8 @@ export function AIDrawer({ isOpen, onClose, fullName = "there" }: { isOpen: bool
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: history.map((m) => ({ role: m.role, content: m.content })),
+          workspaceId: activeWs?.id,
+          workspaceName: activeWs?.name,
         }),
       });
 
@@ -89,23 +93,22 @@ export function AIDrawer({ isOpen, onClose, fullName = "there" }: { isOpen: bool
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
         transition={{ type: "spring", damping: 25, stiffness: 200 }}
-        // The whole page now uses the animated gradient background
-        className="fixed inset-0 z-[100] flex flex-col h-[100dvh] animated-gradient-bg"
+        className="fixed inset-0 z-[100] flex flex-col h-[100dvh] bg-[#0b0b0c]"
       >
         <style>{`
-          @keyframes flowBackground {
+          @keyframes gradientFlow {
             0% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
           }
-          .animated-gradient-bg {
-            background: linear-gradient(135deg, #DE3121 0%, #4a0d06 30%, #0b0b0c 60%, #0b0b0c 100%);
+          .flowing-gradient {
+            background: linear-gradient(135deg, #DE3121 0%, #0b0b0c 60%, #0b0b0c 100%);
             background-size: 200% 200%;
-            animation: flowBackground 12s ease infinite;
+            animation: gradientFlow 8s ease infinite;
           }
         `}</style>
 
-        <div className="relative shrink-0 flex flex-col px-6 pt-[calc(env(safe-area-inset-top)+20px)] pb-6">
+        <div className="relative shrink-0 flex flex-col px-6 pt-[calc(env(safe-area-inset-top)+20px)] pb-10 flowing-gradient">
           <button 
             onClick={onClose}
             className="absolute right-5 top-[calc(env(safe-area-inset-top)+16px)] flex h-9 w-9 items-center justify-center rounded-full bg-black/20 text-white z-50 hover:bg-black/40 transition-colors"
@@ -113,14 +116,16 @@ export function AIDrawer({ isOpen, onClose, fullName = "there" }: { isOpen: bool
             <X size={18} />
           </button>
 
-          <h1 className="relative z-10 text-[34px] font-semibold text-white leading-tight mt-6">
+          <h1 className="text-[34px] font-semibold text-white leading-tight mt-6">
             Hello {firstName}<br/>May I help you?
           </h1>
+          <p className="text-[12px] text-white/60 mt-2">
+            Workspace: {activeWs?.name ?? "None"}
+          </p>
         </div>
 
-        {/* Suggestion Chips */}
         {messages.length === 0 && (
-          <div className="flex-1 overflow-y-auto px-6 pt-2">
+          <div className="flex-1 overflow-y-auto px-6 pt-6">
             <div className="flex items-center gap-2 mb-4 text-white/90">
               <Sparkles size={18} />
               <span className="text-[16px] font-semibold">Acuity AI</span>
@@ -129,7 +134,7 @@ export function AIDrawer({ isOpen, onClose, fullName = "there" }: { isOpen: bool
             <div className="grid grid-cols-2 gap-3">
               <button 
                 onClick={() => send("How much can I safely spend this week?")}
-                className="flex flex-col justify-between rounded-2xl bg-black/60 backdrop-blur-md p-4 text-left border border-white/10 shadow-lg h-40"
+                className="flex flex-col justify-between rounded-2xl bg-[#1c1c1e] p-4 text-left border border-white/5 shadow-lg h-40"
               >
                 <span className="text-[14px] text-white leading-snug">How much can I safely spend this week?</span>
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white">
@@ -139,7 +144,7 @@ export function AIDrawer({ isOpen, onClose, fullName = "there" }: { isOpen: bool
               
               <button 
                 onClick={() => send("Where am I wasting the most money?")}
-                className="flex flex-col justify-between rounded-2xl bg-black/60 backdrop-blur-md p-4 text-left border border-white/10 shadow-lg h-40"
+                className="flex flex-col justify-between rounded-2xl bg-[#1c1c1e] p-4 text-left border border-white/5 shadow-lg h-40"
               >
                 <span className="text-[14px] text-white leading-snug">Where am I wasting the most money?</span>
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white">
@@ -150,10 +155,9 @@ export function AIDrawer({ isOpen, onClose, fullName = "there" }: { isOpen: bool
           </div>
         )}
 
-        {/* Chat Area */}
         {messages.length > 0 && (
           <div className="flex-1 overflow-y-auto px-6 pb-4">
-            <div className="flex flex-col gap-5 pt-2">
+            <div className="flex flex-col gap-5 pt-4">
               {messages.map((msg) => (
                 <motion.div
                   key={msg.id}
@@ -166,7 +170,7 @@ export function AIDrawer({ isOpen, onClose, fullName = "there" }: { isOpen: bool
                       "max-w-[85%] rounded-3xl p-4 text-[15px] leading-relaxed shadow-sm",
                       msg.role === "user"
                         ? "rounded-tr-md bg-white text-black"
-                        : "rounded-tl-md bg-black text-white border border-white/10"
+                        : "rounded-tl-md bg-[#1c1c1e] text-white border border-white/5"
                     )}
                   >
                     {msg.role === "assistant" ? formatMessage(msg.content) : msg.content}
@@ -176,7 +180,7 @@ export function AIDrawer({ isOpen, onClose, fullName = "there" }: { isOpen: bool
 
               {isThinking && (
                 <div className="flex justify-start">
-                  <div className="flex gap-1.5 rounded-3xl rounded-tl-md bg-black p-5 border border-white/10">
+                  <div className="flex gap-1.5 rounded-3xl rounded-tl-md bg-[#1c1c1e] p-5 border border-white/5">
                     <span className="h-2 w-2 animate-bounce rounded-full bg-white/50" />
                     <span className="h-2 w-2 animate-bounce rounded-full bg-white/50" style={{ animationDelay: "120ms" }} />
                     <span className="h-2 w-2 animate-bounce rounded-full bg-white/50" style={{ animationDelay: "240ms" }} />
@@ -188,9 +192,8 @@ export function AIDrawer({ isOpen, onClose, fullName = "there" }: { isOpen: bool
           </div>
         )}
 
-        {/* Input Area */}
-        <div className="shrink-0 px-4 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-2">
-          <div className="flex items-end gap-2 rounded-3xl bg-black/80 backdrop-blur-xl p-2 border border-white/10 shadow-2xl">
+        <div className="shrink-0 px-4 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-2 bg-[#0b0b0c]">
+          <div className="flex items-end gap-2 rounded-3xl bg-[#1c1c1e] p-2 border border-white/10 shadow-2xl">
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -200,7 +203,7 @@ export function AIDrawer({ isOpen, onClose, fullName = "there" }: { isOpen: bool
                   send(input);
                 }
               }}
-              placeholder="Enter a prompt here"
+              placeholder="Ask about your money..."
               className="flex-1 max-h-32 min-h-[40px] bg-transparent px-4 py-2.5 text-[15px] text-white outline-none placeholder:text-white/40 resize-none"
               rows={1}
             />

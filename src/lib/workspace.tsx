@@ -1,22 +1,23 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { clearDataCache } from "@/lib/supabase/database";
 
-interface Workspace {
+export interface Workspace {
   id: string;
   name: string;
-  country?: string | null;
+  owner_id: string;
+  created_at?: string;
 }
 
 interface Ctx {
   workspaces: Workspace[];
-  activeId: string | null;
   active: Workspace | null;
   setActive: (id: string) => void;
-  refresh: () => Promise<void>;
   createWorkspace: (name: string) => Promise<Workspace>;
   deleteWorkspace: (id: string) => Promise<void>;
+  reload: () => Promise<void>;
 }
 
 const C = createContext<Ctx | null>(null);
@@ -24,98 +25,102 @@ const KEY = "acuity:activeWorkspace";
 
 export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const [active, setActiveState] = useState<Workspace | null>(null);
   const supabase = createClient();
 
-  const refresh = useCallback(async () => {
+  const reload = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
     const { data } = await supabase
       .from("workspaces")
-      .select("id,name")
+      .select("*")
       .eq("owner_id", user.id)
-      .order("created_at");
+      .order("created_at", { ascending: true });
 
-    let list: Workspace[] = (data ?? []).map((w: any) => ({ id: w.id, name: w.name, country: null }));
+    const list = (data ?? []) as Workspace[];
+    setWorkspaces(list);
 
     if (list.length === 0) {
-      const { data: created, error } = await supabase
-        .from("workspaces")
-        .insert({ owner_id: user.id, name: "Personal" })
-        .select("id,name")
-        .single();
-      if (error) {
-        console.error("Auto-create workspace failed:", error);
-      } else if (created) {
-        list = [{ id: created.id, name: created.name, country: null }];
-      }
+      setActiveState(null);
+      return;
     }
 
-    setWorkspaces(list);
-    const stored = typeof window !== "undefined" ? localStorage.getItem(KEY) : null;
-    const valid = stored && list.some((w) => w.id === stored) ? stored : list[0]?.id ?? null;
-    setActiveId(valid);
-    if (valid && typeof window !== "undefined") localStorage.setItem(KEY, valid);
+    // Try to restore from localStorage
+    let storedId: string | null = null;
+    try { storedId = localStorage.getItem(KEY); } catch {}
+    
+    const stored = list.find(w => w.id === storedId);
+    if (stored) {
+      setActiveState(stored);
+      return;
+    }
+
+    // Fall back to first workspace
+    setActiveState(list[0]);
+    try { localStorage.setItem(KEY, list[0].id); } catch {}
   }, [supabase]);
 
-  useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => {
+    reload();
+  }, [reload]);
 
   const setActive = useCallback((id: string) => {
-    setActiveId(id);
+    const ws = workspaces.find(w => w.id === id);
+    if (!ws) return;
+    setActiveState(ws);
     try { localStorage.setItem(KEY, id); } catch {}
-    import("@/lib/supabase/database").then((m) => m.clearDataCache());
-  }, []);
+    clearDataCache();
+  }, [workspaces]);
 
-  const createWorkspace = useCallback(async (name: string): Promise<Workspace> => {
-    const trimmed = name.trim();
-    if (!trimmed) throw new Error("Workspace name cannot be empty");
+  const createWorkspace = useCallback(async (name: string) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Not logged in");
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("workspaces")
-      .insert({ owner_id: user.id, name: trimmed });
+      .insert({ name: name.trim(), owner_id: user.id })
+      .select()
+      .single();
 
-    if (error) {
-      console.error("createWorkspace insert failed:", error);
-      throw new Error(error.message || "Could not create workspace");
-    }
-
-    const { data: list } = await supabase
-      .from("workspaces")
-      .select("id,name")
-      .eq("owner_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(1);
-
-    const newest = list?.[0];
-    if (!newest) throw new Error("Workspace created but could not be loaded");
-
-    const ws: Workspace = { id: newest.id, name: newest.name, country: null };
-    setWorkspaces((p) => [...p, ws]);
-    setActive(ws.id);
+    if (error) throw error;
+    const ws = data as Workspace;
+    setWorkspaces(prev => [...prev, ws]);
+    setActiveState(ws);
+    try { localStorage.setItem(KEY, ws.id); } catch {}
+    clearDataCache();
     return ws;
-  }, [supabase, setActive]);
+  }, [supabase]);
 
   const deleteWorkspace = useCallback(async (id: string) => {
     const { error } = await supabase.from("workspaces").delete().eq("id", id);
-    if (error) throw new Error(error.message || "Could not delete workspace");
-    setWorkspaces((p) => p.filter((w) => w.id !== id));
-    if (activeId === id) {
-      const remaining = workspaces.filter((w) => w.id !== id);
-      if (remaining[0]) {
-        try { localStorage.setItem(KEY, remaining[0].id); } catch {}
-        setActiveId(remaining[0].id);
-      }
-    }
-  }, [supabase, activeId, workspaces]);
+    if (error) throw error;
 
-  return (
-    <C.Provider value={{ workspaces, activeId, active: workspaces.find((w) => w.id === activeId) ?? null, setActive, refresh, createWorkspace, deleteWorkspace }}>
-      {children}
-    </C.Provider>
-  );
+    setWorkspaces(prev => {
+      const next = prev.filter(w => w.id !== id);
+      if (active?.id === id) {
+        if (next.length > 0) {
+          setActiveState(next[0]);
+          try { localStorage.setItem(KEY, next[0].id); } catch {}
+        } else {
+          setActiveState(null);
+        }
+      }
+      return next;
+    });
+    clearDataCache();
+  }, [supabase, active?.id]);
+
+  const value = useMemo(() => ({
+    workspaces,
+    active,
+    setActive,
+    createWorkspace,
+    deleteWorkspace,
+    reload,
+  }), [workspaces, active, setActive, createWorkspace, deleteWorkspace, reload]);
+
+  return <C.Provider value={value}>{children}</C.Provider>;
 }
 
 export function useWorkspace() {
