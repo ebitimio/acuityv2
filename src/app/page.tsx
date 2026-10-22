@@ -45,7 +45,7 @@ import { Field, Button } from "@/components/ui/form";
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
 import {
   Eye, EyeOff, ChevronRight, Receipt, ChevronDown, Plus, Trash2,
-  PiggyBank, PieChart, ArrowLeftRight,
+  PiggyBank, PieChart, ArrowLeftRight, Bell,
 } from "lucide-react";
 import { TransactionsScreen } from "@/components/screens/transactions-screen";
 
@@ -366,11 +366,12 @@ export default function SandboxPage() {
                 </button>
                 <div className="flex gap-2">
                   <button
-                    onClick={toggleHidden}
-                    aria-label={hidden ? "Show balances" : "Hide balances"}
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--line)] bg-[var(--fill-1)] text-[var(--text-2)]"
+                    onClick={() => toast("No new notifications")}
+                    aria-label="Notifications"
+                    className="relative flex h-9 w-9 items-center justify-center rounded-full border border-[var(--line)] bg-[var(--fill-1)] text-[var(--text-2)]"
                   >
-                    {hidden ? <EyeOff size={16} /> : <Eye size={16} />}
+                    <Bell size={16} />
+                    <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[#DE3121]" />
                   </button>
                   <button
                     onClick={() => setIsSettingsOpen(true)}
