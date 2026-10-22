@@ -50,8 +50,9 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
 
   const toggleHidden = useCallback(() => {
     setHidden((h) => {
-      try { localStorage.setItem("acuity:hidden", h ? "0" : "1"); } catch {}
-      return !h;
+      const next = !h;
+      try { localStorage.setItem("acuity:hidden", next ? "1" : "0"); } catch {}
+      return next;
     });
   }, []);
 
@@ -60,20 +61,15 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
     const convert = (n: number) => (currency === "USD" ? n / rate : n);
     
     const fmt = (n: number, o?: FmtOpts) => {
-      if (hidden && !o?.force) return "₦";
+      if (hidden && !o?.force) return "₦••••";
       const v = convert(n);
       const d = o?.decimals ?? currency === "USD";
-      
-      // 1. Determine if it's negative
-      const isNegative = v < 0;
-      
-      // 2. Format the absolute value (without the sign)
       const s = new Intl.NumberFormat("en-NG", {
         minimumFractionDigits: d ? 2 : 0,
         maximumFractionDigits: d ? 2 : 0,
       }).format(Math.abs(v));
       
-      // 3. Put the sign in front if needed
+      const isNegative = v < 0;
       let prefix = "";
       if (isNegative) prefix = "-";
       else if (o?.sign && v > 0) prefix = "+";

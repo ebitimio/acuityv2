@@ -34,6 +34,7 @@ import { NeedsReviewScreen } from "@/components/screens/needs-review-screen";
 import { AjoScreen } from "@/components/screens/ajo-screen";
 import { BankChargeScreen } from "@/components/screens/bank-charge-screen";
 import { SettingsSheet } from "@/components/ui/settings-sheet";
+import { NotificationsSheet } from "@/components/ui/notifications-sheet";
 import { ImportSheet } from "@/components/ui/import-sheet";
 import { TransactionDetailSheet } from "@/components/ui/transaction-detail-sheet";
 import { AIDrawer } from "@/components/ui/ai-drawer";
@@ -76,6 +77,7 @@ export default function SandboxPage() {
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isAdvisorOpen, setIsAdvisorOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isAddTxnOpen, setIsAddTxnOpen] = useState(false);
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [selectedTxn, setSelectedTxn] = useState<Txn | null>(null);
@@ -366,7 +368,7 @@ export default function SandboxPage() {
                 </button>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => toast("No new notifications")}
+                    onClick={() => setIsNotificationsOpen(true)}
                     aria-label="Notifications"
                     className="relative flex h-9 w-9 items-center justify-center rounded-full border border-[var(--line)] bg-[var(--fill-1)] text-[var(--text-2)]"
                   >
@@ -565,6 +567,12 @@ export default function SandboxPage() {
         user={session.user}
         onSignOut={handleSignOut}
       />
+
+      <NotificationsSheet
+        isOpen={isNotificationsOpen}
+        onClose={() => setIsNotificationsOpen(false)}
+      />
+
       <AddTransactionSheet isOpen={isAddTxnOpen} onClose={() => setIsAddTxnOpen(false)} onSaved={refreshData} />
       <QuickAddSheet isOpen={isQuickAddOpen} onClose={() => setIsQuickAddOpen(false)} onSaved={refreshData} />
 

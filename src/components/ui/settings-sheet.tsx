@@ -1,16 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X, ChevronRight, Eye, Bell, Shield, Wallet, Briefcase, HelpCircle,
-  LogOut, Trash2, User, RefreshCw, Moon, FileText, MessageSquare, Info
+  LogOut, Trash2, RefreshCw, Moon, FileText, MessageSquare, Info
 } from "lucide-react";
 import { useCurrency } from "@/lib/currency";
 import { useWorkspace } from "@/lib/workspace";
 import { useToast } from "./toast";
 import { cn } from "@/lib/utils";
 import { Modal } from "./modal";
+import { clearDataCache } from "@/lib/supabase/database";
 
 interface SettingsSheetProps {
   isOpen: boolean;
@@ -24,21 +25,62 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut }: SettingsShee
   const { active: activeWs, deleteWorkspace, workspaces } = useWorkspace();
   const toast = useToast();
 
-  const [pushEnabled, setPushEnabled] = useState(true);
-  const [weeklySummary, setWeeklySummary] = useState(true);
-  const [budgetAlerts, setBudgetAlerts] = useState(true);
-  const [billReminders, setBillReminders] = useState(true);
-  const [biometric, setBiometric] = useState(false);
+  // Notification settings (persisted in localStorage)
+  const [pushEnabled, setPushEnabled] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return localStorage.getItem("acuity:push_notifications") !== "0";
+  });
+  const [weeklySummary, setWeeklySummary] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return localStorage.getItem("acuity:weekly_summary") !== "0";
+  });
+  const [budgetAlerts, setBudgetAlerts] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return localStorage.getItem("acuity:budget_alerts") !== "0";
+  });
+  const [billReminders, setBillReminders] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return localStorage.getItem("acuity:bill_reminders") !== "0";
+  });
+  const [biometric, setBiometric] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("acuity:biometric") === "1";
+  });
 
   const [confirmDelete, setConfirmDelete] = useState(false);
 
+  // Persist notification settings whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem("acuity:push_notifications", pushEnabled ? "1" : "0");
+      localStorage.setItem("acuity:weekly_summary", weeklySummary ? "1" : "0");
+      localStorage.setItem("acuity:budget_alerts", budgetAlerts ? "1" : "0");
+      localStorage.setItem("acuity:bill_reminders", billReminders ? "1" : "0");
+      localStorage.setItem("acuity:biometric", biometric ? "1" : "0");
+    } catch {}
+  }, [pushEnabled, weeklySummary, budgetAlerts, billReminders, biometric]);
+
   const profileName = user?.email?.split("@")[0]?.split(".")[0] || "User";
   const profileInitial = profileName.charAt(0).toUpperCase();
+
+  const handleClearCache = () => {
+    clearDataCache();
+    try {
+      // Also clear local storage preferences (except currency)
+      const currency = localStorage.getItem("acuity:currency");
+      const rate = localStorage.getItem("acuity:rate");
+      localStorage.clear();
+      if (currency) localStorage.setItem("acuity:currency", currency);
+      if (rate) localStorage.setItem("acuity:rate", rate);
+    } catch {}
+    toast("Cache cleared");
+  };
 
   const handleDeleteWorkspace = async () => {
     if (!activeWs) return;
     if (workspaces.length <= 1) {
       toast("You need at least one workspace", "err");
+      setConfirmDelete(false);
       return;
     }
     try {
@@ -55,7 +97,7 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut }: SettingsShee
     <Modal open={isOpen} onClose={onClose} title="Settings">
       <div className="space-y-6 pb-6 overflow-y-auto max-h-[75dvh]">
 
-        {/* ---------- PROFILE ---------- */}
+        {/* PROFILE */}
         <div className="flex items-center gap-4 p-4 rounded-2xl bg-[var(--surface-2)] border border-[var(--line)]">
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#DE3121] text-white text-[20px] font-bold">
             {profileInitial}
@@ -70,7 +112,7 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut }: SettingsShee
           </div>
         </div>
 
-        {/* ---------- MONEY & CURRENCY ---------- */}
+        {/* MONEY & CURRENCY */}
         <Section title="Money & Currency">
           <Row
             icon={Wallet}
@@ -86,14 +128,14 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut }: SettingsShee
           />
           <Row
             icon={Eye}
-            label="Hide balances by default"
+            label="Hide balances"
             toggle
             toggleValue={hidden}
             onToggle={toggleHidden}
           />
         </Section>
 
-        {/* ---------- NOTIFICATIONS ---------- */}
+        {/* NOTIFICATIONS (Preferences only — actual notifications live in Bell icon) */}
         <Section title="Notifications">
           <Row
             icon={Bell}
@@ -125,7 +167,7 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut }: SettingsShee
           />
         </Section>
 
-        {/* ---------- PRIVACY & SECURITY ---------- */}
+        {/* PRIVACY & SECURITY */}
         <Section title="Privacy & Security">
           <Row
             icon={Shield}
@@ -145,33 +187,28 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut }: SettingsShee
             icon={RefreshCw}
             label="Clear cache"
             chevron
-            onClick={() => toast("Cache cleared")}
+            onClick={handleClearCache}
           />
         </Section>
 
-        {/* ---------- FINANCIAL PREFERENCES ---------- */}
+        {/* FINANCIAL PREFERENCES */}
         <Section title="Financial Preferences">
           <Row
             icon={Wallet}
-            label="Default account"
+            label="Current workspace"
             value={activeWs?.name ?? "None"}
-            chevron
           />
           <Row
             icon={Briefcase}
             label="Payday cycle"
             value="Day 27"
             chevron
+            onClick={() => toast("Manage on Budget screen")}
           />
         </Section>
 
-        {/* ---------- WORKSPACE ---------- */}
+        {/* WORKSPACE */}
         <Section title="Workspace">
-          <Row
-            icon={Briefcase}
-            label="Current workspace"
-            value={activeWs?.name ?? "None"}
-          />
           <Row
             icon={Trash2}
             label="Delete workspace"
@@ -181,7 +218,7 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut }: SettingsShee
           />
         </Section>
 
-        {/* ---------- ABOUT & SUPPORT ---------- */}
+        {/* ABOUT & SUPPORT */}
         <Section title="About & Support">
           <Row
             icon={HelpCircle}
@@ -202,7 +239,7 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut }: SettingsShee
           />
         </Section>
 
-        {/* ---------- SIGN OUT ---------- */}
+        {/* SIGN OUT */}
         <button
           onClick={() => {
             if (confirm("Sign out of Acuity?")) onSignOut();
@@ -214,7 +251,7 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut }: SettingsShee
         </button>
       </div>
 
-      {/* Delete workspace confirmation modal */}
+      {/* Delete workspace confirmation */}
       <AnimatePresence>
         {confirmDelete && (
           <motion.div
