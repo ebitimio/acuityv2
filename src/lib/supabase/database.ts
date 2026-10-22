@@ -79,8 +79,8 @@ async function removeRow(table: string, id: string) {
 /* ---------- metrics ---------- */
 
 export async function getHomeMetrics(): Promise<HomeMetrics> {
-  const { sb } = await ctx();
-  const { data, error } = await sb.rpc("get_home_metrics");
+  const { sb, workspaceId } = await ctx();
+  const { data, error } = await sb.rpc("get_home_metrics", { p_workspace_id: workspaceId });
   if (error) throw error;
   return data as HomeMetrics;
 }
@@ -414,8 +414,8 @@ export interface SetupStatus {
 }
 
 export async function getSetupStatus(): Promise<SetupStatus> {
-  const { sb } = await ctx();
-  const { data, error } = await sb.rpc("get_setup_status");
+  const { sb, workspaceId } = await ctx();
+  const { data, error } = await sb.rpc("get_setup_status", { p_workspace_id: workspaceId });
   if (error) throw error;
   return data as SetupStatus;
 }
@@ -442,8 +442,8 @@ export interface SafeToSpend {
 }
 
 export async function getSafeToSpend(): Promise<SafeToSpend> {
-  const { sb } = await ctx();
-  const { data, error } = await sb.rpc("get_safe_to_spend");
+  const { sb, workspaceId } = await ctx();
+  const { data, error } = await sb.rpc("get_safe_to_spend", { p_workspace_id: workspaceId });
   if (error) throw error;
   return data as SafeToSpend;
 }
