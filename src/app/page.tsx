@@ -45,7 +45,7 @@ import { Modal } from "@/components/ui/modal";
 import { Field, Button } from "@/components/ui/form";
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
 import {
-  Eye, EyeOff, ChevronRight, Receipt, ChevronDown, Plus, Trash2,
+  ChevronRight, Receipt, ChevronDown, Plus, Trash2,
   PiggyBank, PieChart, ArrowLeftRight, Bell,
 } from "lucide-react";
 import { TransactionsScreen } from "@/components/screens/transactions-screen";
@@ -380,7 +380,7 @@ export default function SandboxPage() {
                     aria-label="Settings"
                     className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--line)] bg-[var(--fill-1)] text-[12px] font-semibold text-[var(--text-1)]"
                   >
-                    {session.user?.email?.charAt(0).toUpperCase() ?? "A"}
+                    {profileName.charAt(0).toUpperCase() || "A"}
                   </button>
                 </div>
               </div>
@@ -566,6 +566,8 @@ export default function SandboxPage() {
         onClose={() => setIsSettingsOpen(false)}
         user={session.user}
         onSignOut={handleSignOut}
+        profileName={profileName}
+        onNameUpdated={(name) => setProfileName(name)}
       />
 
       <NotificationsSheet

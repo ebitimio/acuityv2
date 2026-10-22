@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import { Bell, AlertTriangle, Calendar, TrendingDown } from "lucide-react";
 import { Modal } from "./modal";
 import { getSafeToSpend, getRecurringItems, getHomeMetrics } from "@/lib/supabase/database";
-import type { RecurringItem, HomeMetrics } from "@/lib/types";
 
 interface NotificationsSheetProps {
   isOpen: boolean;
@@ -19,6 +18,22 @@ export function NotificationsSheet({ isOpen, onClose }: NotificationsSheetProps)
   useEffect(() => {
     if (!isOpen) return;
     
+    const pushEnabled = localStorage.getItem("acuity:push_notifications") !== "0";
+    const budgetAlerts = localStorage.getItem("acuity:budget_alerts") !== "0";
+    const billReminders = localStorage.getItem("acuity:bill_reminders") !== "0";
+
+    if (!pushEnabled) {
+      setNotifications([{
+        id: "disabled",
+        type: "info",
+        title: "Notifications are off",
+        body: "Enable push notifications in Settings to receive alerts.",
+        time: "",
+      }]);
+      setLoading(false);
+      return;
+    }
+
     async function loadNotifications() {
       setLoading(true);
       const list: any[] = [];
@@ -30,47 +45,46 @@ export function NotificationsSheet({ isOpen, onClose }: NotificationsSheetProps)
             id: "uncategorized",
             type: "warning",
             title: `${metrics.uncategorized_count} transactions need review`,
-            body: "Tap to categorize them in the Needs Review screen.",
+            body: "Tap to categorize them.",
             time: "Just now",
           });
         }
 
-        const budgetLimit = metrics.budget_limit_minor / 100;
-        const spent = metrics.total_spent_minor / 100;
-        if (budgetLimit > 0) {
-          const pct = (spent / budgetLimit) * 100;
-          if (pct >= 90) {
-            list.push({
-              id: "budget-alert",
-              type: "alert",
-              title: "Budget almost used up",
-              body: `You've used ${Math.round(pct)}% of your monthly budget.`,
-              time: "Today",
-            });
+        if (budgetAlerts) {
+          const budgetLimit = metrics.budget_limit_minor / 100;
+          const spent = metrics.total_spent_minor / 100;
+          if (budgetLimit > 0) {
+            const pct = (spent / budgetLimit) * 100;
+            if (pct >= 90) {
+              list.push({
+                id: "budget-alert",
+                type: "alert",
+                title: "Budget almost used up",
+                body: `You've used ${Math.round(pct)}% of your monthly budget.`,
+                time: "Today",
+              });
+            }
           }
         }
-      } catch (e) {
-        console.error(e);
-      }
+      } catch (e) {}
 
-      try {
-        const items = await getRecurringItems();
-        const today = new Date().getDate();
-        const upcoming = items.filter(i => {
-          const daysUntil = i.day - today;
-          return daysUntil > 0 && daysUntil <= 3;
-        });
-        upcoming.forEach(i => {
-          list.push({
-            id: `bill-${i.id}`,
-            type: "reminder",
-            title: `${i.name} due in ${i.day - today} days`,
-            body: `${i.kind === "bill" ? "Bill" : "Income"} of ₦${(i.amount_minor / 100).toLocaleString()} on day ${i.day}.`,
-            time: "Upcoming",
+      if (billReminders) {
+        try {
+          const items = await getRecurringItems();
+          const today = new Date().getDate();
+          items.filter(i => {
+            const daysUntil = i.day - today;
+            return daysUntil > 0 && daysUntil <= 3;
+          }).forEach(i => {
+            list.push({
+              id: `bill-${i.id}`,
+              type: "reminder",
+              title: `${i.name} due in ${i.day - today} days`,
+              body: `${i.kind === "bill" ? "Bill" : "Income"} of ₦${(i.amount_minor / 100).toLocaleString()}.`,
+              time: "Upcoming",
+            });
           });
-        });
-      } catch (e) {
-        console.error(e);
+        } catch (e) {}
       }
 
       try {
@@ -84,16 +98,14 @@ export function NotificationsSheet({ isOpen, onClose }: NotificationsSheetProps)
             time: "Info",
           });
         }
-      } catch (e) {
-        console.error(e);
-      }
+      } catch (e) {}
 
       if (list.length === 0) {
         list.push({
           id: "empty",
           type: "info",
           title: "You're all caught up",
-          body: "No new notifications. We'll let you know when something needs attention.",
+          body: "No new notifications.",
           time: "",
         });
       }

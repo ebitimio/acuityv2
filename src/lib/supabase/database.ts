@@ -594,3 +594,8 @@ export function getPeriodLabel(cycle: { cycle_start: string; cycle_end: string }
   // Always show the current month, not the cycle start month
   return new Date().toLocaleDateString("en-NG", { month: "long", year: "numeric" });
 }
+export async function updateProfile(fullName: string) {
+  const { sb, user } = await ctx();
+  const { error } = await sb.from("profiles").update({ full_name: fullName.trim() }).eq("id", user.id);
+  if (error) throw error;
+}
