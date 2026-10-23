@@ -9,7 +9,7 @@ import {
   type SetupStatus, type SafeToSpend, type CategorySpendRow,
 } from "@/lib/supabase/database";
 import { useWorkspace } from "@/lib/workspace";
-import type { Txn, HomeMetrics } from "@/lib/types";
+import type { Txn, HomeMetrics, Account } from "@/lib/types";
 import { AuthScreen } from "@/components/screens/auth-screen";
 import { SplashScreen } from "@/components/ui/splash-screen";
 import { HomeSkeleton } from "@/components/ui/skeleton-loader";
@@ -18,7 +18,6 @@ import { TransactionRow } from "@/components/ui/transaction-row";
 import { SetupChecklist } from "@/components/screens/setup-checklist";
 import { SetupWizard } from "@/components/screens/setup-wizard";
 import { SafeToSpendHero } from "@/components/ui/safe-to-spend";
-import { CategoryScroller } from "@/components/ui/category-scroller";
 import { ToolsScroller } from "@/components/ui/tools-scroller";
 import { TransactionFilterChips, type TransactionFilter } from "@/components/ui/transaction-filter-chips";
 import { ScreenTransition } from "@/components/ui/screen-transition";
@@ -52,6 +51,7 @@ import {
 import { TransactionsScreen } from "@/components/screens/transactions-screen";
 import { OnboardingCarousel } from "@/components/screens/onboarding-carousel";
 import { PinLockScreen } from "@/components/screens/pin-lock-screen";
+import { StackedAccountCard } from "@/components/ui/stacked-account-card";
 
 const ZERO_METRICS: HomeMetrics = {
   net_worth_minor: 0,
@@ -93,6 +93,7 @@ export default function SandboxPage() {
   const [metrics, setMetrics] = useState<HomeMetrics | null>(null);
   const [transactions, setTransactions] = useState<Txn[]>([]);
   const [categoryRows, setCategoryRows] = useState<CategorySpendRow[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]); // NEW state for accounts
   const [setupStatus, setSetupStatus] = useState<SetupStatus | null>(null);
   const [setupError, setSetupError] = useState<string | null>(null);
   const [safeToSpend, setSafeToSpend] = useState<SafeToSpend | null>(null);
@@ -101,6 +102,7 @@ export default function SandboxPage() {
   const [setupWizardStep, setSetupWizardStep] = useState<"account" | "income" | "bills">("account");
   const [checklistDismissed, setChecklistDismissed] = useState(false);
   const [txnFilter, setTxnFilter] = useState<TransactionFilter>("all");
+  const [expandedCard, setExpandedCard] = useState<string | null>(null); // For the dashboard cards
 
   const [navHidden, setNavHidden] = useState(false);
 
@@ -172,16 +174,24 @@ export default function SandboxPage() {
     clearDataCache();
     
     try {
-      const [m, t] = await Promise.all([getHomeMetrics(), getRecentTransactions(20)]);
+      const [m, t, accs] = await Promise.all([
+        getHomeMetrics(), 
+        getRecentTransactions(20),
+        getAccounts()
+      ]);
       setMetrics(m ?? ZERO_METRICS);
       setTransactions(t ?? []);
-    } catch (e: any) { setMetrics(ZERO_METRICS); setTransactions([]); }
-
-    try {
-      const accounts = await getAccounts();
-      const total = accounts.reduce((s, a) => s + (a.current_minor ?? a.balance_minor), 0) / 100;
+      setAccounts(accs ?? []);
+      
+      // Also update liquid assets here
+      const total = (accs ?? []).reduce((s, a) => s + (a.current_minor ?? a.balance_minor), 0) / 100;
       setLiquidAssets(total);
-    } catch (e) { setLiquidAssets(0); }
+    } catch (e: any) { 
+      setMetrics(ZERO_METRICS); 
+      setTransactions([]); 
+      setAccounts([]);
+      setLiquidAssets(0);
+    }
 
     try {
       const catSpend = await getCategorySpend(
@@ -255,6 +265,7 @@ export default function SandboxPage() {
     setCategoryRows([]);
     setSafeToSpend(null);
     setLiquidAssets(0);
+    setAccounts([]);
   }, [activeWs?.id]);
 
   useEffect(() => {
@@ -399,7 +410,6 @@ export default function SandboxPage() {
     }} />;
   }
 
-  // ENSURE DATA IS READY BEFORE SHOWING DASHBOARD
   if (isLoading || !metrics) return <HomeSkeleton />;
 
   const m = metrics ?? ZERO_METRICS;
@@ -492,7 +502,42 @@ export default function SandboxPage() {
                 {setupError && <p className="px-1 text-[11px] text-[var(--danger)]">Setup status failed: {setupError}</p>}
                 {showChecklist && <SetupChecklist status={setupStatus!} onStartStep={handleStartSetupStep} onDismiss={handleDismissChecklist} />}
 
-                <CategoryScroller rows={categoryRows} onSeeAll={() => setActiveScreen("analytics")} />
+                {/* --- REPLACED: CategoryScroller with My Accounts --- */}
+                <div className="w-full">
+                  <div className="mb-3 flex items-center justify-between px-1">
+                    <h3 className="text-[15px] font-semibold text-[var(--text-1)]">My Accounts</h3>
+                    <button onClick={() => setActiveScreen("accounts")} className="text-[12px] font-medium text-[var(--brand)]">
+                      See all
+                    </button>
+                  </div>
+                  
+                  {accounts.length > 0 ? (
+                    <div className="-mx-5 overflow-x-auto px-5 pb-2 [scrollbar-width:none]">
+                      <div className="flex gap-4">
+                        {accounts.slice(0, 3).map((a) => (
+                          <div key={a.id} className="shrink-0 w-[300px]">
+                            <StackedAccountCard
+                              account={a}
+                              balance={(a.current_minor ?? a.balance_minor) / 100}
+                              fmt={fmt}
+                              isExpanded={true} // Keep it expanded on home for visibility
+                              onClick={() => setActiveScreen("accounts")}
+                              onCheckBalance={() => setActiveScreen("accounts")}
+                              onDelete={() => {}}
+                              cardholderName={profileName}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl border border-dashed border-[var(--line-strong)] p-6 text-center">
+                      <p className="text-[14px] text-[var(--text-3)]">No accounts yet.</p>
+                      <Button onClick={() => setActiveScreen("accounts")} variant="ghost" className="mt-3 h-9 text-[12px]">Add Account</Button>
+                    </div>
+                  )}
+                </div>
+                {/* --- END REPLACEMENT --- */}
 
                 <ToolsScroller onNavigate={(key) => setActiveScreen(key as ScreenId)} />
 
