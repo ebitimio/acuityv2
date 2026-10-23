@@ -31,12 +31,23 @@ export function AuthScreen() {
         if (!fullName || !password || !confirmPassword) throw new Error("Please fill all fields");
         if (password !== confirmPassword) throw new Error("Passwords do not match");
         
-        const { error } = await supabase.auth.signUp({ 
+        // 1. Create the auth user
+        const { data, error } = await supabase.auth.signUp({ 
           email, 
           password,
           options: { data: { full_name: fullName } } 
         });
         if (error) throw error;
+
+        // 2. Immediately save the name to the profiles table
+        if (data.user) {
+          await supabase.from("profiles").upsert({ 
+            id: data.user.id, 
+            email: email,
+            full_name: fullName 
+          });
+        }
+        
         toast("Account created!");
       } else if (mode === "forgot") {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
