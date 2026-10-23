@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ScreenHeader, IconButton } from "@/components/ui/screen-header";
-import { Plus, ChevronLeft, X, Check, Users } from "lucide-react";
+import { Plus, ChevronLeft, X, Check, Users, Trash2 } from "lucide-react";
 import { getAjoGroups, addAjoGroup, recordAjoPayment, deleteAjoGroup } from "@/lib/supabase/database";
 import { useCurrency } from "@/lib/currency";
 import { useToast } from "@/components/ui/toast";
@@ -20,12 +20,16 @@ export function AjoScreen({ onBack }: { onBack: () => void }) {
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
   const [frequency, setFrequency] = useState<"weekly" | "monthly">("monthly");
-  const [members, setMembers] = useState(10);
+  const [members, setMembers] = useState(3);
   const [myPosition, setMyPosition] = useState(1);
+  const [startDate, setStartDate] = useState(() => new Date().toISOString().split("T")[0]);
   
   // Member list state
   const [memberNames, setMemberNames] = useState<string[]>([]);
   const [newMemberName, setNewMemberName] = useState("");
+
+  // Custom Delete Modal State
+  const [confirmDelete, setConfirmDelete] = useState<AjoGroup | null>(null);
 
   const { fmt } = useCurrency();
   const toast = useToast();
@@ -44,8 +48,9 @@ export function AjoScreen({ onBack }: { onBack: () => void }) {
     setName("");
     setAmount("");
     setFrequency("monthly");
-    setMembers(10);
+    setMembers(3);
     setMyPosition(1);
+    setStartDate(new Date().toISOString().split("T")[0]);
     setMemberNames([]);
     setNewMemberName("");
     setStep(1);
@@ -68,9 +73,13 @@ export function AjoScreen({ onBack }: { onBack: () => void }) {
 
   const handleNext = () => {
     if (step === 1) {
-      if (!name || !amount) { toast("Please fill in all fields", "err"); return; }
+      if (!name || !amount || !startDate) { toast("Please fill in all fields", "err"); return; }
       setStep(2);
     } else if (step === 2) {
+      if (memberNames.length < members - 1) {
+        toast(`Please add ${members - 1} names for the other members`, "err");
+        return;
+      }
       setStep(3);
     }
   };
@@ -83,7 +92,8 @@ export function AjoScreen({ onBack }: { onBack: () => void }) {
         frequency, 
         members, 
         position: myPosition,
-        members_list: memberNames
+        members_list: memberNames,
+        start_date: new Date(startDate).toISOString()
       });
       toast("Ajo group created");
       setIsWizardOpen(false);
@@ -100,17 +110,20 @@ export function AjoScreen({ onBack }: { onBack: () => void }) {
   };
 
   const handleDelete = async (g: AjoGroup) => {
-    if (confirm(`Delete "${g.name}"?`)) {
-      await deleteAjoGroup(g.id);
-      if (activeGroup?.id === g.id) setActiveGroup(null);
-      load();
-    }
+    await deleteAjoGroup(g.id);
+    if (activeGroup?.id === g.id) setActiveGroup(null);
+    setConfirmDelete(null);
+    load();
   };
 
-  // Calculate next payout details
+  // Calculate next payout details based on start_date
   const payoutAmount = activeGroup ? (activeGroup.contribution_minor / 100) * activeGroup.members : 0;
-  const daysUntilPayout = activeGroup ? (activeGroup.my_position - activeGroup.paid_cycles) * (activeGroup.frequency === "weekly" ? 7 : 30) : 0;
-  const payoutDate = new Date(Date.now() + daysUntilPayout * 86400000);
+  
+  const start = activeGroup ? new Date(activeGroup.start_date) : new Date();
+  const daysPerCycle = activeGroup?.frequency === "weekly" ? 7 : 30;
+  const cyclesToPayout = activeGroup ? (activeGroup.my_position - 1) : 0;
+  const payoutDate = new Date(start.getTime() + (cyclesToPayout * daysPerCycle) * 86400000);
+  const daysUntilPayout = Math.max(0, Math.ceil((payoutDate.getTime() - Date.now()) / 86400000));
 
   return (
     <div className="min-h-[100dvh] pb-32 bg-[#0b0b0c]">
@@ -191,17 +204,21 @@ export function AjoScreen({ onBack }: { onBack: () => void }) {
                       <p className="text-[11px] text-[var(--text-3)]">Due {payoutDate.toLocaleDateString("en-NG", { weekday: "short", day: "numeric", month: "short" })}</p>
                     </div>
                   </div>
-                  <span className={cn(
-                    "text-[11px] font-bold px-3 py-1 rounded-full",
-                    activeGroup.paid_cycles >= activeGroup.my_position ? "bg-[#52c28a]/20 text-[#52c28a]" : "bg-[#F59E0B]/20 text-[#F59E0B]"
-                  )}>
-                    {activeGroup.paid_cycles >= activeGroup.my_position ? "Paid" : "Pending"}
-                  </span>
+                  <button
+                    onClick={() => handlePayment(activeGroup)}
+                    className={cn(
+                      "flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-full transition-colors",
+                      activeGroup.paid_cycles >= activeGroup.my_position ? "bg-[#52c28a]/20 text-[#52c28a]" : "bg-[#F59E0B]/20 text-[#F59E0B]"
+                    )}
+                  >
+                    {activeGroup.paid_cycles >= activeGroup.my_position ? <><Check size={12}/> Paid</> : "Pending"}
+                  </button>
                 </div>
 
-                {/* Other Members (from members_list) */}
+                {/* Other Members */}
                 {activeGroup.members_list?.map((name, i) => {
                   const isReceiving = i + 2 === activeGroup.my_position;
+                  // A member is paid if their index is less than the number of cycles paid
                   const isPaid = i < activeGroup.paid_cycles;
                   return (
                     <div key={i} className="flex items-center justify-between rounded-2xl bg-[#1c1c1e] p-4 border border-white/5">
@@ -216,20 +233,29 @@ export function AjoScreen({ onBack }: { onBack: () => void }) {
                           </p>
                         </div>
                       </div>
-                      <span className={cn(
-                        "text-[11px] font-bold px-3 py-1 rounded-full",
-                        isReceiving ? "bg-[#DE3121]/20 text-[#DE3121]" :
-                        isPaid ? "bg-[#52c28a]/20 text-[#52c28a]" : "bg-[#F59E0B]/20 text-[#F59E0B]"
-                      )}>
-                        {isReceiving ? "Receiving" : isPaid ? "Paid" : "Pending"}
-                      </span>
+                      
+                      {/* Interactive Checkbox for Payment */}
+                      <button
+                        onClick={() => {
+                          // Note: Since we don't have a per-member payment table, 
+                          // we can only track aggregate cycles. Clicking this 
+                          // advances the overall paid count.
+                          handlePayment(activeGroup);
+                        }}
+                        className={cn(
+                          "flex h-8 w-8 items-center justify-center rounded-full border transition-colors",
+                          isPaid ? "bg-[#52c28a] border-[#52c28a] text-white" : "border-[var(--line-strong)] bg-transparent text-transparent"
+                        )}
+                      >
+                        <Check size={16} strokeWidth={3} />
+                      </button>
                     </div>
                   );
                 })}
               </div>
             </div>
             
-            <button onClick={() => handleDelete(activeGroup)} className="w-full py-3 text-[13px] font-semibold text-[var(--danger)]">
+            <button onClick={() => setConfirmDelete(activeGroup)} className="w-full py-3 text-[13px] font-semibold text-[var(--danger)]">
               Delete this group
             </button>
           </>
@@ -303,6 +329,15 @@ export function AjoScreen({ onBack }: { onBack: () => void }) {
                           className="w-full bg-transparent px-2 text-[22px] font-bold text-white outline-none placeholder:text-[var(--text-3)]"
                         />
                       </div>
+                    </div>
+                    <div>
+                      <label className="text-[13px] font-medium text-[var(--text-3)]">Start Date</label>
+                      <input
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                        className="mt-1 w-full h-14 rounded-2xl border border-[var(--line-strong)] bg-[var(--surface-2)] px-4 text-[16px] text-white outline-none focus:border-[#DE3121]"
+                      />
                     </div>
                   </div>
 
@@ -430,6 +465,49 @@ export function AjoScreen({ onBack }: { onBack: () => void }) {
                 </button>
               )}
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* CUSTOM DELETE MODAL */}
+      <AnimatePresence>
+        {confirmDelete && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[300] flex items-center justify-center bg-black/60 backdrop-blur-sm p-6"
+            onClick={() => setConfirmDelete(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-sm rounded-2xl bg-[var(--surface-2)] border border-[var(--line)] p-5"
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <Trash2 size={20} className="text-[var(--danger)]" />
+                <h3 className="text-[16px] font-bold text-[var(--text-1)]">Delete group?</h3>
+              </div>
+              <p className="text-[13px] text-[var(--text-3)] mb-4">
+                This will permanently delete <strong className="text-[var(--text-1)]">{confirmDelete.name}</strong> and all its data. This cannot be undone.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setConfirmDelete(null)}
+                  className="flex-1 rounded-xl bg-[var(--fill-1)] py-2.5 text-[13px] font-semibold text-[var(--text-1)]"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleDelete(confirmDelete)}
+                  className="flex-1 rounded-xl bg-[var(--danger)] py-2.5 text-[13px] font-semibold text-white"
+                >
+                  Delete
+                </button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

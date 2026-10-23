@@ -40,7 +40,6 @@ async function ctx() {
   return { sb, user, workspaceId: ws.id };
 }
 
-// Helper to get all account IDs for the active workspace
 async function getWorkspaceAccountIds(sb: any, workspaceId: string): Promise<string[]> {
   const { data, error } = await sb.from("accounts").select("id").eq("workspace_id", workspaceId);
   if (error) throw error;
@@ -436,14 +435,16 @@ export const addAjoGroup = (g: {
   frequency: "weekly" | "monthly"; 
   members: number; 
   position: number;
-  members_list: string[]; // NEW
+  members_list: string[];
+  start_date: string;
 }) => insertRow("ajo_groups", { 
   name: g.name, 
   contribution_minor: toMinor(g.contribution), 
   frequency: g.frequency, 
   members: g.members, 
   my_position: g.position,
-  members_list: g.members_list // NEW
+  members_list: g.members_list,
+  start_date: g.start_date
 });
 export const recordAjoPayment = (g: AjoGroup) => patchRow("ajo_groups", g.id, { paid_cycles: Math.min(g.paid_cycles + 1, g.members) });
 export const deleteAjoGroup = (id: string) => removeRow("ajo_groups", id);
