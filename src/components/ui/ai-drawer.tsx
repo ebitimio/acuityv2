@@ -93,7 +93,7 @@ export function AIDrawer({ isOpen, onClose, fullName = "there" }: { isOpen: bool
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
         transition={{ type: "spring", damping: 25, stiffness: 200 }}
-        className="fixed inset-0 z-[100] flex flex-col h-[100dvh] bg-[#0b0b0c]"
+        className="fixed inset-0 z-[100] flex flex-col h-[100dvh] flowing-gradient"
       >
         <style>{`
           @keyframes gradientFlow {
@@ -108,7 +108,7 @@ export function AIDrawer({ isOpen, onClose, fullName = "there" }: { isOpen: bool
           }
         `}</style>
 
-        <div className="relative shrink-0 flex flex-col px-6 pt-[calc(env(safe-area-inset-top)+20px)] pb-10 flowing-gradient">
+        <div className="relative shrink-0 flex flex-col px-6 pt-[calc(env(safe-area-inset-top)+20px)] pb-10">
           <button 
             onClick={onClose}
             className="absolute right-5 top-[calc(env(safe-area-inset-top)+16px)] flex h-9 w-9 items-center justify-center rounded-full bg-black/20 text-white z-50 hover:bg-black/40 transition-colors"
@@ -192,7 +192,7 @@ export function AIDrawer({ isOpen, onClose, fullName = "there" }: { isOpen: bool
           </div>
         )}
 
-        <div className="shrink-0 px-4 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-2 bg-[#0b0b0c]">
+        <div className="shrink-0 px-4 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-2">
           <div className="flex items-end gap-2 rounded-3xl bg-[#1c1c1e] p-2 border border-white/10 shadow-2xl">
             <textarea
               value={input}
