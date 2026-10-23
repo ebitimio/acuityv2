@@ -37,17 +37,18 @@ const getBrand = (name: string) => {
 
 export function CommitmentsScreen({ onBack }: { onBack: () => void }) {
   const [items, setItems] = useState<RecurringItem[]>([]);
-  const [familySupports, setFamilySupports] = useState<{ name: string; amount: number }[]>([]);
+  const [familySupports, setFamilySupports] = useState<{ name: string; amount: number; day: number }[]>([]);
   const [totalFamilySupport, setTotalFamilySupport] = useState(0);
 
   const [modal, setModal] = useState<"bill" | "income" | "family" | null>(null);
-  const [showDayPicker, setShowDayPicker] = useState(false);
+  const [showDayPicker, setShowDayPicker] = useState<"bill" | "family" | null>(null);
 
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
   const [day, setDay] = useState("1");
   const [familyName, setFamilyName] = useState("");
   const [familyAmt, setFamilyAmt] = useState("");
+  const [familyDay, setFamilyDay] = useState("1");
 
   const { fmt } = useCurrency();
   const toast = useToast();
@@ -59,15 +60,17 @@ export function CommitmentsScreen({ onBack }: { onBack: () => void }) {
     try {
       const parsed = JSON.parse(fam.label);
       if (Array.isArray(parsed)) {
-        setFamilySupports(parsed);
-        setTotalFamilySupport(parsed.reduce((s, f) => s + f.amount, 0));
+        // Ensure all have a day fallback
+        const sanitized = parsed.map(p => ({ ...p, day: p.day || fam.day || 1 }));
+        setFamilySupports(sanitized);
+        setTotalFamilySupport(sanitized.reduce((s, f) => s + f.amount, 0));
       } else {
-        setFamilySupports([{ name: fam.label || "Family Support", amount: fam.amount_minor / 100 }]);
+        setFamilySupports([{ name: fam.label || "Family Support", amount: fam.amount_minor / 100, day: fam.day }]);
         setTotalFamilySupport(fam.amount_minor / 100);
       }
     } catch {
       if (fam.amount_minor > 0) {
-        setFamilySupports([{ name: fam.label || "Family Support", amount: fam.amount_minor / 100 }]);
+        setFamilySupports([{ name: fam.label || "Family Support", amount: fam.amount_minor / 100, day: fam.day }]);
         setTotalFamilySupport(fam.amount_minor / 100);
       }
     }
@@ -94,25 +97,32 @@ export function CommitmentsScreen({ onBack }: { onBack: () => void }) {
 
   const addFamily = async () => {
     if (!familyName || !familyAmt) return;
-    const newList = [...familySupports, { name: familyName, amount: parseFloat(familyAmt) }];
+    const newList = [...familySupports, { name: familyName, amount: parseFloat(familyAmt), day: parseInt(familyDay) }];
     const newTotal = newList.reduce((s, f) => s + f.amount, 0);
-    await setFamilySupport(newTotal, JSON.stringify(newList));
+    // Save list as JSON, and also save the first day as the default workspace day
+    await setFamilySupport(newTotal, JSON.stringify(newList), parseInt(familyDay));
+    
     setFamilySupports(newList);
     setTotalFamilySupport(newTotal);
-    setFamilyName(""); setFamilyAmt(""); setModal(null);
+    setFamilyName(""); setFamilyAmt(""); setFamilyDay("1"); setModal(null);
     toast("Family support added");
   };
 
   const removeFamily = async (index: number) => {
     const newList = familySupports.filter((_, i) => i !== index);
     const newTotal = newList.reduce((s, f) => s + f.amount, 0);
-    await setFamilySupport(newTotal, JSON.stringify(newList));
+    const fallbackDay = newList[0]?.day || 1;
+    await setFamilySupport(newTotal, JSON.stringify(newList), fallbackDay);
     setFamilySupports(newList);
     setTotalFamilySupport(newTotal);
   };
 
   const income = items.filter((i) => i.kind === "income");
   const bills = items.filter((i) => i.kind === "bill");
+
+  const totalIncome = income.reduce((s, i) => s + i.amount_minor / 100, 0);
+  const totalBills = bills.reduce((s, i) => s + i.amount_minor / 100, 0);
+  const netIncome = totalIncome - (totalBills + totalFamilySupport);
 
   // Calendar Logic
   const today = new Date();
@@ -186,7 +196,7 @@ export function CommitmentsScreen({ onBack }: { onBack: () => void }) {
           </div>
         </div>
 
-        {/* SECTION: BILLS (Stacked overlapping cards) */}
+        {/* SECTION: BILLS */}
         <section>
           <div className="flex items-center justify-between mb-4 px-1">
             <div className="flex items-center gap-2">
@@ -275,6 +285,7 @@ export function CommitmentsScreen({ onBack }: { onBack: () => void }) {
                   </div>
                   <div>
                     <p className="text-[15px] font-semibold text-white">{f.name}</p>
+                    <p className="text-[12px] text-[var(--text-3)]">Day {f.day}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -285,21 +296,49 @@ export function CommitmentsScreen({ onBack }: { onBack: () => void }) {
             ))}
             
             {familySupports.length > 0 && (
-              <div className="flex items-center justify-between rounded-2xl bg-gradient-to-r from-[#DE3121] to-[#ff5a4a] p-5 shadow-lg mt-4">
-                <p className="text-[14px] font-bold text-black/70">Total Family Support</p>
-                <p className="text-[20px] font-black tabular text-black">{fmt(totalFamilySupport)}</p>
+              <div className="flex items-center justify-between rounded-2xl bg-[var(--surface-2)] p-5 border border-[var(--line)] mt-4">
+                <p className="text-[14px] font-bold text-white/70">Total Family Support</p>
+                <p className="text-[20px] font-black tabular text-white">{fmt(totalFamilySupport)}</p>
               </div>
             )}
-            {familySupports.length === 0 && <p className="px-4 py-6 text-center text-[14px] text-[var(--text-3)] bg-[var(--surface-2)] rounded-2xl border border-[var(--line)]">No family support set up.</p>}
           </div>
         </section>
+
+        {/* SUMMARY CARD */}
+        <section className="mt-8">
+          <div className="rounded-[32px] bg-black border border-[var(--line)] p-6 shadow-2xl">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <p className="text-[14px] text-[var(--text-2)]">Total Income</p>
+                <p className="text-[15px] font-bold text-[var(--gain)] tabular">+{fmt(totalIncome)}</p>
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="text-[14px] text-[var(--text-2)]">Total Bills</p>
+                <p className="text-[15px] font-bold text-white tabular">-{fmt(totalBills)}</p>
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="text-[14px] text-[var(--text-2)]">Family Support</p>
+                <p className="text-[15px] font-bold text-white tabular">-{fmt(totalFamilySupport)}</p>
+              </div>
+              
+              <div className="h-px w-full bg-[var(--line)] my-2" />
+              
+              <div className="flex items-center justify-between">
+                <p className="text-[16px] font-bold text-white">Net Left</p>
+                <p className={cn("text-[24px] font-black tabular", netIncome >= 0 ? "text-[var(--brand)]" : "text-[var(--danger)]")}>
+                  {netIncome >= 0 ? "+" : ""}{fmt(netIncome)}
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
       </div>
 
       {/* ADD BILL MODAL */}
       <Modal open={modal === "bill"} onClose={() => setModal(null)} title="Add Bill">
         <div className="flex flex-col h-[70dvh]">
           <div className="flex-1 flex flex-col items-center pt-2">
-            
             <p className="text-[13px] text-[var(--text-3)] mb-2">Amount</p>
             <div className="flex items-center justify-center">
               <span className="text-[32px] text-[var(--text-3)]">₦</span>
@@ -342,13 +381,10 @@ export function CommitmentsScreen({ onBack }: { onBack: () => void }) {
 
           <div className="shrink-0 space-y-4 pb-4">
             <div className="flex gap-2 justify-center">
-              {/* Hardcoded Monthly for now */}
               <div className="flex items-center gap-2 rounded-full bg-[var(--surface-2)] px-4 py-2 border border-[var(--line)] opacity-70">
                 <span className="text-[13px] font-semibold text-white">Monthly</span>
               </div>
-              
-              {/* Functional Day Picker */}
-              <button onClick={() => setShowDayPicker(true)} className="flex items-center gap-2 rounded-full bg-[var(--surface-2)] px-4 py-2 border border-[var(--line)]">
+              <button onClick={() => setShowDayPicker("bill")} className="flex items-center gap-2 rounded-full bg-[var(--surface-2)] px-4 py-2 border border-[var(--line)]">
                 <span className="text-[13px] font-semibold text-white">Day {day}</span>
                 <ChevronDown size={14} className="text-[var(--text-3)]" />
               </button>
@@ -371,24 +407,52 @@ export function CommitmentsScreen({ onBack }: { onBack: () => void }) {
         </div>
       </Modal>
 
-      {/* DAY PICKER MODAL (Nested inside the Add Bill Modal) */}
-      <Modal open={showDayPicker} onClose={() => setShowDayPicker(false)} title="Select Day of Month">
-        <div className="max-h-[50dvh] overflow-y-auto grid grid-cols-4 gap-2 pb-6">
-          {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
-            <button
-              key={d}
-              onClick={() => { setDay(d.toString()); setShowDayPicker(false); }}
-              className={cn(
-                "flex h-12 items-center justify-center rounded-xl text-[16px] font-semibold transition-colors",
-                day === d.toString() ? "bg-[#DE3121] text-white" : "bg-[var(--surface-2)] text-[var(--text-1)] hover:bg-[var(--fill-2)]"
-              )}
-            >
-              {d}
-            </button>
-          ))}
+      {/* ADD FAMILY MODAL */}
+      <Modal open={modal === "family"} onClose={() => setModal(null)} title="Add Family Support">
+        <div className="space-y-4 pb-6">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#DE3121]/20 text-[#DE3121]"><HeartHandshake size={24} /></div>
+            <div><p className="text-[16px] font-bold text-white">Support a Family Member</p><p className="text-[12px] text-[var(--text-3)]">Add a name, amount, and day</p></div>
+          </div>
+          <Field label="Person's Name (e.g. Mom)" value={familyName} onChange={(e) => setFamilyName(e.target.value)} />
+          <CurrencyField label="Monthly Amount" value={parseFloat(familyAmt)} onChange={(v) => setFamilyAmt(v.toString())} />
+          
+          <button onClick={() => setShowDayPicker("family")} className="flex w-full items-center justify-between rounded-xl border border-[var(--line-strong)] bg-[var(--surface-1)] px-4 py-3 text-[15px] text-[var(--text-1)]">
+            <span>Day of month</span>
+            <span className="font-semibold">Day {familyDay}</span>
+          </button>
+
+          <Button onClick={addFamily} disabled={!familyName || !familyAmt} className="w-full h-12 text-[15px] font-bold">Add Person</Button>
         </div>
       </Modal>
 
+      {/* DAY PICKER MODAL */}
+      <Modal open={!!showDayPicker} onClose={() => setShowDayPicker(null)} title="Select Day of Month">
+        <div className="max-h-[50dvh] overflow-y-auto grid grid-cols-4 gap-2 pb-6">
+          {Array.from({ length: 31 }, (_, i) => i + 1).map(d => {
+            const isBill = showDayPicker === "bill";
+            const currentVal = isBill ? day : familyDay;
+            return (
+              <button
+                key={d}
+                onClick={() => { 
+                  if (isBill) setDay(d.toString()); 
+                  else setFamilyDay(d.toString()); 
+                  setShowDayPicker(null); 
+                }}
+                className={cn(
+                  "flex h-12 items-center justify-center rounded-xl text-[16px] font-semibold transition-colors",
+                  currentVal === d.toString() ? "bg-[#DE3121] text-white" : "bg-[var(--surface-2)] text-[var(--text-1)] hover:bg-[var(--fill-2)]"
+                )}
+              >
+                {d}
+              </button>
+            );
+          })}
+        </div>
+      </Modal>
+
+      {/* ADD INCOME MODAL */}
       <Modal open={modal === "income"} onClose={() => setModal(null)} title="Add Income">
         <div className="space-y-4 pb-6">
           <div className="flex items-center gap-4 mb-4">
@@ -399,18 +463,6 @@ export function CommitmentsScreen({ onBack }: { onBack: () => void }) {
           <Field label="Source (e.g. Salary)" value={name} onChange={(e) => setName(e.target.value)} placeholder="Enter source" />
           <Field label="Day of month (1-31)" type="number" value={day} onChange={(e) => setDay(e.target.value)} />
           <Button onClick={addRec} disabled={!name || !amount} className="w-full h-12 text-[15px] font-bold">Save Income</Button>
-        </div>
-      </Modal>
-
-      <Modal open={modal === "family"} onClose={() => setModal(null)} title="Add Family Support">
-        <div className="space-y-4 pb-6">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#DE3121]/20 text-[#DE3121]"><HeartHandshake size={24} /></div>
-            <div><p className="text-[16px] font-bold text-white">Support a Family Member</p><p className="text-[12px] text-[var(--text-3)]">Add a name and monthly amount</p></div>
-          </div>
-          <Field label="Person's Name (e.g. Mom)" value={familyName} onChange={(e) => setFamilyName(e.target.value)} />
-          <CurrencyField label="Monthly Amount" value={parseFloat(familyAmt)} onChange={(v) => setFamilyAmt(v.toString())} />
-          <Button onClick={addFamily} disabled={!familyName || !familyAmt} className="w-full h-12 text-[15px] font-bold">Add Person</Button>
         </div>
       </Modal>
     </div>
