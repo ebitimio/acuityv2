@@ -75,6 +75,7 @@ export interface AjoGroup {
   members: number;
   my_position: number;
   paid_cycles: number;
+  members_list: string[]; // NEW
 }
 
 export interface HomeMetrics {

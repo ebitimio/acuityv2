@@ -430,7 +430,21 @@ export async function setFamilySupport(amount: number, label: string, day: numbe
 /* ---------- ajo ---------- */
 
 export const getAjoGroups = () => list<AjoGroup>("ajo_groups");
-export const addAjoGroup = (g: { name: string; contribution: number; frequency: "weekly" | "monthly"; members: number; position: number }) => insertRow("ajo_groups", { name: g.name, contribution_minor: toMinor(g.contribution), frequency: g.frequency, members: g.members, my_position: g.position });
+export const addAjoGroup = (g: { 
+  name: string; 
+  contribution: number; 
+  frequency: "weekly" | "monthly"; 
+  members: number; 
+  position: number;
+  members_list: string[]; // NEW
+}) => insertRow("ajo_groups", { 
+  name: g.name, 
+  contribution_minor: toMinor(g.contribution), 
+  frequency: g.frequency, 
+  members: g.members, 
+  my_position: g.position,
+  members_list: g.members_list // NEW
+});
 export const recordAjoPayment = (g: AjoGroup) => patchRow("ajo_groups", g.id, { paid_cycles: Math.min(g.paid_cycles + 1, g.members) });
 export const deleteAjoGroup = (id: string) => removeRow("ajo_groups", id);
 
