@@ -123,71 +123,90 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
   };
 
   const activeAccount = accounts.find(a => a.id === selectedAccount);
-  const selectedCatObj = getCategory(isCustom ? "Uncategorized" : category);
+
+  // We use a custom full-screen modal wrapper instead of the bottom sheet Modal
+  if (!isOpen) return null;
 
   return (
-    <Modal open={isOpen} onClose={onClose} title="">
-      <div className="flex flex-col h-[75dvh] min-h-0 bg-[#0b0b0c] -mx-5 -mt-6 px-5 pt-6 pb-2">
-        
-        {/* Top Bar (Direction) */}
-        <div className="flex justify-center shrink-0 mb-4">
-          <div className="flex items-center rounded-full bg-[#1c1c1e] p-1 border border-white/5">
-            <button
-              onClick={() => setDirection("debit")}
-              className={cn(
-                "flex items-center gap-1.5 rounded-full px-4 py-1.5 text-[13px] font-semibold transition-colors",
-                direction === "debit" ? "bg-[#DE3121] text-white" : "text-[var(--text-3)] hover:text-white"
-              )}
-            >
-              <ArrowRightLeft size={14} className="rotate-90" /> Expense
-            </button>
-            <button
-              onClick={() => setDirection("credit")}
-              className={cn(
-                "flex items-center gap-1.5 rounded-full px-4 py-1.5 text-[13px] font-semibold transition-colors",
-                direction === "credit" ? "bg-[#52c28a] text-white" : "text-[var(--text-3)] hover:text-white"
-              )}
-            >
-              <ArrowRightLeft size={14} className="-rotate-90" /> Income
-            </button>
-          </div>
+    <div className="fixed inset-0 z-[200] flex flex-col bg-[#0b0b0c] text-white">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 pt-[calc(env(safe-area-inset-top)+16px)] pb-4">
+        <button onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 active:scale-95">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+        <div className="flex items-center rounded-full bg-[#1c1c1e] p-1">
+          <button
+            onClick={() => setDirection("debit")}
+            className={cn(
+              "flex items-center gap-1.5 rounded-full px-4 py-1.5 text-[13px] font-semibold transition-colors",
+              direction === "debit" ? "bg-[#DE3121] text-white" : "text-[var(--text-3)]"
+            )}
+          >
+            <ArrowRightLeft size={14} className="rotate-90" /> Expense
+          </button>
+          <button
+            onClick={() => setDirection("credit")}
+            className={cn(
+              "flex items-center gap-1.5 rounded-full px-4 py-1.5 text-[13px] font-semibold transition-colors",
+              direction === "credit" ? "bg-[#52c28a] text-white" : "text-[var(--text-3)]"
+            )}
+          >
+            <ArrowRightLeft size={14} className="-rotate-90" /> Income
+          </button>
         </div>
+        <div className="w-10" /> {/* Spacer to balance header */}
+      </div>
 
+      <div className="flex-1 flex flex-col px-4 overflow-y-auto">
         {/* Big Amount */}
-        <div className="flex flex-col items-center justify-center py-6 shrink-0">
-          <p className="text-[48px] font-bold tabular tracking-tight text-white leading-none">
+        <div className="flex flex-col items-center justify-center py-8 shrink-0">
+          <p className="text-[52px] font-bold tabular tracking-tight text-white leading-none">
             ₦{amount || "0"}
           </p>
         </div>
 
         {/* Account & Date Pills */}
-        <div className="flex items-center justify-between gap-2 shrink-0 mb-4">
-          <div className="flex items-center gap-2 rounded-full bg-[#1c1c1e] px-3 py-1.5 border border-white/5">
-            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-black">
-              <CreditCard size={12} />
-            </div>
-            <span className="text-[12px] font-medium text-white max-w-[100px] truncate">
-              {activeAccount?.name || "Account"}
+        <div className="flex items-center justify-between gap-2 shrink-0 mb-6">
+          
+          {/* FIXED ACCOUNT DROPDOWN: Uses native select but looks like a pill */}
+          <div className="relative flex items-center gap-2 rounded-full bg-[#1c1c1e] px-4 py-2 border border-white/5">
+            <CreditCard size={16} className="text-white/60" />
+            <span className="text-[14px] font-semibold text-white">
+              {activeAccount?.name || "Select Account"}
             </span>
-            <ChevronDown size={12} className="text-white/50" />
+            <ChevronDown size={14} className="text-white/60" />
+            
+            <select
+              value={selectedAccount}
+              onChange={(e) => setSelectedAccount(e.target.value)}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            >
+              {accounts.map((acc) => (
+                <option key={acc.id} value={acc.id}>
+                  {acc.name}
+                </option>
+              ))}
+              {accounts.length === 0 && <option value="">No accounts</option>}
+            </select>
           </div>
 
-          <div className="flex items-center gap-2 rounded-full bg-[#1c1c1e] px-3 py-1.5 border border-white/5 relative">
+          {/* Date Picker */}
+          <div className="relative flex items-center gap-2 rounded-full bg-[#1c1c1e] px-4 py-2 border border-white/5">
+            <span className="text-[14px] font-semibold text-white">
+              {new Date(date).toLocaleDateString("en-NG", { day: "numeric", month: "short" })}
+            </span>
             <input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
               className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
             />
-            <span className="text-[12px] font-medium text-white">
-              {new Date(date).toLocaleDateString("en-NG", { day: "numeric", month: "short" })}
-            </span>
           </div>
         </div>
 
-        {/* Category Scroller (Replaces Note Input) */}
+        {/* Category Scroller */}
         <div className="mb-4 shrink-0">
-          <div className="-mx-5 overflow-x-auto px-5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="-mx-4 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <div className="flex gap-2">
               {categoryNames.map((name) => {
                 const cat = getCategory(name);
@@ -198,8 +217,8 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
                     key={name}
                     onClick={() => { setCategory(name); setIsCustom(false); }}
                     className={cn(
-                      "flex shrink-0 flex-col items-center gap-1.5 rounded-2xl border p-3 w-[72px] transition-colors",
-                      isActive ? "bg-[var(--fill-2)] border-white/20" : "bg-[#1c1c1e] border-white/5"
+                      "flex shrink-0 flex-col items-center gap-1.5 rounded-2xl border p-3 w-[80px] transition-colors",
+                      isActive ? "bg-white/10 border-white/20" : "bg-[#1c1c1e] border-transparent"
                     )}
                   >
                     <div 
@@ -208,25 +227,24 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
                     >
                       <Icon size={16} />
                     </div>
-                    <span className={cn("text-[10px] font-medium truncate w-full text-center", isActive ? "text-white" : "text-white/60")}>
+                    <span className={cn("text-[11px] font-medium truncate w-full text-center", isActive ? "text-white" : "text-white/60")}>
                       {name.split(" ")[0]}
                     </span>
                   </button>
                 );
               })}
               
-              {/* Add Custom Category Button */}
               <button
                 onClick={() => setIsCustom(true)}
                 className={cn(
-                  "flex shrink-0 flex-col items-center gap-1.5 rounded-2xl border p-3 w-[72px] transition-colors",
-                  isCustom ? "bg-[var(--fill-2)] border-white/20" : "bg-[#1c1c1e] border-white/5"
+                  "flex shrink-0 flex-col items-center gap-1.5 rounded-2xl border p-3 w-[80px] transition-colors",
+                  isCustom ? "bg-white/10 border-white/20" : "bg-[#1c1c1e] border-transparent"
                 )}
               >
                 <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/5 text-white/60">
                   <Plus size={16} />
                 </div>
-                <span className="text-[10px] font-medium text-white/60">Custom</span>
+                <span className="text-[11px] font-medium text-white/60">Custom</span>
               </button>
             </div>
           </div>
@@ -237,37 +255,29 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
               value={customCategory}
               onChange={(e) => setCustomCategory(e.target.value)}
               placeholder="Type custom category..."
-              className="mt-2 w-full rounded-xl border border-[var(--line-strong)] bg-[#1c1c1e] px-4 py-2.5 text-[14px] text-white outline-none focus:border-[#DE3121]"
+              className="mt-3 w-full rounded-xl border border-[var(--line-strong)] bg-[#1c1c1e] px-4 py-3 text-[15px] text-white outline-none focus:border-[#DE3121]"
               autoFocus
             />
           )}
         </div>
 
         {/* Numpad & Save */}
-        <div className="mt-auto pb-2 pt-2 shrink-0">
+        <div className="mt-auto pb-[calc(env(safe-area-inset-bottom)+16px)] shrink-0 pt-2">
           {error && (
             <p className="mb-2 text-center text-[12px] font-medium text-[var(--danger)]">{error}</p>
           )}
 
-          <div className="grid grid-cols-4 gap-1.5 mb-3">
-            {["1", "2", "3", "+", "4", "5", "6", "-", "7", "8", "9", "x", ".", "0", "backspace", "/"].map((key) => {
-              // For the extra operator keys, we just pass them to the amount string for now
-              // or disable them if you only want numbers. I'll include them visually.
-              const isOperator = ["+", "-", "x", "/"].includes(key);
-              return (
-                <button
-                  key={key}
-                  onClick={() => handleKeyPress(key)}
-                  className={cn(
-                    "flex h-12 items-center justify-center rounded-xl text-[20px] font-medium transition-colors",
-                    isOperator ? "bg-transparent text-white/40" : "bg-[#1c1c1e] text-white active:bg-[#2c2c2e]"
-                  )}
-                  disabled={isOperator}
-                >
-                  {key === "backspace" ? <Delete size={20} /> : key}
-                </button>
-              );
-            })}
+          {/* Clean 3-column Numpad */}
+          <div className="grid grid-cols-3 gap-2 mb-4">
+            {["1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "0", "backspace"].map((key) => (
+              <button
+                key={key}
+                onClick={() => handleKeyPress(key)}
+                className="flex h-14 items-center justify-center rounded-2xl bg-[#1c1c1e] text-[22px] font-medium text-white active:bg-[#2c2c2e] transition-colors"
+              >
+                {key === "backspace" ? <Delete size={22} /> : key}
+              </button>
+            ))}
           </div>
 
           <Button
@@ -280,6 +290,6 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
           </Button>
         </div>
       </div>
-    </Modal>
+    </div>
   );
 }
