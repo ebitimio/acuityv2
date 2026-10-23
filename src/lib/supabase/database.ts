@@ -408,14 +408,22 @@ export const deleteFund = (id: string) => removeRow("sinking_funds", id);
 
 export async function getFamilySupport() {
   const { sb, workspaceId } = await ctx();
-  const { data, error } = await sb.from("workspaces").select("family_support_minor,family_support_label").eq("id", workspaceId).single();
+  const { data, error } = await sb.from("workspaces").select("family_support_minor,family_support_label,family_support_day").eq("id", workspaceId).single();
   if (error) throw error;
-  return { amount_minor: Number(data?.family_support_minor ?? 0), label: (data?.family_support_label as string) ?? "" };
+  return { 
+    amount_minor: Number(data?.family_support_minor ?? 0), 
+    label: (data?.family_support_label as string) ?? "",
+    day: Number(data?.family_support_day ?? 1)
+  };
 }
 
-export async function setFamilySupport(amount: number, label: string) {
+export async function setFamilySupport(amount: number, label: string, day: number = 1) {
   const { sb, workspaceId } = await ctx();
-  const { error } = await sb.from("workspaces").update({ family_support_minor: toMinor(amount), family_support_label: label }).eq("id", workspaceId);
+  const { error } = await sb.from("workspaces").update({ 
+    family_support_minor: toMinor(amount), 
+    family_support_label: label,
+    family_support_day: day
+  }).eq("id", workspaceId);
   if (error) throw error;
 }
 

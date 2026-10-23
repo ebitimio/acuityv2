@@ -77,7 +77,6 @@ export default function SandboxPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeScreen, setActiveScreen] = useState<ScreenId>("home");
 
-  // Onboarding & Lock states
   const [onboardingSequence, setOnboardingSequence] = useState<"checking" | "carousel" | "pin" | "complete">("checking");
   const [isLocked, setIsLocked] = useState(false);
   const [lockError, setLockError] = useState("");
@@ -117,7 +116,7 @@ export default function SandboxPage() {
     else setNavHidden(false);
   });
 
-  // 30-Minute Inactivity Lock Timer (Runs only when not locked and onboarded)
+  // 30-Minute Inactivity Lock Timer
   useEffect(() => {
     if (!session || onboardingSequence !== "complete" || isLocked || !dbPin) return;
 
@@ -226,15 +225,10 @@ export default function SandboxPage() {
           } else {
             setDbPin(profile.pin);
             
-            // CRITICAL FIX: Force lock check on initial load
             const lastActive = Number(localStorage.getItem("acuity:last_active") || "0");
-            
-            // If lastActive is 0, it means they either just signed up or the cache was cleared.
-            // In either case, we want to prompt for the PIN to be safe.
             if (lastActive === 0 || Date.now() - lastActive > 1800000) {
               setIsLocked(true);
             } else {
-              // Only update lastActive if we are not locking them
               localStorage.setItem("acuity:last_active", String(Date.now()));
             }
             
@@ -264,11 +258,11 @@ export default function SandboxPage() {
   }, [activeWs?.id]);
 
   useEffect(() => {
-    if (!showSplash && session) {
-      const timer = setTimeout(() => setIsLoading(false), 800);
+    if (!showSplash && session && metrics) {
+      const timer = setTimeout(() => setIsLoading(false), 500);
       return () => clearTimeout(timer);
     }
-  }, [showSplash, session]);
+  }, [showSplash, session, metrics]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -377,7 +371,6 @@ export default function SandboxPage() {
   
   if (!session) return <AuthScreen />;
 
-  // HARD LOCK: Do not render dashboard until onboarding sequence is complete
   if (onboardingSequence === "carousel") {
     return <OnboardingCarousel onComplete={() => {
       setOnboardingSequence("pin");
@@ -406,7 +399,8 @@ export default function SandboxPage() {
     }} />;
   }
 
-  if (isLoading) return <HomeSkeleton />;
+  // ENSURE DATA IS READY BEFORE SHOWING DASHBOARD
+  if (isLoading || !metrics) return <HomeSkeleton />;
 
   const m = metrics ?? ZERO_METRICS;
   const netAcrossAccounts = m.net_worth_minor / 100;
@@ -540,7 +534,13 @@ export default function SandboxPage() {
       <ImportSheet isOpen={isImportOpen} onClose={() => setIsImportOpen(false)} onImportSuccess={() => { refreshData(); toast("Statement imported"); }} />
       <AIDrawer isOpen={isAdvisorOpen} onClose={() => setIsAdvisorOpen(false)} fullName={profileName} />
       <SettingsSheet isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} user={{ ...session.user, created_at: session.user.created_at }} onSignOut={handleSignOut} profileName={profileName} onNameUpdated={(name) => setProfileName(name)} />
-      <NotificationsSheet isOpen={isNotificationsOpen} onClose={() => setIsNotificationsOpen(false)} />
+      
+      <NotificationsSheet 
+        isOpen={isNotificationsOpen} 
+        onClose={() => setIsNotificationsOpen(false)} 
+        onDataChanged={refreshData} 
+      />
+
       <AddTransactionSheet isOpen={isAddTxnOpen} onClose={() => setIsAddTxnOpen(false)} onSaved={refreshData} />
       <QuickAddSheet isOpen={isQuickAddOpen} onClose={() => setIsQuickAddOpen(false)} onSaved={refreshData} />
 
