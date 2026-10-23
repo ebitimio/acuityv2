@@ -77,12 +77,13 @@ export default function SandboxPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeScreen, setActiveScreen] = useState<ScreenId>("home");
 
-  // Onboarding & PIN states
-  const [hasCheckedOnboarding, setHasCheckedOnboarding] = useState(false);
-  const [showCarousel, setShowCarousel] = useState(false);
-  const [showPinSetup, setShowPinSetup] = useState(false);
-  const [isLocked, setIsLocked] = useState(false);
-  const [lockError, setLockError] = useState("");
+  // Onboarding states - THESE ARE HARD LOCKS
+  const [onboardingSequence, setOnboardingSequence] = useState<"checking" | "carousel" | "pin" | "complete">("checking");
+
+  // SYNCHRONOUS CHECK: This runs before anything else
+  if (typeof window !== "undefined" && localStorage.getItem("acuity:new_signup") === "true" && onboardingSequence === "checking") {
+    setOnboardingSequence("carousel");
+  }
 
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isAdvisorOpen, setIsAdvisorOpen] = useState(false);
@@ -118,34 +119,9 @@ export default function SandboxPage() {
     else setNavHidden(false);
   });
 
-  // 30-Minute Inactivity Lock
-  useEffect(() => {
-    if (!session || showCarousel || showPinSetup || !hasCheckedOnboarding) return;
-
-    let timeout: NodeJS.Timeout;
-    const resetTimer = () => {
-      clearTimeout(timeout);
-      // 30 minutes = 1,800,000 ms
-      timeout = setTimeout(() => {
-        if (localStorage.getItem("acuity:pin")) {
-          setIsLocked(true);
-        }
-      }, 1800000); 
-    };
-
-    const events = ["mousedown", "keydown", "touchstart", "scroll"];
-    events.forEach((e) => window.addEventListener(e, resetTimer));
-    resetTimer();
-
-    return () => {
-      clearTimeout(timeout);
-      events.forEach((e) => window.removeEventListener(e, resetTimer));
-    };
-  }, [session, showCarousel, showPinSetup, hasCheckedOnboarding]);
-
   useEffect(() => {
     if (session?.user?.id) {
-      supabase.from("profiles").select("full_name").eq("id", session.user.id).single()
+      supabase.from("profiles").select("full_name, pin").eq("id", session.user.id).single()
         .then(({ data }) => {
           if (data?.full_name) setProfileName(data.full_name);
           else if (session.user.email) setProfileName(session.user.email.split("@")[0]);
@@ -201,22 +177,26 @@ export default function SandboxPage() {
   }, [activeWs?.id]);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setIsAuthLoading(false);
       
-      // Check onboarding/PIN status securely before rendering
       if (session) {
-        const hasPin = localStorage.getItem("acuity:pin");
-        const hasSeenCarousel = localStorage.getItem("acuity:onboarded");
+        const isNewSignup = localStorage.getItem("acuity:new_signup") === "true";
         
-        if (!hasSeenCarousel) {
-          setShowCarousel(true);
-        } else if (!hasPin) {
-          setShowPinSetup(true);
+        if (isNewSignup) {
+          setOnboardingSequence("carousel");
+        } else {
+          const { data: profile } = await supabase.from("profiles").select("pin").eq("id", session.user.id).single();
+          if (!profile?.pin) {
+            setOnboardingSequence("carousel");
+          } else {
+            setOnboardingSequence("complete");
+          }
         }
+      } else {
+        setOnboardingSequence("complete");
       }
-      setHasCheckedOnboarding(true);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
@@ -269,8 +249,7 @@ export default function SandboxPage() {
 
   const handleSignOut = async () => {
     clearDataCache();
-    localStorage.removeItem("acuity:pin");
-    localStorage.removeItem("acuity:onboarded");
+    localStorage.removeItem("acuity:new_signup");
     await supabase.auth.signOut();
     window.location.reload();
   };
@@ -336,37 +315,22 @@ export default function SandboxPage() {
 
   if (showSplash) return <SplashScreen onComplete={() => setShowSplash(false)} />;
   
-  // Block rendering until we know the auth AND onboarding status
-  if (isAuthLoading || wsLoading || !hasCheckedOnboarding) return <div className="min-h-[100dvh]" style={{ background: "var(--bg)" }} />;
+  if (isAuthLoading || wsLoading) return <div className="min-h-[100dvh]" style={{ background: "var(--bg)" }} />;
   
   if (!session) return <AuthScreen />;
-  
-  // Synchronous check in render to guarantee these show before dashboard
-  const hasSeenCarousel = typeof window !== "undefined" ? localStorage.getItem("acuity:onboarded") : "1";
-  const hasPin = typeof window !== "undefined" ? localStorage.getItem("acuity:pin") : "1";
 
-  if (!hasSeenCarousel) {
+  // HARD LOCK: Do not render dashboard until onboarding sequence is complete
+  if (onboardingSequence === "carousel") {
     return <OnboardingCarousel onComplete={() => {
-      localStorage.setItem("acuity:onboarded", "1");
-      window.location.reload(); // Force reload to re-evaluate state cleanly
+      setOnboardingSequence("pin");
     }} />;
   }
 
-  if (!hasPin) {
-    return <PinLockScreen mode="setup" onComplete={(pin) => {
-      localStorage.setItem("acuity:pin", pin);
-      window.location.reload(); // Force reload to re-evaluate state cleanly
-    }} />;
-  }
-
-  if (isLocked) {
-    return <PinLockScreen mode="unlock" errorText={lockError} onComplete={(pin) => {
-      if (pin === localStorage.getItem("acuity:pin")) {
-        setIsLocked(false);
-        setLockError("");
-      } else {
-        setLockError("Incorrect PIN. Try again.");
-      }
+  if (onboardingSequence === "pin") {
+    return <PinLockScreen mode="setup" onComplete={async (pin) => {
+      await supabase.from("profiles").update({ pin }).eq("id", session.user.id);
+      localStorage.removeItem("acuity:new_signup");
+      setOnboardingSequence("complete");
     }} />;
   }
 

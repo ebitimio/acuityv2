@@ -46,7 +46,13 @@ export function AuthScreen() {
           });
         }
         
+        // SET FLAG IMMEDIATELY
+        localStorage.setItem("acuity:new_signup", "true");
         toast("Account created!");
+        
+        // Force a hard reload so the app starts fresh with the flag set
+        window.location.reload();
+        return;
       } else if (mode === "forgot") {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
           redirectTo: `${window.location.origin}/reset-password`,
