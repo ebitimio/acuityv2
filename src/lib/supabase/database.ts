@@ -40,6 +40,13 @@ async function ctx() {
   return { sb, user, workspaceId: ws.id };
 }
 
+// Helper to get all account IDs for the active workspace
+async function getWorkspaceAccountIds(sb: any, workspaceId: string): Promise<string[]> {
+  const { data, error } = await sb.from("accounts").select("id").eq("workspace_id", workspaceId);
+  if (error) throw error;
+  return (data ?? []).map((a: { id: string }) => a.id);
+}
+
 async function fetchAll<T>(build: (from: number, to: number) => PromiseLike<{ data: any[] | null; error: any }>): Promise<T[]> {
   const out: T[] = [];
   for (let i = 0; i < 30; i++) {
@@ -88,17 +95,29 @@ export async function getHomeMetrics(): Promise<HomeMetrics> {
 /* ---------- transactions ---------- */
 
 export async function getRecentTransactions(limit = 20): Promise<Txn[]> {
-  const { sb } = await ctx();
-  const { data, error } = await sb.from("transactions").select(TX_SELECT).or(NOT_SPLIT).eq("status", "posted").order("date", { ascending: false }).limit(limit);
+  const { sb, workspaceId } = await ctx();
+  const accountIds = await getWorkspaceAccountIds(sb, workspaceId);
+  if (accountIds.length === 0) return [];
+
+  const { data, error } = await sb.from("transactions")
+    .select(TX_SELECT)
+    .in("account_id", accountIds)
+    .or(NOT_SPLIT)
+    .eq("status", "posted")
+    .order("date", { ascending: false })
+    .limit(limit);
   if (error) throw error;
   return (data ?? []) as unknown as Txn[];
 }
 
 export async function getTransactions(o: { search?: string; category?: string; direction?: "debit" | "credit"; limit?: number; offset?: number } = {}): Promise<{ rows: Txn[]; count: number }> {
-  const { sb } = await ctx();
+  const { sb, workspaceId } = await ctx();
+  const accountIds = await getWorkspaceAccountIds(sb, workspaceId);
+  if (accountIds.length === 0) return { rows: [], count: 0 };
+
   const limit = o.limit ?? 30;
   const offset = o.offset ?? 0;
-  let q = sb.from("transactions").select(TX_SELECT, { count: "exact" }).or(NOT_SPLIT);
+  let q = sb.from("transactions").select(TX_SELECT, { count: "exact" }).in("account_id", accountIds).or(NOT_SPLIT);
   if (o.category) q = q.eq("category_name", o.category);
   if (o.direction) q = q.eq("direction", o.direction);
   const s = o.search?.replace(/[,()%*]/g, " ").trim();
@@ -109,17 +128,23 @@ export async function getTransactions(o: { search?: string; category?: string; d
 }
 
 export async function getTransactionsSince(sinceISO: string): Promise<Txn[]> {
-  const { sb } = await ctx();
+  const { sb, workspaceId } = await ctx();
+  const accountIds = await getWorkspaceAccountIds(sb, workspaceId);
+  if (accountIds.length === 0) return [];
+
   return fetchAll<Txn>((f, t) =>
-    sb.from("transactions").select(TX_FLAT).or(NOT_SPLIT).eq("status", "posted").gte("date", sinceISO)
+    sb.from("transactions").select(TX_FLAT).in("account_id", accountIds).or(NOT_SPLIT).eq("status", "posted").gte("date", sinceISO)
       .order("date", { ascending: false }).range(f, t)
   );
 }
 
 export async function getAllTransactions(): Promise<Txn[]> {
-  const { sb } = await ctx();
+  const { sb, workspaceId } = await ctx();
+  const accountIds = await getWorkspaceAccountIds(sb, workspaceId);
+  if (accountIds.length === 0) return [];
+
   return fetchAll<Txn>((f, t) =>
-    sb.from("transactions").select(TX_SELECT).or(NOT_SPLIT).eq("status", "posted")
+    sb.from("transactions").select(TX_SELECT).in("account_id", accountIds).or(NOT_SPLIT).eq("status", "posted")
       .order("date", { ascending: false }).range(f, t)
   );
 }
@@ -562,10 +587,14 @@ export interface CategorySpendRow {
 }
 
 export async function getCategorySpend(sinceISO: string): Promise<CategorySpendRow[]> {
-  const { sb } = await ctx();
+  const { sb, workspaceId } = await ctx();
+  const accountIds = await getWorkspaceAccountIds(sb, workspaceId);
+  if (accountIds.length === 0) return [];
+
   const { data, error } = await sb
     .from("transactions")
     .select("category_name,amount_minor")
+    .in("account_id", accountIds)
     .or(NOT_SPLIT)
     .eq("direction", "debit")
     .eq("status", "posted")
