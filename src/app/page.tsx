@@ -78,7 +78,7 @@ export default function SandboxPage() {
   const [activeScreen, setActiveScreen] = useState<ScreenId>("home");
 
   // Onboarding & PIN states
-  const [isOnboardingChecked, setIsOnboardingChecked] = useState(false);
+  const [hasCheckedOnboarding, setHasCheckedOnboarding] = useState(false);
   const [showCarousel, setShowCarousel] = useState(false);
   const [showPinSetup, setShowPinSetup] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
@@ -120,7 +120,7 @@ export default function SandboxPage() {
 
   // 30-Minute Inactivity Lock
   useEffect(() => {
-    if (!session || showCarousel || showPinSetup || !isOnboardingChecked) return;
+    if (!session || showCarousel || showPinSetup || !hasCheckedOnboarding) return;
 
     let timeout: NodeJS.Timeout;
     const resetTimer = () => {
@@ -141,7 +141,7 @@ export default function SandboxPage() {
       clearTimeout(timeout);
       events.forEach((e) => window.removeEventListener(e, resetTimer));
     };
-  }, [session, showCarousel, showPinSetup, isOnboardingChecked]);
+  }, [session, showCarousel, showPinSetup, hasCheckedOnboarding]);
 
   useEffect(() => {
     if (session?.user?.id) {
@@ -216,7 +216,7 @@ export default function SandboxPage() {
           setShowPinSetup(true);
         }
       }
-      setIsOnboardingChecked(true);
+      setHasCheckedOnboarding(true);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
@@ -335,21 +335,27 @@ export default function SandboxPage() {
   };
 
   if (showSplash) return <SplashScreen onComplete={() => setShowSplash(false)} />;
-  if (isAuthLoading || wsLoading || !isOnboardingChecked) return <div className="min-h-[100dvh]" style={{ background: "var(--bg)" }} />;
+  
+  // Block rendering until we know the auth AND onboarding status
+  if (isAuthLoading || wsLoading || !hasCheckedOnboarding) return <div className="min-h-[100dvh]" style={{ background: "var(--bg)" }} />;
+  
   if (!session) return <AuthScreen />;
   
-  if (showCarousel) {
+  // Synchronous check in render to guarantee these show before dashboard
+  const hasSeenCarousel = typeof window !== "undefined" ? localStorage.getItem("acuity:onboarded") : "1";
+  const hasPin = typeof window !== "undefined" ? localStorage.getItem("acuity:pin") : "1";
+
+  if (!hasSeenCarousel) {
     return <OnboardingCarousel onComplete={() => {
       localStorage.setItem("acuity:onboarded", "1");
-      setShowCarousel(false);
-      setShowPinSetup(true);
+      window.location.reload(); // Force reload to re-evaluate state cleanly
     }} />;
   }
 
-  if (showPinSetup) {
+  if (!hasPin) {
     return <PinLockScreen mode="setup" onComplete={(pin) => {
       localStorage.setItem("acuity:pin", pin);
-      setShowPinSetup(false);
+      window.location.reload(); // Force reload to re-evaluate state cleanly
     }} />;
   }
 
