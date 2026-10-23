@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, CreditCard, Coins, Sparkles, BrainCircuit, PieChart, ShieldCheck, Zap } from "lucide-react";
+import { ArrowRight, CreditCard, Coins, Sparkles, BrainCircuit, PieChart, ShieldCheck, MessageSquare, Lightbulb } from "lucide-react";
 
 const SLIDES = [
   {
@@ -173,14 +173,12 @@ function Slide2Budget() {
       className="absolute inset-0 flex items-center justify-center"
       style={{ perspective: 1000 }}
     >
-      {/* Background Glow */}
       <motion.div
         animate={{ scale: [1, 1.1, 1], opacity: [0.05, 0.08, 0.05] }}
         transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
         className="absolute h-[350px] w-[350px] rounded-full bg-[#DE3121] blur-[100px]"
       />
 
-      {/* Floating Tiles */}
       <motion.div
         animate={{ y: [-10, 10, -10], rotateZ: [5, 10, 5] }}
         transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
@@ -205,7 +203,6 @@ function Slide2Budget() {
         </div>
       </motion.div>
 
-      {/* 3D Donut Chart */}
       <motion.div
         initial={{ rotateX: 60, scale: 0.8, opacity: 0 }}
         animate={{ 
@@ -223,10 +220,8 @@ function Slide2Budget() {
         className="relative h-64 w-64"
       >
         <svg viewBox="0 0 200 200" className="h-full w-full">
-          {/* Background Track */}
           <circle cx="100" cy="100" r={radius} fill="none" stroke="#DE3121" strokeWidth="20" opacity="0.3" />
           
-          {/* Animated Progress Arc */}
           <motion.circle
             cx="100"
             cy="100"
@@ -237,7 +232,7 @@ function Slide2Budget() {
             strokeLinecap="round"
             strokeDasharray={circumference}
             initial={{ strokeDashoffset: circumference }}
-            animate={{ strokeDashoffset: circumference * 0.3 }} // 70% full
+            animate={{ strokeDashoffset: circumference * 0.3 }}
             transition={{ duration: 2, delay: 0.5, ease: "easeInOut" }}
             style={{ filter: "drop-shadow(0 0 10px #DE3121)" }}
           />
@@ -248,7 +243,7 @@ function Slide2Budget() {
 }
 
 // ---------------------------------------------------------
-// SLIDE 3: Glowing AI Core with Orbital Rings
+// SLIDE 3: Floating 3D Chat Interface & Glass Data Chips
 // ---------------------------------------------------------
 function Slide3AI() {
   return (
@@ -257,84 +252,72 @@ function Slide3AI() {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="absolute inset-0 flex items-center justify-center"
-      style={{ perspective: 1000 }}
+      style={{ perspective: 1200 }}
     >
       {/* Background Glow */}
       <motion.div
-        animate={{ scale: [1, 1.3, 1], opacity: [0.08, 0.15, 0.08] }}
-        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute h-[300px] w-[300px] rounded-full bg-[#DE3121] blur-[80px]"
+        animate={{ scale: [1, 1.2, 1], opacity: [0.05, 0.1, 0.05] }}
+        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute h-[400px] w-[400px] rounded-full bg-[#DE3121] blur-[100px]"
       />
 
-      {/* Orbital Rings */}
-      {[0, 1, 2].map((i) => (
-        <motion.div
-          key={`ring-${i}`}
-          initial={{ scale: 0.5, opacity: 0 }}
-          animate={{ 
-            scale: 1, 
-            opacity: 0.1,
-            rotateX: [60, 120, 60],
-            rotateY: [0, 180, 360],
-          }}
-          transition={{ 
-            scale: { duration: 1.5, ease: "easeOut" },
-            opacity: { duration: 1.5 },
-            rotateX: { duration: 10 + i * 2, repeat: Infinity, ease: "linear" },
-            rotateY: { duration: 8 + i * 3, repeat: Infinity, ease: "linear" },
-          }}
-          className="absolute rounded-full border border-[#DE3121]"
-          style={{
-            width: 200 + i * 80,
-            height: 200 + i * 80,
-            transformStyle: "preserve-3d",
-          }}
-        />
-      ))}
-
-      {/* Central AI Core */}
+      {/* Orbiting Glass Chips */}
       <motion.div
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 0.2 }}
-        transition={{ duration: 1, ease: "backOut" }}
-        className="relative flex h-32 w-32 items-center justify-center rounded-full bg-[#0b0b0c] border border-[#DE3121]/50 shadow-[0_0_50px_rgba(222,49,33,0.5)]"
+        animate={{ y: [-15, 15, -15], rotateZ: [5, -5, 5] }}
+        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute left-8 top-1/4 flex items-center gap-2 rounded-full border border-[#DE3121]/30 bg-[#121213]/60 px-3 py-1.5 shadow-xl backdrop-blur-md"
       >
-        <motion.div
-          animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
-          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-        >
-          <BrainCircuit size={48} className="text-[#DE3121]" />
-        </motion.div>
+        <Lightbulb size={14} className="text-[#DE3121]" />
+        <span className="text-[10px] font-semibold text-white/80">Advice</span>
       </motion.div>
 
-      {/* Sparks / Floating Data Nodes */}
-      {[
-        { icon: Zap, x: -120, y: -80, delay: 0 },
-        { icon: Sparkles, x: 130, y: -50, delay: 0.5 },
-        { icon: ShieldCheck, x: -100, y: 100, delay: 1 },
-        { icon: PieChart, x: 120, y: 90, delay: 1.5 },
-      ].map((node, i) => (
-        <motion.div
-          key={`node-${i}`}
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ 
-            scale: [0, 1, 1, 0], 
-            opacity: [0, 0.3, 0.3, 0],
-            x: node.x, 
-            y: node.y 
-          }}
-          transition={{ 
-            duration: 3, 
-            delay: node.delay, 
-            repeat: Infinity, 
-            repeatDelay: 2,
-            ease: "easeInOut"
-          }}
-          className="absolute flex h-10 w-10 items-center justify-center rounded-full bg-[#DE3121]/10 border border-[#DE3121]/30 backdrop-blur-sm"
-        >
-          <node.icon size={16} className="text-[#DE3121]" />
-        </motion.div>
-      ))}
+      <motion.div
+        animate={{ y: [15, -15, 15], rotateZ: [-5, 5, -5] }}
+        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute right-8 bottom-1/4 flex items-center gap-2 rounded-full border border-[#DE3121]/30 bg-[#121213]/60 px-3 py-1.5 shadow-xl backdrop-blur-md"
+      >
+        <Sparkles size={14} className="text-[#DE3121]" />
+        <span className="text-[10px] font-semibold text-white/80">Insights</span>
+      </motion.div>
+
+      {/* Main Floating Chat Bubble */}
+      <motion.div
+        initial={{ y: 50, rotateX: 45, opacity: 0 }}
+        animate={{ 
+          y: [-15, 15, -15], 
+          rotateX: 15,
+          rotateY: [-5, 5, -5],
+          opacity: 0.15 
+        }}
+        transition={{ 
+          y: { duration: 5, repeat: Infinity, ease: "easeInOut" },
+          rotateX: { duration: 1.5, ease: "easeOut" },
+          rotateY: { duration: 1.5, ease: "easeOut" },
+          opacity: { duration: 1.5 }
+        }}
+        className="relative flex flex-col items-start gap-3 rounded-3xl rounded-tl-sm border border-[#DE3121]/30 bg-gradient-to-br from-[#DE3121]/15 to-transparent p-5 shadow-2xl backdrop-blur-md max-w-[280px]"
+        style={{ transformStyle: "preserve-3d" }}
+      >
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#DE3121]/20">
+            <Sparkles size={16} className="text-[#DE3121]" />
+          </div>
+          <span className="text-[12px] font-bold text-white/90">Acuity AI</span>
+        </div>
+        
+        <p className="text-[14px] leading-relaxed text-white/70">
+          Based on your current spending, you can safely spend <span className="font-bold text-[#DE3121]">₦14,800</span> this week without touching your rent.
+        </p>
+
+        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+          <motion.div 
+            initial={{ width: 0 }}
+            animate={{ width: "70%" }}
+            transition={{ duration: 2, delay: 0.5 }}
+            className="h-full bg-[#DE3121]" 
+          />
+        </div>
+      </motion.div>
     </motion.div>
   );
 }
