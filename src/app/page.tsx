@@ -77,13 +77,11 @@ export default function SandboxPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeScreen, setActiveScreen] = useState<ScreenId>("home");
 
-  // Onboarding states - THESE ARE HARD LOCKS
+  // Onboarding & Lock states
   const [onboardingSequence, setOnboardingSequence] = useState<"checking" | "carousel" | "pin" | "complete">("checking");
-
-  // SYNCHRONOUS CHECK: This runs before anything else
-  if (typeof window !== "undefined" && localStorage.getItem("acuity:new_signup") === "true" && onboardingSequence === "checking") {
-    setOnboardingSequence("carousel");
-  }
+  const [isLocked, setIsLocked] = useState(false);
+  const [lockError, setLockError] = useState("");
+  const [dbPin, setDbPin] = useState<string | null>(null);
 
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isAdvisorOpen, setIsAdvisorOpen] = useState(false);
@@ -119,12 +117,52 @@ export default function SandboxPage() {
     else setNavHidden(false);
   });
 
+  // 30-Minute Inactivity & Force Close Lock
+  useEffect(() => {
+    // Only run if we are fully onboarded and not currently showing the carousel/pin setup
+    if (!session || onboardingSequence !== "complete") return;
+
+    const updateActiveTime = () => {
+      localStorage.setItem("acuity:last_active", String(Date.now()));
+    };
+
+    // Set the time when they first log in / unlock
+    updateActiveTime();
+
+    const events = ["mousedown", "keydown", "touchstart", "scroll"];
+    events.forEach((e) => window.addEventListener(e, updateActiveTime));
+
+    // Fallback for force close: save on visibility change
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        localStorage.setItem("acuity:last_active", String(Date.now()));
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    // Check every minute if 30 mins have passed
+    const interval = setInterval(() => {
+      const lastActive = Number(localStorage.getItem("acuity:last_active") || "0");
+      if (Date.now() - lastActive > 1800000) { // 30 mins
+        setIsLocked(true);
+      }
+    }, 60000);
+
+    return () => {
+      events.forEach((e) => window.removeEventListener(e, updateActiveTime));
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      clearInterval(interval);
+    };
+  }, [session, onboardingSequence]);
+
   useEffect(() => {
     if (session?.user?.id) {
       supabase.from("profiles").select("full_name, pin").eq("id", session.user.id).single()
         .then(({ data }) => {
           if (data?.full_name) setProfileName(data.full_name);
           else if (session.user.email) setProfileName(session.user.email.split("@")[0]);
+          
+          if (data?.pin) setDbPin(data.pin);
         });
     }
   }, [session, supabase]);
@@ -188,9 +226,20 @@ export default function SandboxPage() {
           setOnboardingSequence("carousel");
         } else {
           const { data: profile } = await supabase.from("profiles").select("pin").eq("id", session.user.id).single();
+          
           if (!profile?.pin) {
             setOnboardingSequence("carousel");
           } else {
+            setDbPin(profile.pin);
+            
+            // Check if we need to lock immediately (Force close / 30 mins passed)
+            const lastActive = Number(localStorage.getItem("acuity:last_active") || "0");
+            if (lastActive > 0 && Date.now() - lastActive > 1800000) {
+              setIsLocked(true);
+            } else {
+              localStorage.setItem("acuity:last_active", String(Date.now()));
+            }
+            
             setOnboardingSequence("complete");
           }
         }
@@ -250,6 +299,18 @@ export default function SandboxPage() {
   const handleSignOut = async () => {
     clearDataCache();
     localStorage.removeItem("acuity:new_signup");
+    localStorage.removeItem("acuity:last_active");
+    await supabase.auth.signOut();
+    window.location.reload();
+  };
+
+  const handleForgotPin = async () => {
+    if (!session?.user?.id) return;
+    // Remove the pin from DB so they can set a new one, then sign out to force login
+    await supabase.from("profiles").update({ pin: null }).eq("id", session.user.id);
+    clearDataCache();
+    localStorage.removeItem("acuity:new_signup");
+    localStorage.removeItem("acuity:last_active");
     await supabase.auth.signOut();
     window.location.reload();
   };
@@ -329,8 +390,22 @@ export default function SandboxPage() {
   if (onboardingSequence === "pin") {
     return <PinLockScreen mode="setup" onComplete={async (pin) => {
       await supabase.from("profiles").update({ pin }).eq("id", session.user.id);
+      setDbPin(pin);
       localStorage.removeItem("acuity:new_signup");
+      localStorage.setItem("acuity:last_active", String(Date.now()));
       setOnboardingSequence("complete");
+    }} />;
+  }
+
+  if (isLocked) {
+    return <PinLockScreen mode="unlock" errorText={lockError} onForgot={handleForgotPin} onComplete={(pin) => {
+      if (pin === dbPin) {
+        setIsLocked(false);
+        setLockError("");
+        localStorage.setItem("acuity:last_active", String(Date.now()));
+      } else {
+        setLockError("Incorrect PIN. Try again.");
+      }
     }} />;
   }
 
