@@ -117,22 +117,17 @@ export default function SandboxPage() {
     else setNavHidden(false);
   });
 
-  // 30-Minute Inactivity & Force Close Lock
+  // 30-Minute Inactivity Lock Timer (Runs only when not locked and onboarded)
   useEffect(() => {
-    // Only run if we are fully onboarded and not currently showing the carousel/pin setup
-    if (!session || onboardingSequence !== "complete") return;
+    if (!session || onboardingSequence !== "complete" || isLocked || !dbPin) return;
 
     const updateActiveTime = () => {
       localStorage.setItem("acuity:last_active", String(Date.now()));
     };
 
-    // Set the time when they first log in / unlock
-    updateActiveTime();
-
     const events = ["mousedown", "keydown", "touchstart", "scroll"];
     events.forEach((e) => window.addEventListener(e, updateActiveTime));
 
-    // Fallback for force close: save on visibility change
     const handleVisibilityChange = () => {
       if (document.visibilityState === "hidden") {
         localStorage.setItem("acuity:last_active", String(Date.now()));
@@ -140,7 +135,6 @@ export default function SandboxPage() {
     };
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
-    // Check every minute if 30 mins have passed
     const interval = setInterval(() => {
       const lastActive = Number(localStorage.getItem("acuity:last_active") || "0");
       if (Date.now() - lastActive > 1800000) { // 30 mins
@@ -153,7 +147,7 @@ export default function SandboxPage() {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       clearInterval(interval);
     };
-  }, [session, onboardingSequence]);
+  }, [session, onboardingSequence, isLocked, dbPin]);
 
   useEffect(() => {
     if (session?.user?.id) {
@@ -232,11 +226,15 @@ export default function SandboxPage() {
           } else {
             setDbPin(profile.pin);
             
-            // Check if we need to lock immediately (Force close / 30 mins passed)
+            // CRITICAL FIX: Force lock check on initial load
             const lastActive = Number(localStorage.getItem("acuity:last_active") || "0");
-            if (lastActive > 0 && Date.now() - lastActive > 1800000) {
+            
+            // If lastActive is 0, it means they either just signed up or the cache was cleared.
+            // In either case, we want to prompt for the PIN to be safe.
+            if (lastActive === 0 || Date.now() - lastActive > 1800000) {
               setIsLocked(true);
             } else {
+              // Only update lastActive if we are not locking them
               localStorage.setItem("acuity:last_active", String(Date.now()));
             }
             
@@ -306,7 +304,6 @@ export default function SandboxPage() {
 
   const handleForgotPin = async () => {
     if (!session?.user?.id) return;
-    // Remove the pin from DB so they can set a new one, then sign out to force login
     await supabase.from("profiles").update({ pin: null }).eq("id", session.user.id);
     clearDataCache();
     localStorage.removeItem("acuity:new_signup");
