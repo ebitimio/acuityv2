@@ -6,10 +6,10 @@ import { Button } from "./form";
 import { createClient } from "@/lib/supabase/client";
 import { parseNumberInput } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { Delete } from "lucide-react";
+import { Delete, ArrowRightLeft, CreditCard, ChevronDown, Plus } from "lucide-react";
 import { useWorkspace } from "@/lib/workspace";
 import { buildCategoryList } from "@/lib/category-options";
-import { CATEGORIES } from "@/lib/categories";
+import { CATEGORIES, getCategory } from "@/lib/categories";
 import { getAccounts } from "@/lib/supabase/database";
 import type { Account } from "@/lib/types";
 
@@ -22,7 +22,7 @@ interface QuickAddSheetProps {
 export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) {
   const [amount, setAmount] = useState("");
   const [direction, setDirection] = useState<"debit" | "credit">("debit");
-  const [category, setCategory] = useState("Groceries");
+  const [category, setCategory] = useState(CATEGORIES[0].name);
   const [customCategory, setCustomCategory] = useState("");
   const [isCustom, setIsCustom] = useState(false);
   const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
@@ -57,14 +57,14 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
     if (isOpen) {
       setAmount("");
       setDirection("debit");
-      setCategory(categoryNames[0] || "Groceries");
+      setCategory(CATEGORIES[0].name);
       setCustomCategory("");
       setIsCustom(false);
       setDate(new Date().toISOString().split("T")[0]);
       setError(null);
       setIsSaving(false);
     }
-  }, [isOpen, categoryNames]);
+  }, [isOpen]);
 
   const handleKeyPress = (key: string) => {
     if (key === "backspace") {
@@ -104,7 +104,6 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
         amount_minor: Math.round(parsedAmount * 100),
         direction: direction,
         category_name: finalCategory,
-        // Save the category as the description so it's not "Unnamed"
         description_clean: finalCategory,
         description_raw: finalCategory,
         date: new Date(date).toISOString(),
@@ -123,148 +122,159 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
     }
   };
 
-  const quickPills = [
-    { label: "Bolt", amount: 1500 },
-    { label: "Lunch", amount: 2500 },
-    { label: "Data", amount: 2000 },
-  ];
+  const activeAccount = accounts.find(a => a.id === selectedAccount);
+  const selectedCatObj = getCategory(isCustom ? "Uncategorized" : category);
 
   return (
-    <Modal open={isOpen} onClose={onClose} title="Quick add">
-      <div className="flex flex-col h-[75dvh] min-h-0">
+    <Modal open={isOpen} onClose={onClose} title="">
+      <div className="flex flex-col h-[75dvh] min-h-0 bg-[#0b0b0c] -mx-5 -mt-6 px-5 pt-6 pb-2">
         
-        <div className="pt-2 pb-2 shrink-0">
-          <select
-            value={selectedAccount}
-            onChange={(e) => setSelectedAccount(e.target.value)}
-            className="inline-flex items-center gap-2 rounded-full bg-[var(--brand)]/10 px-3 py-1.5 text-[13px] font-medium text-[var(--brand)] outline-none appearance-none cursor-pointer"
-          >
-            {accounts.map((acc) => (
-              <option key={acc.id} value={acc.id}>
-                {acc.name}
-              </option>
-            ))}
-            {accounts.length === 0 && <option value="">No accounts</option>}
-          </select>
-        </div>
-
-        <div className="flex flex-col items-center justify-center py-2 shrink-0">
-          <p className="text-[14px] font-medium text-[var(--text-3)] mb-1">
-            {direction === "credit" ? "Received" : "Spent"}
-          </p>
-          <p className="text-[44px] font-bold tabular tracking-tight text-[var(--text-1)] leading-none">
-            ₦{amount || "0"}
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 mt-2 shrink-0 no-scrollbar justify-center w-full">
-          {quickPills.map((p) => (
-            <button
-              key={p.label}
-              onClick={() => setAmount(p.amount.toString())}
-              className="whitespace-nowrap rounded-full border border-[var(--line)] bg-[var(--surface-2)] px-3 py-1.5 text-[12px] font-medium text-[var(--text-2)]"
-            >
-              {p.label} ₦{p.amount.toLocaleString()}
-            </button>
-          ))}
-        </div>
-
-        <div className="space-y-3 mt-2 shrink-0">
-          <div>
-            <p className="mb-1.5 px-1 text-[13px] font-medium text-[var(--text-3)]">Category</p>
-            <select
-              value={isCustom ? "__custom__" : category}
-              onChange={(e) => {
-                if (e.target.value === "__custom__") {
-                  setIsCustom(true);
-                } else {
-                  setIsCustom(false);
-                  setCategory(e.target.value);
-                }
-              }}
-              className="w-full rounded-xl border border-[var(--line-strong)] bg-[var(--surface-2)] px-4 py-3 text-[15px] text-[var(--text-1)] focus:border-[var(--brand)] outline-none appearance-none"
-            >
-              {categoryNames.map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-              <option value="__custom__">+ Create custom category</option>
-            </select>
-            
-            {isCustom && (
-              <input
-                type="text"
-                value={customCategory}
-                onChange={(e) => setCustomCategory(e.target.value)}
-                placeholder="Enter category name"
-                className="mt-2 w-full rounded-xl border border-[var(--line-strong)] bg-[var(--surface-2)] px-4 py-3 text-[15px] text-[var(--text-1)] focus:border-[var(--brand)] outline-none"
-                autoFocus
-              />
-            )}
-          </div>
-
-          <div>
-            <p className="mb-1.5 px-1 text-[13px] font-medium text-[var(--text-3)]">Date</p>
-            <div className="w-full overflow-hidden rounded-xl border border-[var(--line-strong)] bg-[var(--surface-2)]">
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full px-4 py-3 text-[15px] text-[var(--text-1)] bg-transparent outline-none focus:border-[var(--brand)] border-none box-border appearance-none"
-                style={{ WebkitAppearance: "none" }}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-auto pb-2 pt-4 shrink-0">
-          {error && (
-            <p className="mb-2 text-center text-[12px] font-medium text-[var(--danger)]">
-              {error}
-            </p>
-          )}
-
-          <div className="grid grid-cols-3 gap-1.5 mb-2">
-            {["1", "2", "3", "4", "5", "6", "7", "8", "9", "000", "0", "backspace"].map((key) => (
-              <button
-                key={key}
-                onClick={() => handleKeyPress(key)}
-                className="flex h-10 items-center justify-center rounded-xl bg-[var(--surface-3)] text-[19px] font-medium text-[var(--text-1)] active:bg-[var(--fill-2)] transition-colors"
-              >
-                {key === "backspace" ? <Delete size={20} className="text-[var(--text-2)]" /> : key}
-              </button>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-2 gap-1.5 mb-2">
+        {/* Top Bar (Direction) */}
+        <div className="flex justify-center shrink-0 mb-4">
+          <div className="flex items-center rounded-full bg-[#1c1c1e] p-1 border border-white/5">
             <button
               onClick={() => setDirection("debit")}
               className={cn(
-                "flex h-9 items-center justify-center rounded-xl text-[13px] font-medium transition-colors",
-                direction === "debit"
-                  ? "bg-[var(--text-1)] text-[var(--bg)]"
-                  : "bg-[var(--surface-3)] text-[var(--text-3)]"
+                "flex items-center gap-1.5 rounded-full px-4 py-1.5 text-[13px] font-semibold transition-colors",
+                direction === "debit" ? "bg-[#DE3121] text-white" : "text-[var(--text-3)] hover:text-white"
               )}
             >
-              Money out
+              <ArrowRightLeft size={14} className="rotate-90" /> Expense
             </button>
             <button
               onClick={() => setDirection("credit")}
               className={cn(
-                "flex h-9 items-center justify-center rounded-xl text-[13px] font-medium transition-colors",
-                direction === "credit"
-                  ? "bg-[var(--brand)] text-white"
-                  : "bg-[var(--surface-3)] text-[var(--text-3)]"
+                "flex items-center gap-1.5 rounded-full px-4 py-1.5 text-[13px] font-semibold transition-colors",
+                direction === "credit" ? "bg-[#52c28a] text-white" : "text-[var(--text-3)] hover:text-white"
               )}
             >
-              Money in
+              <ArrowRightLeft size={14} className="-rotate-90" /> Income
             </button>
+          </div>
+        </div>
+
+        {/* Big Amount */}
+        <div className="flex flex-col items-center justify-center py-6 shrink-0">
+          <p className="text-[48px] font-bold tabular tracking-tight text-white leading-none">
+            ₦{amount || "0"}
+          </p>
+        </div>
+
+        {/* Account & Date Pills */}
+        <div className="flex items-center justify-between gap-2 shrink-0 mb-4">
+          <div className="flex items-center gap-2 rounded-full bg-[#1c1c1e] px-3 py-1.5 border border-white/5">
+            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-black">
+              <CreditCard size={12} />
+            </div>
+            <span className="text-[12px] font-medium text-white max-w-[100px] truncate">
+              {activeAccount?.name || "Account"}
+            </span>
+            <ChevronDown size={12} className="text-white/50" />
+          </div>
+
+          <div className="flex items-center gap-2 rounded-full bg-[#1c1c1e] px-3 py-1.5 border border-white/5 relative">
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+            />
+            <span className="text-[12px] font-medium text-white">
+              {new Date(date).toLocaleDateString("en-NG", { day: "numeric", month: "short" })}
+            </span>
+          </div>
+        </div>
+
+        {/* Category Scroller (Replaces Note Input) */}
+        <div className="mb-4 shrink-0">
+          <div className="-mx-5 overflow-x-auto px-5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="flex gap-2">
+              {categoryNames.map((name) => {
+                const cat = getCategory(name);
+                const Icon = cat.icon;
+                const isActive = (category === name && !isCustom);
+                return (
+                  <button
+                    key={name}
+                    onClick={() => { setCategory(name); setIsCustom(false); }}
+                    className={cn(
+                      "flex shrink-0 flex-col items-center gap-1.5 rounded-2xl border p-3 w-[72px] transition-colors",
+                      isActive ? "bg-[var(--fill-2)] border-white/20" : "bg-[#1c1c1e] border-white/5"
+                    )}
+                  >
+                    <div 
+                      className="flex h-8 w-8 items-center justify-center rounded-xl"
+                      style={{ background: `${cat.color}22`, color: cat.color }}
+                    >
+                      <Icon size={16} />
+                    </div>
+                    <span className={cn("text-[10px] font-medium truncate w-full text-center", isActive ? "text-white" : "text-white/60")}>
+                      {name.split(" ")[0]}
+                    </span>
+                  </button>
+                );
+              })}
+              
+              {/* Add Custom Category Button */}
+              <button
+                onClick={() => setIsCustom(true)}
+                className={cn(
+                  "flex shrink-0 flex-col items-center gap-1.5 rounded-2xl border p-3 w-[72px] transition-colors",
+                  isCustom ? "bg-[var(--fill-2)] border-white/20" : "bg-[#1c1c1e] border-white/5"
+                )}
+              >
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/5 text-white/60">
+                  <Plus size={16} />
+                </div>
+                <span className="text-[10px] font-medium text-white/60">Custom</span>
+              </button>
+            </div>
+          </div>
+
+          {isCustom && (
+            <input
+              type="text"
+              value={customCategory}
+              onChange={(e) => setCustomCategory(e.target.value)}
+              placeholder="Type custom category..."
+              className="mt-2 w-full rounded-xl border border-[var(--line-strong)] bg-[#1c1c1e] px-4 py-2.5 text-[14px] text-white outline-none focus:border-[#DE3121]"
+              autoFocus
+            />
+          )}
+        </div>
+
+        {/* Numpad & Save */}
+        <div className="mt-auto pb-2 pt-2 shrink-0">
+          {error && (
+            <p className="mb-2 text-center text-[12px] font-medium text-[var(--danger)]">{error}</p>
+          )}
+
+          <div className="grid grid-cols-4 gap-1.5 mb-3">
+            {["1", "2", "3", "+", "4", "5", "6", "-", "7", "8", "9", "x", ".", "0", "backspace", "/"].map((key) => {
+              // For the extra operator keys, we just pass them to the amount string for now
+              // or disable them if you only want numbers. I'll include them visually.
+              const isOperator = ["+", "-", "x", "/"].includes(key);
+              return (
+                <button
+                  key={key}
+                  onClick={() => handleKeyPress(key)}
+                  className={cn(
+                    "flex h-12 items-center justify-center rounded-xl text-[20px] font-medium transition-colors",
+                    isOperator ? "bg-transparent text-white/40" : "bg-[#1c1c1e] text-white active:bg-[#2c2c2e]"
+                  )}
+                  disabled={isOperator}
+                >
+                  {key === "backspace" ? <Delete size={20} /> : key}
+                </button>
+              );
+            })}
           </div>
 
           <Button
             onClick={handleSave}
             loading={isSaving}
             disabled={parseNumberInput(amount) <= 0 || !selectedAccount}
-            className="w-full h-11 rounded-xl text-[15px]"
+            className="w-full h-14 rounded-2xl text-[16px] font-bold bg-white text-black hover:bg-gray-200"
           >
             Save
           </Button>
