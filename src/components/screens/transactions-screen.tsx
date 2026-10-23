@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { ScreenHeader } from "@/components/ui/screen-header";
 import { getTransactionsSince, deleteTransaction } from "@/lib/supabase/database";
 import { useCurrency } from "@/lib/currency";
+import { useWorkspace } from "@/lib/workspace";
 import type { Txn } from "@/lib/types";
 import { Search, Filter } from "lucide-react";
 import { TransactionRow } from "@/components/ui/transaction-row";
@@ -16,8 +17,10 @@ export function TransactionsScreen({ onBack, onDataChanged }: { onBack: () => vo
   const [search, setSearch] = useState("");
   const [selectedTxn, setSelectedTxn] = useState<Txn | null>(null);
   const { fmt } = useCurrency();
+  const { active: activeWs } = useWorkspace();
 
   const load = async () => {
+    if (!activeWs?.id) return;
     // Get last 6 months of transactions
     const d = new Date();
     d.setMonth(d.getMonth() - 6);
@@ -25,7 +28,10 @@ export function TransactionsScreen({ onBack, onDataChanged }: { onBack: () => vo
     setTxns(data || []);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { 
+    setTxns([]); 
+    load(); 
+  }, [activeWs?.id]);
 
   const handleDelete = async (t: Txn) => {
     try {

@@ -6,6 +6,7 @@ import { getTransactionsSince, getAccounts, getAssets } from "@/lib/supabase/dat
 import { startOfMonthISO } from "@/lib/dates";
 import { useCurrency } from "@/lib/currency";
 import { useToast } from "@/components/ui/toast";
+import { useWorkspace } from "@/lib/workspace";
 import type { Txn, Account, Asset, Budget } from "@/lib/types";
 import { TrendingDown, Wallet, Landmark, Scale, ChevronRight, Sparkles, Lightbulb, DollarSign, Info } from "lucide-react";
 import { PullToRefresh } from "@/components/ui/pull-to-refresh";
@@ -24,12 +25,16 @@ export function AnalyticsScreen({ onBack, onNavigateTransactions }: { onBack: ()
   
   const { fmt } = useCurrency();
   const toast = useToast();
+  const { active: activeWs } = useWorkspace();
   const exchangeRate = 1500;
 
   const load = async () => {
+    if (!activeWs?.id) return;
+
     const { data: allBudgets } = await (await import("@/lib/supabase/client")).createClient()
       .from("budgets")
       .select("*")
+      .eq("workspace_id", activeWs.id)
       .order("created_at", { ascending: false });
 
     const [t, a, s] = await Promise.all([
@@ -43,7 +48,15 @@ export function AnalyticsScreen({ onBack, onNavigateTransactions }: { onBack: ()
     setBudgets((allBudgets as Budget[]) || []);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { 
+    setTxns([]);
+    setAccounts([]);
+    setAssets([]);
+    setBudgets([]);
+    setSelectedCategory(null);
+    setSelectedAccountId("all");
+    load(); 
+  }, [activeWs?.id]);
 
   const filteredTxns = useMemo(() => {
     let base = txns;

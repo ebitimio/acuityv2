@@ -15,6 +15,7 @@ import { CryptoSheet } from "@/components/ui/crypto-sheet";
 import { StackedAccountCard } from "@/components/ui/stacked-account-card";
 import { useCurrency } from "@/lib/currency";
 import { useToast } from "@/components/ui/toast";
+import { useWorkspace } from "@/lib/workspace";
 import type { Account, Asset } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -40,8 +41,10 @@ export function AccountsScreen({ onBack, userName = "there" }: { onBack: () => v
 
   const { fmt } = useCurrency();
   const toast = useToast();
+  const { active: activeWs } = useWorkspace();
 
   const load = async () => {
+    if (!activeWs?.id) return;
     clearDataCache();
     const [a, s] = await Promise.all([getAccounts(), getAssets()]);
     setAccounts(a);
@@ -51,7 +54,13 @@ export function AccountsScreen({ onBack, userName = "there" }: { onBack: () => v
       if (refreshed) setCheckinAccount(refreshed);
     }
   };
-  useEffect(() => { load(); }, []);
+
+  useEffect(() => { 
+    setAccounts([]);
+    setAssets([]);
+    setExpandedCard(null);
+    load(); 
+  }, [activeWs?.id]);
 
   const addAcc = async () => {
     if (!name || !institution || !balance) {
@@ -160,11 +169,14 @@ export function AccountsScreen({ onBack, userName = "there" }: { onBack: () => v
                     onClick={() => setExpandedCard(isExpanded ? null : a.id)}
                     onCheckBalance={() => setCheckinAccount(a)}
                     onDelete={() => delAcc(a)}
-                    cardholderName={userName} // <-- PASS THE NAME HERE
+                    cardholderName={userName}
                   />
                 </div>
               );
             })}
+            {accounts.length === 0 && (
+              <p className="text-center py-6 text-[14px] text-[var(--text-3)]">No accounts yet. Add one above.</p>
+            )}
           </div>
         </div>
 

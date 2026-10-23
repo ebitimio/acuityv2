@@ -16,6 +16,7 @@ import { Modal } from "@/components/ui/modal";
 import { Field, Button } from "@/components/ui/form";
 import { CurrencyField } from "@/components/ui/currency-field";
 import { useToast } from "@/components/ui/toast";
+import { useWorkspace } from "@/lib/workspace";
 import { PullToRefresh } from "@/components/ui/pull-to-refresh";
 import type { Txn, HomeMetrics, Account, CustomCategory, Budget } from "@/lib/types";
 import { getCategory } from "@/lib/categories";
@@ -47,6 +48,7 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
 
   const { fmt } = useCurrency();
   const toast = useToast();
+  const { active: activeWs } = useWorkspace();
 
   const loadBudgetsForAccount = async (accountKey: string) => {
     if (!accountKey) { setBudgets([]); setCategoryLimits({}); return; }
@@ -64,20 +66,37 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
   };
 
   const loadStatic = async () => {
+    if (!activeWs?.id) return;
     try { setMetrics((await getHomeMetrics()) ?? ZERO_METRICS); } catch {}
     try { setTxns((await getTransactionsSince(startOfMonthISO())) ?? []); } catch {}
     try {
       const accs = await getAccounts();
       setAccounts(accs ?? []);
-      if (accs && accs.length > 0 && !selectedAccount) {
-        setSelectedAccount(accs[0].id);
+      if (accs && accs.length > 0) {
+        // Only default to first account if the currently selected one isn't in the list
+        if (!selectedAccount || !accs.some(a => a.id === selectedAccount)) {
+          setSelectedAccount(accs[0].id);
+        }
+      } else {
+        setSelectedAccount("");
       }
     } catch {}
     try { setCategories((await getCustomCategories()) ?? []); } catch {}
     try { setCycle(await getCurrentCycle()); } catch { setCycle(null); }
   };
 
-  useEffect(() => { loadStatic(); }, []);
+  useEffect(() => { 
+    // Reset local state when workspace changes
+    setMetrics(ZERO_METRICS);
+    setTxns([]);
+    setAccounts([]);
+    setCategories([]);
+    setBudgets([]);
+    setCategoryLimits({});
+    setSelectedAccount("");
+    loadStatic(); 
+  }, [activeWs?.id]);
+
   useEffect(() => { loadBudgetsForAccount(selectedAccount); }, [selectedAccount]);
 
   const saveCycle = async () => {

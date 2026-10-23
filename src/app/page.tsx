@@ -204,6 +204,15 @@ export default function SandboxPage() {
     if (session && activeWs?.id) refreshData();
   }, [session, refreshData, activeWs?.id]);
 
+  // Reset state immediately when workspace changes to prevent stale UI flash
+  useEffect(() => {
+    setMetrics(ZERO_METRICS);
+    setTransactions([]);
+    setCategoryRows([]);
+    setSafeToSpend(null);
+    setLiquidAssets(0);
+  }, [activeWs?.id]);
+
   useEffect(() => {
     if (!showSplash && session) {
       const timer = setTimeout(() => setIsLoading(false), 800);
@@ -246,14 +255,6 @@ export default function SandboxPage() {
     try { localStorage.setItem("acuity:activeWorkspace", id); } catch {}
     setActiveWs(id);
     clearDataCache();
-    // Reset local state to avoid stale data flashing
-    setMetrics(ZERO_METRICS);
-    setTransactions([]);
-    setCategoryRows([]);
-    setSafeToSpend(null);
-    setLiquidAssets(0);
-    // Trigger refetch
-    setTimeout(() => refreshData(), 100);
   };
 
   const handleCreateWorkspace = async () => {
@@ -268,13 +269,6 @@ export default function SandboxPage() {
       toast(`Workspace "${name}" created`);
       setWsCreateOpen(false);
       setWsNewName("");
-      // Reset state
-      setMetrics(ZERO_METRICS);
-      setTransactions([]);
-      setCategoryRows([]);
-      setSafeToSpend(null);
-      setLiquidAssets(0);
-      setTimeout(() => refreshData(), 100);
     } catch (err: any) {
       console.error("Workspace create error:", err);
       toast(`Could not create: ${err?.message ?? "Unknown error"}`, "err");
@@ -349,23 +343,32 @@ export default function SandboxPage() {
         <ScreenTransition id={activeScreen}>
           {activeScreen === "analytics" ? (
             <AnalyticsScreen 
+              key={activeWs?.id}
               onBack={() => setActiveScreen("home")} 
               onNavigateTransactions={() => setActiveScreen("transactions")} 
             />
           ) : activeScreen === "transactions" ? (
             <TransactionsScreen 
+              key={activeWs?.id}
               onBack={() => setActiveScreen("home")} 
               onDataChanged={refreshData}
             />
           ) : activeScreen === "budget" ? (
-            <BudgetScreen onBack={() => setActiveScreen("home")} />
+            <BudgetScreen 
+              key={activeWs?.id}
+              onBack={() => setActiveScreen("home")} 
+            />
           ) : activeScreen === "accounts" ? (
             <AccountsScreen 
+              key={activeWs?.id}
               onBack={() => setActiveScreen("home")} 
               userName={profileName}
             />
           ) : activeScreen === "commitments" ? (
-            <CommitmentsScreen onBack={() => setActiveScreen("home")} />
+            <CommitmentsScreen 
+              key={activeWs?.id}
+              onBack={() => setActiveScreen("home")} 
+            />
           ) : activeScreen === "tax" ? (
             <TaxScreen onBack={() => setActiveScreen("home")} />
           ) : activeScreen === "needs-review" ? (
