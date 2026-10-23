@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react"; // Added useRef
+import { useState, useEffect, useCallback, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
   getHomeMetrics, getRecentTransactions, deleteTransaction, clearDataCache,
@@ -96,9 +96,9 @@ export default function SandboxPage() {
   const [categoryRows, setCategoryRows] = useState<CategorySpendRow[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   
-  // State for the Carousel active dot
   const [activeCardIndex, setActiveCardIndex] = useState(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const autoScrollTimerRef = useRef<NodeJS.Timeout | null>(null); // Ref for auto-scroll timer
 
   const [setupStatus, setSetupStatus] = useState<SetupStatus | null>(null);
   const [setupError, setSetupError] = useState<string | null>(null);
@@ -123,15 +123,62 @@ export default function SandboxPage() {
     else setNavHidden(false);
   });
 
-  // Handle Carousel Scroll
+  // Handle Manual Scroll
   const handleScroll = () => {
     if (!scrollContainerRef.current) return;
     const scrollLeft = scrollContainerRef.current.scrollLeft;
     const width = scrollContainerRef.current.offsetWidth;
-    // Calculate which card is currently centered
-    const index = Math.round(scrollLeft / (width * 0.85)); // 0.85 approximates the card width + gap
+    const index = Math.round(scrollLeft / (width * 0.85));
     setActiveCardIndex(index);
+
+    // If the user manually scrolls, we reset the auto-scroll timer
+    // so it doesn't fight them immediately.
+    if (autoScrollTimerRef.current) {
+      clearInterval(autoScrollTimerRef.current);
+    }
+    startAutoScroll();
   };
+
+  // Auto Scroll Logic
+  const startAutoScroll = useCallback(() => {
+    if (autoScrollTimerRef.current) clearInterval(autoScrollTimerRef.current);
+    if (!accounts || accounts.length <= 1) return;
+
+    autoScrollTimerRef.current = setInterval(() => {
+      if (!scrollContainerRef.current) return;
+      
+      const container = scrollContainerRef.current;
+      const children = container.children[0]?.children;
+      if (!children) return;
+
+      // Calculate next index
+      let nextIndex = activeCardIndex + 1;
+      if (nextIndex >= accounts.length) {
+        nextIndex = 0; // Loop back to start
+      }
+
+      // Scroll to the next card
+      // We use the child element's offsetLeft to ensure perfect snapping
+      const nextElement = children[nextIndex] as HTMLElement;
+      if (nextElement) {
+        container.scrollTo({
+          left: nextElement.offsetLeft - 20, // 20px offset to account for padding
+          behavior: "smooth",
+        });
+      }
+    }, 4000); // 4 seconds per slide
+  }, [activeCardIndex, accounts.length]);
+
+  // Start auto scroll when accounts load
+  useEffect(() => {
+    if (accounts.length > 1) {
+      startAutoScroll();
+    }
+    return () => {
+      if (autoScrollTimerRef.current) clearInterval(autoScrollTimerRef.current);
+    };
+  }, [accounts.length, startAutoScroll]);
+
 
   // 30-Minute Inactivity Lock Timer
   useEffect(() => {
