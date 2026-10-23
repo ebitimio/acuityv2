@@ -2,25 +2,29 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Plane, Building2, Sparkles } from "lucide-react";
 
 const SLIDES = [
   {
     title: "Welcome to Acuity.",
     desc: "Your AI-powered personal wealth command center.",
+    icon: Plane,
   },
   {
     title: "Know your limits.",
     desc: "We calculate your daily Safe to Spend based on real obligations, so you never run out before payday.",
+    icon: Building2,
   },
   {
     title: "Your AI CFO.",
     desc: "Ask questions, get realistic advice, and track your net worth across multiple accounts.",
+    icon: Sparkles,
   },
 ];
 
 export function OnboardingCarousel({ onComplete }: { onComplete: () => void }) {
   const [current, setCurrent] = useState(0);
+  const SlideIcon = SLIDES[current].icon;
 
   const next = () => {
     if (current < SLIDES.length - 1) setCurrent(current + 1);
@@ -28,8 +32,23 @@ export function OnboardingCarousel({ onComplete }: { onComplete: () => void }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[200] flex flex-col bg-[#0b0b0c] text-white">
-      <div className="flex flex-1 flex-col items-center justify-center px-8 text-center">
+    <div className="fixed inset-0 z-[200] flex flex-col bg-[#0b0b0c] text-white overflow-hidden">
+      
+      {/* Animated Background Watermark */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={`bg-${current}`}
+          initial={{ opacity: 0, scale: 1.5, x: "-10%" }}
+          animate={{ opacity: 0.1, scale: 1, x: "0%" }}
+          exit={{ opacity: 0, scale: 0.8, x: "10%" }}
+          transition={{ duration: 1.2, ease: "easeOut" }}
+          className="absolute inset-0 flex items-center justify-center pointer-events-none"
+        >
+          <SlideIcon size={400} strokeWidth={0.5} className="text-[#DE3121]" />
+        </motion.div>
+      </AnimatePresence>
+
+      <div className="flex flex-1 flex-col items-center justify-center px-8 text-center relative z-10">
         <div className="mb-12 flex items-baseline">
           <span className="text-[48px] font-black tracking-tighter text-white">ACUITY</span>
           <span className="text-[48px] font-black tracking-tighter" style={{ color: "#DE3121" }}>.</span>
@@ -50,7 +69,7 @@ export function OnboardingCarousel({ onComplete }: { onComplete: () => void }) {
         </AnimatePresence>
       </div>
 
-      <div className="pb-[calc(env(safe-area-inset-bottom)+32px)] px-8">
+      <div className="pb-[calc(env(safe-area-inset-bottom)+32px)] px-8 relative z-10">
         <div className="mb-8 flex justify-center gap-2">
           {SLIDES.map((_, i) => (
             <div

@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronRight, Eye, Bell, Shield, Wallet, Briefcase, HelpCircle,
   LogOut, Trash2, RefreshCw, Moon, FileText, MessageSquare, Info,
-  ArrowLeft, Sun, Lock, User
+  ArrowLeft, Sun, Lock, User, KeyRound
 } from "lucide-react";
 import { useCurrency } from "@/lib/currency";
 import { useWorkspace } from "@/lib/workspace";
@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { Modal } from "./modal";
 import { clearDataCache, updateProfile, updatePassword } from "@/lib/supabase/database";
 import { Button } from "./form";
+import { PinLockScreen } from "@/components/screens/pin-lock-screen";
 
 interface SettingsSheetProps {
   isOpen: boolean;
@@ -30,7 +31,7 @@ interface SettingsSheetProps {
   onNameUpdated: (name: string) => void;
 }
 
-type SubView = "main" | "edit-profile" | "change-password" | "privacy" | "terms" | "help";
+type SubView = "main" | "edit-profile" | "change-password" | "change-pin" | "privacy" | "terms" | "help";
 
 export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, onNameUpdated }: SettingsSheetProps) {
   const { currency, setCurrency, rate, hidden, toggleHidden } = useCurrency();
@@ -44,6 +45,7 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
   const [billReminders, setBillReminders] = useState(true);
 
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [view, setView] = useState<SubView>("main");
 
   // Edit profile
@@ -149,6 +151,19 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
     : "Recently";
 
   // ---------- SUB VIEWS ----------
+  if (view === "change-pin") {
+    return (
+      <PinLockScreen 
+        mode="setup" 
+        onComplete={(pin) => {
+          localStorage.setItem("acuity:pin", pin);
+          toast("PIN updated successfully");
+          setView("main");
+        }} 
+      />
+    );
+  }
+
   if (view === "edit-profile") {
     return (
       <Modal open={isOpen} onClose={() => setView("main")} title="Edit Profile">
@@ -296,7 +311,6 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
         {/* PROFILE CARD */}
         <div className="p-4 rounded-2xl bg-[var(--surface-2)] border border-[var(--line)]">
           <div className="flex items-center gap-4">
-            {/* Avatar with Google badge if applicable */}
             <div className="relative">
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#DE3121] text-white text-[20px] font-bold">
                 {profileName.charAt(0).toUpperCase()}
@@ -346,62 +360,28 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
                 <Lock size={13} /> Password
               </button>
             )}
+            <button
+              onClick={() => setView("change-pin")}
+              className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-[var(--fill-1)] py-2 text-[12px] font-semibold text-[var(--text-1)]"
+            >
+              <KeyRound size={13} /> Change PIN
+            </button>
           </div>
         </div>
 
         {/* MONEY & CURRENCY */}
         <Section title="Money & Currency">
-          <Row
-            icon={Wallet}
-            label="Currency"
-            value={currency}
-            onClick={() => setCurrency(currency === "NGN" ? "USD" : "NGN")}
-            chevron
-          />
-          <Row
-            icon={RefreshCw}
-            label="Exchange Rate"
-            value={`₦${rate.toLocaleString()} / $1`}
-          />
-          <Row
-            icon={Eye}
-            label="Hide balances"
-            toggle
-            toggleValue={hidden}
-            onToggle={toggleHidden}
-          />
+          <Row icon={Wallet} label="Currency" value={currency} onClick={() => setCurrency(currency === "NGN" ? "USD" : "NGN")} chevron />
+          <Row icon={RefreshCw} label="Exchange Rate" value={`₦${rate.toLocaleString()} / $1`} />
+          <Row icon={Eye} label="Hide balances" toggle toggleValue={hidden} onToggle={toggleHidden} />
         </Section>
 
         {/* NOTIFICATIONS */}
         <Section title="Notifications">
-          <Row
-            icon={Bell}
-            label="Push notifications"
-            toggle
-            toggleValue={pushEnabled}
-            onToggle={() => setPushEnabled(!pushEnabled)}
-          />
-          <Row
-            icon={FileText}
-            label="Weekly spending summary"
-            toggle
-            toggleValue={weeklySummary}
-            onToggle={() => setWeeklySummary(!weeklySummary)}
-          />
-          <Row
-            icon={Bell}
-            label="Budget alerts (90%)"
-            toggle
-            toggleValue={budgetAlerts}
-            onToggle={() => setBudgetAlerts(!budgetAlerts)}
-          />
-          <Row
-            icon={Bell}
-            label="Bill reminders"
-            toggle
-            toggleValue={billReminders}
-            onToggle={() => setBillReminders(!billReminders)}
-          />
+          <Row icon={Bell} label="Push notifications" toggle toggleValue={pushEnabled} onToggle={() => setPushEnabled(!pushEnabled)} />
+          <Row icon={FileText} label="Weekly spending summary" toggle toggleValue={weeklySummary} onToggle={() => setWeeklySummary(!weeklySummary)} />
+          <Row icon={Bell} label="Budget alerts (90%)" toggle toggleValue={budgetAlerts} onToggle={() => setBudgetAlerts(!budgetAlerts)} />
+          <Row icon={Bell} label="Bill reminders" toggle toggleValue={billReminders} onToggle={() => setBillReminders(!billReminders)} />
         </Section>
 
         {/* APPEARANCE */}
@@ -435,74 +415,76 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
 
         {/* PRIVACY & SECURITY */}
         <Section title="Privacy & Security">
-          <Row
-            icon={RefreshCw}
-            label="Clear cache"
-            chevron
-            onClick={handleClearCache}
-          />
+          <Row icon={RefreshCw} label="Clear cache" chevron onClick={handleClearCache} />
         </Section>
 
         {/* WORKSPACE */}
         <Section title="Workspace">
-          <Row
-            icon={Briefcase}
-            label="Current workspace"
-            value={activeWs?.name ?? "None"}
-          />
-          <Row
-            icon={Trash2}
-            label="Delete workspace"
-            danger
-            chevron
-            onClick={() => setConfirmDelete(true)}
-          />
+          <Row icon={Briefcase} label="Current workspace" value={activeWs?.name ?? "None"} />
+          <Row icon={Trash2} label="Delete workspace" danger chevron onClick={() => setConfirmDelete(true)} />
         </Section>
 
         {/* ABOUT & SUPPORT */}
         <Section title="About & Support">
-          <Row
-            icon={HelpCircle}
-            label="Help & FAQ"
-            chevron
-            onClick={() => setView("help")}
-          />
-          <Row
-            icon={FileText}
-            label="Terms of Service"
-            chevron
-            onClick={() => setView("terms")}
-          />
-          <Row
-            icon={Shield}
-            label="Privacy Policy"
-            chevron
-            onClick={() => setView("privacy")}
-          />
-          <Row
-            icon={MessageSquare}
-            label="Contact support"
-            chevron
-            onClick={() => window.location.href = "mailto:support@acuity.app"}
-          />
-          <Row
-            icon={Info}
-            label="App version"
-            value="1.0.0"
-          />
+          <Row icon={HelpCircle} label="Help & FAQ" chevron onClick={() => setView("help")} />
+          <Row icon={FileText} label="Terms of Service" chevron onClick={() => setView("terms")} />
+          <Row icon={Shield} label="Privacy Policy" chevron onClick={() => setView("privacy")} />
+          <Row icon={MessageSquare} label="Contact support" chevron onClick={() => window.location.href = "mailto:support@acuity.app"} />
+          <Row icon={Info} label="App version" value="1.0.0" />
         </Section>
 
         {/* SIGN OUT */}
         <button
-          onClick={() => {
-            if (confirm("Sign out of Acuity?")) onSignOut();
-          }}
+          onClick={() => setConfirmSignOut(true)}
           className="w-full flex items-center justify-center gap-2 rounded-2xl border border-[var(--danger)]/30 bg-[var(--danger)]/10 py-3.5 text-[15px] font-bold text-[var(--danger)]"
         >
           <LogOut size={16} />
           Sign Out
         </button>
       </div>
+
+      {/* Custom Sign Out Confirmation */}
+      <AnimatePresence>
+        {confirmSignOut && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-6"
+            onClick={() => setConfirmSignOut(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-sm rounded-2xl bg-[var(--surface-2)] border border-[var(--line)] p-5"
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <LogOut size={20} className="text-[var(--danger)]" />
+                <h3 className="text-[16px] font-bold text-[var(--text-1)]">Sign out?</h3>
+              </div>
+              <p className="text-[13px] text-[var(--text-3)] mb-4">
+                Are you sure you want to sign out of Acuity?
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setConfirmSignOut(false)}
+                  className="flex-1 rounded-xl bg-[var(--fill-1)] py-2.5 text-[13px] font-semibold text-[var(--text-1)]"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => { setConfirmSignOut(false); onSignOut(); }}
+                  className="flex-1 rounded-xl bg-[var(--danger)] py-2.5 text-[13px] font-semibold text-white"
+                >
+                  Sign Out
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Delete confirmation */}
       <AnimatePresence>

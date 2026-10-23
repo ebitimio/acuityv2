@@ -31,7 +31,6 @@ export function AuthScreen() {
         if (!fullName || !password || !confirmPassword) throw new Error("Please fill all fields");
         if (password !== confirmPassword) throw new Error("Passwords do not match");
         
-        // 1. Create the auth user
         const { data, error } = await supabase.auth.signUp({ 
           email, 
           password,
@@ -39,7 +38,6 @@ export function AuthScreen() {
         });
         if (error) throw error;
 
-        // 2. Immediately save the name to the profiles table
         if (data.user) {
           await supabase.from("profiles").upsert({ 
             id: data.user.id, 
@@ -53,7 +51,12 @@ export function AuthScreen() {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
           redirectTo: `${window.location.origin}/reset-password`,
         });
-        if (error) throw error;
+        if (error) {
+          if (error.message.includes("rate limit") || error.message.includes("sending")) {
+            throw new Error("Email service is currently busy. Please try again in a few minutes.");
+          }
+          throw error;
+        }
         toast("Check your email for the reset link");
         setMode("login");
       }
