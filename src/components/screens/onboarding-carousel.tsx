@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, CreditCard, Coins } from "lucide-react";
+import { ArrowRight, CreditCard, Coins, Sparkles, BrainCircuit, PieChart, ShieldCheck, Zap } from "lucide-react";
 
 const SLIDES = [
   {
@@ -34,12 +34,12 @@ export function OnboardingCarousel({ onComplete }: { onComplete: () => void }) {
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <AnimatePresence mode="wait">
           {current === 0 && <Slide1Wealth key="s1" />}
-          {current === 1 && <Slide2Chart key="s2" />}
+          {current === 1 && <Slide2Budget key="s2" />}
           {current === 2 && <Slide3AI key="s3" />}
         </AnimatePresence>
       </div>
 
-      <div className="flex flex-1 flex-col items-center justify-center px-8 text-center relative z-10">
+      <div className="flex flex-1 flex-col items-center justify-center px-8 text-center relative z-10 pt-20">
         <div className="mb-12 flex items-baseline">
           <span className="text-[48px] font-black tracking-tighter text-white">ACUITY</span>
           <span className="text-[48px] font-black tracking-tighter" style={{ color: "#DE3121" }}>.</span>
@@ -96,14 +96,12 @@ function Slide1Wealth() {
       exit={{ opacity: 0 }}
       className="absolute inset-0 flex flex-col items-center justify-center"
     >
-      {/* Background Glow */}
       <motion.div
         animate={{ scale: [1, 1.2, 1], opacity: [0.05, 0.1, 0.05] }}
         transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
         className="absolute h-[400px] w-[400px] rounded-full bg-[#DE3121] blur-[100px]"
       />
 
-      {/* Bouncing Coins */}
       <div className="absolute flex gap-4 opacity-20 mt-20">
         {[0, 1, 2].map((i) => (
           <motion.div
@@ -123,7 +121,6 @@ function Slide1Wealth() {
         ))}
       </div>
 
-      {/* Floating Card */}
       <motion.div
         initial={{ y: 50, rotateX: 45, rotateZ: -20, opacity: 0 }}
         animate={{ 
@@ -162,116 +159,182 @@ function Slide1Wealth() {
 }
 
 // ---------------------------------------------------------
-// SLIDE 2: Bar chart growing + Line tracing
+// SLIDE 2: 3D Rotating Donut Chart & Floating Tiles
 // ---------------------------------------------------------
-function Slide2Chart() {
+function Slide2Budget() {
+  const radius = 80;
+  const circumference = 2 * Math.PI * radius;
+
   return (
-    <motion.svg
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="absolute inset-0 w-full h-full"
-      viewBox="0 0 400 800"
-      preserveAspectRatio="none"
+      className="absolute inset-0 flex items-center justify-center"
+      style={{ perspective: 1000 }}
     >
-      {/* Growing Bars */}
-      {[0, 1, 2, 3, 4].map((i) => (
-        <motion.rect
-          key={i}
-          x={50 + i * 70}
-          width="40"
-          rx="8"
-          fill="#DE3121"
-          initial={{ height: 0, y: 800, opacity: 0 }}
-          animate={{ 
-            height: [0, 100 + i * 60], 
-            y: [800, 800 - (100 + i * 60)],
-            opacity: 0.1 
-          }}
-          transition={{ 
-            duration: 1.5, 
-            delay: i * 0.15, 
-            ease: "easeOut",
-            repeat: Infinity,
-            repeatType: "reverse",
-            repeatDelay: 1
-          }}
-        />
-      ))}
-      
-      {/* Tracing Line */}
-      <motion.path
-        d="M 50 750 L 120 700 L 190 600 L 260 500 L 330 350"
-        fill="none"
-        stroke="#DE3121"
-        strokeWidth="4"
-        strokeLinecap="round"
-        initial={{ pathLength: 0, opacity: 0 }}
-        animate={{ pathLength: 1, opacity: 0.3 }}
-        transition={{ duration: 2, ease: "easeInOut", repeat: Infinity, repeatType: "reverse", delay: 0.5 }}
+      {/* Background Glow */}
+      <motion.div
+        animate={{ scale: [1, 1.1, 1], opacity: [0.05, 0.08, 0.05] }}
+        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute h-[350px] w-[350px] rounded-full bg-[#DE3121] blur-[100px]"
       />
-    </motion.svg>
+
+      {/* Floating Tiles */}
+      <motion.div
+        animate={{ y: [-10, 10, -10], rotateZ: [5, 10, 5] }}
+        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute left-10 top-1/4 flex h-24 w-20 flex-col justify-between rounded-xl border border-[#DE3121]/20 bg-[#121213]/80 p-3 shadow-xl backdrop-blur-md"
+      >
+        <ShieldCheck size={18} className="text-[#DE3121]" />
+        <div>
+          <p className="text-[8px] text-white/50">Safe to</p>
+          <p className="text-[10px] font-bold text-[#DE3121]">Spend</p>
+        </div>
+      </motion.div>
+
+      <motion.div
+        animate={{ y: [10, -10, 10], rotateZ: [-5, -10, -5] }}
+        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute right-10 bottom-1/3 flex h-24 w-20 flex-col justify-between rounded-xl border border-[#DE3121]/20 bg-[#121213]/80 p-3 shadow-xl backdrop-blur-md"
+      >
+        <PieChart size={18} className="text-[#DE3121]" />
+        <div>
+          <p className="text-[8px] text-white/50">Budget</p>
+          <p className="text-[10px] font-bold text-[#DE3121]">Set</p>
+        </div>
+      </motion.div>
+
+      {/* 3D Donut Chart */}
+      <motion.div
+        initial={{ rotateX: 60, scale: 0.8, opacity: 0 }}
+        animate={{ 
+          rotateX: 30, 
+          rotateY: [-15, 15, -15],
+          scale: 1, 
+          opacity: 0.15 
+        }}
+        transition={{ 
+          rotateX: { duration: 1.5, ease: "easeOut" },
+          scale: { duration: 1.5, ease: "easeOut" },
+          opacity: { duration: 1.5 },
+          rotateY: { duration: 6, repeat: Infinity, ease: "easeInOut" }
+        }}
+        className="relative h-64 w-64"
+      >
+        <svg viewBox="0 0 200 200" className="h-full w-full">
+          {/* Background Track */}
+          <circle cx="100" cy="100" r={radius} fill="none" stroke="#DE3121" strokeWidth="20" opacity="0.3" />
+          
+          {/* Animated Progress Arc */}
+          <motion.circle
+            cx="100"
+            cy="100"
+            r={radius}
+            fill="none"
+            stroke="#DE3121"
+            strokeWidth="20"
+            strokeLinecap="round"
+            strokeDasharray={circumference}
+            initial={{ strokeDashoffset: circumference }}
+            animate={{ strokeDashoffset: circumference * 0.3 }} // 70% full
+            transition={{ duration: 2, delay: 0.5, ease: "easeInOut" }}
+            style={{ filter: "drop-shadow(0 0 10px #DE3121)" }}
+          />
+        </svg>
+      </motion.div>
+    </motion.div>
   );
 }
 
 // ---------------------------------------------------------
-// SLIDE 3: AI Network connecting nodes
+// SLIDE 3: Glowing AI Core with Orbital Rings
 // ---------------------------------------------------------
 function Slide3AI() {
-  const nodes = [
-    { x: 100, y: 200 },
-    { x: 300, y: 250 },
-    { x: 150, y: 500 },
-    { x: 350, y: 550 },
-    { x: 200, y: 700 },
-  ];
-
   return (
-    <motion.svg
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="absolute inset-0 w-full h-full"
-      viewBox="0 0 400 800"
-      preserveAspectRatio="none"
+      className="absolute inset-0 flex items-center justify-center"
+      style={{ perspective: 1000 }}
     >
-      {/* Connecting Lines */}
-      {nodes.map((node, i) => (
-        <motion.line
-          key={`line-${i}`}
-          x1="200" y1="400"
-          x2={node.x} y2={node.y}
-          stroke="#DE3121"
-          strokeWidth="2"
-          strokeDasharray="4 4"
-          initial={{ pathLength: 0, opacity: 0 }}
-          animate={{ pathLength: 1, opacity: 0.2 }}
-          transition={{ duration: 1.5, delay: i * 0.2, ease: "easeInOut", repeat: Infinity, repeatType: "reverse" }}
-        />
-      ))}
-
-      {/* Central AI Node */}
-      <motion.circle
-        cx="200" cy="400" r="30"
-        fill="#DE3121"
-        initial={{ scale: 0.5, opacity: 0 }}
-        animate={{ scale: [1, 1.2, 1], opacity: 0.2 }}
-        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+      {/* Background Glow */}
+      <motion.div
+        animate={{ scale: [1, 1.3, 1], opacity: [0.08, 0.15, 0.08] }}
+        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute h-[300px] w-[300px] rounded-full bg-[#DE3121] blur-[80px]"
       />
 
-      {/* Orbiting Nodes */}
-      {nodes.map((node, i) => (
-        <motion.circle
-          key={`node-${i}`}
-          cx={node.x} cy={node.y} r="12"
-          fill="#0b0b0c"
-          stroke="#DE3121"
-          strokeWidth="3"
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 0.3 }}
-          transition={{ duration: 0.5, delay: i * 0.2, ease: "backOut", repeat: Infinity, repeatType: "reverse", repeatDelay: 1 }}
+      {/* Orbital Rings */}
+      {[0, 1, 2].map((i) => (
+        <motion.div
+          key={`ring-${i}`}
+          initial={{ scale: 0.5, opacity: 0 }}
+          animate={{ 
+            scale: 1, 
+            opacity: 0.1,
+            rotateX: [60, 120, 60],
+            rotateY: [0, 180, 360],
+          }}
+          transition={{ 
+            scale: { duration: 1.5, ease: "easeOut" },
+            opacity: { duration: 1.5 },
+            rotateX: { duration: 10 + i * 2, repeat: Infinity, ease: "linear" },
+            rotateY: { duration: 8 + i * 3, repeat: Infinity, ease: "linear" },
+          }}
+          className="absolute rounded-full border border-[#DE3121]"
+          style={{
+            width: 200 + i * 80,
+            height: 200 + i * 80,
+            transformStyle: "preserve-3d",
+          }}
         />
       ))}
-    </motion.svg>
+
+      {/* Central AI Core */}
+      <motion.div
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 0.2 }}
+        transition={{ duration: 1, ease: "backOut" }}
+        className="relative flex h-32 w-32 items-center justify-center rounded-full bg-[#0b0b0c] border border-[#DE3121]/50 shadow-[0_0_50px_rgba(222,49,33,0.5)]"
+      >
+        <motion.div
+          animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
+          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <BrainCircuit size={48} className="text-[#DE3121]" />
+        </motion.div>
+      </motion.div>
+
+      {/* Sparks / Floating Data Nodes */}
+      {[
+        { icon: Zap, x: -120, y: -80, delay: 0 },
+        { icon: Sparkles, x: 130, y: -50, delay: 0.5 },
+        { icon: ShieldCheck, x: -100, y: 100, delay: 1 },
+        { icon: PieChart, x: 120, y: 90, delay: 1.5 },
+      ].map((node, i) => (
+        <motion.div
+          key={`node-${i}`}
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ 
+            scale: [0, 1, 1, 0], 
+            opacity: [0, 0.3, 0.3, 0],
+            x: node.x, 
+            y: node.y 
+          }}
+          transition={{ 
+            duration: 3, 
+            delay: node.delay, 
+            repeat: Infinity, 
+            repeatDelay: 2,
+            ease: "easeInOut"
+          }}
+          className="absolute flex h-10 w-10 items-center justify-center rounded-full bg-[#DE3121]/10 border border-[#DE3121]/30 backdrop-blur-sm"
+        >
+          <node.icon size={16} className="text-[#DE3121]" />
+        </motion.div>
+      ))}
+    </motion.div>
   );
 }
