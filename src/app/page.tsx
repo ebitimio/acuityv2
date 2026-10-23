@@ -78,6 +78,7 @@ export default function SandboxPage() {
   const [activeScreen, setActiveScreen] = useState<ScreenId>("home");
 
   // Onboarding & PIN states
+  const [isOnboardingChecked, setIsOnboardingChecked] = useState(false);
   const [showCarousel, setShowCarousel] = useState(false);
   const [showPinSetup, setShowPinSetup] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
@@ -119,7 +120,7 @@ export default function SandboxPage() {
 
   // 30-Minute Inactivity Lock
   useEffect(() => {
-    if (!session || showCarousel || showPinSetup) return;
+    if (!session || showCarousel || showPinSetup || !isOnboardingChecked) return;
 
     let timeout: NodeJS.Timeout;
     const resetTimer = () => {
@@ -140,7 +141,7 @@ export default function SandboxPage() {
       clearTimeout(timeout);
       events.forEach((e) => window.removeEventListener(e, resetTimer));
     };
-  }, [session, showCarousel, showPinSetup]);
+  }, [session, showCarousel, showPinSetup, isOnboardingChecked]);
 
   useEffect(() => {
     if (session?.user?.id) {
@@ -204,7 +205,7 @@ export default function SandboxPage() {
       setSession(session);
       setIsAuthLoading(false);
       
-      // Check onboarding/PIN status
+      // Check onboarding/PIN status securely before rendering
       if (session) {
         const hasPin = localStorage.getItem("acuity:pin");
         const hasSeenCarousel = localStorage.getItem("acuity:onboarded");
@@ -215,6 +216,7 @@ export default function SandboxPage() {
           setShowPinSetup(true);
         }
       }
+      setIsOnboardingChecked(true);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
@@ -333,7 +335,7 @@ export default function SandboxPage() {
   };
 
   if (showSplash) return <SplashScreen onComplete={() => setShowSplash(false)} />;
-  if (isAuthLoading || wsLoading) return <div className="min-h-[100dvh]" style={{ background: "var(--bg)" }} />;
+  if (isAuthLoading || wsLoading || !isOnboardingChecked) return <div className="min-h-[100dvh]" style={{ background: "var(--bg)" }} />;
   if (!session) return <AuthScreen />;
   
   if (showCarousel) {
