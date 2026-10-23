@@ -8,9 +8,10 @@ interface PinLockScreenProps {
   mode: "setup" | "unlock";
   onComplete: (pin: string) => void;
   errorText?: string;
+  onForgot?: () => void;
 }
 
-export function PinLockScreen({ mode, onComplete, errorText }: PinLockScreenProps) {
+export function PinLockScreen({ mode, onComplete, errorText, onForgot }: PinLockScreenProps) {
   const [pin, setPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
   const [stage, setStage] = useState<"enter" | "confirm">("enter");
@@ -66,7 +67,6 @@ export function PinLockScreen({ mode, onComplete, errorText }: PinLockScreenProp
             : "Your session timed out. Enter your PIN to continue."}
         </p>
 
-        {/* PIN Dots */}
         <div className="flex gap-4 mb-8">
           {[0, 1, 2, 3].map((i) => (
             <motion.div
@@ -85,7 +85,6 @@ export function PinLockScreen({ mode, onComplete, errorText }: PinLockScreenProp
           <p className="text-[#DE3121] text-[13px] font-medium mb-6">{errorText}</p>
         )}
 
-        {/* Keypad */}
         <div className="grid grid-cols-3 gap-4 w-full max-w-[280px]">
           {["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "backspace"].map((key, i) => (
             <div key={i} className="flex items-center justify-center">
@@ -107,6 +106,15 @@ export function PinLockScreen({ mode, onComplete, errorText }: PinLockScreenProp
             </div>
           ))}
         </div>
+
+        {mode === "unlock" && onForgot && (
+          <button
+            onClick={onForgot}
+            className="mt-8 text-[14px] font-semibold text-[#DE3121] active:opacity-70"
+          >
+            Forgot PIN?
+          </button>
+        )}
       </div>
     </div>
   );
