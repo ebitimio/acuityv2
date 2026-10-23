@@ -14,6 +14,7 @@ interface StackedAccountCardProps {
   onCheckBalance: () => void;
   onDelete: () => void;
   cardholderName: string;
+  hideActions?: boolean; // NEW PROP
 }
 
 export function StackedAccountCard({ 
@@ -25,6 +26,7 @@ export function StackedAccountCard({
   onCheckBalance,
   onDelete,
   cardholderName,
+  hideActions = false, // Default to false to keep Accounts page working
 }: StackedAccountCardProps) {
   return (
     <motion.div
@@ -41,7 +43,7 @@ export function StackedAccountCard({
     >
       <div onClick={onClick} className="relative p-5 cursor-pointer overflow-hidden">
         
-        {/* WATERMARK: Very faint ACUITY. in the middle */}
+        {/* WATERMARK */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <p className="text-[48px] font-black tracking-tighter text-[#DE3121]/[0.04] select-none">
             ACUITY<span className="text-[#DE3121]/[0.08]">.</span>
@@ -64,7 +66,6 @@ export function StackedAccountCard({
               </div>
             </div>
             
-            {/* CARDHOLDER NAME (ATM style) */}
             <div className="text-right">
               <p className="text-[9px] uppercase tracking-widest text-[#DE3121]/60 font-semibold">Cardholder</p>
               <p className="text-[13px] font-mono tracking-wider text-[#DE3121] uppercase">
@@ -84,7 +85,7 @@ export function StackedAccountCard({
       </div>
 
       <AnimatePresence>
-        {isExpanded && (
+        {isExpanded && !hideActions && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}

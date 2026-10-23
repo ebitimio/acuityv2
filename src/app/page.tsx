@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react"; // Added useRef
 import { createClient } from "@/lib/supabase/client";
 import {
   getHomeMetrics, getRecentTransactions, deleteTransaction, clearDataCache,
@@ -52,6 +52,7 @@ import { TransactionsScreen } from "@/components/screens/transactions-screen";
 import { OnboardingCarousel } from "@/components/screens/onboarding-carousel";
 import { PinLockScreen } from "@/components/screens/pin-lock-screen";
 import { StackedAccountCard } from "@/components/ui/stacked-account-card";
+import { cn } from "@/lib/utils";
 
 const ZERO_METRICS: HomeMetrics = {
   net_worth_minor: 0,
@@ -93,7 +94,12 @@ export default function SandboxPage() {
   const [metrics, setMetrics] = useState<HomeMetrics | null>(null);
   const [transactions, setTransactions] = useState<Txn[]>([]);
   const [categoryRows, setCategoryRows] = useState<CategorySpendRow[]>([]);
-  const [accounts, setAccounts] = useState<Account[]>([]); // NEW state for accounts
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  
+  // State for the Carousel active dot
+  const [activeCardIndex, setActiveCardIndex] = useState(0);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
   const [setupStatus, setSetupStatus] = useState<SetupStatus | null>(null);
   const [setupError, setSetupError] = useState<string | null>(null);
   const [safeToSpend, setSafeToSpend] = useState<SafeToSpend | null>(null);
@@ -102,7 +108,6 @@ export default function SandboxPage() {
   const [setupWizardStep, setSetupWizardStep] = useState<"account" | "income" | "bills">("account");
   const [checklistDismissed, setChecklistDismissed] = useState(false);
   const [txnFilter, setTxnFilter] = useState<TransactionFilter>("all");
-  const [expandedCard, setExpandedCard] = useState<string | null>(null); // For the dashboard cards
 
   const [navHidden, setNavHidden] = useState(false);
 
@@ -117,6 +122,16 @@ export default function SandboxPage() {
     if (latest > previous && latest > 100) setNavHidden(true);
     else setNavHidden(false);
   });
+
+  // Handle Carousel Scroll
+  const handleScroll = () => {
+    if (!scrollContainerRef.current) return;
+    const scrollLeft = scrollContainerRef.current.scrollLeft;
+    const width = scrollContainerRef.current.offsetWidth;
+    // Calculate which card is currently centered
+    const index = Math.round(scrollLeft / (width * 0.85)); // 0.85 approximates the card width + gap
+    setActiveCardIndex(index);
+  };
 
   // 30-Minute Inactivity Lock Timer
   useEffect(() => {
@@ -183,7 +198,6 @@ export default function SandboxPage() {
       setTransactions(t ?? []);
       setAccounts(accs ?? []);
       
-      // Also update liquid assets here
       const total = (accs ?? []).reduce((s, a) => s + (a.current_minor ?? a.balance_minor), 0) / 100;
       setLiquidAssets(total);
     } catch (e: any) { 
@@ -502,7 +516,7 @@ export default function SandboxPage() {
                 {setupError && <p className="px-1 text-[11px] text-[var(--danger)]">Setup status failed: {setupError}</p>}
                 {showChecklist && <SetupChecklist status={setupStatus!} onStartStep={handleStartSetupStep} onDismiss={handleDismissChecklist} />}
 
-                {/* --- REPLACED: CategoryScroller with My Accounts --- */}
+                {/* --- CAROUSEL ACCOUNTS --- */}
                 <div className="w-full">
                   <div className="mb-3 flex items-center justify-between px-1">
                     <h3 className="text-[15px] font-semibold text-[var(--text-1)]">My Accounts</h3>
@@ -512,24 +526,44 @@ export default function SandboxPage() {
                   </div>
                   
                   {accounts.length > 0 ? (
-                    <div className="-mx-5 overflow-x-auto px-5 pb-2 [scrollbar-width:none]">
-                      <div className="flex gap-4">
-                        {accounts.slice(0, 3).map((a) => (
-                          <div key={a.id} className="shrink-0 w-[300px]">
-                            <StackedAccountCard
-                              account={a}
-                              balance={(a.current_minor ?? a.balance_minor) / 100}
-                              fmt={fmt}
-                              isExpanded={true} // Keep it expanded on home for visibility
-                              onClick={() => setActiveScreen("accounts")}
-                              onCheckBalance={() => setActiveScreen("accounts")}
-                              onDelete={() => {}}
-                              cardholderName={profileName}
-                            />
-                          </div>
+                    <>
+                      <div 
+                        ref={scrollContainerRef}
+                        onScroll={handleScroll}
+                        className="-mx-5 overflow-x-auto px-5 pb-4 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                      >
+                        <div className="flex gap-4">
+                          {accounts.map((a) => (
+                            <div key={a.id} className="shrink-0 w-[85vw] max-w-[340px] snap-center">
+                              <StackedAccountCard
+                                account={a}
+                                balance={(a.current_minor ?? a.balance_minor) / 100}
+                                fmt={fmt}
+                                isExpanded={true}
+                                hideActions={true} // <-- Hides check balance and delete buttons
+                                onClick={() => setActiveScreen("accounts")}
+                                onCheckBalance={() => {}}
+                                onDelete={() => {}}
+                                cardholderName={profileName}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      {/* Orange Slider Dots */}
+                      <div className="flex justify-center gap-1.5 mt-1">
+                        {accounts.map((_, i) => (
+                          <div 
+                            key={i} 
+                            className={cn(
+                              "h-1.5 rounded-full transition-all duration-300",
+                              i === activeCardIndex ? "w-6 bg-[#DE3121]" : "w-1.5 bg-white/20"
+                            )} 
+                          />
                         ))}
                       </div>
-                    </div>
+                    </>
                   ) : (
                     <div className="rounded-2xl border border-dashed border-[var(--line-strong)] p-6 text-center">
                       <p className="text-[14px] text-[var(--text-3)]">No accounts yet.</p>
@@ -537,7 +571,7 @@ export default function SandboxPage() {
                     </div>
                   )}
                 </div>
-                {/* --- END REPLACEMENT --- */}
+                {/* --- END CAROUSEL --- */}
 
                 <ToolsScroller onNavigate={(key) => setActiveScreen(key as ScreenId)} />
 
