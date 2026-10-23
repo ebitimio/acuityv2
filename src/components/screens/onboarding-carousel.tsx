@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, CreditCard, Coins } from "lucide-react";
 
 const SLIDES = [
   {
@@ -33,7 +33,7 @@ export function OnboardingCarousel({ onComplete }: { onComplete: () => void }) {
       {/* Animated Backgrounds */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <AnimatePresence mode="wait">
-          {current === 0 && <Slide1Plane key="s1" />}
+          {current === 0 && <Slide1Wealth key="s1" />}
           {current === 1 && <Slide2Chart key="s2" />}
           {current === 2 && <Slide3AI key="s3" />}
         </AnimatePresence>
@@ -86,46 +86,78 @@ export function OnboardingCarousel({ onComplete }: { onComplete: () => void }) {
 }
 
 // ---------------------------------------------------------
-// SLIDE 1: Airplane flying with dashed trail
+// SLIDE 1: Floating Card & Bouncing Coins
 // ---------------------------------------------------------
-function Slide1Plane() {
+function Slide1Wealth() {
   return (
-    <motion.svg
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="absolute inset-0 w-full h-full"
-      viewBox="0 0 400 800"
-      preserveAspectRatio="none"
+      className="absolute inset-0 flex flex-col items-center justify-center"
     >
-      {/* Dashed Trail */}
-      <motion.path
-        d="M -50 850 Q 150 500 450 200"
-        fill="none"
-        stroke="#DE3121"
-        strokeWidth="2"
-        strokeDasharray="8 8"
-        initial={{ pathLength: 0, opacity: 0 }}
-        animate={{ pathLength: 1, opacity: 0.4 }}
-        transition={{ duration: 3, ease: "easeInOut", repeat: Infinity, repeatType: "reverse" }}
+      {/* Background Glow */}
+      <motion.div
+        animate={{ scale: [1, 1.2, 1], opacity: [0.05, 0.1, 0.05] }}
+        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute h-[400px] w-[400px] rounded-full bg-[#DE3121] blur-[100px]"
       />
-      {/* Airplane Icon following the path */}
-      <motion.g
-        initial={{ offsetDistance: "0%", opacity: 0 }}
-        animate={{ offsetDistance: "100%", opacity: 0.15 }}
-        transition={{ duration: 3, ease: "easeInOut", repeat: Infinity, repeatType: "reverse" }}
-        style={{ 
-          offsetPath: 'path("M -50 850 Q 150 500 450 200")',
-          offsetRotate: "auto 90deg" 
+
+      {/* Bouncing Coins */}
+      <div className="absolute flex gap-4 opacity-20 mt-20">
+        {[0, 1, 2].map((i) => (
+          <motion.div
+            key={i}
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: [100, 0, 100], opacity: [0, 1, 0] }}
+            transition={{ 
+              duration: 2, 
+              delay: i * 0.4, 
+              repeat: Infinity, 
+              ease: "easeInOut",
+              repeatDelay: 1
+            }}
+          >
+            <Coins size={48} className="text-[#DE3121]" strokeWidth={1} />
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Floating Card */}
+      <motion.div
+        initial={{ y: 50, rotateX: 45, rotateZ: -20, opacity: 0 }}
+        animate={{ 
+          y: [-10, 10, -10], 
+          rotateX: 20, 
+          rotateZ: -15,
+          opacity: 0.15 
         }}
+        transition={{ 
+          y: { duration: 4, repeat: Infinity, ease: "easeInOut" },
+          rotateX: { duration: 1.5, ease: "easeOut" },
+          rotateZ: { duration: 1.5, ease: "easeOut" },
+          opacity: { duration: 1.5 }
+        }}
+        className="relative flex h-56 w-[340px] rounded-2xl border border-[#DE3121]/30 bg-gradient-to-br from-[#DE3121]/20 to-transparent p-6 shadow-2xl backdrop-blur-sm"
+        style={{ perspective: 1000 }}
       >
-        <path 
-          d="M 21 16 L 21 10 C 21 8.895 20.105 8 19 8 C 17.895 8 17 8.895 17 10 L 17 16 L 11 16 L 9 13 L 7 13 L 8 18 L 7 23 L 9 23 L 11 20 L 17 20 L 17 26 C 17 27.105 17.895 28 19 28 C 20.105 28 21 27.105 21 26 L 21 20 L 27 20 L 29 23 L 31 23 L 30 18 L 31 13 L 29 13 L 27 16 Z" 
-          fill="#DE3121"
-          transform="scale(2) translate(-10, -10)"
-        />
-      </motion.g>
-    </motion.svg>
+        <div className="flex w-full flex-col justify-between">
+          <div className="flex justify-between items-start">
+            <span className="text-[20px] font-black tracking-tighter text-[#DE3121]">ACUITY.</span>
+            <CreditCard size={28} className="text-[#DE3121]" />
+          </div>
+          <div>
+            <div className="h-8 w-12 rounded-md bg-[#DE3121]/30 mb-4" />
+            <div className="flex gap-4">
+              <div className="h-2 w-12 rounded bg-[#DE3121]/30" />
+              <div className="h-2 w-12 rounded bg-[#DE3121]/30" />
+              <div className="h-2 w-12 rounded bg-[#DE3121]/30" />
+              <div className="h-2 w-12 rounded bg-[#DE3121]/30" />
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
   );
 }
 
