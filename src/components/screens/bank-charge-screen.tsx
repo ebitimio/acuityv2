@@ -62,7 +62,7 @@ export function BankChargeScreen({ onBack }: { onBack: () => void }) {
         </div>
 
         <p className="max-w-[300px] text-center text-[15px] leading-relaxed text-[var(--text-2)]">
-          We're currently building an advanced Bank Charge auditor. Soon you'll be able to automatically detect overcharges, stamp duties, and hidden fees directly from your statements.
+          We're currently building.
         </p>
 
         <div className="w-full max-w-[280px] pt-6">
