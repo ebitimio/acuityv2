@@ -2,7 +2,7 @@ import { OpenAI } from "openai";
 import { createClient } from "@/lib/supabase/server";
 import { buildTools } from "@/lib/ai/tools";
 
-export const runtime = "edge"; // Required for fast streaming
+export const runtime = "edge";
 
 export async function POST(req: Request) {
   try {
@@ -15,20 +15,22 @@ export async function POST(req: Request) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
 
+    const workspaceId = body?.workspaceId ?? null; // <--- GET WORKSPACE ID
     const workspaceName = body?.workspaceName ?? "Current";
 
-    const tools = buildTools(supabase);
+    const tools = buildTools(supabase, workspaceId); // <--- PASS WORKSPACE ID
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
     const system = `You are the Acuity AI Wealth Manager for Nigerian users.
 ACTIVE WORKSPACE: "${workspaceName}"
 
 CRITICAL RULES:
-1. All tools query the currently active workspace.
-2. NEVER invent amounts. Use Naira (₦).
-3. ALWAYS check income, obligations, and budget before giving spending advice.
-4. Be realistic. If math says spend ₦300k/day but budget is ₦50k, warn the user.
-5. Use plain text. Do not use Markdown headers.`;
+1. All tools query the currently active workspace. Never reference data from other workspaces.
+2. If the user just created a new workspace, the data will be sparse or empty. Adjust your tone and advice accordingly — don't invent data.
+3. NEVER invent amounts. Use Naira (₦).
+4. ALWAYS check income, obligations, and budget before giving spending advice.
+5. Be realistic. If math says spend ₦300k/day but budget is ₦50k, warn the user.
+6. Use plain text. Do not use Markdown headers.`;
 
     const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
       { role: "system", content: system },
@@ -43,7 +45,6 @@ CRITICAL RULES:
       function: { name: t.name, description: t.description, parameters: t.parameters },
     }));
 
-    // Create a readable stream for SSE
     const stream = new ReadableStream({
       async start(controller) {
         const encoder = new TextEncoder();
@@ -67,24 +68,19 @@ CRITICAL RULES:
               (c): c is OpenAI.Chat.Completions.ChatCompletionMessageFunctionToolCall => c.type === "function"
             );
 
-            // If no tool calls, stream the final text response
             if (functionCalls.length === 0) {
               const finalResponse = choice.message.content || "";
-              // Simulate word-by-word streaming for the typewriter effect
               const words = finalResponse.split(" ");
               for (let i = 0; i < words.length; i++) {
                 sendEvent({ type: "text", content: words[i] + (i < words.length - 1 ? " " : "") });
-                // Tiny delay to make it look like it's typing
                 await new Promise((r) => setTimeout(r, 15));
               }
               break;
             }
 
-            // If tool calls exist, send "thinking" events to the UI
             for (const call of functionCalls) {
               const tool = tools.find((t) => t.name === call.function.name);
               
-              // Send a "Thinking" event based on the tool name
               const toolLabel = call.function.name.replace(/_/g, " ");
               sendEvent({ type: "thinking", label: `Analyzing ${toolLabel}...` });
 

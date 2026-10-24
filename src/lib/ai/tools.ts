@@ -19,7 +19,8 @@ export interface ToolDef {
   run: (args: Record<string, unknown>) => Promise<unknown>;
 }
 
-export function buildTools(supabase: Awaited<ReturnType<typeof createClient>>): ToolDef[] {
+// We now accept workspaceId to ensure the AI looks at the correct data
+export function buildTools(supabase: Awaited<ReturnType<typeof createClient>>, workspaceId: string | null): ToolDef[] {
   return [
     {
       name: "get_financial_context",
@@ -29,8 +30,8 @@ export function buildTools(supabase: Awaited<ReturnType<typeof createClient>>): 
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return { error: "not logged in" };
 
-        const { data: ws } = await supabase.from("workspaces").select("id, family_support_minor").eq("owner_id", user.id).limit(1).single();
-        const wsId = ws?.id;
+        // Use the active workspace ID passed from the UI
+        if (!workspaceId) return { error: "No active workspace selected" };
 
         const [
           { data: accounts },
@@ -38,18 +39,23 @@ export function buildTools(supabase: Awaited<ReturnType<typeof createClient>>): 
           { data: assets },
           { data: budgets },
           { data: commitments },
-          { data: ajo }
+          { data: ajo },
+          { data: ws }
         ] = await Promise.all([
-          supabase.from("accounts").select("id,name,type,institution").eq("workspace_id", wsId),
+          supabase.from("accounts").select("id,name,type,institution").eq("workspace_id", workspaceId),
           supabase.rpc("get_account_balances"),
-          supabase.from("assets").select("name,type,value_minor").eq("workspace_id", wsId),
-          supabase.from("budgets").select("limit_minor").eq("workspace_id", wsId),
-          supabase.from("recurring_items").select("name,kind,amount_minor,frequency").eq("workspace_id", wsId),
-          supabase.from("ajo_groups").select("name,contribution_minor,frequency").eq("workspace_id", wsId)
+          supabase.from("assets").select("name,type,value_minor").eq("workspace_id", workspaceId),
+          supabase.from("budgets").select("limit_minor").eq("workspace_id", workspaceId),
+          supabase.from("recurring_items").select("name,kind,amount_minor,frequency").eq("workspace_id", workspaceId),
+          supabase.from("ajo_groups").select("name,contribution_minor,frequency").eq("workspace_id", workspaceId),
+          supabase.from("workspaces").select("budget_limit_minor,family_support_minor").eq("id", workspaceId).single()
         ]);
 
+        const accountIds = (accounts ?? []).map(a => a.id);
         const balanceMap = new Map<string, number>(
-          (balances ?? []).map((b: { account_id: string; current_minor: number }) => [b.account_id, Number(b.current_minor)])
+          (balances ?? [])
+            .filter((b: { account_id: string; current_minor: number }) => accountIds.includes(b.account_id))
+            .map((b: { account_id: string; current_minor: number }) => [b.account_id, Number(b.current_minor)])
         );
 
         let liquidCash = 0;
@@ -67,9 +73,8 @@ export function buildTools(supabase: Awaited<ReturnType<typeof createClient>>): 
           return { name: a.name, type: a.type, value: naira(a.value_minor) };
         });
 
-        const totalBudget = (budgets ?? []).reduce((sum, b) => sum + Number(b.limit_minor), 0);
+        const budgetLimit = ws?.budget_limit_minor ?? 0;
         
-        // Calculate income and bills
         const incomeItems = (commitments ?? []).filter(c => c.kind === "income");
         const billItems = (commitments ?? []).filter(c => c.kind === "bill");
         const totalIncome = incomeItems.reduce((s, c) => s + c.amount_minor, 0);
@@ -86,7 +91,7 @@ export function buildTools(supabase: Awaited<ReturnType<typeof createClient>>): 
           monthly_bills: naira(totalBills),
           family_support: naira(familySupport),
           total_obligations: naira(totalBills + familySupport),
-          monthly_budget_limit: totalBudget > 0 ? naira(totalBudget) : "Not set",
+          monthly_budget_limit: budgetLimit > 0 ? naira(budgetLimit) : "Not set",
           recurring_income: incomeItems.map(c => ({ name: c.name, amount: naira(c.amount_minor) })),
           recurring_bills: billItems.map(c => ({ name: c.name, amount: naira(c.amount_minor) })),
           ajo_groups: (ajo ?? []).map(a => ({ name: a.name, contribution: naira(a.contribution_minor), frequency: a.frequency }))
@@ -98,7 +103,8 @@ export function buildTools(supabase: Awaited<ReturnType<typeof createClient>>): 
       description: "Get the exact 'Safe to Spend' calculation the app uses on the home screen. Returns daily safe amount, days until payday, and total safe cash.",
       parameters: { type: "object", properties: {}, additionalProperties: false },
       run: async () => {
-        const { data, error } = await supabase.rpc("get_safe_to_spend");
+        if (!workspaceId) return { error: "No active workspace" };
+        const { data, error } = await supabase.rpc("get_safe_to_spend", { p_workspace_id: workspaceId });
         if (error) return { error: error.message };
         return {
           daily_safe_to_spend: naira(data.daily_safe_minor),
@@ -113,17 +119,22 @@ export function buildTools(supabase: Awaited<ReturnType<typeof createClient>>): 
       description: "Get this month's real budget, spend so far, and how much is left.",
       parameters: { type: "object", properties: {}, additionalProperties: false },
       run: async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return { error: "not logged in" };
+        if (!workspaceId) return { error: "No active workspace" };
         
-        const { data: ws } = await supabase.from("workspaces").select("id").eq("owner_id", user.id).limit(1).single();
-        
-        const [{ data: budgets }, { data: txs }] = await Promise.all([
-          supabase.from("budgets").select("limit_minor").eq("workspace_id", ws?.id),
-          supabase.from("transactions").select("amount_minor").or(NOT_SPLIT).eq("direction", "debit").gte("date", monthStartISO()),
+        const [{ data: budgets }, { data: ws }, { data: accounts }] = await Promise.all([
+          supabase.from("budgets").select("limit_minor").eq("workspace_id", workspaceId),
+          supabase.from("workspaces").select("budget_limit_minor").eq("id", workspaceId).single(),
+          supabase.from("accounts").select("id").eq("workspace_id", workspaceId)
         ]);
+
+        const accountIds = (accounts ?? []).map(a => a.id);
         
-        const totalBudget = (budgets ?? []).reduce((s, b) => s + Number(b.limit_minor), 0);
+        const { data: txs } = accountIds.length > 0 ? await supabase.from("transactions").select("amount_minor").in("account_id", accountIds).or(NOT_SPLIT).eq("direction", "debit").gte("date", monthStartISO()) : { data: [] };
+        
+        const categoryBudget = (budgets ?? []).reduce((s, b) => s + Number(b.limit_minor), 0);
+        const workspaceBudget = ws?.budget_limit_minor ?? 0;
+        const totalBudget = categoryBudget > 0 ? categoryBudget : workspaceBudget;
+        
         const spent = (txs ?? []).reduce((s, t) => s + t.amount_minor, 0);
         const remaining = Math.max(totalBudget - spent, 0);
         
@@ -140,7 +151,12 @@ export function buildTools(supabase: Awaited<ReturnType<typeof createClient>>): 
       description: "Get this month's income, spending, and net cash flow.",
       parameters: { type: "object", properties: {}, additionalProperties: false },
       run: async () => {
-        const { data } = await supabase.from("transactions").select("amount_minor,direction").or(NOT_SPLIT).gte("date", monthStartISO());
+        if (!workspaceId) return { error: "No active workspace" };
+        const { data: accounts } = await supabase.from("accounts").select("id").eq("workspace_id", workspaceId);
+        const accountIds = (accounts ?? []).map(a => a.id);
+        if (accountIds.length === 0) return { income: "₦0", spent: "₦0", net: "₦0" };
+
+        const { data } = await supabase.from("transactions").select("amount_minor,direction").in("account_id", accountIds).or(NOT_SPLIT).gte("date", monthStartISO());
         let income = 0, spent = 0;
         for (const t of data ?? []) t.direction === "credit" ? (income += t.amount_minor) : (spent += t.amount_minor);
         return { income: naira(income), spent: naira(spent), net: naira(income - spent) };
@@ -155,10 +171,16 @@ export function buildTools(supabase: Awaited<ReturnType<typeof createClient>>): 
         additionalProperties: false,
       },
       run: async (args) => {
+        if (!workspaceId) return { error: "No active workspace" };
         const offset = Number(args.month_offset ?? 0);
         const since = monthStartISOAgo(offset);
         const until = offset === 0 ? new Date().toISOString() : monthStartISOAgo(offset - 1);
-        const { data } = await supabase.from("transactions").select("amount_minor,category_name").or(NOT_SPLIT).eq("direction", "debit").gte("date", since).lt("date", until).limit(2000);
+        
+        const { data: accounts } = await supabase.from("accounts").select("id").eq("workspace_id", workspaceId);
+        const accountIds = (accounts ?? []).map(a => a.id);
+        if (accountIds.length === 0) return [];
+
+        const { data } = await supabase.from("transactions").select("amount_minor,category_name").in("account_id", accountIds).or(NOT_SPLIT).eq("direction", "debit").gte("date", since).lt("date", until).limit(2000);
         const byCat = new Map<string, number>();
         for (const t of data ?? []) {
           const k = t.category_name || "Uncategorized";
@@ -176,8 +198,14 @@ export function buildTools(supabase: Awaited<ReturnType<typeof createClient>>): 
         additionalProperties: false,
       },
       run: async (args) => {
+        if (!workspaceId) return { error: "No active workspace" };
         const limit = Math.min(Number(args.limit ?? 10), 50);
-        const { data } = await supabase.from("transactions").select("date,description_clean,category_name,direction,amount_minor").or(NOT_SPLIT).order("date", { ascending: false }).limit(limit);
+        
+        const { data: accounts } = await supabase.from("accounts").select("id").eq("workspace_id", workspaceId);
+        const accountIds = (accounts ?? []).map(a => a.id);
+        if (accountIds.length === 0) return [];
+
+        const { data } = await supabase.from("transactions").select("date,description_clean,category_name,direction,amount_minor").in("account_id", accountIds).or(NOT_SPLIT).order("date", { ascending: false }).limit(limit);
         return (data ?? []).map((t) => ({
           date: new Date(t.date).toLocaleDateString("en-NG"),
           description: t.description_clean,
