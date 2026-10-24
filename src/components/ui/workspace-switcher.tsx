@@ -2,7 +2,8 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, Plus, Trash2, AlertTriangle } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 interface WorkspaceSwitcherProps {
   isOpen: boolean;
@@ -24,6 +25,9 @@ export function WorkspaceSwitcher({
   onDelete,
 }: WorkspaceSwitcherProps) {
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   const handleConfirmDelete = () => {
     if (confirmDelete) {
@@ -92,48 +96,51 @@ export function WorkspaceSwitcher({
         )}
       </AnimatePresence>
 
-      {/* CUSTOM DELETE CONFIRMATION MODAL */}
-      <AnimatePresence>
-        {confirmDelete && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[300] flex items-center justify-center bg-black/60 backdrop-blur-sm p-6"
-            onClick={() => setConfirmDelete(null)}
-          >
+      {/* PORTAL FOR DELETE MODAL */}
+      {mounted && createPortal(
+        <AnimatePresence>
+          {confirmDelete && (
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-sm rounded-2xl bg-[var(--surface-2)] border border-[var(--line)] p-5"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[300] flex items-center justify-center bg-black/60 backdrop-blur-sm p-6"
+              onClick={() => setConfirmDelete(null)}
             >
-              <div className="flex items-center gap-2 mb-3">
-                <AlertTriangle size={20} className="text-[var(--danger)]" />
-                <h3 className="text-[16px] font-bold text-[var(--text-1)]">Delete workspace?</h3>
-              </div>
-              <p className="text-[13px] text-[var(--text-3)] mb-4">
-                This will permanently delete <strong className="text-[var(--text-1)]">"{confirmDelete.name}"</strong> and all its data. This cannot be undone.
-              </p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setConfirmDelete(null)}
-                  className="flex-1 rounded-xl bg-[var(--fill-1)] py-2.5 text-[13px] font-semibold text-[var(--text-1)]"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleConfirmDelete}
-                  className="flex-1 rounded-xl bg-[var(--danger)] py-2.5 text-[13px] font-semibold text-white"
-                >
-                  Delete
-                </button>
-              </div>
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-sm rounded-2xl bg-[var(--surface-2)] border border-[var(--line)] p-5 shadow-2xl"
+              >
+                <div className="flex items-center gap-2 mb-3">
+                  <AlertTriangle size={20} className="text-[var(--danger)]" />
+                  <h3 className="text-[16px] font-bold text-[var(--text-1)]">Delete workspace?</h3>
+                </div>
+                <p className="text-[13px] text-[var(--text-3)] mb-4">
+                  This will permanently delete <strong className="text-[var(--text-1)]">"{confirmDelete.name}"</strong> and all its data. This cannot be undone.
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setConfirmDelete(null)}
+                    className="flex-1 rounded-xl bg-[var(--fill-1)] py-2.5 text-[13px] font-semibold text-[var(--text-1)]"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleConfirmDelete}
+                    className="flex-1 rounded-xl bg-[var(--danger)] py-2.5 text-[13px] font-semibold text-white"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </>
   );
 }
