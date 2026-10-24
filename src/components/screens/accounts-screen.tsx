@@ -21,7 +21,17 @@ import { cn } from "@/lib/utils";
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
-export function AccountsScreen({ onBack, userName = "there" }: { onBack: () => void, userName?: string }) {
+export function AccountsScreen({ 
+  onBack, 
+  userName = "there",
+  autoOpenAddAccount,
+  onAutoOpenHandled
+}: { 
+  onBack: () => void, 
+  userName?: string,
+  autoOpenAddAccount?: boolean,
+  onAutoOpenHandled?: () => void
+}) {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [modal, setModal] = useState<"account" | "asset" | null>(null);
@@ -42,6 +52,14 @@ export function AccountsScreen({ onBack, userName = "there" }: { onBack: () => v
   const { fmt } = useCurrency();
   const toast = useToast();
   const { active: activeWs } = useWorkspace();
+
+  // --- NEW: Auto-open logic from Setup Checklist ---
+  useEffect(() => {
+    if (autoOpenAddAccount) {
+      setModal("account");
+      onAutoOpenHandled?.();
+    }
+  }, [autoOpenAddAccount, onAutoOpenHandled]);
 
   const load = async () => {
     if (!activeWs?.id) return;
@@ -129,9 +147,15 @@ export function AccountsScreen({ onBack, userName = "there" }: { onBack: () => v
             <IconButton label="Transfer" onClick={() => setIsTransferOpen(true)}>
               <ArrowRightLeft size={16} />
             </IconButton>
-            <IconButton label="Add" onClick={() => setModal("account")}>
+            {/* ADDED data-setup-btn HERE */}
+            <button 
+              data-setup-btn="add-account" 
+              onClick={() => setModal("account")} 
+              className="press flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--text-2)]"
+              style={{ background: "var(--fill-1)" }}
+            >
               <Plus size={18} />
-            </IconButton>
+            </button>
           </div>
         }
       />

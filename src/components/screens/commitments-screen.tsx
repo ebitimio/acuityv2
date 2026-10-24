@@ -38,7 +38,15 @@ const getBrand = (name: string) => {
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-export function CommitmentsScreen({ onBack }: { onBack: () => void }) {
+export function CommitmentsScreen({ 
+  onBack,
+  autoOpenModal,
+  onAutoOpenHandled
+}: { 
+  onBack: () => void,
+  autoOpenModal?: "bill" | "income" | "family" | "rent" | null,
+  onAutoOpenHandled?: () => void
+}) {
   const [items, setItems] = useState<RecurringItem[]>([]);
   const [familySupports, setFamilySupports] = useState<{ name: string; amount: number; day: number }[]>([]);
   const [totalFamilySupport, setTotalFamilySupport] = useState(0);
@@ -59,6 +67,14 @@ export function CommitmentsScreen({ onBack }: { onBack: () => void }) {
 
   const { fmt } = useCurrency();
   const toast = useToast();
+
+  // --- NEW: Auto-open logic from Setup Checklist ---
+  useEffect(() => {
+    if (autoOpenModal) {
+      setModal(autoOpenModal);
+      onAutoOpenHandled?.();
+    }
+  }, [autoOpenModal, onAutoOpenHandled]);
 
   const load = async () => {
     const [rec, fam] = await Promise.all([getRecurringItems(), getFamilySupport()]);
@@ -157,7 +173,7 @@ export function CommitmentsScreen({ onBack }: { onBack: () => void }) {
         title="Bills & Commitments" 
         onBack={onBack} 
         right={
-          <IconButton label="Add Bill" onClick={() => { setModal("bill"); }}>
+          <IconButton label="Add Bill" onClick={() => { setModal("bill"); }} data-setup-btn="add-bill">
             <Plus size={18} />
           </IconButton>
         } 
@@ -260,7 +276,7 @@ export function CommitmentsScreen({ onBack }: { onBack: () => void }) {
               <h3 className="text-[18px] font-bold text-white">Bills</h3>
               <span className="text-[12px] font-semibold bg-[var(--surface-3)] text-[var(--text-2)] px-2 py-0.5 rounded-full">{bills.length}</span>
             </div>
-            <button onClick={() => setModal("bill")} className="text-[var(--brand)] text-[13px] flex items-center gap-1 font-semibold"><Plus size={14} /> Add</button>
+            <button onClick={() => setModal("bill")} data-setup-btn="add-bill" className="text-[var(--brand)] text-[13px] flex items-center gap-1 font-semibold"><Plus size={14} /> Add</button>
           </div>
           
           <div className="flex flex-col relative w-full pb-4">
@@ -302,7 +318,7 @@ export function CommitmentsScreen({ onBack }: { onBack: () => void }) {
         <section>
           <div className="flex items-center justify-between mb-4 px-1">
             <h3 className="text-[18px] font-bold text-white">Income</h3>
-            <button onClick={() => setModal("income")} className="text-[var(--brand)] text-[13px] flex items-center gap-1 font-semibold"><Plus size={14} /> Add</button>
+            <button onClick={() => setModal("income")} data-setup-btn="add-income" className="text-[var(--brand)] text-[13px] flex items-center gap-1 font-semibold"><Plus size={14} /> Add</button>
           </div>
           <div className="space-y-3">
             {income.map((i) => (

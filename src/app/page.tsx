@@ -16,7 +16,6 @@ import { HomeSkeleton } from "@/components/ui/skeleton-loader";
 import { FloatingTabBar, type TabId } from "@/components/ui/floating-tab-bar";
 import { TransactionRow } from "@/components/ui/transaction-row";
 import { SetupChecklist } from "@/components/screens/setup-checklist";
-import { SetupWizard } from "@/components/screens/setup-wizard";
 import { SafeToSpendHero } from "@/components/ui/safe-to-spend";
 import { ToolsScroller } from "@/components/ui/tools-scroller";
 import { TransactionFilterChips, type TransactionFilter } from "@/components/ui/transaction-filter-chips";
@@ -98,14 +97,13 @@ export default function SandboxPage() {
   
   const [activeCardIndex, setActiveCardIndex] = useState(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const autoScrollTimerRef = useRef<NodeJS.Timeout | null>(null); // Ref for auto-scroll timer
+  const autoScrollTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const [setupStatus, setSetupStatus] = useState<SetupStatus | null>(null);
   const [setupError, setSetupError] = useState<string | null>(null);
   const [safeToSpend, setSafeToSpend] = useState<SafeToSpend | null>(null);
   const [cycle, setCycle] = useState<{ cycle_start: string; cycle_end: string } | null>(null);
-  const [setupWizardOpen, setSetupWizardOpen] = useState(false);
-  const [setupWizardStep, setSetupWizardStep] = useState<"account" | "income" | "bills">("account");
+  
   const [checklistDismissed, setChecklistDismissed] = useState(false);
   const [txnFilter, setTxnFilter] = useState<TransactionFilter>("all");
 
@@ -123,7 +121,6 @@ export default function SandboxPage() {
     else setNavHidden(false);
   });
 
-  // Handle Manual Scroll
   const handleScroll = () => {
     if (!scrollContainerRef.current) return;
     const scrollLeft = scrollContainerRef.current.scrollLeft;
@@ -131,15 +128,12 @@ export default function SandboxPage() {
     const index = Math.round(scrollLeft / (width * 0.85));
     setActiveCardIndex(index);
 
-    // If the user manually scrolls, we reset the auto-scroll timer
-    // so it doesn't fight them immediately.
     if (autoScrollTimerRef.current) {
       clearInterval(autoScrollTimerRef.current);
     }
     startAutoScroll();
   };
 
-  // Auto Scroll Logic
   const startAutoScroll = useCallback(() => {
     if (autoScrollTimerRef.current) clearInterval(autoScrollTimerRef.current);
     if (!accounts || accounts.length <= 1) return;
@@ -151,25 +145,21 @@ export default function SandboxPage() {
       const children = container.children[0]?.children;
       if (!children) return;
 
-      // Calculate next index
       let nextIndex = activeCardIndex + 1;
       if (nextIndex >= accounts.length) {
-        nextIndex = 0; // Loop back to start
+        nextIndex = 0;
       }
 
-      // Scroll to the next card
-      // We use the child element's offsetLeft to ensure perfect snapping
       const nextElement = children[nextIndex] as HTMLElement;
       if (nextElement) {
         container.scrollTo({
-          left: nextElement.offsetLeft - 20, // 20px offset to account for padding
+          left: nextElement.offsetLeft - 20,
           behavior: "smooth",
         });
       }
-    }, 4000); // 4 seconds per slide
+    }, 4000);
   }, [activeCardIndex, accounts.length]);
 
-  // Start auto scroll when accounts load
   useEffect(() => {
     if (accounts.length > 1) {
       startAutoScroll();
@@ -180,7 +170,6 @@ export default function SandboxPage() {
   }, [accounts.length, startAutoScroll]);
 
 
-  // 30-Minute Inactivity Lock Timer
   useEffect(() => {
     if (!session || onboardingSequence !== "complete" || isLocked || !dbPin) return;
 
@@ -200,7 +189,7 @@ export default function SandboxPage() {
 
     const interval = setInterval(() => {
       const lastActive = Number(localStorage.getItem("acuity:last_active") || "0");
-      if (Date.now() - lastActive > 1800000) { // 30 mins
+      if (Date.now() - lastActive > 1800000) {
         setIsLocked(true);
       }
     }, 60000);
@@ -422,9 +411,30 @@ export default function SandboxPage() {
     }
   };
 
+  // --- THE NEW LOGIC (DOES NOT MODIFY ACCOUNTS OR COMMITMENTS) ---
   const handleStartSetupStep = (step: "account" | "income" | "bills") => {
-    setSetupWizardStep(step);
-    setSetupWizardOpen(true);
+    if (step === "account") {
+      setActiveScreen("accounts");
+      // Waits for the Accounts screen to mount, then simulates a click on its "+" button
+      setTimeout(() => {
+        const btn = document.querySelector('[data-setup-btn="add-account"]') as HTMLElement;
+        if (btn) btn.click();
+      }, 150);
+    } else if (step === "income") {
+      setActiveScreen("commitments");
+      // Waits for Commitments screen, then simulates a click on "Add" Income
+      setTimeout(() => {
+        const btn = document.querySelector('[data-setup-btn="add-income"]') as HTMLElement;
+        if (btn) btn.click();
+      }, 150);
+    } else if (step === "bills") {
+      setActiveScreen("commitments");
+      // Waits for Commitments screen, then simulates a click on "Add" Bill
+      setTimeout(() => {
+        const btn = document.querySelector('[data-setup-btn="add-bill"]') as HTMLElement;
+        if (btn) btn.click();
+      }, 150);
+    }
   };
 
   const handleDismissChecklist = async () => {
@@ -563,7 +573,6 @@ export default function SandboxPage() {
                 {setupError && <p className="px-1 text-[11px] text-[var(--danger)]">Setup status failed: {setupError}</p>}
                 {showChecklist && <SetupChecklist status={setupStatus!} onStartStep={handleStartSetupStep} onDismiss={handleDismissChecklist} />}
 
-                {/* --- CAROUSEL ACCOUNTS --- */}
                 <div className="w-full">
                   <div className="mb-3 flex items-center justify-between px-1">
                     <h3 className="text-[15px] font-semibold text-[var(--text-1)]">My Accounts</h3>
@@ -587,7 +596,7 @@ export default function SandboxPage() {
                                 balance={(a.current_minor ?? a.balance_minor) / 100}
                                 fmt={fmt}
                                 isExpanded={true}
-                                hideActions={true} // <-- Hides check balance and delete buttons
+                                hideActions={true}
                                 onClick={() => setActiveScreen("accounts")}
                                 onCheckBalance={() => {}}
                                 onDelete={() => {}}
@@ -598,7 +607,6 @@ export default function SandboxPage() {
                         </div>
                       </div>
                       
-                      {/* Orange Slider Dots */}
                       <div className="flex justify-center gap-1.5 mt-1">
                         {accounts.map((_, i) => (
                           <div 
@@ -618,7 +626,6 @@ export default function SandboxPage() {
                     </div>
                   )}
                 </div>
-                {/* --- END CAROUSEL --- */}
 
                 <ToolsScroller onNavigate={(key) => setActiveScreen(key as ScreenId)} />
 
@@ -669,8 +676,6 @@ export default function SandboxPage() {
 
       <AddTransactionSheet isOpen={isAddTxnOpen} onClose={() => setIsAddTxnOpen(false)} onSaved={refreshData} />
       <QuickAddSheet isOpen={isQuickAddOpen} onClose={() => setIsQuickAddOpen(false)} onSaved={refreshData} />
-
-      <SetupWizard isOpen={setupWizardOpen} initialStep={setupWizardStep} onClose={() => { setSetupWizardOpen(false); refreshData(); }} onRefresh={refreshData} />
 
       <Modal open={wsCreateOpen} onClose={() => { setWsCreateOpen(false); setWsNewName(""); }} title="New workspace">
         <div className="space-y-3">
