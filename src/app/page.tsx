@@ -106,9 +106,6 @@ export default function SandboxPage() {
   
   const [openAddAccount, setOpenAddAccount] = useState(false);
   const [openCommitmentsTab, setOpenCommitmentsTab] = useState<"bill" | "income" | "family" | "rent" | null>(null);
-  
-  // New state to track which checklist step we are currently resolving
-  const [checklistFix, setChecklistFix] = useState<"income" | "bills" | null>(null);
 
   const [checklistDismissed, setChecklistDismissed] = useState(false);
   const [txnFilter, setTxnFilter] = useState<TransactionFilter>("all");
@@ -417,21 +414,10 @@ export default function SandboxPage() {
     }
   };
 
-  // --- UPDATED AUTO-REFRESH LOGIC ---
+  // --- CLEANED UP AUTO-REFRESH LOGIC ---
   const handleBackToHome = () => {
     setActiveScreen("home");
-    
-    // If we came back from fixing income or bills, force the database to reflect it
-    if (checklistFix && setupStatus) {
-      setSetupStatus({
-        ...setupStatus,
-        has_income: checklistFix === "income" ? true : setupStatus.has_income,
-        has_bills: checklistFix === "bills" ? true : setupStatus.has_bills,
-      });
-      setChecklistFix(null); // Reset
-    }
-    
-    refreshData(); 
+    refreshData(); // Just fetch the true status from the DB
   };
 
   const handleStartSetupStep = (step: "account" | "income" | "bills") => {
@@ -442,14 +428,12 @@ export default function SandboxPage() {
         if (btn) btn.click();
       }, 150);
     } else if (step === "income") {
-      setChecklistFix("income"); // Flag it so it turns green on return
       setActiveScreen("commitments");
       setTimeout(() => {
         const btn = document.querySelector('[data-setup-btn="add-income"]') as HTMLElement;
         if (btn) btn.click();
       }, 150);
     } else if (step === "bills") {
-      setChecklistFix("bills"); // Flag it so it turns green on return
       setActiveScreen("commitments");
       setTimeout(() => {
         const btn = document.querySelector('[data-setup-btn="add-bill"]') as HTMLElement;
