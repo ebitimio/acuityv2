@@ -5,6 +5,7 @@ import { ScreenHeader, IconButton } from "@/components/ui/screen-header";
 import {
   getRecurringItems, addRecurringItem, deleteRecurringItem,
   getFamilySupport, setFamilySupport,
+  getAccounts,
 } from "@/lib/supabase/database";
 import { useCurrency } from "@/lib/currency";
 import { Modal } from "@/components/ui/modal";
@@ -14,20 +15,44 @@ import { useToast } from "@/components/ui/toast";
 import { 
   Plus, Trash2, ChevronDown, ChevronUp, Delete, Wallet, Users, ShieldCheck, Wifi, Zap, Home, Briefcase, HeartHandshake, TrendingUp
 } from "lucide-react";
-import type { RecurringItem } from "@/lib/types";
+import type { Account, RecurringItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
 // Native SVG Brand Icons
 const BRANDS = [
-  { key: "netflix", name: "Netflix", bg: "bg-[#E50914]", icon: () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6"><path d="M5.398 0v.006c3.028 8.556 5.37 15.175 8.348 23.596 2.344.058 4.85.398 4.854.398-2.8-7.924-5.923-16.747-8.487-24h-4.715zm8.489 0v9.63l-3.554-3.554v-6.076h3.554zm-9.594 16.485c2.69 8.144 4.322 15.134 4.322 15.134 1.37-.122 3.997-.4 3.997-.4-1.524-4.734-3.278-11.51-4.82-14.734h-3.5z" /></svg> },
-  { key: "spotify", name: "Spotify", bg: "bg-[#1DB954]", icon: () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.6.18-1.2.72-1.38 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" /></svg> },
-  { key: "disney", name: "Disney+", bg: "bg-[#113CCF]", icon: () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm-1.2 17.2c-3.6 0-6.6-2.4-7.8-5.4 1.2.6 2.4.9 3.6.9 1.8 0 3.6-.6 5.4-1.8 2.4-1.8 4.2-4.2 5.4-6.6 1.8 2.4 3 5.4 3 8.4 0 4.2-3.6 7.8-7.8 7.8z" /></svg> },
-  { key: "chatgpt", name: "ChatGPT", bg: "bg-[#10A37F]", icon: () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6"><path d="M22.28 12.35c0-1.1-.2-2.15-.55-3.15a6.16 6.16 0 0 0-1.1-2.35 6.1 6.1 0 0 0-2.1-1.6c-.5-.25-1.05-.4-1.6-.45a6.16 6.16 0 0 0-1.75.05 6.2 6.2 0 0 0-2.15.9c-.65.4-1.2.9-1.65 1.5-.45.6-.8 1.3-1 2.05a6.2 6.2 0 0 0-.2 2.15c.05.7.25 1.4.6 2.05.35.65.8 1.25 1.35 1.75.55.5 1.2.9 1.9 1.15.7.25 1.45.35 2.2.3.75-.05 1.5-.25 2.2-.6.7-.35 1.3-.8 1.8-1.35.5-.55.9-1.2 1.15-1.9.25-.7.35-1.45.3-2.2a6.2 6.2 0 0 0-.6-2.2zM12 15.5c-1.95 0-3.5-1.55-3.5-3.5S10.05 8.5 12 8.5s3.5 1.55 3.5 3.5-1.55 3.5-3.5 3.5z" /></svg> },
-  { key: "internet", name: "Internet", bg: "bg-[#0070F3]", icon: () => <Wifi className="w-6 h-6" /> },
-  { key: "power", name: "Power", bg: "bg-[#F59E0B]", icon: () => <Zap className="w-6 h-6" /> },
-  { key: "rent", name: "Rent", bg: "bg-[#8B5CF6]", icon: () => <Home className="w-6 h-6" /> },
-  { key: "insurance", name: "Insurance", bg: "bg-[#3B82F6]", icon: () => <ShieldCheck className="w-6 h-6" /> },
+  { 
+    key: "netflix", name: "Netflix", bg: "bg-[#E50914]", 
+    icon: () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6"><path d="M5.398 0v.006c3.028 8.556 5.37 15.175 8.348 23.596 2.344.058 4.85.398 4.854.398-2.8-7.924-5.923-16.747-8.487-24h-4.715zm8.489 0v9.63l-3.554-3.554v-6.076h3.554zm-9.594 16.485c2.69 8.144 4.322 15.134 4.322 15.134 1.37-.122 3.997-.4 3.997-.4-1.524-4.734-3.278-11.51-4.82-14.734h-3.5z" /></svg>
+  },
+  { 
+    key: "spotify", name: "Spotify", bg: "bg-[#1DB954]", 
+    icon: () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.6.18-1.2.72-1.38 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" /></svg>
+  },
+  { 
+    key: "disney", name: "Disney+", bg: "bg-[#113CCF]", 
+    icon: () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm-1.2 17.2c-3.6 0-6.6-2.4-7.8-5.4 1.2.6 2.4.9 3.6.9 1.8 0 3.6-.6 5.4-1.8 2.4-1.8 4.2-4.2 5.4-6.6 1.8 2.4 3 5.4 3 8.4 0 4.2-3.6 7.8-7.8 7.8z" /></svg>
+  },
+  { 
+    key: "chatgpt", name: "ChatGPT", bg: "bg-[#10A37F]", 
+    icon: () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6"><path d="M22.28 12.35c0-1.1-.2-2.15-.55-3.15a6.16 6.16 0 0 0-1.1-2.35 6.1 6.1 0 0 0-2.1-1.6c-.5-.25-1.05-.4-1.6-.45a6.16 6.16 0 0 0-1.75.05 6.2 6.2 0 0 0-2.15.9c-.65.4-1.2.9-1.65 1.5-.45.6-.8 1.3-1 2.05a6.2 6.2 0 0 0-.2 2.15c.05.7.25 1.4.6 2.05.35.65.8 1.25 1.35 1.75.55.5 1.2.9 1.9 1.15.7.25 1.45.35 2.2.3.75-.05 1.5-.25 2.2-.6.7-.35 1.3-.8 1.8-1.35.5-.55.9-1.2 1.15-1.9.25-.7.35-1.45.3-2.2a6.2 6.2 0 0 0-.6-2.2zM12 15.5c-1.95 0-3.5-1.55-3.5-3.5S10.05 8.5 12 8.5s3.5 1.55 3.5 3.5-1.55 3.5-3.5 3.5z" /></svg>
+  },
+  { 
+    key: "internet", name: "Internet", bg: "bg-[#0070F3]", 
+    icon: () => <Wifi className="w-6 h-6" />
+  },
+  { 
+    key: "power", name: "Power", bg: "bg-[#F59E0B]", 
+    icon: () => <Zap className="w-6 h-6" />
+  },
+  { 
+    key: "rent", name: "Rent", bg: "bg-[#8B5CF6]", 
+    icon: () => <Home className="w-6 h-6" />
+  },
+  { 
+    key: "insurance", name: "Insurance", bg: "bg-[#3B82F6]", 
+    icon: () => <ShieldCheck className="w-6 h-6" />
+  },
 ];
 
 const getBrand = (name: string) => {
@@ -46,6 +71,8 @@ export function CommitmentsScreen({ onBack }: { onBack: () => void }) {
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
   const [day, setDay] = useState("1");
+  const [frequency, setFrequency] = useState<"weekly" | "monthly" | "annually">("monthly");
+  
   const [familyName, setFamilyName] = useState("");
   const [familyAmt, setFamilyAmt] = useState("");
   const [familyDay, setFamilyDay] = useState("1");
@@ -60,7 +87,6 @@ export function CommitmentsScreen({ onBack }: { onBack: () => void }) {
     try {
       const parsed = JSON.parse(fam.label);
       if (Array.isArray(parsed)) {
-        // Ensure all have a day fallback
         const sanitized = parsed.map(p => ({ ...p, day: p.day || fam.day || 1 }));
         setFamilySupports(sanitized);
         setTotalFamilySupport(sanitized.reduce((s, f) => s + f.amount, 0));
@@ -86,11 +112,11 @@ export function CommitmentsScreen({ onBack }: { onBack: () => void }) {
         name, 
         kind: modal === "bill" ? "bill" : "income", 
         amount: numericAmount, 
-        frequency: "monthly", 
+        frequency: frequency, // <-- Updated to pass the selected frequency
         day: parseInt(day),
       });
       toast(`Added successfully`);
-      setModal(null); setName(""); setAmount(""); setDay("1");
+      setModal(null); setName(""); setAmount(""); setDay("1"); setFrequency("monthly");
       load();
     } catch (e: any) { toast(e.message ?? "Could not add", "err"); }
   };
@@ -99,7 +125,6 @@ export function CommitmentsScreen({ onBack }: { onBack: () => void }) {
     if (!familyName || !familyAmt) return;
     const newList = [...familySupports, { name: familyName, amount: parseFloat(familyAmt), day: parseInt(familyDay) }];
     const newTotal = newList.reduce((s, f) => s + f.amount, 0);
-    // Save list as JSON, and also save the first day as the default workspace day
     await setFamilySupport(newTotal, JSON.stringify(newList), parseInt(familyDay));
     
     setFamilySupports(newList);
@@ -295,12 +320,8 @@ export function CommitmentsScreen({ onBack }: { onBack: () => void }) {
               </div>
             ))}
             
-            {familySupports.length > 0 && (
-              <div className="flex items-center justify-between rounded-2xl bg-[var(--surface-2)] p-5 border border-[var(--line)] mt-4">
-                <p className="text-[14px] font-bold text-white/70">Total Family Support</p>
-                <p className="text-[20px] font-black tabular text-white">{fmt(totalFamilySupport)}</p>
-              </div>
-            )}
+            {/* Removed the Total Family Support Card here as requested */}
+            
           </div>
         </section>
 
@@ -337,7 +358,7 @@ export function CommitmentsScreen({ onBack }: { onBack: () => void }) {
 
       {/* ADD BILL MODAL */}
       <Modal open={modal === "bill"} onClose={() => setModal(null)} title="Add Bill">
-        <div className="flex flex-col h-[70dvh]">
+        <div className="flex flex-col h-[75dvh]">
           <div className="flex-1 flex flex-col items-center pt-2">
             <p className="text-[13px] text-[var(--text-3)] mb-2">Amount</p>
             <div className="flex items-center justify-center">
@@ -355,7 +376,7 @@ export function CommitmentsScreen({ onBack }: { onBack: () => void }) {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Name of bill (e.g. Spotify)"
+              placeholder="Name of bill (e.g. Rent)"
               className="w-full max-w-[280px] bg-transparent text-center text-[18px] font-semibold text-white outline-none placeholder:text-[var(--text-3)] mt-2 border-b border-[var(--line)] pb-2"
             />
 
@@ -381,9 +402,22 @@ export function CommitmentsScreen({ onBack }: { onBack: () => void }) {
 
           <div className="shrink-0 space-y-4 pb-4">
             <div className="flex gap-2 justify-center">
-              <div className="flex items-center gap-2 rounded-full bg-[var(--surface-2)] px-4 py-2 border border-[var(--line)] opacity-70">
-                <span className="text-[13px] font-semibold text-white">Monthly</span>
+              {/* Frequency Selector */}
+              <div className="flex gap-1 bg-[var(--surface-2)] p-1 rounded-full border border-[var(--line)]">
+                {(["weekly", "monthly", "annually"] as const).map(f => (
+                  <button
+                    key={f}
+                    onClick={() => setFrequency(f)}
+                    className={cn(
+                      "px-3 py-1 text-[12px] font-semibold rounded-full capitalize transition-colors",
+                      frequency === f ? "bg-[var(--brand)] text-white" : "text-[var(--text-3)]"
+                    )}
+                  >
+                    {f}
+                  </button>
+                ))}
               </div>
+
               <button onClick={() => setShowDayPicker("bill")} className="flex items-center gap-2 rounded-full bg-[var(--surface-2)] px-4 py-2 border border-[var(--line)]">
                 <span className="text-[13px] font-semibold text-white">Day {day}</span>
                 <ChevronDown size={14} className="text-[var(--text-3)]" />
