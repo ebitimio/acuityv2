@@ -676,3 +676,16 @@ export async function updatePassword(newPassword: string) {
   const { error } = await sb.auth.updateUser({ password: newPassword });
   if (error) throw error;
 }
+// Add to database.ts
+export async function getAnnualRent() {
+  const { sb, workspaceId } = await ctx();
+  const { data, error } = await sb.from("workspaces").select("annual_rent_minor").eq("id", workspaceId).single();
+  if (error) throw error;
+  return Number(data?.annual_rent_minor ?? 0) / 100;
+}
+
+export async function setAnnualRent(amount: number) {
+  const { sb, workspaceId } = await ctx();
+  const { error } = await sb.from("workspaces").update({ annual_rent_minor: toMinor(amount) }).eq("id", workspaceId);
+  if (error) throw error;
+}
