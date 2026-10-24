@@ -87,7 +87,6 @@ export function CommitmentsScreen({ onBack }: { onBack: () => void }) {
     const numericAmount = parseFloat(amount);
     if (!name || !numericAmount) return;
     
-    // We map "rent" modal to the "rent" kind
     const kind = modal === "rent" ? "rent" : modal === "bill" ? "bill" : "income";
     
     try {
@@ -133,8 +132,9 @@ export function CommitmentsScreen({ onBack }: { onBack: () => void }) {
 
   const totalIncome = income.reduce((s, i) => s + i.amount_minor / 100, 0);
   const totalBills = bills.reduce((s, i) => s + i.amount_minor / 100, 0);
-  const totalRent = rents.reduce((s, i) => s + i.amount_minor / 100, 0);
-  const netIncome = totalIncome - (totalBills + totalFamilySupport + totalRent);
+  
+  // REMOVED: totalRent from the calculation
+  const netIncome = totalIncome - (totalBills + totalFamilySupport);
 
   // Calendar Logic
   const today = new Date();
@@ -362,10 +362,7 @@ export function CommitmentsScreen({ onBack }: { onBack: () => void }) {
                 <p className="text-[14px] text-[var(--text-2)]">Total Income</p>
                 <p className="text-[15px] font-bold text-[var(--gain)] tabular">+{fmt(totalIncome)}</p>
               </div>
-              <div className="flex items-center justify-between">
-                <p className="text-[14px] text-[var(--text-2)]">Total Rent</p>
-                <p className="text-[15px] font-bold text-white tabular">-{fmt(totalRent)}</p>
-              </div>
+              {/* REMOVED: Total Rent Row */}
               <div className="flex items-center justify-between">
                 <p className="text-[14px] text-[var(--text-2)]">Total Bills</p>
                 <p className="text-[15px] font-bold text-white tabular">-{fmt(totalBills)}</p>
