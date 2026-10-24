@@ -40,6 +40,7 @@ async function ctx() {
   return { sb, user, workspaceId: ws.id };
 }
 
+// Helper to get all account IDs for the active workspace
 async function getWorkspaceAccountIds(sb: any, workspaceId: string): Promise<string[]> {
   const { data, error } = await sb.from("accounts").select("id").eq("workspace_id", workspaceId);
   if (error) throw error;
@@ -391,8 +392,27 @@ export async function deleteCategoryRule(id: string): Promise<void> {
 /* ---------- recurring items ---------- */
 
 export const getRecurringItems = () => list<RecurringItem>("recurring_items", "created_at");
-export const addRecurringItem = (i: { account_id: string | null; name: string; kind: "income" | "bill"; amount: number; frequency: "weekly" | "monthly"; day: number; category?: string | null; auto_post?: boolean }) =>
-  insertRow("recurring_items", { account_id: i.account_id, name: i.name, kind: i.kind, amount_minor: toMinor(i.amount), frequency: i.frequency, day: i.day, category: i.category ?? null, auto_post: i.auto_post ?? false, active: true });
+export const addRecurringItem = (i: { 
+  account_id: string | null; 
+  name: string; 
+  kind: "income" | "bill"; 
+  amount: number; 
+  frequency: "weekly" | "monthly" | "annually"; 
+  day: number; 
+  category?: string | null; 
+  auto_post?: boolean 
+}) =>
+  insertRow("recurring_items", { 
+    account_id: i.account_id, 
+    name: i.name, 
+    kind: i.kind, 
+    amount_minor: toMinor(i.amount), 
+    frequency: i.frequency, 
+    day: i.day, 
+    category: i.category ?? null, 
+    auto_post: i.auto_post ?? false, 
+    active: true 
+  });
 export const updateRecurringItem = (id: string, patch: Partial<Pick<RecurringItem, "name" | "amount_minor" | "day" | "category" | "auto_post" | "active">>) => patchRow("recurring_items", id, patch);
 export const deleteRecurringItem = (id: string) => removeRow("recurring_items", id);
 

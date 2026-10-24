@@ -44,7 +44,7 @@ export interface RecurringItem {
   name: string;
   kind: "income" | "bill";
   amount_minor: number;
-  frequency: "weekly" | "monthly";
+  frequency: "weekly" | "monthly" | "annually";
   day: number;
   category: string | null;
   auto_post: boolean;
