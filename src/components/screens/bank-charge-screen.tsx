@@ -1,50 +1,75 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { ScreenHeader } from "@/components/ui/screen-header";
-import { getAllTransactions } from "@/lib/supabase/database";
-import { auditCharges } from "@/lib/charges";
-import { useCurrency } from "@/lib/currency";
-import { ShieldCheck, AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/form";
 
 export function BankChargeScreen({ onBack }: { onBack: () => void }) {
-  const [txns, setTxns] = useState<any[]>([]);
-  const { fmt } = useCurrency();
-  useEffect(() => { getAllTransactions().then(setTxns); }, []);
-
-  const audit = auditCharges(txns as any);
-
   return (
-    <div className="min-h-[100dvh] pb-32">
+    <div className="min-h-[100dvh] flex flex-col bg-[var(--bg)] relative overflow-hidden">
       <ScreenHeader title="Bank Charges" onBack={onBack} />
-      <div className="px-4 pt-6 space-y-4">
-        <div className="rounded-3xl bg-[var(--surface-2)] border border-[var(--line)] p-6 text-center">
-          <p className="text-[13px] text-[var(--text-2)] mb-1">Possible overcharges</p>
-          <p className={`text-[34px] font-bold tabular ${audit.totalOver > 0 ? "text-[var(--danger)]" : "text-[var(--gain)]"}`}>
-            {fmt(audit.totalOver)}
-          </p>
-          <p className="text-[12px] text-[var(--text-3)] mt-1">{audit.charges.length} bank charges audited</p>
+
+      {/* Background Construction Elements */}
+      <div className="absolute inset-0 pointer-events-none opacity-[0.03] flex flex-col items-center justify-center">
+        {/* Warning Stripes */}
+        <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern id="stripes" width="40" height="40" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <rect width="20" height="40" fill="var(--warn)" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#stripes)" />
+        </svg>
+        
+        {/* Large Construction Helmet */}
+        <svg 
+          viewBox="0 0 24 24" 
+          fill="none" 
+          stroke="var(--warn)" 
+          strokeWidth="1.5" 
+          strokeLinecap="round" 
+          strokeLinejoin="round" 
+          className="absolute w-64 h-64 opacity-20"
+        >
+          <path d="M2 18a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v2z" />
+          <path d="M10 10V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5" />
+          <path d="M4 15v-3a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v3" />
+          <path d="M4 15h16" />
+        </svg>
+      </div>
+
+      {/* Foreground Content */}
+      <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 pb-20 space-y-8">
+        
+        {/* Acuity Logo */}
+        <div className="flex items-baseline">
+          <span className="text-[52px] font-black tracking-tighter text-white">
+            ACUITY
+          </span>
+          <span className="text-[52px] font-black tracking-tighter" style={{ color: "var(--brand)" }}>
+            .
+          </span>
         </div>
 
-        {audit.charges.length === 0 ? (
-          <div className="rounded-3xl bg-[var(--surface-2)] border border-[var(--line)] p-10 text-center">
-            <ShieldCheck size={40} className="mx-auto text-[var(--gain)] mb-3" />
-            <p className="text-[15px] font-semibold">All clear</p>
-            <p className="text-[13px] text-[var(--text-2)] mt-1">No overcharges detected.</p>
-          </div>
-        ) : (
-          <div className="group-list">
-            {audit.charges.map((c) => (
-              <div key={c.id} className="px-4 py-4">
-                <div className="flex justify-between items-start mb-1">
-                  <div><p className="text-[14px] font-medium">{c.description}</p><p className="text-[11px] text-[var(--text-3)]">{new Date(c.date).toLocaleDateString("en-NG")} ₦· {c.type}</p></div>
-                  <p className="tabular font-bold">{fmt(c.amount)}</p>
-                </div>
-                {c.flag && <div className="flex items-center gap-1 text-[var(--danger)] text-[12px] mt-2"><AlertTriangle size={12} /> {c.flag}</div>}
-              </div>
-            ))}
-          </div>
-        )}
+        {/* Orange Construction Badge */}
+        <div className="flex items-center gap-2 rounded-full bg-[var(--warn)]/10 px-5 py-2 border border-[var(--warn)]/30">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--warn)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+            <path d="M2 18a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v2z" />
+            <path d="M10 10V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5" />
+            <path d="M4 15v-3a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v3" />
+            <path d="M4 15h16" />
+          </svg>
+          <span className="text-[14px] font-semibold text-[var(--warn)]">Feature in development</span>
+        </div>
+
+        <p className="max-w-[300px] text-center text-[15px] leading-relaxed text-[var(--text-2)]">
+          We're currently building an advanced Bank Charge auditor. Soon you'll be able to automatically detect overcharges, stamp duties, and hidden fees directly from your statements.
+        </p>
+
+        <div className="w-full max-w-[280px] pt-6">
+          <Button variant="ghost" onClick={onBack} className="w-full h-12">
+            Back to Dashboard
+          </Button>
+        </div>
       </div>
     </div>
   );
