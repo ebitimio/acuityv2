@@ -104,6 +104,10 @@ export default function SandboxPage() {
   const [safeToSpend, setSafeToSpend] = useState<SafeToSpend | null>(null);
   const [cycle, setCycle] = useState<{ cycle_start: string; cycle_end: string } | null>(null);
   
+  // --- Restored missing state variables ---
+  const [openAddAccount, setOpenAddAccount] = useState(false);
+  const [openCommitmentsTab, setOpenCommitmentsTab] = useState<"bill" | "income" | "family" | "rent" | null>(null);
+
   const [checklistDismissed, setChecklistDismissed] = useState(false);
   const [txnFilter, setTxnFilter] = useState<TransactionFilter>("all");
 
