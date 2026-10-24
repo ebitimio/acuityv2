@@ -45,7 +45,7 @@ import { Field, Button } from "@/components/ui/form";
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
 import {
   ChevronRight, Receipt, ChevronDown, Plus, Trash2,
-  PiggyBank, PieChart, ArrowLeftRight, Bell,
+  PiggyBank, PieChart, ArrowLeftRight, Bell, Crown, Check
 } from "lucide-react";
 import { TransactionsScreen } from "@/components/screens/transactions-screen";
 import { OnboardingCarousel } from "@/components/screens/onboarding-carousel";
@@ -70,7 +70,7 @@ export default function SandboxPage() {
   const [liquidAssets, setLiquidAssets] = useState(0);
   const supabase = createClient();
   const toast = useToast();
-  const { fmt } = useCurrency();
+  const { fmt, rate } = useCurrency();
   const { workspaces, active: activeWs, setActive: setActiveWs, createWorkspace, deleteWorkspace, loading: wsLoading } = useWorkspace();
 
   const [showSplash, setShowSplash] = useState(true);
@@ -116,6 +116,10 @@ export default function SandboxPage() {
   const [wsCreateOpen, setWsCreateOpen] = useState(false);
   const [wsNewName, setWsNewName] = useState("");
   const [wsBusy, setWsBusy] = useState(false);
+  
+  // --- NEW PREMIUM STATE ---
+  const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
+  const isAtWorkspaceLimit = workspaces.length >= 2;
 
   const { scrollY } = useScroll();
   useMotionValueEvent(scrollY, "change", (latest) => {
@@ -377,6 +381,15 @@ export default function SandboxPage() {
     clearDataCache();
   };
 
+  // --- NEW: HANDLE CREATE CLICK (Check Premium) ---
+  const handleCreateClick = () => {
+    if (isAtWorkspaceLimit) {
+      setIsPremiumModalOpen(true);
+    } else {
+      setWsCreateOpen(true);
+    }
+  };
+
   const handleCreateWorkspace = async () => {
     const name = wsNewName.trim();
     if (!name) return;
@@ -414,10 +427,9 @@ export default function SandboxPage() {
     }
   };
 
-  // --- CLEANED UP AUTO-REFRESH LOGIC ---
   const handleBackToHome = () => {
     setActiveScreen("home");
-    refreshData(); // Just fetch the true status from the DB
+    refreshData();
   };
 
   const handleStartSetupStep = (step: "account" | "income" | "bills") => {
@@ -569,7 +581,16 @@ export default function SandboxPage() {
                 </div>
               </div>
 
-              <WorkspaceSwitcher isOpen={wsOpen} onClose={() => setWsOpen(false)} workspaces={workspaces} activeId={activeWs?.id} onSwitch={handleSwitchWorkspace} onCreate={() => setWsCreateOpen(true)} onDelete={handleDeleteWorkspace} />
+              <WorkspaceSwitcher 
+                isOpen={wsOpen} 
+                onClose={() => setWsOpen(false)} 
+                workspaces={workspaces} 
+                activeId={activeWs?.id} 
+                onSwitch={handleSwitchWorkspace} 
+                onCreate={handleCreateClick} 
+                onDelete={handleDeleteWorkspace} 
+                isPremium={isAtWorkspaceLimit}
+              />
 
               <div className="flex flex-col gap-6 px-5 pt-2">
                 <SafeToSpendHero data={safeToSpend} netAcross={netAcrossAccounts} liquidAssets={liquidAssets} spentThisMonth={spentThisMonth} incomeThisMonth={incomeThisMonth} budgetLimit={budgetLimit} periodLabel={periodLabel} daysUntilIncome={daysUntilIncome} nextIncomeDate={nextIncomeDate} />
@@ -697,6 +718,67 @@ export default function SandboxPage() {
         <div className="space-y-3">
           <Field label="Workspace name" value={wsNewName} onChange={(e) => setWsNewName(e.target.value)} placeholder="e.g. Side Business" autoFocus />
           <Button loading={wsBusy} onClick={handleCreateWorkspace} disabled={!wsNewName.trim()}>Create</Button>
+        </div>
+      </Modal>
+
+      {/* --- PREMIUM SUBSCRIPTION MODAL --- */}
+      <Modal open={isPremiumModalOpen} onClose={() => setIsPremiumModalOpen(false)} title="Acuity Premium">
+        <div className="flex flex-col items-center py-4 space-y-6">
+          
+          <div className="flex items-baseline">
+            <span className="text-[38px] font-black tracking-tighter text-white">ACUITY</span>
+            <span className="text-[38px] font-black tracking-tighter" style={{ color: "var(--brand)" }}>.</span>
+          </div>
+
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--brand)]/10">
+            <Crown size={32} className="text-[var(--brand)]" />
+          </div>
+
+          <div className="text-center">
+            <h2 className="text-[20px] font-bold text-[var(--text-1)]">Unlock Premium</h2>
+            <p className="text-[13px] text-[var(--text-3)] mt-2 max-w-[260px] mx-auto leading-relaxed">
+              You've reached the maximum of 2 free workspaces. Upgrade to create unlimited workspaces and unlock advanced features.
+            </p>
+          </div>
+
+          <div className="w-full space-y-3">
+            {/* Monthly Card */}
+            <div className="rounded-2xl bg-[var(--surface-2)] border border-[var(--line)] p-5 relative overflow-hidden">
+              <div className="flex justify-between items-center mb-1">
+                <p className="text-[15px] font-semibold text-[var(--text-1)]">Monthly Plan</p>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-[20px] font-bold text-white">$3.99</span>
+                  <span className="text-[12px] text-[var(--text-3)]">/mo</span>
+                </div>
+              </div>
+              <p className="text-[12px] text-[var(--text-2)]">≈ {fmt(3.99 * rate)} / month</p>
+            </div>
+
+            {/* Annual Card (Highlighted) */}
+            <div className="rounded-2xl bg-[var(--brand)]/10 border border-[var(--brand)]/30 p-5 relative overflow-hidden">
+              <div className="absolute top-0 right-0 bg-[var(--brand)] text-white text-[10px] font-bold px-3 py-1 rounded-bl-lg">
+                SAVE 16%
+              </div>
+              <div className="flex justify-between items-center mb-1">
+                <p className="text-[15px] font-semibold text-[var(--brand)]">Annual Plan</p>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-[20px] font-bold text-[var(--brand)]">$39.99</span>
+                  <span className="text-[12px] text-[var(--brand)]/70">/yr</span>
+                </div>
+              </div>
+              <p className="text-[12px] text-[var(--brand)]/80">≈ {fmt(39.99 * rate)} / year</p>
+              <p className="text-[11px] text-[var(--brand)]/60 mt-1">Just $3.33/mo</p>
+            </div>
+          </div>
+
+          <div className="w-full pt-2">
+            <Button 
+              onClick={() => toast("Payment gateway coming soon!")} 
+              className="w-full h-12 text-[15px] font-bold"
+            >
+              Upgrade Now
+            </Button>
+          </div>
         </div>
       </Modal>
 

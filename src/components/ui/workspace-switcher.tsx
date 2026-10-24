@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, Plus, Trash2, AlertTriangle } from "lucide-react";
+import { Check, Plus, Trash2, AlertTriangle, Crown } from "lucide-react";
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 
@@ -13,6 +13,7 @@ interface WorkspaceSwitcherProps {
   onSwitch: (id: string) => void;
   onCreate: () => void;
   onDelete: (w: { id: string; name: string }) => void;
+  isPremium: boolean; // NEW PROP
 }
 
 export function WorkspaceSwitcher({
@@ -23,6 +24,7 @@ export function WorkspaceSwitcher({
   onSwitch,
   onCreate,
   onDelete,
+  isPremium = false,
 }: WorkspaceSwitcherProps) {
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -86,10 +88,23 @@ export function WorkspaceSwitcher({
             <div className="border-t border-[var(--line)] p-1.5">
               <button
                 onClick={() => { onClose(); onCreate(); }}
-                className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-[13px] font-semibold text-[#DE3121] hover:bg-[#DE3121]/10 transition-colors"
+                className={`flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-[13px] font-semibold transition-colors ${
+                  isPremium 
+                    ? "text-[#DE3121] hover:bg-[#DE3121]/10" 
+                    : "text-[var(--text-1)] hover:bg-[var(--fill-1)]"
+                }`}
               >
-                <Plus size={14} />
-                Create new workspace
+                {isPremium ? (
+                  <>
+                    <Crown size={14} className="text-[#DE3121]" />
+                    Unlock Premium Workspaces
+                  </>
+                ) : (
+                  <>
+                    <Plus size={14} />
+                    Create new workspace
+                  </>
+                )}
               </button>
             </div>
           </motion.div>
