@@ -42,10 +42,11 @@ export interface RecurringItem {
   workspace_id: string;
   account_id: string | null;
   name: string;
-  kind: "income" | "bill";
+  kind: "income" | "bill" | "rent"; // Added rent
   amount_minor: number;
   frequency: "weekly" | "monthly" | "annually";
   day: number;
+  month?: number; // 0-11 for rent
   category: string | null;
   auto_post: boolean;
   last_posted_through: string | null;

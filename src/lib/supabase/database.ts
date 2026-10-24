@@ -395,10 +395,11 @@ export const getRecurringItems = () => list<RecurringItem>("recurring_items", "c
 export const addRecurringItem = (i: { 
   account_id: string | null; 
   name: string; 
-  kind: "income" | "bill"; 
+  kind: "income" | "bill" | "rent"; 
   amount: number; 
   frequency: "weekly" | "monthly" | "annually"; 
   day: number; 
+  month?: number;
   category?: string | null; 
   auto_post?: boolean 
 }) =>
@@ -409,6 +410,7 @@ export const addRecurringItem = (i: {
     amount_minor: toMinor(i.amount), 
     frequency: i.frequency, 
     day: i.day, 
+    month: i.month ?? null,
     category: i.category ?? null, 
     auto_post: i.auto_post ?? false, 
     active: true 
