@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ArrowUp, Loader2, Sparkles, ArrowUpRight } from "lucide-react";
+import { X, ArrowUp, Loader2, Sparkles, ArrowUpRight, CheckCircle2, Search, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useWorkspace } from "@/lib/workspace";
 
@@ -38,12 +38,15 @@ export function AIDrawer({ isOpen, onClose, fullName = "there" }: { isOpen: bool
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isThinking, setIsThinking] = useState(false);
+  const [thinkingSteps, setThinkingSteps] = useState<string[]>([]);
+  const [streamingContent, setStreamingContent] = useState("");
+  
   const endRef = useRef<HTMLDivElement>(null);
   const { active: activeWs } = useWorkspace();
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isThinking]);
+  }, [messages, isThinking, streamingContent]);
 
   const send = async (text: string) => {
     if (!text.trim() || isThinking) return;
@@ -53,6 +56,8 @@ export function AIDrawer({ isOpen, onClose, fullName = "there" }: { isOpen: bool
     setMessages(history);
     setInput("");
     setIsThinking(true);
+    setThinkingSteps([]);
+    setStreamingContent("");
 
     try {
       const res = await fetch("/api/chat", {
@@ -65,12 +70,47 @@ export function AIDrawer({ isOpen, onClose, fullName = "there" }: { isOpen: bool
         }),
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "The AI encountered an error.");
+      if (!res.ok) throw new Error("Failed to connect to AI");
+      if (!res.body) throw new Error("No response body");
 
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let currentText = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split("\n");
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const dataStr = line.slice(6);
+            if (dataStr === "[DONE]") continue;
+            
+            try {
+              const data = JSON.parse(dataStr);
+              
+              if (data.type === "thinking") {
+                setThinkingSteps(prev => [...prev, data.label]);
+              } else if (data.type === "text") {
+                currentText += data.content;
+                setStreamingContent(currentText);
+              } else if (data.type === "error") {
+                throw new Error(data.message);
+              }
+            } catch (e) {
+              console.error("Parse error", e);
+            }
+          }
+        }
+      }
+
+      // Finalize the message
       setMessages((prev) => [
         ...prev,
-        { id: Date.now().toString(), role: "assistant", content: data.response },
+        { id: Date.now().toString(), role: "assistant", content: currentText },
       ]);
     } catch (err: any) {
       setMessages((prev) => [
@@ -79,6 +119,8 @@ export function AIDrawer({ isOpen, onClose, fullName = "there" }: { isOpen: bool
       ]);
     } finally {
       setIsThinking(false);
+      setStreamingContent("");
+      setThinkingSteps([]);
     }
   };
 
@@ -124,7 +166,7 @@ export function AIDrawer({ isOpen, onClose, fullName = "there" }: { isOpen: bool
           </p>
         </div>
 
-        {messages.length === 0 && (
+        {messages.length === 0 && !isThinking && (
           <div className="flex-1 overflow-y-auto px-6 pt-6">
             <div className="flex items-center gap-2 mb-4 text-white/90">
               <Sparkles size={18} />
@@ -155,7 +197,7 @@ export function AIDrawer({ isOpen, onClose, fullName = "there" }: { isOpen: bool
           </div>
         )}
 
-        {messages.length > 0 && (
+        {(messages.length > 0 || isThinking) && (
           <div className="flex-1 overflow-y-auto px-6 pb-4">
             <div className="flex flex-col gap-5 pt-4">
               {messages.map((msg) => (
@@ -178,14 +220,64 @@ export function AIDrawer({ isOpen, onClose, fullName = "there" }: { isOpen: bool
                 </motion.div>
               ))}
 
+              {/* THINKING UI (Screenshot Style) */}
               {isThinking && (
-                <div className="flex justify-start">
-                  <div className="flex gap-1.5 rounded-3xl rounded-tl-md bg-[#1c1c1e] p-5 border border-white/5">
-                    <span className="h-2 w-2 animate-bounce rounded-full bg-white/50" />
-                    <span className="h-2 w-2 animate-bounce rounded-full bg-white/50" style={{ animationDelay: "120ms" }} />
-                    <span className="h-2 w-2 animate-bounce rounded-full bg-white/50" style={{ animationDelay: "240ms" }} />
-                  </div>
-                </div>
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex flex-col gap-2"
+                >
+                  {/* Floating Process Card */}
+                  {thinkingSteps.length > 0 && !streamingContent && (
+                    <div className="w-[85%] rounded-2xl bg-[#1c1c1e] border border-white/10 shadow-2xl p-4 overflow-hidden">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <Loader2 size={14} className="text-[var(--brand)] animate-spin" />
+                          <span className="text-[13px] font-semibold text-white">Acuity AI</span>
+                        </div>
+                        <span className="text-[11px] text-white/40">Thinking</span>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <AnimatePresence mode="popLayout">
+                          {thinkingSteps.map((step, idx) => (
+                            <motion.div 
+                              key={idx}
+                              initial={{ opacity: 0, x: -10 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              className="flex items-center gap-2 text-[12px] text-white/70"
+                            >
+                              {step.includes("Analyzing") ? <Search size={12} className="text-white/40" /> : <FileText size={12} className="text-white/40" />}
+                              {step}
+                              {idx !== thinkingSteps.length - 1 ? (
+                                <CheckCircle2 size={12} className="text-white/30 ml-auto" />
+                              ) : (
+                                <Loader2 size={12} className="animate-spin ml-auto text-[var(--brand)]" />
+                              )}
+                            </motion.div>
+                          ))}
+                        </AnimatePresence>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Streaming Text */}
+                  {streamingContent && (
+                    <div className="max-w-[85%] rounded-3xl rounded-tl-md bg-[#1c1c1e] p-4 text-[15px] leading-relaxed text-white border border-white/5 shadow-sm">
+                      {formatMessage(streamingContent)}
+                      <span className="inline-block w-1.5 h-4 ml-1 bg-white/50 animate-pulse align-middle" />
+                    </div>
+                  )}
+
+                  {/* Fallback Loading Dots */}
+                  {thinkingSteps.length === 0 && !streamingContent && (
+                    <div className="flex gap-1.5 rounded-3xl rounded-tl-md bg-[#1c1c1e] p-5 border border-white/5 w-fit">
+                      <span className="h-2 w-2 animate-bounce rounded-full bg-white/50" />
+                      <span className="h-2 w-2 animate-bounce rounded-full bg-white/50" style={{ animationDelay: "120ms" }} />
+                      <span className="h-2 w-2 animate-bounce rounded-full bg-white/50" style={{ animationDelay: "240ms" }} />
+                    </div>
+                  )}
+                </motion.div>
               )}
               <div ref={endRef} />
             </div>
