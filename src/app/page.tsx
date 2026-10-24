@@ -411,25 +411,27 @@ export default function SandboxPage() {
     }
   };
 
-  // --- THE NEW LOGIC (DOES NOT MODIFY ACCOUNTS OR COMMITMENTS) ---
+  // --- AUTO-REFRESH LOGIC ON BACK NAVIGATION ---
+  const handleBackToHome = () => {
+    setActiveScreen("home");
+    refreshData(); // This forces the checklist to re-check the database
+  };
+
   const handleStartSetupStep = (step: "account" | "income" | "bills") => {
     if (step === "account") {
       setActiveScreen("accounts");
-      // Waits for the Accounts screen to mount, then simulates a click on its "+" button
       setTimeout(() => {
         const btn = document.querySelector('[data-setup-btn="add-account"]') as HTMLElement;
         if (btn) btn.click();
       }, 150);
     } else if (step === "income") {
       setActiveScreen("commitments");
-      // Waits for Commitments screen, then simulates a click on "Add" Income
       setTimeout(() => {
         const btn = document.querySelector('[data-setup-btn="add-income"]') as HTMLElement;
         if (btn) btn.click();
       }, 150);
     } else if (step === "bills") {
       setActiveScreen("commitments");
-      // Waits for Commitments screen, then simulates a click on "Add" Bill
       setTimeout(() => {
         const btn = document.querySelector('[data-setup-btn="add-bill"]') as HTMLElement;
         if (btn) btn.click();
@@ -508,23 +510,34 @@ export default function SandboxPage() {
       <PullToRefresh onRefresh={refreshData}>
         <ScreenTransition id={activeScreen}>
           {activeScreen === "analytics" ? (
-            <AnalyticsScreen key={activeWs?.id} onBack={() => setActiveScreen("home")} onNavigateTransactions={() => setActiveScreen("transactions")} />
+            <AnalyticsScreen key={activeWs?.id} onBack={handleBackToHome} onNavigateTransactions={() => setActiveScreen("transactions")} />
           ) : activeScreen === "transactions" ? (
-            <TransactionsScreen key={activeWs?.id} onBack={() => setActiveScreen("home")} onDataChanged={refreshData} />
+            <TransactionsScreen key={activeWs?.id} onBack={handleBackToHome} onDataChanged={refreshData} />
           ) : activeScreen === "budget" ? (
-            <BudgetScreen key={activeWs?.id} onBack={() => setActiveScreen("home")} />
+            <BudgetScreen key={activeWs?.id} onBack={handleBackToHome} />
           ) : activeScreen === "accounts" ? (
-            <AccountsScreen key={activeWs?.id} onBack={() => setActiveScreen("home")} userName={profileName} />
+            <AccountsScreen 
+              key={activeWs?.id} 
+              onBack={handleBackToHome} 
+              userName={profileName} 
+              autoOpenAddAccount={openAddAccount} 
+              onAutoOpenHandled={() => setOpenAddAccount(false)}
+            />
           ) : activeScreen === "commitments" ? (
-            <CommitmentsScreen key={activeWs?.id} onBack={() => setActiveScreen("home")} />
+            <CommitmentsScreen 
+              key={activeWs?.id} 
+              onBack={handleBackToHome} 
+              autoOpenModal={openCommitmentsTab}
+              onAutoOpenHandled={() => setOpenCommitmentsTab(null)}
+            />
           ) : activeScreen === "tax" ? (
-            <TaxScreen onBack={() => setActiveScreen("home")} />
+            <TaxScreen onBack={handleBackToHome} />
           ) : activeScreen === "needs-review" ? (
-            <NeedsReviewScreen onBack={() => setActiveScreen("home")} onResolved={refreshData} />
+            <NeedsReviewScreen onBack={handleBackToHome} onResolved={refreshData} />
           ) : activeScreen === "ajo" ? (
-            <AjoScreen onBack={() => setActiveScreen("home")} />
+            <AjoScreen onBack={handleBackToHome} />
           ) : activeScreen === "bank-charge" ? (
-            <BankChargeScreen onBack={() => setActiveScreen("home")} />
+            <BankChargeScreen onBack={handleBackToHome} />
           ) : (
             <div className="flex-1 overflow-y-auto pb-32">
               <div

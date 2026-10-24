@@ -60,23 +60,28 @@ export function SetupWizard({ isOpen, initialStep = "account", onClose, onRefres
     setIsSaving(true);
 
     try {
+      let createdAccountId = null;
+
       if (form.accountName && form.accountBalance) {
-        await supabase.from("accounts").insert({
+        const { data, error } = await supabase.from("accounts").insert({
           workspace_id: activeWs.id,
           name: form.accountName,
-          institution: form.bank, // Fixed column name
-          type: "checking",       // Fixed column name
+          institution: form.bank,
+          type: "checking",
           balance_minor: Math.round(parseFloat(form.accountBalance) * 100),
-        });
+        }).select().single();
+        
+        if (error) throw error;
+        if (data) createdAccountId = data.id;
       }
 
-      if (form.income) {
+      if (form.income && createdAccountId) {
         await supabase.from("transactions").insert({
-          // workspace_id: activeWs.id, // Removed: transactions are linked via account
+          account_id: createdAccountId, 
           amount_minor: Math.round(parseFloat(form.income) * 100),
           direction: "credit",
           category_name: "Income",
-          date: new Date().toISOString(), // Fixed column name
+          date: new Date().toISOString(),
         });
       }
 
@@ -95,7 +100,6 @@ export function SetupWizard({ isOpen, initialStep = "account", onClose, onRefres
 
   return (
     <div className="fixed inset-0 z-[300] flex flex-col bg-[var(--bg)]">
-      {/* Header */}
       <div 
         className="flex items-center justify-between px-4 pb-4 border-b border-[var(--line)]"
         style={{ paddingTop: "calc(env(safe-area-inset-top) + 16px)" }}
@@ -104,10 +108,9 @@ export function SetupWizard({ isOpen, initialStep = "account", onClose, onRefres
           <ChevronLeft size={24} className="text-[var(--text-1)]" />
         </button>
         <span className="text-[15px] font-semibold text-[var(--text-1)]">Setup</span>
-        <div className="w-10" /> {/* Spacer for balance */}
+        <div className="w-10" />
       </div>
 
-      {/* Content */}
       <div className="flex-1 overflow-y-auto px-6 pt-8 pb-24">
         <AnimatePresence mode="wait">
           {step === "account" && (
@@ -182,7 +185,6 @@ export function SetupWizard({ isOpen, initialStep = "account", onClose, onRefres
         </AnimatePresence>
       </div>
 
-      {/* Footer Buttons */}
       <div 
         className="shrink-0 px-6 pt-4 border-t border-[var(--line)] bg-[var(--bg)]"
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 24px)" }}
