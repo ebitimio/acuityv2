@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, TrendingUp, Bell, PiggyBank, LineChart, Eye, ChevronDown } from "lucide-react";
+import { ArrowRight, TrendingUp, Bell, PiggyBank, LineChart } from "lucide-react";
 
 const SLIDES = [
   {
@@ -45,7 +45,7 @@ export function OnboardingCarousel({ onComplete }: { onComplete: () => void }) {
       {/* Background Graphics that change per slide */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden flex flex-col justify-center items-center">
         <AnimatePresence mode="wait">
-          {current === 0 && <Slide1Mockup key="g1" />}
+          {current === 0 && <Slide1Graphic key="g1" />}
           {current === 1 && <Slide2Graphic key="g2" />}
           {current === 2 && <Slide3Graphic key="g3" />}
           {current === 3 && <Slide4Graphic key="g4" />}
@@ -112,133 +112,67 @@ export function OnboardingCarousel({ onComplete }: { onComplete: () => void }) {
 }
 
 // ---------------------------------------------------------
-// GRAPHIC 1: Floating Phone Mockup with Dashboard
+// GRAPHIC 1: 3D "A." Logo with glowing red dot
 // ---------------------------------------------------------
-function Slide1Mockup() {
+function Slide1Graphic() {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 50, scale: 0.9 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -20, scale: 0.95 }}
-      transition={{ duration: 0.8, ease: "easeOut" }}
+      initial={{ opacity: 0, scale: 0.9, rotateX: 20 }}
+      animate={{ opacity: 1, scale: 1, rotateX: 0 }}
+      exit={{ opacity: 0, scale: 1.1 }}
+      transition={{ duration: 0.8, type: "spring" }}
       className="relative w-full h-[55vh] flex items-center justify-center mt-[-5vh]"
+      style={{ perspective: 1000 }}
     >
-      {/* Glow behind the phone */}
-      <div className="absolute w-64 h-64 bg-[var(--brand)]/20 blur-[80px] rounded-full" />
+      {/* Glow behind the logo */}
+      <div className="absolute w-48 h-48 bg-[var(--brand)]/20 blur-[60px] rounded-full" />
 
-      {/* Phone Frame */}
-      <div className="relative w-[260px] h-[540px] rounded-[40px] border-[6px] border-[#222] bg-[#0b0b0c] shadow-2xl overflow-hidden flex flex-col">
+      {/* The 3D 'A' Structure */}
+      <div className="relative w-64 h-72 flex justify-center items-end pb-8">
         
-        {/* Notch */}
-        <div className="absolute top-0 inset-x-0 h-6 flex justify-center z-20">
-          <div className="w-24 h-6 bg-[#222] rounded-b-xl" />
-        </div>
+        {/* Left Leg */}
+        <div 
+          className="absolute bottom-8 left-[15%] w-16 h-full origin-bottom-left rounded-t-lg"
+          style={{
+            background: "linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.1) 40%, rgba(0,0,0,0.8) 100%)",
+            transform: "rotate(25deg)",
+            clipPath: "polygon(50% 0, 100% 100%, 0% 100%)",
+            boxShadow: "inset -4px 0 10px rgba(0,0,0,0.5), inset 4px 0 10px rgba(255,255,255,0.2)",
+            borderRight: "1px solid rgba(255,255,255,0.3)"
+          }}
+        />
 
-        {/* Status Bar */}
-        <div className="flex justify-between items-center px-5 pt-8 pb-2 text-[10px] font-semibold text-white">
-          <span>12:28</span>
-          <div className="flex gap-1 items-center">
-            <div className="w-3 h-2 bg-white rounded-sm" />
-            <div className="w-2 h-2 bg-white rounded-full" />
-            <div className="w-3 h-2 bg-white rounded-sm" />
-          </div>
-        </div>
+        {/* Right Leg */}
+        <div 
+          className="absolute bottom-8 right-[15%] w-16 h-full origin-bottom-right rounded-t-lg"
+          style={{
+            background: "linear-gradient(-135deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.1) 40%, rgba(0,0,0,0.9) 100%)",
+            transform: "rotate(-25deg)",
+            clipPath: "polygon(50% 0, 100% 100%, 0% 100%)",
+            boxShadow: "inset 4px 0 10px rgba(0,0,0,0.6), inset -4px 0 10px rgba(255,255,255,0.1)",
+            borderLeft: "1px solid rgba(255,255,255,0.2)"
+          }}
+        />
 
-        {/* App Content Mockup */}
-        <div className="flex-1 px-4 flex flex-col gap-3 overflow-hidden">
-          
-          {/* Header */}
-          <div className="flex justify-between items-center mt-2">
-            <span className="text-[14px] font-bold text-white flex items-center gap-1">
-              Personal Workspace <ChevronDown size={12} className="text-white/50" />
-            </span>
-            <div className="flex gap-1">
-              <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center"><Bell size={10} className="text-white" /></div>
-              <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-[8px] font-bold text-white">E</div>
-            </div>
-          </div>
+        {/* Crossbar / Base Shape */}
+        <div 
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 w-48 h-32"
+          style={{
+            background: "linear-gradient(to top, rgba(255,255,255,0.4), transparent)",
+            clipPath: "polygon(20% 100%, 80% 100%, 60% 30%, 40% 30%)",
+          }}
+        />
 
-          {/* Hero Card */}
-          <div className="rounded-[16px] p-3 text-black relative" style={{ background: "var(--brand)" }}>
-            <p className="text-center text-[8px] font-semibold text-black/70">October 2026</p>
-            <p className="text-[8px] text-black/70 mt-1">Net across accounts</p>
-            <div className="flex items-center gap-1 mt-0.5">
-              <span className="text-[18px] font-bold leading-none tracking-tight">₦60,714,465</span>
-              <div className="w-4 h-4 rounded-full bg-black/10 flex items-center justify-center"><Eye size={8} className="text-black/70" /></div>
-            </div>
-            <p className="text-[7px] text-black/70 mt-1">₦219,500 spent this month</p>
-            
-            <div className="mt-2 flex items-center justify-between rounded-md bg-black px-2 py-1">
-              <span className="text-[6px] font-medium text-white">Safe to spend today</span>
-              <span className="text-[8px] font-bold text-white">₦69,200</span>
-            </div>
-
-            <div className="mt-2 grid grid-cols-2 gap-2">
-              <div>
-                <p className="text-[6px] text-black/70">Income</p>
-                <p className="text-[8px] font-semibold text-[#22c55e]">₦69,200</p>
-              </div>
-              <div>
-                <p className="text-[6px] text-black/70">Net liquid assets</p>
-                <p className="text-[8px] font-semibold text-black">₦643,000</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Actions */}
-          <div className="grid grid-cols-3 gap-2">
-            <div className="h-8 rounded-lg bg-[#1c1c1e] border border-white/5 flex items-center justify-center">
-              <PiggyBank size={12} color="var(--brand)" />
-            </div>
-            <div className="h-8 rounded-lg bg-[#1c1c1e] border border-white/5 flex items-center justify-center">
-              <TrendingUp size={12} color="var(--brand)" />
-            </div>
-            <div className="h-8 rounded-lg bg-[#1c1c1e] border border-white/5 flex items-center justify-center">
-              <ArrowRight size={12} color="var(--brand)" />
-            </div>
-          </div>
-
-          {/* Accounts Section */}
-          <div className="mt-1">
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-[8px] font-semibold text-white">My Accounts</span>
-              <span className="text-[7px] text-[var(--brand)]">See all</span>
-            </div>
-            {/* Mini ATM Card */}
-            <div className="rounded-xl border border-[var(--brand)]/30 bg-gradient-to-br from-[#1c1c1e] to-[#0b0b0c] p-2 relative overflow-hidden">
-              <div className="flex justify-between items-start relative z-10">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-5 h-5 rounded-full bg-[var(--brand)]/20 flex items-center justify-center text-[8px] font-bold text-[var(--brand)]">M</div>
-                  <div>
-                    <p className="text-[8px] font-bold text-[var(--brand)]">Main</p>
-                    <p className="text-[6px] text-[var(--brand)]/60 uppercase">Checking</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-[5px] uppercase tracking-widest text-[var(--brand)]/60">Cardholder</p>
-                  <p className="text-[7px] font-mono tracking-wider text-[var(--brand)]">EBITIMI OGLAFA</p>
-                </div>
-              </div>
-              <div className="mt-4 flex justify-between items-end relative z-10">
-                <div>
-                  <p className="text-[5px] text-[var(--brand)]/60">Balance</p>
-                  <p className="text-[10px] font-bold text-[var(--brand)]">₦193,000</p>
-                </div>
-                <p className="text-[6px] text-[var(--brand)]/80">Kuda bank</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Nav Mockup */}
-        <div className="h-12 bg-[#1c1c1e] mt-auto flex items-center justify-around px-4 rounded-b-[34px]">
-          <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center"><div className="w-2 h-2 bg-white rounded-full" /></div>
-          <div className="w-2 h-2 bg-white/30 rounded-full" />
-          <div className="w-2 h-2 bg-white/30 rounded-full" />
-          <div className="w-2 h-2 bg-white/30 rounded-full" />
-          <div className="w-6 h-6 rounded-full bg-[var(--brand)] flex items-center justify-center text-black font-bold text-[10px]">+</div>
+        {/* The Glowing Red Dot */}
+        <div className="absolute bottom-6 right-[10%] flex flex-col items-center">
+          <div className="w-10 h-10 rounded-full bg-[var(--brand)] blur-sm opacity-60" />
+          <div className="absolute w-8 h-8 rounded-full bg-[var(--brand)] shadow-[0_0_20px_rgba(222,49,33,0.8)]" />
         </div>
       </div>
+
+      {/* Reflection Floor */}
+      <div className="absolute bottom-0 w-[80%] h-[2px] bg-gradient-to-r from-transparent via-white/30 to-transparent blur-[1px]" />
+      <div className="absolute bottom-0 w-[80%] h-[60px] bg-gradient-to-t from-[var(--brand)]/10 to-transparent opacity-50" />
     </motion.div>
   );
 }
