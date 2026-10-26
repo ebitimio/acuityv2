@@ -40,7 +40,7 @@ export function OnboardingCarousel({ onComplete }: { onComplete: () => void }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[200] flex flex-col bg-[#0b0b0c] text-white overflow-hidden">
+    <div className="fixed inset-0 z-[200] flex flex-col justify-between bg-[#0b0b0c] text-white overflow-hidden">
       
       {/* Background Graphics */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden flex flex-col justify-center items-center">
@@ -60,8 +60,8 @@ export function OnboardingCarousel({ onComplete }: { onComplete: () => void }) {
         </div>
       </div>
 
-      {/* Text Content - Pushed lower to fill the bottom space */}
-      <div className="relative z-10 flex-1 flex flex-col justify-end px-8 pb-[calc(env(safe-area-inset-bottom)+100px)]">
+      {/* Main Content Area */}
+      <div className="relative z-10 flex-1 flex flex-col justify-end px-8">
         <AnimatePresence mode="wait">
           <motion.div
             key={current}
@@ -69,7 +69,7 @@ export function OnboardingCarousel({ onComplete }: { onComplete: () => void }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
-            className="max-w-sm"
+            className="max-w-sm mb-4" 
           >
             <p className="text-[13px] font-mono tracking-widest text-[var(--brand)] mb-4 uppercase">
               {SLIDES[current].subtitle}
@@ -84,9 +84,9 @@ export function OnboardingCarousel({ onComplete }: { onComplete: () => void }) {
         </AnimatePresence>
       </div>
 
-      {/* Footer: Dots & Button - Pushed lower */}
-      <div className="absolute bottom-0 left-0 right-0 z-10 px-8 pb-[calc(env(safe-area-inset-bottom)+32px)] pt-4 bg-gradient-to-t from-[#0b0b0c] via-[#0b0b0c]/90 to-transparent">
-        <div className="flex items-center justify-between mb-6">
+      {/* Footer: Dots & Button - Pushed to the absolute bottom */}
+      <div className="relative z-10 px-8 pb-[calc(env(safe-area-inset-bottom)+32px)] pt-4 bg-gradient-to-t from-[#0b0b0c] via-[#0b0b0c]/90 to-transparent">
+        <div className="flex items-center mb-6">
           <div className="flex gap-2">
             {SLIDES.map((_, i) => (
               <div
@@ -140,7 +140,7 @@ function Slide1Graphic() {
 }
 
 // ---------------------------------------------------------
-// GRAPHIC 2: Glowing AI Orb (Removed bottom cards)
+// GRAPHIC 2: Glowing AI Orb
 // ---------------------------------------------------------
 function Slide2Graphic() {
   return (
@@ -158,7 +158,6 @@ function Slide2Graphic() {
         <span className="text-[40px] font-black text-white">A<span style={{ color: "var(--brand)" }}>.</span></span>
       </div>
 
-      {/* Only the top two widgets remain */}
       <motion.div 
         animate={{ y: [0, -8, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
         className="absolute top-[5%] left-[5%] p-2.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md scale-90"
