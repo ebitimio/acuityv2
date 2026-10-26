@@ -5,11 +5,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronRight, Eye, Bell, Shield, Wallet, Briefcase, HelpCircle,
   LogOut, Trash2, RefreshCw, Moon, FileText, MessageSquare, Info,
-  ArrowLeft, Sun, Lock, User, KeyRound
+  ArrowLeft, Sun, Lock, User, KeyRound, Palette
 } from "lucide-react";
 import { useCurrency } from "@/lib/currency";
 import { useWorkspace } from "@/lib/workspace";
-import { useTheme } from "@/lib/theme";
+import { useTheme, type AccentColor } from "@/lib/theme";
 import { useToast } from "./toast";
 import { cn } from "@/lib/utils";
 import { Modal } from "./modal";
@@ -36,7 +36,7 @@ type SubView = "main" | "edit-profile" | "change-password" | "change-pin" | "pri
 export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, onNameUpdated }: SettingsSheetProps) {
   const { currency, setCurrency, rate, hidden, toggleHidden } = useCurrency();
   const { active: activeWs, deleteWorkspace, workspaces } = useWorkspace();
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, accent, setAccent } = useTheme();
   const toast = useToast();
 
   const [pushEnabled, setPushEnabled] = useState(true);
@@ -48,16 +48,13 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
   const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [view, setView] = useState<SubView>("main");
 
-  // Edit profile
   const [editName, setEditName] = useState(profileName);
   const [savingName, setSavingName] = useState(false);
 
-  // Change password
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [savingPassword, setSavingPassword] = useState(false);
 
-  // Determine auth provider
   const isGoogleUser = user?.app_metadata?.provider === "google";
 
   useEffect(() => {
@@ -150,7 +147,6 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
     ? new Date(user.created_at).toLocaleDateString("en-NG", { month: "long", year: "numeric" })
     : "Recently";
 
-  // ---------- SUB VIEWS ----------
   if (view === "change-pin") {
     return (
       <PinLockScreen 
@@ -173,7 +169,7 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
           </button>
           <div className="flex justify-center">
             <div className="relative">
-              <div className="flex h-24 w-24 items-center justify-center rounded-full bg-[#DE3121] text-white text-[36px] font-bold">
+              <div className="flex h-24 w-24 items-center justify-center rounded-full bg-[var(--brand)] text-white text-[36px] font-bold">
                 {editName.charAt(0).toUpperCase() || "U"}
               </div>
               {isGoogleUser && (
@@ -194,7 +190,7 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
               type="text"
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
-              className="mt-1 w-full h-12 rounded-xl border border-[var(--line-strong)] bg-[var(--surface-2)] px-4 text-[15px] text-[var(--text-1)] outline-none focus:border-[#DE3121]"
+              className="mt-1 w-full h-12 rounded-xl border border-[var(--line-strong)] bg-[var(--surface-2)] px-4 text-[15px] text-[var(--text-1)] outline-none focus:border-[var(--brand)]"
             />
           </div>
           <div>
@@ -228,7 +224,7 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="At least 6 characters"
-              className="mt-1 w-full h-12 rounded-xl border border-[var(--line-strong)] bg-[var(--surface-2)] px-4 text-[15px] text-[var(--text-1)] outline-none focus:border-[#DE3121]"
+              className="mt-1 w-full h-12 rounded-xl border border-[var(--line-strong)] bg-[var(--surface-2)] px-4 text-[15px] text-[var(--text-1)] outline-none focus:border-[var(--brand)]"
             />
           </div>
           <div>
@@ -238,7 +234,7 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Re-enter password"
-              className="mt-1 w-full h-12 rounded-xl border border-[var(--line-strong)] bg-[var(--surface-2)] px-4 text-[15px] text-[var(--text-1)] outline-none focus:border-[#DE3121]"
+              className="mt-1 w-full h-12 rounded-xl border border-[var(--line-strong)] bg-[var(--surface-2)] px-4 text-[15px] text-[var(--text-1)] outline-none focus:border-[var(--brand)]"
             />
           </div>
           <Button onClick={handleSavePassword} loading={savingPassword} className="w-full h-12">
@@ -303,7 +299,6 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
     );
   }
 
-  // ---------- MAIN VIEW ----------
   return (
     <Modal open={isOpen} onClose={onClose} title="Settings">
       <div className="space-y-6 pb-6 overflow-y-auto max-h-[75dvh]">
@@ -312,7 +307,7 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
         <div className="p-4 rounded-2xl bg-[var(--surface-2)] border border-[var(--line)]">
           <div className="flex items-center gap-4">
             <div className="relative">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#DE3121] text-white text-[20px] font-bold">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--brand)] text-white text-[20px] font-bold">
                 {profileName.charAt(0).toUpperCase()}
               </div>
               {isGoogleUser && (
@@ -369,14 +364,12 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
           </div>
         </div>
 
-        {/* MONEY & CURRENCY */}
         <Section title="Money & Currency">
           <Row icon={Wallet} label="Currency" value={currency} onClick={() => setCurrency(currency === "NGN" ? "USD" : "NGN")} chevron />
           <Row icon={RefreshCw} label="Exchange Rate" value={`₦${rate.toLocaleString()} / $1`} />
           <Row icon={Eye} label="Hide balances" toggle toggleValue={hidden} onToggle={toggleHidden} />
         </Section>
 
-        {/* NOTIFICATIONS */}
         <Section title="Notifications">
           <Row icon={Bell} label="Push notifications" toggle toggleValue={pushEnabled} onToggle={() => setPushEnabled(!pushEnabled)} />
           <Row icon={FileText} label="Weekly spending summary" toggle toggleValue={weeklySummary} onToggle={() => setWeeklySummary(!weeklySummary)} />
@@ -384,12 +377,12 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
           <Row icon={Bell} label="Bill reminders" toggle toggleValue={billReminders} onToggle={() => setBillReminders(!billReminders)} />
         </Section>
 
-        {/* APPEARANCE */}
+        {/* APPEARANCE & COLOR THEME */}
         <Section title="Appearance">
-          <div className="px-4 py-3.5">
+          <div className="px-4 py-3.5 border-b border-[var(--line)]">
             <div className="flex items-center gap-3 mb-3">
-              <Moon size={18} className="text-[#DE3121]" />
-              <span className="text-[14px] font-medium text-[var(--text-1)]">Theme</span>
+              <Moon size={18} className="text-[var(--brand)]" />
+              <span className="text-[14px] font-medium text-[var(--text-1)]">Display Mode</span>
             </div>
             <div className="grid grid-cols-3 gap-2">
               {(["dark", "light", "system"] as const).map((t) => (
@@ -399,7 +392,7 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
                   className={cn(
                     "flex flex-col items-center gap-1.5 rounded-xl py-3 text-[11px] font-semibold capitalize transition-colors",
                     theme === t
-                      ? "bg-[#DE3121]/10 text-[#DE3121] border border-[#DE3121]/30"
+                      ? "bg-[var(--brand)]/10 text-[var(--brand)] border border-[var(--brand)]/30"
                       : "bg-[var(--fill-1)] text-[var(--text-2)] border border-transparent"
                   )}
                 >
@@ -411,20 +404,48 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
               ))}
             </div>
           </div>
+
+          <div className="px-4 py-3.5">
+            <div className="flex items-center gap-3 mb-3">
+              <Palette size={18} className="text-[var(--brand)]" />
+              <span className="text-[14px] font-medium text-[var(--text-1)]">App Color</span>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {(["red", "lime", "grey"] as AccentColor[]).map((c) => (
+                <button
+                  key={c}
+                  onClick={() => setAccent(c)}
+                  className={cn(
+                    "flex flex-col items-center gap-2 rounded-xl py-3 text-[11px] font-semibold capitalize transition-colors border",
+                    accent === c
+                      ? "bg-[var(--fill-2)] border-[var(--text-1)]"
+                      : "bg-[var(--fill-1)] border-transparent"
+                  )}
+                >
+                  <div 
+                    className="h-5 w-5 rounded-full shadow-sm" 
+                    style={{ 
+                      backgroundColor: c === "red" ? "#DE3121" : c === "lime" ? "#D2F824" : "#4B5563" 
+                    }} 
+                  />
+                  <span className={accent === c ? "text-[var(--text-1)]" : "text-[var(--text-2)]"}>
+                    {c === "red" ? "Default" : c === "lime" ? "Lime" : "Grey"}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
         </Section>
 
-        {/* PRIVACY & SECURITY */}
         <Section title="Privacy & Security">
           <Row icon={RefreshCw} label="Clear cache" chevron onClick={handleClearCache} />
         </Section>
 
-        {/* WORKSPACE */}
         <Section title="Workspace">
           <Row icon={Briefcase} label="Current workspace" value={activeWs?.name ?? "None"} />
           <Row icon={Trash2} label="Delete workspace" danger chevron onClick={() => setConfirmDelete(true)} />
         </Section>
 
-        {/* ABOUT & SUPPORT */}
         <Section title="About & Support">
           <Row icon={HelpCircle} label="Help & FAQ" chevron onClick={() => setView("help")} />
           <Row icon={FileText} label="Terms of Service" chevron onClick={() => setView("terms")} />
@@ -433,7 +454,6 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
           <Row icon={Info} label="App version" value="1.0.0" />
         </Section>
 
-        {/* SIGN OUT */}
         <button
           onClick={() => setConfirmSignOut(true)}
           className="w-full flex items-center justify-center gap-2 rounded-2xl border border-[var(--danger)]/30 bg-[var(--danger)]/10 py-3.5 text-[15px] font-bold text-[var(--danger)]"
@@ -443,7 +463,6 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
         </button>
       </div>
 
-      {/* Custom Sign Out Confirmation */}
       <AnimatePresence>
         {confirmSignOut && (
           <motion.div
@@ -486,7 +505,6 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
         )}
       </AnimatePresence>
 
-      {/* Delete confirmation */}
       <AnimatePresence>
         {confirmDelete && (
           <motion.div
@@ -577,7 +595,7 @@ function Row({
         isClickable && "hover:bg-[var(--fill-1)]"
       )}
     >
-      <Icon size={18} className={danger ? "text-[var(--danger)]" : "text-[#DE3121]"} />
+      <Icon size={18} className={danger ? "text-[var(--danger)]" : "text-[var(--brand)]"} />
       <span className={cn(
         "flex-1 text-[14px] font-medium",
         danger ? "text-[var(--danger)]" : "text-[var(--text-1)]"
@@ -592,7 +610,7 @@ function Row({
           onClick={(e) => { e.stopPropagation(); onToggle?.(); }}
           className={cn(
             "relative h-6 w-11 rounded-full transition-colors",
-            toggleValue ? "bg-[#DE3121]" : "bg-[var(--fill-3)]"
+            toggleValue ? "bg-[var(--brand)]" : "bg-[var(--fill-3)]"
           )}
         >
           <motion.div

@@ -4,15 +4,19 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 
 type ThemeChoice = "system" | "light" | "dark";
 type Resolved = "light" | "dark";
+export type AccentColor = "red" | "lime" | "grey";
 
 interface Ctx {
   theme: ThemeChoice;
   resolved: Resolved;
+  accent: AccentColor;
   setTheme: (t: ThemeChoice) => void;
+  setAccent: (a: AccentColor) => void;
 }
 
 const C = createContext<Ctx | null>(null);
-const KEY = "acuity:theme";
+const THEME_KEY = "acuity:theme";
+const ACCENT_KEY = "acuity:accent";
 
 function resolve(choice: ThemeChoice): Resolved {
   if (choice === "system") {
@@ -22,25 +26,52 @@ function resolve(choice: ThemeChoice): Resolved {
   return choice;
 }
 
+// Defines the brand colors and the text color that sits ON TOP of the brand color
+const ACCENT_COLORS: Record<AccentColor, { hex: string; soft: string; ink: string }> = {
+  red: { hex: "#DE3121", soft: "rgba(222, 49, 33, 0.14)", ink: "#ffffff" },
+  lime: { hex: "#D2F824", soft: "rgba(210, 248, 36, 0.14)", ink: "#000000" },
+  grey: { hex: "#4B5563", soft: "rgba(75, 85, 99, 0.14)", ink: "#ffffff" },
+};
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<ThemeChoice>("system");
   const [resolved, setResolved] = useState<Resolved>("dark");
+  const [accent, setAccentState] = useState<AccentColor>("red");
 
-  // Hydrate from localStorage on mount
+  // Apply color to CSS variables
+  const applyAccent = useCallback((color: AccentColor) => {
+    if (typeof document === "undefined") return;
+    const { hex, soft, ink } = ACCENT_COLORS[color];
+    document.documentElement.style.setProperty("--brand", hex);
+    document.documentElement.style.setProperty("--brand-soft", soft);
+    document.documentElement.style.setProperty("--brand-ink", ink);
+  }, []);
+
+  // Hydrate on mount
   useEffect(() => {
-    let stored: ThemeChoice | null = null;
+    let storedTheme: ThemeChoice | null = null;
+    let storedAccent: AccentColor | null = null;
+    
     try {
-      const raw = localStorage.getItem(KEY);
-      if (raw === "light" || raw === "dark" || raw === "system") stored = raw;
+      const rawTheme = localStorage.getItem(THEME_KEY);
+      if (rawTheme === "light" || rawTheme === "dark" || rawTheme === "system") storedTheme = rawTheme;
+      
+      const rawAccent = localStorage.getItem(ACCENT_KEY);
+      if (rawAccent === "red" || rawAccent === "lime" || rawAccent === "grey") storedAccent = rawAccent;
     } catch {}
-    const choice = stored ?? "system";
+
+    const choice = storedTheme ?? "system";
     setThemeState(choice);
     const r = resolve(choice);
     setResolved(r);
     document.documentElement.dataset.theme = r;
-  }, []);
 
-  // Follow system when theme is "system"
+    const ac = storedAccent ?? "red";
+    setAccentState(ac);
+    applyAccent(ac);
+  }, [applyAccent]);
+
+  // Follow system
   useEffect(() => {
     if (theme !== "system") return;
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
@@ -56,13 +87,19 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const setTheme = useCallback((t: ThemeChoice) => {
     setThemeState(t);
-    try { localStorage.setItem(KEY, t); } catch {}
+    try { localStorage.setItem(THEME_KEY, t); } catch {}
     const r = resolve(t);
     setResolved(r);
     document.documentElement.dataset.theme = r;
   }, []);
 
-  return <C.Provider value={{ theme, resolved, setTheme }}>{children}</C.Provider>;
+  const setAccent = useCallback((a: AccentColor) => {
+    setAccentState(a);
+    try { localStorage.setItem(ACCENT_KEY, a); } catch {}
+    applyAccent(a);
+  }, [applyAccent]);
+
+  return <C.Provider value={{ theme, resolved, accent, setTheme, setAccent }}>{children}</C.Provider>;
 }
 
 export function useTheme() {
