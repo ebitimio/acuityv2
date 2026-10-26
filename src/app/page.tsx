@@ -45,7 +45,7 @@ import { Field, Button } from "@/components/ui/form";
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
 import {
   ChevronRight, Receipt, ChevronDown, Plus, Trash2,
-  PiggyBank, PieChart, ArrowLeftRight, Bell, Crown, Check
+  PiggyBank, PieChart, ArrowLeftRight, Bell, Crown
 } from "lucide-react";
 import { TransactionsScreen } from "@/components/screens/transactions-screen";
 import { OnboardingCarousel } from "@/components/screens/onboarding-carousel";
@@ -117,7 +117,6 @@ export default function SandboxPage() {
   const [wsNewName, setWsNewName] = useState("");
   const [wsBusy, setWsBusy] = useState(false);
   
-  // --- NEW PREMIUM STATE ---
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
   const isAtWorkspaceLimit = workspaces.length >= 2;
 
@@ -381,7 +380,6 @@ export default function SandboxPage() {
     clearDataCache();
   };
 
-  // --- NEW: HANDLE CREATE CLICK (Check Premium) ---
   const handleCreateClick = () => {
     if (isAtWorkspaceLimit) {
       setIsPremiumModalOpen(true);
@@ -573,7 +571,7 @@ export default function SandboxPage() {
                 <div className="flex gap-2">
                   <button onClick={() => setIsNotificationsOpen(true)} className="relative flex h-9 w-9 items-center justify-center rounded-full border border-[var(--line)] bg-[var(--fill-1)] text-[var(--text-2)]">
                     <Bell size={16} />
-                    <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[#DE3121]" />
+                    <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[var(--brand)]" />
                   </button>
                   <button onClick={() => setIsSettingsOpen(true)} className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--line)] bg-[var(--fill-1)] text-[12px] font-semibold text-[var(--text-1)]">
                     {profileName.charAt(0).toUpperCase() || "A"}
@@ -597,13 +595,13 @@ export default function SandboxPage() {
 
                 <div className="grid grid-cols-3 gap-3">
                   <button onClick={() => setActiveScreen("budget")} className="press flex h-14 items-center justify-center rounded-[18px] border border-white/5 bg-[#1c1c1e]">
-                    <PiggyBank size={20} color="#DE3121" />
+                    <PiggyBank size={20} color="var(--brand)" />
                   </button>
                   <button onClick={() => setActiveScreen("analytics")} className="press flex h-14 items-center justify-center rounded-[18px] border border-white/5 bg-[#1c1c1e]">
-                    <PieChart size={20} color="#DE3121" />
+                    <PieChart size={20} color="var(--brand)" />
                   </button>
                   <button onClick={() => setIsImportOpen(true)} className="press flex h-14 items-center justify-center rounded-[18px] border border-white/5 bg-[#1c1c1e]">
-                    <ArrowLeftRight size={20} color="#DE3121" />
+                    <ArrowLeftRight size={20} color="var(--brand)" />
                   </button>
                 </div>
 
@@ -650,7 +648,7 @@ export default function SandboxPage() {
                             key={i} 
                             className={cn(
                               "h-1.5 rounded-full transition-all duration-300",
-                              i === activeCardIndex ? "w-6 bg-[#DE3121]" : "w-1.5 bg-white/20"
+                              i === activeCardIndex ? "w-6 bg-[var(--brand)]" : "w-1.5 bg-white/20"
                             )} 
                           />
                         ))}
@@ -756,7 +754,7 @@ export default function SandboxPage() {
 
             {/* Annual Card (Highlighted) */}
             <div className="rounded-2xl bg-[var(--brand)]/10 border border-[var(--brand)]/30 p-5 relative overflow-hidden">
-              <div className="absolute top-0 right-0 bg-[var(--brand)] text-white text-[10px] font-bold px-3 py-1 rounded-bl-lg">
+              <div className="absolute top-0 right-0 bg-[var(--brand)] text-[var(--brand-ink)] text-[10px] font-bold px-3 py-1 rounded-bl-lg">
                 SAVE 16%
               </div>
               <div className="flex justify-between items-center mb-1">

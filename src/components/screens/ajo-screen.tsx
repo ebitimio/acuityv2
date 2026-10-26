@@ -116,7 +116,6 @@ export function AjoScreen({ onBack }: { onBack: () => void }) {
     load();
   };
 
-  // Calculate next payout details based on start_date
   const payoutAmount = activeGroup ? (activeGroup.contribution_minor / 100) * activeGroup.members : 0;
   
   const start = activeGroup ? new Date(activeGroup.start_date) : new Date();
@@ -154,8 +153,8 @@ export function AjoScreen({ onBack }: { onBack: () => void }) {
         {/* Active Group Dashboard */}
         {activeGroup ? (
           <>
-            {/* Hero Card (Brand Red) */}
-            <div className="rounded-[24px] bg-[#DE3121] p-6 text-black shadow-xl relative overflow-hidden">
+            {/* Hero Card (Changed to var(--brand)) */}
+            <div className="rounded-[24px] p-6 text-black shadow-xl relative overflow-hidden" style={{ background: "var(--brand)" }}>
               <p className="text-[13px] font-medium text-black/70">Next payout</p>
               <p className="text-[36px] font-bold tabular mt-1">{fmt(payoutAmount)}</p>
               
@@ -198,7 +197,7 @@ export function AjoScreen({ onBack }: { onBack: () => void }) {
                 {/* You */}
                 <div className="flex items-center justify-between rounded-2xl bg-[#1c1c1e] p-4 border border-white/5">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#DE3121] text-white font-bold text-[14px]">Y</div>
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--brand)] text-[var(--brand-ink)] font-bold text-[14px]">Y</div>
                     <div>
                       <p className="text-[14px] font-semibold text-white">You</p>
                       <p className="text-[11px] text-[var(--text-3)]">Due {payoutDate.toLocaleDateString("en-NG", { weekday: "short", day: "numeric", month: "short" })}</p>
@@ -218,7 +217,6 @@ export function AjoScreen({ onBack }: { onBack: () => void }) {
                 {/* Other Members */}
                 {activeGroup.members_list?.map((name, i) => {
                   const isReceiving = i + 2 === activeGroup.my_position;
-                  // A member is paid if their index is less than the number of cycles paid
                   const isPaid = i < activeGroup.paid_cycles;
                   return (
                     <div key={i} className="flex items-center justify-between rounded-2xl bg-[#1c1c1e] p-4 border border-white/5">
@@ -234,14 +232,8 @@ export function AjoScreen({ onBack }: { onBack: () => void }) {
                         </div>
                       </div>
                       
-                      {/* Interactive Checkbox for Payment */}
                       <button
-                        onClick={() => {
-                          // Note: Since we don't have a per-member payment table, 
-                          // we can only track aggregate cycles. Clicking this 
-                          // advances the overall paid count.
-                          handlePayment(activeGroup);
-                        }}
+                        onClick={() => handlePayment(activeGroup)}
                         className={cn(
                           "flex h-8 w-8 items-center justify-center rounded-full border transition-colors",
                           isPaid ? "bg-[#52c28a] border-[#52c28a] text-white" : "border-[var(--line-strong)] bg-transparent text-transparent"
@@ -264,7 +256,7 @@ export function AjoScreen({ onBack }: { onBack: () => void }) {
             <Users size={48} className="mx-auto text-[var(--text-3)] mb-4" />
             <p className="text-[15px] font-semibold text-white">No Ajo groups yet</p>
             <p className="text-[13px] text-[var(--text-3)] mt-1 mb-6">Start a circle with friends or family.</p>
-            <button onClick={openWizard} className="rounded-full bg-[#DE3121] px-6 py-2.5 text-[14px] font-bold text-white">
+            <button onClick={openWizard} className="rounded-full bg-[var(--brand)] px-6 py-2.5 text-[14px] font-bold text-[var(--brand-ink)]">
               Create an Ajo
             </button>
           </div>
@@ -281,7 +273,6 @@ export function AjoScreen({ onBack }: { onBack: () => void }) {
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
             className="fixed inset-0 z-[200] flex flex-col bg-[#0b0b0c]"
           >
-            {/* Wizard Header */}
             <div className="flex items-center justify-between px-4 pt-[calc(env(safe-area-inset-top)+16px)] pb-4">
               <button onClick={() => setIsWizardOpen(false)} className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white">
                 <ChevronLeft size={24} />
@@ -290,14 +281,12 @@ export function AjoScreen({ onBack }: { onBack: () => void }) {
               <div className="w-10" />
             </div>
 
-            {/* Progress Bar */}
             <div className="flex gap-2 px-4 mb-8">
               {[1, 2, 3].map((s) => (
-                <div key={s} className={cn("h-1 flex-1 rounded-full", s <= step ? "bg-[#DE3121]" : "bg-white/10")} />
+                <div key={s} className={cn("h-1 flex-1 rounded-full", s <= step ? "bg-[var(--brand)]" : "bg-white/10")} />
               ))}
             </div>
 
-            {/* Step Content */}
             <div className="flex-1 px-6 overflow-y-auto pb-24">
               {step === 1 && (
                 <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
@@ -314,12 +303,12 @@ export function AjoScreen({ onBack }: { onBack: () => void }) {
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         placeholder="e.g. Family Asusu"
-                        className="mt-1 w-full h-14 rounded-2xl border border-[var(--line-strong)] bg-[var(--surface-2)] px-4 text-[16px] text-white outline-none focus:border-[#DE3121]"
+                        className="mt-1 w-full h-14 rounded-2xl border border-[var(--line-strong)] bg-[var(--surface-2)] px-4 text-[16px] text-white outline-none focus:border-[var(--brand)]"
                       />
                     </div>
                     <div>
                       <label className="text-[13px] font-medium text-[var(--text-3)]">Each person pays</label>
-                      <div className="mt-1 flex items-center h-14 rounded-2xl border border-[var(--line-strong)] bg-[var(--surface-2)] px-4 focus-within:border-[#DE3121]">
+                      <div className="mt-1 flex items-center h-14 rounded-2xl border border-[var(--line-strong)] bg-[var(--surface-2)] px-4 focus-within:border-[var(--brand)]">
                         <span className="text-[20px] text-[var(--text-3)]">₦</span>
                         <input
                           type="number"
@@ -336,7 +325,7 @@ export function AjoScreen({ onBack }: { onBack: () => void }) {
                         type="date"
                         value={startDate}
                         onChange={(e) => setStartDate(e.target.value)}
-                        className="mt-1 w-full h-14 rounded-2xl border border-[var(--line-strong)] bg-[var(--surface-2)] px-4 text-[16px] text-white outline-none focus:border-[#DE3121]"
+                        className="mt-1 w-full h-14 rounded-2xl border border-[var(--line-strong)] bg-[var(--surface-2)] px-4 text-[16px] text-white outline-none focus:border-[var(--brand)]"
                       />
                     </div>
                   </div>
@@ -346,13 +335,13 @@ export function AjoScreen({ onBack }: { onBack: () => void }) {
                     <div className="flex gap-2">
                       <button
                         onClick={() => setFrequency("weekly")}
-                        className={cn("flex-1 h-12 rounded-xl text-[14px] font-semibold transition-colors", frequency === "weekly" ? "bg-[#DE3121] text-white" : "bg-[var(--surface-2)] text-[var(--text-2)]")}
+                        className={cn("flex-1 h-12 rounded-xl text-[14px] font-semibold transition-colors", frequency === "weekly" ? "bg-[var(--brand)] text-[var(--brand-ink)]" : "bg-[var(--surface-2)] text-[var(--text-2)]")}
                       >
                         Weekly
                       </button>
                       <button
                         onClick={() => setFrequency("monthly")}
-                        className={cn("flex-1 h-12 rounded-xl text-[14px] font-semibold transition-colors", frequency === "monthly" ? "bg-[#DE3121] text-white" : "bg-[var(--surface-2)] text-[var(--text-2)]")}
+                        className={cn("flex-1 h-12 rounded-xl text-[14px] font-semibold transition-colors", frequency === "monthly" ? "bg-[var(--brand)] text-[var(--brand-ink)]" : "bg-[var(--surface-2)] text-[var(--text-2)]")}
                       >
                         Monthly
                       </button>
@@ -391,7 +380,6 @@ export function AjoScreen({ onBack }: { onBack: () => void }) {
                     </div>
                   </div>
 
-                  {/* Member Names Input */}
                   <div className="space-y-3">
                     <p className="text-[13px] font-medium text-[var(--text-3)]">Other members names</p>
                     <div className="flex gap-2">
@@ -401,9 +389,9 @@ export function AjoScreen({ onBack }: { onBack: () => void }) {
                         onChange={(e) => setNewMemberName(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && handleAddMember()}
                         placeholder="Enter name"
-                        className="flex-1 h-12 rounded-xl border border-[var(--line-strong)] bg-[var(--surface-2)] px-4 text-[15px] text-white outline-none focus:border-[#DE3121]"
+                        className="flex-1 h-12 rounded-xl border border-[var(--line-strong)] bg-[var(--surface-2)] px-4 text-[15px] text-white outline-none focus:border-[var(--brand)]"
                       />
-                      <button onClick={handleAddMember} className="h-12 px-4 rounded-xl bg-[#DE3121] text-white font-bold text-[14px]">Add</button>
+                      <button onClick={handleAddMember} className="h-12 px-4 rounded-xl bg-[var(--brand)] text-[var(--brand-ink)] font-bold text-[14px]">Add</button>
                     </div>
                     
                     <div className="flex flex-wrap gap-2 mt-2">
@@ -427,7 +415,7 @@ export function AjoScreen({ onBack }: { onBack: () => void }) {
                     <p className="text-[13px] text-[var(--text-3)] mt-1">Here is what your circle looks like.</p>
                   </div>
 
-                  <div className="rounded-3xl bg-[#DE3121] p-6 text-black shadow-xl">
+                  <div className="rounded-3xl p-6 text-black shadow-xl" style={{ background: "var(--brand)" }}>
                     <p className="text-[13px] text-black/70">Each person receives</p>
                     <p className="text-[36px] font-bold tabular mt-1">{fmt(parseFloat(amount || "0") * members)}</p>
                     <p className="text-[12px] text-black/70 mt-2">
@@ -453,14 +441,13 @@ export function AjoScreen({ onBack }: { onBack: () => void }) {
               )}
             </div>
 
-            {/* Footer Button (Raised above nav bar) */}
             <div className="shrink-0 px-6 pb-[calc(env(safe-area-inset-bottom)+90px)] pt-4 bg-[#0b0b0c]">
               {step < 3 ? (
-                <button onClick={handleNext} className="w-full h-14 rounded-2xl bg-[#DE3121] text-[16px] font-bold text-white active:scale-95 transition-transform">
+                <button onClick={handleNext} className="w-full h-14 rounded-2xl bg-[var(--brand)] text-[16px] font-bold text-[var(--brand-ink)] active:scale-95 transition-transform">
                   Continue
                 </button>
               ) : (
-                <button onClick={handleCreate} className="w-full h-14 rounded-2xl bg-[#DE3121] text-[16px] font-bold text-white active:scale-95 transition-transform">
+                <button onClick={handleCreate} className="w-full h-14 rounded-2xl bg-[var(--brand)] text-[16px] font-bold text-[var(--brand-ink)] active:scale-95 transition-transform">
                   Create Circle
                 </button>
               )}
