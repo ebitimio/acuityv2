@@ -42,7 +42,7 @@ export function OnboardingCarousel({ onComplete }: { onComplete: () => void }) {
   return (
     <div className="fixed inset-0 z-[200] flex flex-col bg-[#0b0b0c] text-white overflow-hidden">
       
-      {/* Background Graphics that change per slide */}
+      {/* Background Graphics */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden flex flex-col justify-center items-center">
         <AnimatePresence mode="wait">
           {current === 0 && <Slide1Graphic key="g1" />}
@@ -60,8 +60,8 @@ export function OnboardingCarousel({ onComplete }: { onComplete: () => void }) {
         </div>
       </div>
 
-      {/* Text Content */}
-      <div className="relative z-10 flex-1 flex flex-col justify-end px-8 pb-[calc(env(safe-area-inset-bottom)+120px)]">
+      {/* Text Content - Pushed further down to fill the black space */}
+      <div className="relative z-10 flex-1 flex flex-col justify-end px-8 pb-[calc(env(safe-area-inset-bottom)+150px)]">
         <AnimatePresence mode="wait">
           <motion.div
             key={current}
@@ -69,7 +69,7 @@ export function OnboardingCarousel({ onComplete }: { onComplete: () => void }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
-            className="max-w-sm"
+            className="max-w-sm mb-8"
           >
             <p className="text-[13px] font-mono tracking-widest text-[var(--brand)] mb-4 uppercase">
               {SLIDES[current].subtitle}
@@ -85,7 +85,7 @@ export function OnboardingCarousel({ onComplete }: { onComplete: () => void }) {
       </div>
 
       {/* Footer: Dots & Button */}
-      <div className="absolute bottom-0 left-0 right-0 z-10 px-8 pb-[calc(env(safe-area-inset-bottom)+32px)] pt-4 bg-gradient-to-t from-[#0b0b0c] via-[#0b0b0c]/80 to-transparent">
+      <div className="absolute bottom-0 left-0 right-0 z-10 px-8 pb-[calc(env(safe-area-inset-bottom)+32px)] pt-4 bg-gradient-to-t from-[#0b0b0c] via-[#0b0b0c]/90 to-transparent">
         <div className="flex items-center justify-between mb-6">
           <div className="flex gap-2">
             {SLIDES.map((_, i) => (
@@ -112,7 +112,7 @@ export function OnboardingCarousel({ onComplete }: { onComplete: () => void }) {
 }
 
 // ---------------------------------------------------------
-// GRAPHIC 1: Dogtag Image (using the uploaded asset)
+// GRAPHIC 1: Dogtag Image
 // ---------------------------------------------------------
 function Slide1Graphic() {
   return (
@@ -123,10 +123,6 @@ function Slide1Graphic() {
       transition={{ duration: 0.8 }}
       className="relative w-full h-[60vh] flex items-center justify-center mt-[-10vh] overflow-hidden"
     >
-      {/* 
-        This blends the image into the black background. 
-        If the image still has a visible square edge, increase the brightness/contrast filters.
-      */}
       <img 
         src="/dogtag.png" 
         alt="Acuity Dogtag" 
@@ -138,14 +134,13 @@ function Slide1Graphic() {
         }}
       />
       
-      {/* Gradient overlay to fade the bottom into the text area smoothly */}
       <div className="absolute inset-0 bg-gradient-to-t from-[#0b0b0c] via-transparent to-transparent" />
     </motion.div>
   );
 }
 
 // ---------------------------------------------------------
-// GRAPHIC 2: The Glowing AI Orb with floating widgets
+// GRAPHIC 2: Glowing AI Orb (Moved UP and SCALED DOWN to avoid text)
 // ---------------------------------------------------------
 function Slide2Graphic() {
   return (
@@ -154,7 +149,7 @@ function Slide2Graphic() {
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 1.1 }}
       transition={{ duration: 0.8 }}
-      className="relative w-full h-[50vh] flex items-center justify-center mt-[-10vh]"
+      className="relative w-full h-[50vh] flex items-center justify-center mt-[-25vh]"
     >
       <div className="absolute w-64 h-64 rounded-full border border-[var(--brand)]/30 shadow-[0_0_60px_rgba(222,49,33,0.2)]" />
       <div className="absolute w-48 h-48 rounded-full border border-[var(--brand)]/50 shadow-[0_0_40px_rgba(222,49,33,0.4)]" />
@@ -163,48 +158,49 @@ function Slide2Graphic() {
         <span className="text-[40px] font-black text-white">A<span style={{ color: "var(--brand)" }}>.</span></span>
       </div>
 
+      {/* Widgets scaled down and positioned tighter around the orb */}
       <motion.div 
-        animate={{ y: [0, -10, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute top-[10%] left-[5%] p-3 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md"
+        animate={{ y: [0, -8, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute top-[5%] left-[5%] p-2.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md scale-90"
       >
         <div className="flex items-center gap-2 mb-1">
-          <TrendingUp size={12} className="text-[var(--brand)]" />
-          <span className="text-[10px] font-semibold text-white">Spending Analysis</span>
+          <TrendingUp size={10} className="text-[var(--brand)]" />
+          <span className="text-[9px] font-semibold text-white">Spending Analysis</span>
         </div>
-        <p className="text-[8px] text-white/50">You're spending 23% more on dining this month.</p>
+        <p className="text-[7px] text-white/50">You're spending 23% more on dining this month.</p>
       </motion.div>
 
       <motion.div 
-        animate={{ y: [0, 10, 0] }} transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute top-[15%] right-[5%] p-3 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md"
+        animate={{ y: [0, 8, 0] }} transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute top-[10%] right-[5%] p-2.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md scale-90"
       >
         <div className="flex items-center gap-2 mb-1">
-          <Bell size={12} className="text-[var(--brand)]" />
-          <span className="text-[10px] font-semibold text-white">Smart Alerts</span>
+          <Bell size={10} className="text-[var(--brand)]" />
+          <span className="text-[9px] font-semibold text-white">Smart Alerts</span>
         </div>
-        <p className="text-[8px] text-white/50">Large transaction detected on your card.</p>
+        <p className="text-[7px] text-white/50">Large transaction detected.</p>
       </motion.div>
 
       <motion.div 
-        animate={{ y: [0, -8, 0] }} transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute bottom-[15%] left-[5%] p-3 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md"
+        animate={{ y: [0, -6, 0] }} transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute bottom-[5%] left-[5%] p-2.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md scale-90"
       >
         <div className="flex items-center gap-2 mb-1">
-          <PiggyBank size={12} className="text-[var(--brand)]" />
-          <span className="text-[10px] font-semibold text-white">Savings Suggestion</span>
+          <PiggyBank size={10} className="text-[var(--brand)]" />
+          <span className="text-[9px] font-semibold text-white">Savings Suggestion</span>
         </div>
-        <p className="text-[8px] text-white/50">You could save ₦120,000 more monthly.</p>
+        <p className="text-[7px] text-white/50">You could save ₦120k more.</p>
       </motion.div>
 
       <motion.div 
-        animate={{ y: [0, 12, 0] }} transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute bottom-[20%] right-[5%] p-3 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md"
+        animate={{ y: [0, 10, 0] }} transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute bottom-[10%] right-[5%] p-2.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md scale-90"
       >
         <div className="flex items-center gap-2 mb-1">
-          <LineChart size={12} className="text-[var(--brand)]" />
-          <span className="text-[10px] font-semibold text-white">Investment Insights</span>
+          <LineChart size={10} className="text-[var(--brand)]" />
+          <span className="text-[9px] font-semibold text-white">Investment Insights</span>
         </div>
-        <p className="text-[8px] text-white/50">Your portfolio is up 8.4% this month.</p>
+        <p className="text-[7px] text-white/50">Portfolio up 8.4%.</p>
       </motion.div>
     </motion.div>
   );
