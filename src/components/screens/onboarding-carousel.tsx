@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, TrendingUp, Bell, PiggyBank, LineChart } from "lucide-react";
+import { ArrowRight, TrendingUp, Bell, LineChart } from "lucide-react";
 
 const SLIDES = [
   {
@@ -60,8 +60,8 @@ export function OnboardingCarousel({ onComplete }: { onComplete: () => void }) {
         </div>
       </div>
 
-      {/* Text Content - Pushed further down to fill the black space */}
-      <div className="relative z-10 flex-1 flex flex-col justify-end px-8 pb-[calc(env(safe-area-inset-bottom)+150px)]">
+      {/* Text Content - Pushed lower to fill the bottom space */}
+      <div className="relative z-10 flex-1 flex flex-col justify-end px-8 pb-[calc(env(safe-area-inset-bottom)+100px)]">
         <AnimatePresence mode="wait">
           <motion.div
             key={current}
@@ -69,7 +69,7 @@ export function OnboardingCarousel({ onComplete }: { onComplete: () => void }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
-            className="max-w-sm mb-8"
+            className="max-w-sm"
           >
             <p className="text-[13px] font-mono tracking-widest text-[var(--brand)] mb-4 uppercase">
               {SLIDES[current].subtitle}
@@ -84,7 +84,7 @@ export function OnboardingCarousel({ onComplete }: { onComplete: () => void }) {
         </AnimatePresence>
       </div>
 
-      {/* Footer: Dots & Button */}
+      {/* Footer: Dots & Button - Pushed lower */}
       <div className="absolute bottom-0 left-0 right-0 z-10 px-8 pb-[calc(env(safe-area-inset-bottom)+32px)] pt-4 bg-gradient-to-t from-[#0b0b0c] via-[#0b0b0c]/90 to-transparent">
         <div className="flex items-center justify-between mb-6">
           <div className="flex gap-2">
@@ -121,7 +121,7 @@ function Slide1Graphic() {
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 1.05 }}
       transition={{ duration: 0.8 }}
-      className="relative w-full h-[60vh] flex items-center justify-center mt-[-10vh] overflow-hidden"
+      className="relative w-full h-[65vh] flex items-center justify-center mt-[-15vh] overflow-hidden"
     >
       <img 
         src="/dogtag.png" 
@@ -134,13 +134,13 @@ function Slide1Graphic() {
         }}
       />
       
-      <div className="absolute inset-0 bg-gradient-to-t from-[#0b0b0c] via-transparent to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-[#0b0b0c] via-[#0b0b0c]/50 to-transparent" />
     </motion.div>
   );
 }
 
 // ---------------------------------------------------------
-// GRAPHIC 2: Glowing AI Orb (Moved UP and SCALED DOWN to avoid text)
+// GRAPHIC 2: Glowing AI Orb (Removed bottom cards)
 // ---------------------------------------------------------
 function Slide2Graphic() {
   return (
@@ -149,7 +149,7 @@ function Slide2Graphic() {
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 1.1 }}
       transition={{ duration: 0.8 }}
-      className="relative w-full h-[50vh] flex items-center justify-center mt-[-25vh]"
+      className="relative w-full h-[50vh] flex items-center justify-center mt-[-20vh]"
     >
       <div className="absolute w-64 h-64 rounded-full border border-[var(--brand)]/30 shadow-[0_0_60px_rgba(222,49,33,0.2)]" />
       <div className="absolute w-48 h-48 rounded-full border border-[var(--brand)]/50 shadow-[0_0_40px_rgba(222,49,33,0.4)]" />
@@ -158,7 +158,7 @@ function Slide2Graphic() {
         <span className="text-[40px] font-black text-white">A<span style={{ color: "var(--brand)" }}>.</span></span>
       </div>
 
-      {/* Widgets scaled down and positioned tighter around the orb */}
+      {/* Only the top two widgets remain */}
       <motion.div 
         animate={{ y: [0, -8, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
         className="absolute top-[5%] left-[5%] p-2.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md scale-90"
@@ -179,28 +179,6 @@ function Slide2Graphic() {
           <span className="text-[9px] font-semibold text-white">Smart Alerts</span>
         </div>
         <p className="text-[7px] text-white/50">Large transaction detected.</p>
-      </motion.div>
-
-      <motion.div 
-        animate={{ y: [0, -6, 0] }} transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute bottom-[5%] left-[5%] p-2.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md scale-90"
-      >
-        <div className="flex items-center gap-2 mb-1">
-          <PiggyBank size={10} className="text-[var(--brand)]" />
-          <span className="text-[9px] font-semibold text-white">Savings Suggestion</span>
-        </div>
-        <p className="text-[7px] text-white/50">You could save ₦120k more.</p>
-      </motion.div>
-
-      <motion.div 
-        animate={{ y: [0, 10, 0] }} transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute bottom-[10%] right-[5%] p-2.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md scale-90"
-      >
-        <div className="flex items-center gap-2 mb-1">
-          <LineChart size={10} className="text-[var(--brand)]" />
-          <span className="text-[9px] font-semibold text-white">Investment Insights</span>
-        </div>
-        <p className="text-[7px] text-white/50">Portfolio up 8.4%.</p>
       </motion.div>
     </motion.div>
   );
