@@ -64,7 +64,8 @@ export function SafeToSpendHero({
 
   const actualIncome = expectedIncome - totalObligations;
 
-  const heroBg = "#DE3121";
+  // Use var(--brand) so it changes dynamically
+  const heroBg = "var(--brand)";
 
   const displayValue = hidden ? "₦••••••" : fmt(netAcross);
 
@@ -77,7 +78,6 @@ export function SafeToSpendHero({
       <div className="mt-3">
         <p className="text-[12px] text-black/70">Net across accounts</p>
         
-        {/* Net worth + Eye toggle inline */}
         <div className="mt-1 flex items-center gap-2">
           <div className="text-[38px] font-bold leading-none tracking-tight text-black">
             {hidden ? (

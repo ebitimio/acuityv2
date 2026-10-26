@@ -154,7 +154,7 @@ export function AnalyticsScreen({ onBack, onNavigateTransactions }: { onBack: ()
                   {totalCatBudget > 0 ? `of ${fmt(totalCatBudget)}` : "no limit"}
                 </p>
                 {totalCatBudget > 0 && (
-                  <span className="inline-block mt-1 rounded-md bg-[#DE3121]/10 px-2 py-0.5 text-[11px] font-bold text-[#DE3121]">
+                  <span className="inline-block mt-1 rounded-md bg-[var(--brand)]/10 px-2 py-0.5 text-[11px] font-bold text-[var(--brand)]">
                     {pct > 90 ? "Too fast" : "On track"}
                   </span>
                 )}
@@ -186,8 +186,8 @@ export function AnalyticsScreen({ onBack, onNavigateTransactions }: { onBack: ()
                     key={day}
                     className={cn(
                       "flex items-center justify-center aspect-square rounded-full text-[13px] font-medium transition-colors",
-                      hasSpend ? "bg-[#DE3121] text-white" : "bg-white/5 text-white/60",
-                      isToday && "ring-2 ring-[#DE3121] ring-offset-2 ring-offset-[#1c1c1e]"
+                      hasSpend ? "bg-[var(--brand)] text-[var(--brand-ink)]" : "bg-white/5 text-white/60",
+                      isToday && "ring-2 ring-[var(--brand)] ring-offset-2 ring-offset-[#1c1c1e]"
                     )}
                   >
                     {day}
@@ -196,7 +196,7 @@ export function AnalyticsScreen({ onBack, onNavigateTransactions }: { onBack: ()
               })}
             </div>
             <p className="mt-4 text-[11px] text-white/40 flex items-center gap-1">
-              <Info size={12} /> Days highlighted in red are days you spent money.
+              <Info size={12} /> Days highlighted in brand color are days you spent money.
             </p>
           </div>
 
@@ -229,13 +229,13 @@ export function AnalyticsScreen({ onBack, onNavigateTransactions }: { onBack: ()
             </div>
           </div>
 
-          <div className="relative overflow-hidden rounded-2xl border border-[#DE3121]/20 bg-[#DE3121]/5 p-5">
+          <div className="relative overflow-hidden rounded-2xl border border-[var(--brand)]/20 bg-[var(--brand)]/5 p-5">
             <div className="flex items-start gap-3">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#DE3121] text-white">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] text-[var(--brand-ink)]">
                 <Lightbulb size={16} />
               </div>
               <div>
-                <p className="text-[13px] font-bold text-[#DE3121]">Insight</p>
+                <p className="text-[13px] font-bold text-[var(--brand)]">Insight</p>
                 <p className="mt-1 text-[13px] leading-relaxed text-[var(--text-2)]">
                   {pct > 90 
                     ? `You've used ${Math.round(pct)}% of your ${selectedCategory} budget. Consider slowing down to avoid going over.`
@@ -281,7 +281,7 @@ export function AnalyticsScreen({ onBack, onNavigateTransactions }: { onBack: ()
                   onClick={() => setSelectedAccountId("all")}
                   className={cn(
                     "px-3 py-1.5 rounded-full text-[12px] font-semibold whitespace-nowrap shrink-0",
-                    selectedAccountId === "all" ? "bg-[var(--brand)] text-white" : "bg-[var(--surface-2)] text-[var(--text-3)]"
+                    selectedAccountId === "all" ? "bg-[var(--brand)] text-[var(--brand-ink)]" : "bg-[var(--surface-2)] text-[var(--text-3)]"
                   )}
                 >
                   All Accounts
@@ -292,7 +292,7 @@ export function AnalyticsScreen({ onBack, onNavigateTransactions }: { onBack: ()
                     onClick={() => setSelectedAccountId(a.id)}
                     className={cn(
                       "px-3 py-1.5 rounded-full text-[12px] font-semibold whitespace-nowrap shrink-0",
-                      selectedAccountId === a.id ? "bg-[var(--brand)] text-white" : "bg-[var(--surface-2)] text-[var(--text-3)]"
+                      selectedAccountId === a.id ? "bg-[var(--brand)] text-[var(--brand-ink)]" : "bg-[var(--surface-2)] text-[var(--text-3)]"
                     )}
                   >
                     {a.name}
@@ -317,7 +317,7 @@ export function AnalyticsScreen({ onBack, onNavigateTransactions }: { onBack: ()
                         style={{ 
                           backgroundColor: d.spent === 0 
                             ? "rgba(255,255,255,0.05)" 
-                            : `rgba(222, 49, 33, ${Math.max(intensity, 0.3)})` 
+                            : `rgba(var(--brand-rgb, 222, 49, 33), ${Math.max(intensity, 0.3)})` 
                         }}
                         aria-label={`${d.date.toLocaleDateString()} - ${fmt(d.spent)}`}
                       />
@@ -325,7 +325,7 @@ export function AnalyticsScreen({ onBack, onNavigateTransactions }: { onBack: ()
                   })}
                 </div>
                 <p className="text-[11px] text-white/40 mb-4 flex items-center gap-1">
-                  <Info size={12} /> Tap a square to see daily spend. Darker red = more spent.
+                  <Info size={12} /> Tap a square to see daily spend. Darker color = more spent.
                 </p>
 
                 <div className="grid grid-cols-3 gap-2 border-t border-white/10 pt-4">
@@ -357,7 +357,7 @@ export function AnalyticsScreen({ onBack, onNavigateTransactions }: { onBack: ()
                         className="flex w-full items-center justify-between px-4 py-3.5 hover:bg-[var(--fill-1)] transition-colors"
                       >
                         <div className="flex items-center gap-3 flex-1">
-                          <div className="h-2 w-2 rounded-full bg-[#DE3121]" />
+                          <div className="h-2 w-2 rounded-full bg-[var(--brand)]" />
                           <span className="text-[14px] font-medium text-[var(--text-1)]">{name}</span>
                         </div>
                         <div className="flex items-center gap-3">
@@ -397,7 +397,7 @@ export function AnalyticsScreen({ onBack, onNavigateTransactions }: { onBack: ()
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#DE3121]/10 text-[#DE3121]"><Landmark size={14} /></div>
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--brand)]/10 text-[var(--brand)]"><Landmark size={14} /></div>
                       <span className="text-[14px] text-white">Non-Liquid Assets</span>
                     </div>
                     <span className="text-[14px] font-semibold text-white">{fmt(nonLiquid)}</span>
@@ -412,16 +412,16 @@ export function AnalyticsScreen({ onBack, onNavigateTransactions }: { onBack: ()
                 </div>
               </div>
 
-              <div className="relative overflow-hidden rounded-2xl border border-[#DE3121]/20 bg-[#DE3121]/5 p-5">
-                <div className="absolute -right-4 -top-4 text-[#DE3121]/10">
+              <div className="relative overflow-hidden rounded-2xl border border-[var(--brand)]/20 bg-[var(--brand)]/5 p-5">
+                <div className="absolute -right-4 -top-4 text-[var(--brand)]/10">
                   <Sparkles size={100} />
                 </div>
                 <div className="relative z-10 flex items-start gap-3">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#DE3121] text-white">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] text-[var(--brand-ink)]">
                     <Lightbulb size={16} />
                   </div>
                   <div>
-                    <p className="text-[13px] font-bold text-[#DE3121]">AI Advisor Insight</p>
+                    <p className="text-[13px] font-bold text-[var(--brand)]">AI Advisor Insight</p>
                     <p className="mt-1 text-[13px] leading-relaxed text-[var(--text-2)]">
                       {nonLiquid > liquid * 2 
                         ? "Most of your wealth is tied up in illiquid assets (like land). While great for long-term growth, consider building a larger cash buffer for emergencies."
