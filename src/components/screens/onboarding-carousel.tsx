@@ -112,67 +112,34 @@ export function OnboardingCarousel({ onComplete }: { onComplete: () => void }) {
 }
 
 // ---------------------------------------------------------
-// GRAPHIC 1: 3D "A." Logo with glowing red dot
+// GRAPHIC 1: Dogtag Image (using the uploaded asset)
 // ---------------------------------------------------------
 function Slide1Graphic() {
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.9, rotateX: 20 }}
-      animate={{ opacity: 1, scale: 1, rotateX: 0 }}
-      exit={{ opacity: 0, scale: 1.1 }}
-      transition={{ duration: 0.8, type: "spring" }}
-      className="relative w-full h-[55vh] flex items-center justify-center mt-[-5vh]"
-      style={{ perspective: 1000 }}
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 1.05 }}
+      transition={{ duration: 0.8 }}
+      className="relative w-full h-[60vh] flex items-center justify-center mt-[-10vh] overflow-hidden"
     >
-      {/* Glow behind the logo */}
-      <div className="absolute w-48 h-48 bg-[var(--brand)]/20 blur-[60px] rounded-full" />
-
-      {/* The 3D 'A' Structure */}
-      <div className="relative w-64 h-72 flex justify-center items-end pb-8">
-        
-        {/* Left Leg */}
-        <div 
-          className="absolute bottom-8 left-[15%] w-16 h-full origin-bottom-left rounded-t-lg"
-          style={{
-            background: "linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.1) 40%, rgba(0,0,0,0.8) 100%)",
-            transform: "rotate(25deg)",
-            clipPath: "polygon(50% 0, 100% 100%, 0% 100%)",
-            boxShadow: "inset -4px 0 10px rgba(0,0,0,0.5), inset 4px 0 10px rgba(255,255,255,0.2)",
-            borderRight: "1px solid rgba(255,255,255,0.3)"
-          }}
-        />
-
-        {/* Right Leg */}
-        <div 
-          className="absolute bottom-8 right-[15%] w-16 h-full origin-bottom-right rounded-t-lg"
-          style={{
-            background: "linear-gradient(-135deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.1) 40%, rgba(0,0,0,0.9) 100%)",
-            transform: "rotate(-25deg)",
-            clipPath: "polygon(50% 0, 100% 100%, 0% 100%)",
-            boxShadow: "inset 4px 0 10px rgba(0,0,0,0.6), inset -4px 0 10px rgba(255,255,255,0.1)",
-            borderLeft: "1px solid rgba(255,255,255,0.2)"
-          }}
-        />
-
-        {/* Crossbar / Base Shape */}
-        <div 
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 w-48 h-32"
-          style={{
-            background: "linear-gradient(to top, rgba(255,255,255,0.4), transparent)",
-            clipPath: "polygon(20% 100%, 80% 100%, 60% 30%, 40% 30%)",
-          }}
-        />
-
-        {/* The Glowing Red Dot */}
-        <div className="absolute bottom-6 right-[10%] flex flex-col items-center">
-          <div className="w-10 h-10 rounded-full bg-[var(--brand)] blur-sm opacity-60" />
-          <div className="absolute w-8 h-8 rounded-full bg-[var(--brand)] shadow-[0_0_20px_rgba(222,49,33,0.8)]" />
-        </div>
-      </div>
-
-      {/* Reflection Floor */}
-      <div className="absolute bottom-0 w-[80%] h-[2px] bg-gradient-to-r from-transparent via-white/30 to-transparent blur-[1px]" />
-      <div className="absolute bottom-0 w-[80%] h-[60px] bg-gradient-to-t from-[var(--brand)]/10 to-transparent opacity-50" />
+      {/* 
+        This blends the image into the black background. 
+        If the image still has a visible square edge, increase the brightness/contrast filters.
+      */}
+      <img 
+        src="/dogtag.png" 
+        alt="Acuity Dogtag" 
+        className="w-full h-full object-cover opacity-90"
+        style={{ 
+          filter: "brightness(0.8) contrast(1.2)",
+          maskImage: "radial-gradient(circle, black 40%, transparent 80%)",
+          WebkitMaskImage: "radial-gradient(circle, black 40%, transparent 80%)"
+        }}
+      />
+      
+      {/* Gradient overlay to fade the bottom into the text area smoothly */}
+      <div className="absolute inset-0 bg-gradient-to-t from-[#0b0b0c] via-transparent to-transparent" />
     </motion.div>
   );
 }
