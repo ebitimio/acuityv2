@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, TrendingUp, Bell, PiggyBank, LineChart } from "lucide-react";
+import { ArrowRight, TrendingUp, Bell, PiggyBank, LineChart, Eye, ChevronDown } from "lucide-react";
 
 const SLIDES = [
   {
@@ -45,7 +45,7 @@ export function OnboardingCarousel({ onComplete }: { onComplete: () => void }) {
       {/* Background Graphics that change per slide */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden flex flex-col justify-center items-center">
         <AnimatePresence mode="wait">
-          {current === 0 && <Slide1Graphic key="g1" />}
+          {current === 0 && <Slide1Mockup key="g1" />}
           {current === 1 && <Slide2Graphic key="g2" />}
           {current === 2 && <Slide3Graphic key="g3" />}
           {current === 3 && <Slide4Graphic key="g4" />}
@@ -112,41 +112,133 @@ export function OnboardingCarousel({ onComplete }: { onComplete: () => void }) {
 }
 
 // ---------------------------------------------------------
-// GRAPHIC 1: The 3D "A" with glowing red dot
+// GRAPHIC 1: Floating Phone Mockup with Dashboard
 // ---------------------------------------------------------
-function Slide1Graphic() {
+function Slide1Mockup() {
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 1.1 }}
-      transition={{ duration: 0.8 }}
-      className="relative w-full h-[50vh] flex items-center justify-center mt-[-10vh]"
+      initial={{ opacity: 0, y: 50, scale: 0.9 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -20, scale: 0.95 }}
+      transition={{ duration: 0.8, ease: "easeOut" }}
+      className="relative w-full h-[55vh] flex items-center justify-center mt-[-5vh]"
     >
-      {/* Glowing background dot */}
-      <div className="absolute right-[20%] bottom-[30%] w-12 h-12 rounded-full bg-[var(--brand)] blur-md opacity-80" />
-      <div className="absolute right-[20%] bottom-[30%] w-24 h-24 rounded-full bg-[var(--brand)] blur-2xl opacity-40" />
+      {/* Glow behind the phone */}
+      <div className="absolute w-64 h-64 bg-[var(--brand)]/20 blur-[80px] rounded-full" />
 
-      {/* Abstract 3D 'A' shape using CSS clip-path */}
-      <div 
-        className="relative w-64 h-64 bg-gradient-to-br from-white/40 via-white/5 to-transparent"
-        style={{
-          clipPath: "polygon(50% 0%, 100% 100%, 75% 100%, 50% 40%, 25% 100%, 0% 100%)",
-          boxShadow: "inset 0 0 40px rgba(255,255,255,0.2)"
-        }}
-      >
-        {/* Inner cutout for the A */}
-        <div 
-          className="absolute inset-0 bg-[#0b0b0c]"
-          style={{
-            clipPath: "polygon(48% 15%, 52% 15%, 70% 100%, 30% 100%)",
-            transform: "scale(0.95)"
-          }}
-        />
+      {/* Phone Frame */}
+      <div className="relative w-[260px] h-[540px] rounded-[40px] border-[6px] border-[#222] bg-[#0b0b0c] shadow-2xl overflow-hidden flex flex-col">
+        
+        {/* Notch */}
+        <div className="absolute top-0 inset-x-0 h-6 flex justify-center z-20">
+          <div className="w-24 h-6 bg-[#222] rounded-b-xl" />
+        </div>
+
+        {/* Status Bar */}
+        <div className="flex justify-between items-center px-5 pt-8 pb-2 text-[10px] font-semibold text-white">
+          <span>12:28</span>
+          <div className="flex gap-1 items-center">
+            <div className="w-3 h-2 bg-white rounded-sm" />
+            <div className="w-2 h-2 bg-white rounded-full" />
+            <div className="w-3 h-2 bg-white rounded-sm" />
+          </div>
+        </div>
+
+        {/* App Content Mockup */}
+        <div className="flex-1 px-4 flex flex-col gap-3 overflow-hidden">
+          
+          {/* Header */}
+          <div className="flex justify-between items-center mt-2">
+            <span className="text-[14px] font-bold text-white flex items-center gap-1">
+              Personal Workspace <ChevronDown size={12} className="text-white/50" />
+            </span>
+            <div className="flex gap-1">
+              <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center"><Bell size={10} className="text-white" /></div>
+              <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-[8px] font-bold text-white">E</div>
+            </div>
+          </div>
+
+          {/* Hero Card */}
+          <div className="rounded-[16px] p-3 text-black relative" style={{ background: "var(--brand)" }}>
+            <p className="text-center text-[8px] font-semibold text-black/70">October 2026</p>
+            <p className="text-[8px] text-black/70 mt-1">Net across accounts</p>
+            <div className="flex items-center gap-1 mt-0.5">
+              <span className="text-[18px] font-bold leading-none tracking-tight">₦60,714,465</span>
+              <div className="w-4 h-4 rounded-full bg-black/10 flex items-center justify-center"><Eye size={8} className="text-black/70" /></div>
+            </div>
+            <p className="text-[7px] text-black/70 mt-1">₦219,500 spent this month</p>
+            
+            <div className="mt-2 flex items-center justify-between rounded-md bg-black px-2 py-1">
+              <span className="text-[6px] font-medium text-white">Safe to spend today</span>
+              <span className="text-[8px] font-bold text-white">₦69,200</span>
+            </div>
+
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <div>
+                <p className="text-[6px] text-black/70">Income</p>
+                <p className="text-[8px] font-semibold text-[#22c55e]">₦69,200</p>
+              </div>
+              <div>
+                <p className="text-[6px] text-black/70">Net liquid assets</p>
+                <p className="text-[8px] font-semibold text-black">₦643,000</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="grid grid-cols-3 gap-2">
+            <div className="h-8 rounded-lg bg-[#1c1c1e] border border-white/5 flex items-center justify-center">
+              <PiggyBank size={12} color="var(--brand)" />
+            </div>
+            <div className="h-8 rounded-lg bg-[#1c1c1e] border border-white/5 flex items-center justify-center">
+              <TrendingUp size={12} color="var(--brand)" />
+            </div>
+            <div className="h-8 rounded-lg bg-[#1c1c1e] border border-white/5 flex items-center justify-center">
+              <ArrowRight size={12} color="var(--brand)" />
+            </div>
+          </div>
+
+          {/* Accounts Section */}
+          <div className="mt-1">
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-[8px] font-semibold text-white">My Accounts</span>
+              <span className="text-[7px] text-[var(--brand)]">See all</span>
+            </div>
+            {/* Mini ATM Card */}
+            <div className="rounded-xl border border-[var(--brand)]/30 bg-gradient-to-br from-[#1c1c1e] to-[#0b0b0c] p-2 relative overflow-hidden">
+              <div className="flex justify-between items-start relative z-10">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-5 h-5 rounded-full bg-[var(--brand)]/20 flex items-center justify-center text-[8px] font-bold text-[var(--brand)]">M</div>
+                  <div>
+                    <p className="text-[8px] font-bold text-[var(--brand)]">Main</p>
+                    <p className="text-[6px] text-[var(--brand)]/60 uppercase">Checking</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-[5px] uppercase tracking-widest text-[var(--brand)]/60">Cardholder</p>
+                  <p className="text-[7px] font-mono tracking-wider text-[var(--brand)]">EBITIMI OGLAFA</p>
+                </div>
+              </div>
+              <div className="mt-4 flex justify-between items-end relative z-10">
+                <div>
+                  <p className="text-[5px] text-[var(--brand)]/60">Balance</p>
+                  <p className="text-[10px] font-bold text-[var(--brand)]">₦193,000</p>
+                </div>
+                <p className="text-[6px] text-[var(--brand)]/80">Kuda bank</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Nav Mockup */}
+        <div className="h-12 bg-[#1c1c1e] mt-auto flex items-center justify-around px-4 rounded-b-[34px]">
+          <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center"><div className="w-2 h-2 bg-white rounded-full" /></div>
+          <div className="w-2 h-2 bg-white/30 rounded-full" />
+          <div className="w-2 h-2 bg-white/30 rounded-full" />
+          <div className="w-2 h-2 bg-white/30 rounded-full" />
+          <div className="w-6 h-6 rounded-full bg-[var(--brand)] flex items-center justify-center text-black font-bold text-[10px]">+</div>
+        </div>
       </div>
-      
-      {/* Reflection floor */}
-      <div className="absolute bottom-0 w-full h-1/2 bg-gradient-to-t from-[#0b0b0c] to-transparent" />
     </motion.div>
   );
 }
@@ -163,16 +255,13 @@ function Slide2Graphic() {
       transition={{ duration: 0.8 }}
       className="relative w-full h-[50vh] flex items-center justify-center mt-[-10vh]"
     >
-      {/* Glowing orb ring */}
       <div className="absolute w-64 h-64 rounded-full border border-[var(--brand)]/30 shadow-[0_0_60px_rgba(222,49,33,0.2)]" />
       <div className="absolute w-48 h-48 rounded-full border border-[var(--brand)]/50 shadow-[0_0_40px_rgba(222,49,33,0.4)]" />
       
-      {/* Core Sphere */}
       <div className="relative w-32 h-32 rounded-full bg-gradient-to-br from-[#2a2a2c] to-black shadow-[inset_0_0_20px_rgba(255,255,255,0.1),0_0_30px_rgba(222,49,33,0.3)] flex items-center justify-center">
         <span className="text-[40px] font-black text-white">A<span style={{ color: "var(--brand)" }}>.</span></span>
       </div>
 
-      {/* Floating Widgets */}
       <motion.div 
         animate={{ y: [0, -10, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
         className="absolute top-[10%] left-[5%] p-3 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md"
@@ -232,29 +321,23 @@ function Slide3Graphic() {
       transition={{ duration: 0.8 }}
       className="relative w-full h-[60vh] flex flex-col items-center justify-end mt-[-10vh]"
     >
-      {/* Big Red Sun */}
       <div className="absolute top-[10%] w-48 h-48 rounded-full border-4 border-[var(--brand)] shadow-[0_0_50px_rgba(222,49,33,0.6),inset_0_0_40px_rgba(222,49,33,0.4)]" />
       
-      {/* Mountains & River (Using CSS polygons) */}
       <div className="relative w-full h-[40%] overflow-hidden">
-        {/* Left Mountain */}
         <div 
           className="absolute bottom-0 left-[-10%] w-[70%] h-full bg-[#111]"
           style={{ clipPath: "polygon(0 100%, 50% 0, 100% 100%)" }}
         />
-        {/* Right Mountain */}
         <div 
           className="absolute bottom-0 right-[-10%] w-[70%] h-full bg-[#151515]"
           style={{ clipPath: "polygon(0 100%, 50% 0, 100% 100%)" }}
         />
         
-        {/* Glowing River */}
         <div 
           className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-full bg-gradient-to-t from-[var(--brand)] to-transparent opacity-60"
           style={{ clipPath: "polygon(40% 100%, 60% 100%, 55% 0, 45% 0)" }}
         />
         
-        {/* Foreground shadow */}
         <div className="absolute bottom-0 w-full h-1/2 bg-gradient-to-t from-[#0b0b0c] to-transparent z-10" />
       </div>
     </motion.div>
