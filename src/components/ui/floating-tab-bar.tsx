@@ -65,7 +65,8 @@ export function FloatingTabBar({ activeTab, onTabChange, onAddClick, isHidden }:
             style={{ backgroundColor: "var(--brand)" }}
             aria-label="Quick add"
           >
-            <Plus size={24} strokeWidth={3} style={{ color: "var(--brand-ink)" }} />
+            {/* Hardcoded to black for all themes */}
+            <Plus size={24} strokeWidth={3} style={{ color: "#000000" }} />
           </button>
         )}
       </div>
