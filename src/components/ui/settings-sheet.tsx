@@ -48,13 +48,16 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
   const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [view, setView] = useState<SubView>("main");
 
+  // Edit profile
   const [editName, setEditName] = useState(profileName);
   const [savingName, setSavingName] = useState(false);
 
+  // Change password
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [savingPassword, setSavingPassword] = useState(false);
 
+  // Determine auth provider
   const isGoogleUser = user?.app_metadata?.provider === "google";
 
   useEffect(() => {
@@ -147,6 +150,7 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
     ? new Date(user.created_at).toLocaleDateString("en-NG", { month: "long", year: "numeric" })
     : "Recently";
 
+  // ---------- SUB VIEWS ----------
   if (view === "change-pin") {
     return (
       <PinLockScreen 
@@ -169,7 +173,7 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
           </button>
           <div className="flex justify-center">
             <div className="relative">
-              <div className="flex h-24 w-24 items-center justify-center rounded-full bg-[var(--brand)] text-white text-[36px] font-bold">
+              <div className="flex h-24 w-24 items-center justify-center rounded-full bg-[var(--brand)] text-[var(--brand-ink)] text-[36px] font-bold">
                 {editName.charAt(0).toUpperCase() || "U"}
               </div>
               {isGoogleUser && (
@@ -299,6 +303,7 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
     );
   }
 
+  // ---------- MAIN VIEW ----------
   return (
     <Modal open={isOpen} onClose={onClose} title="Settings">
       <div className="space-y-6 pb-6 overflow-y-auto max-h-[75dvh]">
@@ -307,7 +312,7 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
         <div className="p-4 rounded-2xl bg-[var(--surface-2)] border border-[var(--line)]">
           <div className="flex items-center gap-4">
             <div className="relative">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--brand)] text-white text-[20px] font-bold">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--brand)] text-[var(--brand-ink)] text-[20px] font-bold">
                 {profileName.charAt(0).toUpperCase()}
               </div>
               {isGoogleUser && (
@@ -377,7 +382,7 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
           <Row icon={Bell} label="Bill reminders" toggle toggleValue={billReminders} onToggle={() => setBillReminders(!billReminders)} />
         </Section>
 
-        {/* APPEARANCE & COLOR THEME */}
+        {/* APPEARANCE */}
         <Section title="Appearance">
           <div className="px-4 py-3.5 border-b border-[var(--line)]">
             <div className="flex items-center gap-3 mb-3">
@@ -405,34 +410,43 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
             </div>
           </div>
 
+          {/* APP COLOR - Updated Names */}
           <div className="px-4 py-3.5">
             <div className="flex items-center gap-3 mb-3">
               <Palette size={18} className="text-[var(--brand)]" />
               <span className="text-[14px] font-medium text-[var(--text-1)]">App Color</span>
             </div>
             <div className="grid grid-cols-3 gap-2">
-              {(["red", "lime", "grey"] as AccentColor[]).map((c) => (
-                <button
-                  key={c}
-                  onClick={() => setAccent(c)}
-                  className={cn(
-                    "flex flex-col items-center gap-2 rounded-xl py-3 text-[11px] font-semibold capitalize transition-colors border",
-                    accent === c
-                      ? "bg-[var(--fill-2)] border-[var(--text-1)]"
-                      : "bg-[var(--fill-1)] border-transparent"
-                  )}
-                >
-                  <div 
-                    className="h-5 w-5 rounded-full shadow-sm" 
-                    style={{ 
-                      backgroundColor: c === "red" ? "#DE3121" : c === "lime" ? "#D2F824" : "#4B5563" 
-                    }} 
-                  />
-                  <span className={accent === c ? "text-[var(--text-1)]" : "text-[var(--text-2)]"}>
-                    {c === "red" ? "Default" : c === "lime" ? "Lime" : "Grey"}
-                  </span>
-                </button>
-              ))}
+              {(["red", "lime", "grey"] as AccentColor[]).map((c) => {
+                const labels = {
+                  red: "Ember",
+                  lime: "Neon",
+                  grey: "Midnight"
+                };
+                
+                return (
+                  <button
+                    key={c}
+                    onClick={() => setAccent(c)}
+                    className={cn(
+                      "flex flex-col items-center gap-2 rounded-xl py-3 text-[11px] font-semibold capitalize transition-colors border",
+                      accent === c
+                        ? "bg-[var(--fill-2)] border-[var(--text-1)]"
+                        : "bg-[var(--fill-1)] border-transparent"
+                    )}
+                  >
+                    <div 
+                      className="h-5 w-5 rounded-full shadow-sm" 
+                      style={{ 
+                        backgroundColor: c === "red" ? "#DE3121" : c === "lime" ? "#D2F824" : "#4B5563" 
+                      }} 
+                    />
+                    <span className={accent === c ? "text-[var(--text-1)]" : "text-[var(--text-2)]"}>
+                      {labels[c]}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </Section>
