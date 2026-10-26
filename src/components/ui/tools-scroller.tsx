@@ -20,11 +20,6 @@ export function ToolsScroller({ onNavigate }: { onNavigate: (key: string) => voi
       <div className="mb-3 flex items-center justify-between px-1">
         <h3 className="text-[15px] font-semibold text-[var(--text-1)]">Tools</h3>
       </div>
-      {/* 
-        -mx-5 cancels the parent's px-5 padding.
-        px-5 adds padding back to the content so the first card aligns with the title.
-        This allows the scroll area to touch the very edge of the screen.
-      */}
       <div
         ref={scrollerRef}
         className="flex gap-3 overflow-x-auto pb-2 -mx-5 px-5 no-scrollbar"
@@ -36,7 +31,8 @@ export function ToolsScroller({ onNavigate }: { onNavigate: (key: string) => voi
             className="press flex min-w-[140px] flex-col items-start gap-3 rounded-[18px] border border-white/5 bg-[#1c1c1e] p-4 text-left shrink-0"
           >
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10">
-              <tool.icon size={20} color="#DE3121" />
+              {/* Changed hardcoded hex to var(--brand) */}
+              <tool.icon size={20} color="var(--brand)" />
             </div>
             <div>
               <p className="text-[14px] font-semibold text-white">{tool.label}</p>

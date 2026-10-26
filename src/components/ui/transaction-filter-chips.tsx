@@ -6,7 +6,6 @@ const CHIPS: { key: Filter; label: string }[] = [
   { key: "all", label: "All" },
   { key: "credit", label: "In" },
   { key: "debit", label: "Out" },
-  // Removed Transfers
 ];
 
 export function TransactionFilterChips({

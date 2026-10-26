@@ -53,7 +53,6 @@ export function AccountsScreen({
   const toast = useToast();
   const { active: activeWs } = useWorkspace();
 
-  // --- NEW: Auto-open logic from Setup Checklist ---
   useEffect(() => {
     if (autoOpenAddAccount) {
       setModal("account");
@@ -147,7 +146,6 @@ export function AccountsScreen({
             <IconButton label="Transfer" onClick={() => setIsTransferOpen(true)}>
               <ArrowRightLeft size={16} />
             </IconButton>
-            {/* ADDED data-setup-btn HERE */}
             <button 
               data-setup-btn="add-account" 
               onClick={() => setModal("account")} 
@@ -162,8 +160,8 @@ export function AccountsScreen({
 
       <div className="px-4 pt-6 space-y-6">
         
-        {/* Total Net Worth Hero */}
-        <div className="p-6 rounded-[24px] bg-[#DE3121] shadow-xl text-center">
+        {/* Total Net Worth Hero - Changed to var(--brand) */}
+        <div className="p-6 rounded-[24px] shadow-xl text-center" style={{ background: "var(--brand)" }}>
           <p className="text-[13px] text-black/70 mb-1 font-medium">Total Net Worth</p>
           <p className="text-[36px] font-bold tabular text-black">{fmt(netWorth)}</p>
         </div>
@@ -255,14 +253,13 @@ export function AccountsScreen({
             <Button variant="ghost" onClick={() => { setEditingAssetId(null); setName(""); setBalance(0); setAssetType("asset"); setModal("asset"); }} className="flex-1 h-11 text-[13px]">
               + Add Asset / Liability
             </Button>
-            <Button variant="ghost" onClick={() => setIsCryptoOpen(true)} className="flex-1 h-11 text-[13px] border-[#DE3121]/20 text-[#DE3121]">
+            <Button variant="ghost" onClick={() => setIsCryptoOpen(true)} className="flex-1 h-11 text-[13px] border-[var(--brand)]/20 text-[var(--brand)]">
               <Coins size={14} className="mr-1" /> Add Crypto
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Sheets */}
       <TransferSheet
         isOpen={isTransferOpen}
         onClose={() => setIsTransferOpen(false)}
