@@ -2,20 +2,32 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, CreditCard, Coins, Sparkles, BrainCircuit, PieChart, ShieldCheck, MessageSquare, Lightbulb } from "lucide-react";
+import { ArrowRight, TrendingUp, Bell, PiggyBank, LineChart } from "lucide-react";
 
 const SLIDES = [
   {
-    title: "Welcome to Acuity.",
-    desc: "Your AI-powered personal wealth command center.",
+    id: 0,
+    subtitle: "01 — Welcome",
+    title: "Welcome to\nAcuity.",
+    desc: "A clearer way to move forward.",
   },
   {
-    title: "Know your limits.",
-    desc: "We calculate your daily Safe to Spend based on real obligations, so you never run out before payday.",
+    id: 1,
+    subtitle: "02 — Intelligence",
+    title: "Your Personal\nFinancial Officer.\nPowered by AI.",
+    desc: "Get real-time insights, smart spending alerts, personalised advice and automated tracking — all tailored to your goals.",
   },
   {
-    title: "Your AI CFO.",
-    desc: "Ask questions, get realistic advice, and track your net worth across multiple accounts.",
+    id: 2,
+    subtitle: "03 — Security",
+    title: "Better Money.\nBrighter Futures.",
+    desc: "Take control of your finances today. Let Acuity be your guide, your tracker, and your personal Financial Officer.",
+  },
+  {
+    id: 3,
+    subtitle: "04 — Clarity",
+    title: "Your Future\nDeserves Clarity.",
+    desc: "Everything you need to manage your wealth, thoughtfully designed.",
   },
 ];
 
@@ -30,21 +42,26 @@ export function OnboardingCarousel({ onComplete }: { onComplete: () => void }) {
   return (
     <div className="fixed inset-0 z-[200] flex flex-col bg-[#0b0b0c] text-white overflow-hidden">
       
-      {/* Animated Backgrounds */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+      {/* Background Graphics that change per slide */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden flex flex-col justify-center items-center">
         <AnimatePresence mode="wait">
-          {current === 0 && <Slide1Wealth key="s1" />}
-          {current === 1 && <Slide2Budget key="s2" />}
-          {current === 2 && <Slide3AI key="s3" />}
+          {current === 0 && <Slide1Graphic key="g1" />}
+          {current === 1 && <Slide2Graphic key="g2" />}
+          {current === 2 && <Slide3Graphic key="g3" />}
+          {current === 3 && <Slide4Graphic key="g4" />}
         </AnimatePresence>
       </div>
 
-      <div className="flex flex-1 flex-col items-center justify-center px-8 text-center relative z-10 pt-20">
-        <div className="mb-12 flex items-baseline">
-          <span className="text-[48px] font-black tracking-tighter text-white">ACUITY</span>
-          <span className="text-[48px] font-black tracking-tighter" style={{ color: "#DE3121" }}>.</span>
+      {/* Header */}
+      <div className="relative z-10 px-8 pt-[calc(env(safe-area-inset-top)+24px)]">
+        <div className="flex items-baseline">
+          <span className="text-[28px] font-black tracking-tighter text-white">ACUITY</span>
+          <span className="text-[28px] font-black tracking-tighter" style={{ color: "var(--brand)" }}>.</span>
         </div>
+      </div>
 
+      {/* Text Content */}
+      <div className="relative z-10 flex-1 flex flex-col justify-end px-8 pb-[calc(env(safe-area-inset-bottom)+120px)]">
         <AnimatePresence mode="wait">
           <motion.div
             key={current}
@@ -54,31 +71,40 @@ export function OnboardingCarousel({ onComplete }: { onComplete: () => void }) {
             transition={{ duration: 0.4, ease: "easeOut" }}
             className="max-w-sm"
           >
-            <h1 className="text-[28px] font-bold leading-tight mb-4">{SLIDES[current].title}</h1>
-            <p className="text-[16px] text-white/60 leading-relaxed">{SLIDES[current].desc}</p>
+            <p className="text-[13px] font-mono tracking-widest text-[var(--brand)] mb-4 uppercase">
+              {SLIDES[current].subtitle}
+            </p>
+            <h1 className="text-[42px] font-bold leading-[1.05] tracking-tight whitespace-pre-line mb-4">
+              {SLIDES[current].title}
+            </h1>
+            <p className="text-[15px] text-white/60 leading-relaxed">
+              {SLIDES[current].desc}
+            </p>
           </motion.div>
         </AnimatePresence>
       </div>
 
-      <div className="pb-[calc(env(safe-area-inset-bottom)+32px)] px-8 relative z-10">
-        <div className="mb-8 flex justify-center gap-2">
-          {SLIDES.map((_, i) => (
-            <div
-              key={i}
-              className={`h-2 rounded-full transition-all duration-300 ${
-                i === current ? "w-8 bg-[#DE3121]" : "w-2 bg-white/20"
-              }`}
-            />
-          ))}
+      {/* Footer: Dots & Button */}
+      <div className="absolute bottom-0 left-0 right-0 z-10 px-8 pb-[calc(env(safe-area-inset-bottom)+32px)] pt-4 bg-gradient-to-t from-[#0b0b0c] via-[#0b0b0c]/80 to-transparent">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex gap-2">
+            {SLIDES.map((_, i) => (
+              <div
+                key={i}
+                className={`h-2 rounded-full transition-all duration-300 ${
+                  i === current ? "w-6 bg-[var(--brand)]" : "w-2 bg-white/20"
+                }`}
+              />
+            ))}
+          </div>
         </div>
 
         <button
           onClick={next}
-          className="flex w-full h-14 items-center justify-center gap-2 rounded-2xl font-bold text-[16px] text-black active:scale-95 transition-transform"
-          style={{ backgroundColor: "#DE3121" }}
+          className="flex w-full h-14 items-center justify-center gap-2 rounded-full font-bold text-[16px] text-black active:scale-95 transition-transform bg-white"
         >
-          {current === SLIDES.length - 1 ? "Set up PIN" : "Continue"}
-          <ArrowRight size={18} strokeWidth={3} />
+          Get Started
+          <ArrowRight size={18} strokeWidth={2.5} style={{ color: "var(--brand)" }} />
         </button>
       </div>
     </div>
@@ -86,238 +112,172 @@ export function OnboardingCarousel({ onComplete }: { onComplete: () => void }) {
 }
 
 // ---------------------------------------------------------
-// SLIDE 1: Floating Card & Bouncing Coins
+// GRAPHIC 1: The 3D "A" with glowing red dot
 // ---------------------------------------------------------
-function Slide1Wealth() {
+function Slide1Graphic() {
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="absolute inset-0 flex flex-col items-center justify-center"
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 1.1 }}
+      transition={{ duration: 0.8 }}
+      className="relative w-full h-[50vh] flex items-center justify-center mt-[-10vh]"
     >
-      <motion.div
-        animate={{ scale: [1, 1.2, 1], opacity: [0.05, 0.1, 0.05] }}
-        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute h-[400px] w-[400px] rounded-full bg-[#DE3121] blur-[100px]"
-      />
+      {/* Glowing background dot */}
+      <div className="absolute right-[20%] bottom-[30%] w-12 h-12 rounded-full bg-[var(--brand)] blur-md opacity-80" />
+      <div className="absolute right-[20%] bottom-[30%] w-24 h-24 rounded-full bg-[var(--brand)] blur-2xl opacity-40" />
 
-      <div className="absolute flex gap-4 opacity-20 mt-20">
-        {[0, 1, 2].map((i) => (
-          <motion.div
-            key={i}
-            initial={{ y: 100, opacity: 0 }}
-            animate={{ y: [100, 0, 100], opacity: [0, 1, 0] }}
-            transition={{ 
-              duration: 2, 
-              delay: i * 0.4, 
-              repeat: Infinity, 
-              ease: "easeInOut",
-              repeatDelay: 1
-            }}
-          >
-            <Coins size={48} className="text-[#DE3121]" strokeWidth={1} />
-          </motion.div>
-        ))}
+      {/* Abstract 3D 'A' shape using CSS clip-path */}
+      <div 
+        className="relative w-64 h-64 bg-gradient-to-br from-white/40 via-white/5 to-transparent"
+        style={{
+          clipPath: "polygon(50% 0%, 100% 100%, 75% 100%, 50% 40%, 25% 100%, 0% 100%)",
+          boxShadow: "inset 0 0 40px rgba(255,255,255,0.2)"
+        }}
+      >
+        {/* Inner cutout for the A */}
+        <div 
+          className="absolute inset-0 bg-[#0b0b0c]"
+          style={{
+            clipPath: "polygon(48% 15%, 52% 15%, 70% 100%, 30% 100%)",
+            transform: "scale(0.95)"
+          }}
+        />
+      </div>
+      
+      {/* Reflection floor */}
+      <div className="absolute bottom-0 w-full h-1/2 bg-gradient-to-t from-[#0b0b0c] to-transparent" />
+    </motion.div>
+  );
+}
+
+// ---------------------------------------------------------
+// GRAPHIC 2: The Glowing AI Orb with floating widgets
+// ---------------------------------------------------------
+function Slide2Graphic() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 1.1 }}
+      transition={{ duration: 0.8 }}
+      className="relative w-full h-[50vh] flex items-center justify-center mt-[-10vh]"
+    >
+      {/* Glowing orb ring */}
+      <div className="absolute w-64 h-64 rounded-full border border-[var(--brand)]/30 shadow-[0_0_60px_rgba(222,49,33,0.2)]" />
+      <div className="absolute w-48 h-48 rounded-full border border-[var(--brand)]/50 shadow-[0_0_40px_rgba(222,49,33,0.4)]" />
+      
+      {/* Core Sphere */}
+      <div className="relative w-32 h-32 rounded-full bg-gradient-to-br from-[#2a2a2c] to-black shadow-[inset_0_0_20px_rgba(255,255,255,0.1),0_0_30px_rgba(222,49,33,0.3)] flex items-center justify-center">
+        <span className="text-[40px] font-black text-white">A<span style={{ color: "var(--brand)" }}>.</span></span>
       </div>
 
-      <motion.div
-        initial={{ y: 50, rotateX: 45, rotateZ: -20, opacity: 0 }}
-        animate={{ 
-          y: [-10, 10, -10], 
-          rotateX: 20, 
-          rotateZ: -15,
-          opacity: 0.15 
-        }}
-        transition={{ 
-          y: { duration: 4, repeat: Infinity, ease: "easeInOut" },
-          rotateX: { duration: 1.5, ease: "easeOut" },
-          rotateZ: { duration: 1.5, ease: "easeOut" },
-          opacity: { duration: 1.5 }
-        }}
-        className="relative flex h-56 w-[340px] rounded-2xl border border-[#DE3121]/30 bg-gradient-to-br from-[#DE3121]/20 to-transparent p-6 shadow-2xl backdrop-blur-sm"
-        style={{ perspective: 1000 }}
+      {/* Floating Widgets */}
+      <motion.div 
+        animate={{ y: [0, -10, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute top-[10%] left-[5%] p-3 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md"
       >
-        <div className="flex w-full flex-col justify-between">
-          <div className="flex justify-between items-start">
-            <span className="text-[20px] font-black tracking-tighter text-[#DE3121]">ACUITY.</span>
-            <CreditCard size={28} className="text-[#DE3121]" />
-          </div>
-          <div>
-            <div className="h-8 w-12 rounded-md bg-[#DE3121]/30 mb-4" />
-            <div className="flex gap-4">
-              <div className="h-2 w-12 rounded bg-[#DE3121]/30" />
-              <div className="h-2 w-12 rounded bg-[#DE3121]/30" />
-              <div className="h-2 w-12 rounded bg-[#DE3121]/30" />
-              <div className="h-2 w-12 rounded bg-[#DE3121]/30" />
-            </div>
-          </div>
+        <div className="flex items-center gap-2 mb-1">
+          <TrendingUp size={12} className="text-[var(--brand)]" />
+          <span className="text-[10px] font-semibold text-white">Spending Analysis</span>
         </div>
+        <p className="text-[8px] text-white/50">You're spending 23% more on dining this month.</p>
+      </motion.div>
+
+      <motion.div 
+        animate={{ y: [0, 10, 0] }} transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute top-[15%] right-[5%] p-3 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md"
+      >
+        <div className="flex items-center gap-2 mb-1">
+          <Bell size={12} className="text-[var(--brand)]" />
+          <span className="text-[10px] font-semibold text-white">Smart Alerts</span>
+        </div>
+        <p className="text-[8px] text-white/50">Large transaction detected on your card.</p>
+      </motion.div>
+
+      <motion.div 
+        animate={{ y: [0, -8, 0] }} transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute bottom-[15%] left-[5%] p-3 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md"
+      >
+        <div className="flex items-center gap-2 mb-1">
+          <PiggyBank size={12} className="text-[var(--brand)]" />
+          <span className="text-[10px] font-semibold text-white">Savings Suggestion</span>
+        </div>
+        <p className="text-[8px] text-white/50">You could save ₦120,000 more monthly.</p>
+      </motion.div>
+
+      <motion.div 
+        animate={{ y: [0, 12, 0] }} transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute bottom-[20%] right-[5%] p-3 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md"
+      >
+        <div className="flex items-center gap-2 mb-1">
+          <LineChart size={12} className="text-[var(--brand)]" />
+          <span className="text-[10px] font-semibold text-white">Investment Insights</span>
+        </div>
+        <p className="text-[8px] text-white/50">Your portfolio is up 8.4% this month.</p>
       </motion.div>
     </motion.div>
   );
 }
 
 // ---------------------------------------------------------
-// SLIDE 2: 3D Rotating Donut Chart & Floating Tiles
+// GRAPHIC 3: Red Sun over Mountains
 // ---------------------------------------------------------
-function Slide2Budget() {
-  const radius = 80;
-  const circumference = 2 * Math.PI * radius;
-
+function Slide3Graphic() {
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="absolute inset-0 flex items-center justify-center"
-      style={{ perspective: 1000 }}
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 1.05 }}
+      transition={{ duration: 0.8 }}
+      className="relative w-full h-[60vh] flex flex-col items-center justify-end mt-[-10vh]"
     >
-      <motion.div
-        animate={{ scale: [1, 1.1, 1], opacity: [0.05, 0.08, 0.05] }}
-        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute h-[350px] w-[350px] rounded-full bg-[#DE3121] blur-[100px]"
-      />
-
-      <motion.div
-        animate={{ y: [-10, 10, -10], rotateZ: [5, 10, 5] }}
-        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute left-10 top-1/4 flex h-24 w-20 flex-col justify-between rounded-xl border border-[#DE3121]/20 bg-[#121213]/80 p-3 shadow-xl backdrop-blur-md"
-      >
-        <ShieldCheck size={18} className="text-[#DE3121]" />
-        <div>
-          <p className="text-[8px] text-white/50">Safe to</p>
-          <p className="text-[10px] font-bold text-[#DE3121]">Spend</p>
-        </div>
-      </motion.div>
-
-      <motion.div
-        animate={{ y: [10, -10, 10], rotateZ: [-5, -10, -5] }}
-        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute right-10 bottom-1/3 flex h-24 w-20 flex-col justify-between rounded-xl border border-[#DE3121]/20 bg-[#121213]/80 p-3 shadow-xl backdrop-blur-md"
-      >
-        <PieChart size={18} className="text-[#DE3121]" />
-        <div>
-          <p className="text-[8px] text-white/50">Budget</p>
-          <p className="text-[10px] font-bold text-[#DE3121]">Set</p>
-        </div>
-      </motion.div>
-
-      <motion.div
-        initial={{ rotateX: 60, scale: 0.8, opacity: 0 }}
-        animate={{ 
-          rotateX: 30, 
-          rotateY: [-15, 15, -15],
-          scale: 1, 
-          opacity: 0.15 
-        }}
-        transition={{ 
-          rotateX: { duration: 1.5, ease: "easeOut" },
-          scale: { duration: 1.5, ease: "easeOut" },
-          opacity: { duration: 1.5 },
-          rotateY: { duration: 6, repeat: Infinity, ease: "easeInOut" }
-        }}
-        className="relative h-64 w-64"
-      >
-        <svg viewBox="0 0 200 200" className="h-full w-full">
-          <circle cx="100" cy="100" r={radius} fill="none" stroke="#DE3121" strokeWidth="20" opacity="0.3" />
-          
-          <motion.circle
-            cx="100"
-            cy="100"
-            r={radius}
-            fill="none"
-            stroke="#DE3121"
-            strokeWidth="20"
-            strokeLinecap="round"
-            strokeDasharray={circumference}
-            initial={{ strokeDashoffset: circumference }}
-            animate={{ strokeDashoffset: circumference * 0.3 }}
-            transition={{ duration: 2, delay: 0.5, ease: "easeInOut" }}
-            style={{ filter: "drop-shadow(0 0 10px #DE3121)" }}
-          />
-        </svg>
-      </motion.div>
-    </motion.div>
-  );
-}
-
-// ---------------------------------------------------------
-// SLIDE 3: Floating 3D Chat Interface & Glass Data Chips
-// ---------------------------------------------------------
-function Slide3AI() {
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="absolute inset-0 flex items-center justify-center"
-      style={{ perspective: 1200 }}
-    >
-      {/* Background Glow */}
-      <motion.div
-        animate={{ scale: [1, 1.2, 1], opacity: [0.05, 0.1, 0.05] }}
-        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute h-[400px] w-[400px] rounded-full bg-[#DE3121] blur-[100px]"
-      />
-
-      {/* Orbiting Glass Chips */}
-      <motion.div
-        animate={{ y: [-15, 15, -15], rotateZ: [5, -5, 5] }}
-        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute left-8 top-1/4 flex items-center gap-2 rounded-full border border-[#DE3121]/30 bg-[#121213]/60 px-3 py-1.5 shadow-xl backdrop-blur-md"
-      >
-        <Lightbulb size={14} className="text-[#DE3121]" />
-        <span className="text-[10px] font-semibold text-white/80">Advice</span>
-      </motion.div>
-
-      <motion.div
-        animate={{ y: [15, -15, 15], rotateZ: [-5, 5, -5] }}
-        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute right-8 bottom-1/4 flex items-center gap-2 rounded-full border border-[#DE3121]/30 bg-[#121213]/60 px-3 py-1.5 shadow-xl backdrop-blur-md"
-      >
-        <Sparkles size={14} className="text-[#DE3121]" />
-        <span className="text-[10px] font-semibold text-white/80">Insights</span>
-      </motion.div>
-
-      {/* Main Floating Chat Bubble */}
-      <motion.div
-        initial={{ y: 50, rotateX: 45, opacity: 0 }}
-        animate={{ 
-          y: [-15, 15, -15], 
-          rotateX: 15,
-          rotateY: [-5, 5, -5],
-          opacity: 0.15 
-        }}
-        transition={{ 
-          y: { duration: 5, repeat: Infinity, ease: "easeInOut" },
-          rotateX: { duration: 1.5, ease: "easeOut" },
-          rotateY: { duration: 1.5, ease: "easeOut" },
-          opacity: { duration: 1.5 }
-        }}
-        className="relative flex flex-col items-start gap-3 rounded-3xl rounded-tl-sm border border-[#DE3121]/30 bg-gradient-to-br from-[#DE3121]/15 to-transparent p-5 shadow-2xl backdrop-blur-md max-w-[280px]"
-        style={{ transformStyle: "preserve-3d" }}
-      >
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#DE3121]/20">
-            <Sparkles size={16} className="text-[#DE3121]" />
-          </div>
-          <span className="text-[12px] font-bold text-white/90">Acuity AI</span>
-        </div>
+      {/* Big Red Sun */}
+      <div className="absolute top-[10%] w-48 h-48 rounded-full border-4 border-[var(--brand)] shadow-[0_0_50px_rgba(222,49,33,0.6),inset_0_0_40px_rgba(222,49,33,0.4)]" />
+      
+      {/* Mountains & River (Using CSS polygons) */}
+      <div className="relative w-full h-[40%] overflow-hidden">
+        {/* Left Mountain */}
+        <div 
+          className="absolute bottom-0 left-[-10%] w-[70%] h-full bg-[#111]"
+          style={{ clipPath: "polygon(0 100%, 50% 0, 100% 100%)" }}
+        />
+        {/* Right Mountain */}
+        <div 
+          className="absolute bottom-0 right-[-10%] w-[70%] h-full bg-[#151515]"
+          style={{ clipPath: "polygon(0 100%, 50% 0, 100% 100%)" }}
+        />
         
-        <p className="text-[14px] leading-relaxed text-white/70">
-          Based on your current spending, you can safely spend <span className="font-bold text-[#DE3121]">₦14,800</span> this week without touching your rent.
-        </p>
+        {/* Glowing River */}
+        <div 
+          className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[40%] h-full bg-gradient-to-t from-[var(--brand)] to-transparent opacity-60"
+          style={{ clipPath: "polygon(40% 100%, 60% 100%, 55% 0, 45% 0)" }}
+        />
+        
+        {/* Foreground shadow */}
+        <div className="absolute bottom-0 w-full h-1/2 bg-gradient-to-t from-[#0b0b0c] to-transparent z-10" />
+      </div>
+    </motion.div>
+  );
+}
 
-        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
-          <motion.div 
-            initial={{ width: 0 }}
-            animate={{ width: "70%" }}
-            transition={{ duration: 2, delay: 0.5 }}
-            className="h-full bg-[#DE3121]" 
-          />
-        </div>
-      </motion.div>
+// ---------------------------------------------------------
+// GRAPHIC 4: Simple Abstract Glow
+// ---------------------------------------------------------
+function Slide4Graphic() {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.8 }}
+      className="relative w-full h-[50vh] flex items-center justify-center mt-[-10vh]"
+    >
+      <div className="absolute w-72 h-72 rounded-full bg-[var(--brand)]/10 blur-[80px]" />
+      <div className="absolute w-40 h-40 rounded-full bg-[var(--brand)]/20 blur-[40px]" />
+      <div className="relative text-[120px] font-black tracking-tighter text-white/5">
+        A.
+      </div>
     </motion.div>
   );
 }
