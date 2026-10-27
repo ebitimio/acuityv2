@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronRight, Eye, Bell, Shield, Wallet, Briefcase, HelpCircle,
   LogOut, Trash2, RefreshCw, Moon, FileText, MessageSquare, Info,
-  ArrowLeft, Sun, Lock, User, KeyRound, Palette
+  ArrowLeft, Sun, Lock, User, KeyRound, Palette, AlertOctagon
 } from "lucide-react";
 import { useCurrency } from "@/lib/currency";
 import { useWorkspace } from "@/lib/workspace";
@@ -46,6 +46,9 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
 
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
+  const [confirmDeleteAccount, setConfirmDeleteAccount] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  
   const [view, setView] = useState<SubView>("main");
 
   // Edit profile
@@ -143,6 +146,30 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
       window.location.href = "/";
     } catch (e: any) {
       toast(e.message || "Could not delete", "err");
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setIsDeletingAccount(true);
+    try {
+      const res = await fetch("/api/account/delete", { method: "POST" });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to delete account");
+      }
+      
+      // Clear all local storage and sign out
+      clearDataCache();
+      localStorage.clear();
+      
+      toast("Account permanently deleted");
+      
+      // Force reload to the auth screen
+      window.location.href = "/";
+    } catch (e: any) {
+      toast(e.message || "Could not delete account", "err");
+      setIsDeletingAccount(false);
+      setConfirmDeleteAccount(false);
     }
   };
 
@@ -410,7 +437,7 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
             </div>
           </div>
 
-          {/* APP COLOR - Updated Names */}
+          {/* APP COLOR */}
           <div className="px-4 py-3.5">
             <div className="flex items-center gap-3 mb-3">
               <Palette size={18} className="text-[var(--brand)]" />
@@ -453,6 +480,7 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
 
         <Section title="Privacy & Security">
           <Row icon={RefreshCw} label="Clear cache" chevron onClick={handleClearCache} />
+          <Row icon={AlertOctagon} label="Delete account" danger chevron onClick={() => setConfirmDeleteAccount(true)} />
         </Section>
 
         <Section title="Workspace">
@@ -554,6 +582,51 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
                   className="flex-1 rounded-xl bg-[var(--danger)] py-2.5 text-[13px] font-semibold text-white"
                 >
                   Delete
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* DELETE ACCOUNT CONFIRMATION */}
+      <AnimatePresence>
+        {confirmDeleteAccount && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-6"
+            onClick={() => !isDeletingAccount && setConfirmDeleteAccount(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-sm rounded-2xl bg-[var(--surface-2)] border border-[var(--line)] p-5"
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <AlertOctagon size={20} className="text-[var(--danger)]" />
+                <h3 className="text-[16px] font-bold text-[var(--text-1)]">Delete Account?</h3>
+              </div>
+              <p className="text-[13px] text-[var(--text-3)] mb-4">
+                This will permanently delete your profile, all workspaces, accounts, transactions, and settings. <strong className="text-[var(--danger)]">This cannot be undone.</strong>
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setConfirmDeleteAccount(false)}
+                  disabled={isDeletingAccount}
+                  className="flex-1 rounded-xl bg-[var(--fill-1)] py-2.5 text-[13px] font-semibold text-[var(--text-1)] disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteAccount}
+                  disabled={isDeletingAccount}
+                  className="flex-1 flex items-center justify-center rounded-xl bg-[var(--danger)] py-2.5 text-[13px] font-semibold text-white disabled:opacity-50"
+                >
+                  {isDeletingAccount ? <RefreshCw className="animate-spin" size={16} /> : "Delete Forever"}
                 </button>
               </div>
             </motion.div>
