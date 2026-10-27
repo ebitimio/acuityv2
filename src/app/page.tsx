@@ -92,7 +92,7 @@ export default function SandboxPage() {
   const [selectedTxn, setSelectedTxn] = useState<Txn | null>(null);
   
   // Monthly Report State
-  const [isReportOpen, setIsReportOpen] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(true);
   const [showReportTeaser, setShowReportTeaser] = useState(false);
 
   const [metrics, setMetrics] = useState<HomeMetrics | null>(null);
@@ -607,13 +607,7 @@ export default function SandboxPage() {
                   </span>
                   <ChevronDown size={18} className="text-[var(--text-3)]" />
                 </button>
-                <div className="flex gap-2 items-center">
-                  {/* NEW A. LOGO NAVBAR */}
-                  <div className="flex items-baseline mr-2">
-                    <span className="text-[20px] font-black tracking-tighter text-white">A</span>
-                    <span className="text-[20px] font-black tracking-tighter" style={{ color: "var(--brand)" }}>.</span>
-                  </div>
-
+                <div className="flex gap-2">
                   <button onClick={() => setIsNotificationsOpen(true)} className="relative flex h-9 w-9 items-center justify-center rounded-full border border-[var(--line)] bg-[var(--fill-1)] text-[var(--text-2)]">
                     <Bell size={16} />
                     <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-[var(--brand)]" />
