@@ -1,14 +1,14 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Home, PieChart, Wallet, Sparkles, Plus } from "lucide-react";
+import { Home, PieChart, Wallet, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const tabs = [
   { id: "home", label: "Home", icon: Home },
   { id: "analytics", label: "Analytics", icon: PieChart },
   { id: "accounts", label: "Accounts", icon: Wallet },
-  { id: "ai", label: "AI Advisor", icon: Sparkles },
+  { id: "ai", label: "AI Advisor", icon: null }, // Replaced with custom A.
 ] as const;
 
 export type TabId = (typeof tabs)[number]["id"];
@@ -51,7 +51,14 @@ export function FloatingTabBar({ activeTab, onTabChange, onAddClick, isHidden }:
                     transition={{ type: "spring", stiffness: 300, damping: 30 }}
                   />
                 )}
-                <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
+                {Icon ? (
+                  <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
+                ) : (
+                  <div className="flex items-baseline">
+                    <span className={cn("text-[18px] font-black tracking-tighter", isActive ? "text-white" : "text-white/40")}>A</span>
+                    <span className={cn("text-[18px] font-black tracking-tighter", isActive ? "opacity-100" : "opacity-40")} style={{ color: "var(--brand)" }}>.</span>
+                  </div>
+                )}
               </button>
             );
           })}
@@ -65,7 +72,6 @@ export function FloatingTabBar({ activeTab, onTabChange, onAddClick, isHidden }:
             style={{ backgroundColor: "var(--brand)" }}
             aria-label="Quick add"
           >
-            {/* Hardcoded to black for all themes */}
             <Plus size={24} strokeWidth={3} style={{ color: "#000000" }} />
           </button>
         )}

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Modal } from "./modal";
 import { Button } from "./form";
-import { Sparkles, TrendingUp, TrendingDown, Loader2, Award } from "lucide-react";
+import { TrendingUp, TrendingDown, Loader2 } from "lucide-react";
 import { useCurrency } from "@/lib/currency";
 
 interface ReportData {
@@ -61,13 +61,15 @@ export function MonthlyReportModal({
 
         <div className="relative z-10 flex flex-col items-center text-center w-full">
           
+          {/* Main Big A. Logo */}
           <motion.div 
             initial={{ scale: 0, rotate: -20 }}
             animate={{ scale: 1, rotate: 0 }}
             transition={{ type: "spring", stiffness: 200, damping: 15 }}
-            className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-[var(--brand)] to-[var(--brand)]/60 shadow-[0_0_30px_rgba(var(--brand-rgb,222,49,33),0.4)] mb-4"
+            className="flex items-center justify-center mb-4"
           >
-            <Award size={40} className="text-[var(--brand-ink)]" />
+            <span className="text-[48px] font-black tracking-tighter text-white">A</span>
+            <span className="text-[48px] font-black tracking-tighter" style={{ color: "var(--brand)" }}>.</span>
           </motion.div>
 
           <h2 className="text-[24px] font-black tracking-tight text-white mb-1">
@@ -121,7 +123,11 @@ export function MonthlyReportModal({
               {/* AI Insight */}
               <div className="relative overflow-hidden rounded-2xl border border-[var(--brand)]/30 bg-gradient-to-br from-[var(--brand)]/10 to-transparent p-5 mt-4 text-left">
                 <div className="flex items-center gap-2 mb-2">
-                  <Sparkles size={16} className="text-[var(--brand)]" />
+                  {/* Replaced Sparkles with A. Logo */}
+                  <div className="flex items-baseline">
+                    <span className="text-[18px] font-black tracking-tighter text-[var(--brand)]">A</span>
+                    <span className="text-[18px] font-black tracking-tighter text-[var(--brand)]">.</span>
+                  </div>
                   <span className="text-[13px] font-bold text-[var(--brand)]">AI Financial Coach</span>
                 </div>
                 <p className="text-[13px] leading-relaxed text-[var(--text-1)] whitespace-pre-wrap">
