@@ -46,7 +46,7 @@ export function AIDrawer({
   const [streamingContent, setStreamingContent] = useState("");
   const [hasSentFirstMessage, setHasSentFirstMessage] = useState(false);
   
-  // Visual Viewport state to handle iOS keyboard perfectly
+  // Visual Viewport state
   const [vv, setVv] = useState<{ height: number; offsetTop: number } | null>(null);
   
   const endRef = useRef<HTMLDivElement>(null);
@@ -54,6 +54,16 @@ export function AIDrawer({
   const { fmt } = useCurrency();
   const toast = useToast();
   const supabase = createClient();
+
+  // Lock body scroll when open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [isOpen]);
 
   // Handle iOS Keyboard layout shift
   useEffect(() => {
@@ -231,7 +241,7 @@ export function AIDrawer({
 
   if (!isOpen) return null;
 
-  // Lock the drawer to the visual viewport so it doesn't move with the keyboard
+  // The container must be positioned fixed to the visual viewport
   const frame: React.CSSProperties = vv
     ? { position: "fixed", top: vv.offsetTop, left: 0, right: 0, height: vv.height, zIndex: 100 }
     : { position: "fixed", inset: 0, zIndex: 100 };
@@ -296,7 +306,7 @@ export function AIDrawer({
           </div>
         </div>
 
-        {/* Redesigned Live Context Strip */}
+        {/* Context Strip */}
         <AnimatePresence>
           {!hasSentFirstMessage && (
             <motion.div 
@@ -305,32 +315,26 @@ export function AIDrawer({
               className="relative z-10 shrink-0 overflow-hidden border-b border-[var(--line)] bg-[var(--surface-1)]/50 backdrop-blur-sm"
             >
               <div className="flex justify-between items-center px-5 py-3">
-                
                 <button onClick={() => send("How much can I safely spend today?")} className="flex flex-col items-start gap-0.5">
                   <span className="text-[10px] font-semibold text-[var(--text-3)] uppercase tracking-wider">Safe to spend</span>
                   <span className="text-[15px] font-bold text-[var(--brand)] tabular">
                     {safeToSpend ? fmt(safeToSpend.daily_safe_minor / 100) : "₦0"}
                   </span>
                 </button>
-                
                 <div className="w-px h-8 bg-[var(--line)]" />
-
                 <button onClick={() => send("When is my next payday?")} className="flex flex-col items-start gap-0.5">
                   <span className="text-[10px] font-semibold text-[var(--text-3)] uppercase tracking-wider">Days to payday</span>
                   <span className="text-[15px] font-bold text-[var(--text-1)] tabular">
                     {daysUntilIncome} days
                   </span>
                 </button>
-
                 <div className="w-px h-8 bg-[var(--line)]" />
-
                 <button onClick={() => send("Am I on track with my budget?")} className="flex flex-col items-start gap-0.5">
                   <span className="text-[10px] font-semibold text-[var(--text-3)] uppercase tracking-wider">Budget used</span>
                   <span className="text-[15px] font-bold text-[var(--text-1)] tabular">
                     {budgetUsedPct}%
                   </span>
                 </button>
-
               </div>
             </motion.div>
           )}
@@ -403,7 +407,6 @@ export function AIDrawer({
                 </motion.div>
               ))}
 
-              {/* THINKING UI */}
               {isThinking && (
                 <motion.div 
                   initial={{ opacity: 0, y: 10 }}
@@ -459,8 +462,8 @@ export function AIDrawer({
           )}
         </div>
 
-        {/* Composer */}
-        <div className="relative z-10 shrink-0 px-4 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-2 bg-[var(--bg)]/80 backdrop-blur-md border-t border-[var(--line)]">
+        {/* Composer - Fixed to the bottom, no safe area padding when keyboard is open */}
+        <div className="relative z-10 shrink-0 px-4 pb-2 pt-2 bg-[var(--bg)] border-t border-[var(--line)]">
           <div className="flex items-end gap-2 rounded-[28px] bg-[var(--surface-2)] p-2 border border-[var(--line-strong)] shadow-sm focus-within:border-[var(--brand)] transition-colors">
             <textarea
               value={input}
@@ -472,7 +475,6 @@ export function AIDrawer({
                 }
               }}
               placeholder={messages.length > 0 ? "Ask a follow up..." : "Ask about your money..."}
-              /* 16px stops iOS from auto-zooming the screen */
               className="flex-1 max-h-32 min-h-[40px] bg-transparent px-4 py-2.5 text-[16px] text-[var(--text-1)] outline-none placeholder:text-[var(--text-3)] resize-none"
               rows={1}
             />
