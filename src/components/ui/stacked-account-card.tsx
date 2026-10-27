@@ -15,7 +15,7 @@ interface StackedAccountCardProps {
   onDelete: () => void;
   cardholderName: string;
   hideActions?: boolean;
-  isCompact?: boolean; // NEW PROP
+  isCompact?: boolean; 
 }
 
 export function StackedAccountCard({ 
@@ -28,7 +28,7 @@ export function StackedAccountCard({
   onDelete,
   cardholderName,
   hideActions = false,
-  isCompact = false, // Default to false
+  isCompact = false, 
 }: StackedAccountCardProps) {
   return (
     <motion.div
@@ -41,7 +41,7 @@ export function StackedAccountCard({
       className={cn(
         "relative w-full overflow-hidden rounded-2xl shadow-xl",
         "bg-gradient-to-br from-[#1c1c1e] to-[#0b0b0c] border border-[var(--brand)]/30",
-        isCompact && "h-[200px]" // Apply fixed height ONLY if compact
+        isCompact && "h-[200px]" 
       )}
     >
       <div onClick={onClick} className={cn("relative p-5 cursor-pointer overflow-hidden", isCompact ? "h-full flex flex-col justify-between" : "")}>
@@ -58,8 +58,9 @@ export function StackedAccountCard({
         <div className="absolute -bottom-10 -left-10 h-32 w-32 rounded-full border-[12px] border-[var(--brand)]/10" />
 
         <div className={cn("relative z-10 flex flex-col", isCompact ? "h-full justify-between" : "h-full justify-between")}>
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            {/* Account Info - Takes limited space */}
+            <div className="flex items-center gap-2 min-w-0 flex-1">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand)]/20">
                 <span className="text-[14px] font-bold text-[var(--brand)]">{account.name.charAt(0)}</span>
               </div>
@@ -69,15 +70,19 @@ export function StackedAccountCard({
               </div>
             </div>
             
-            <div className="text-right shrink-0 ml-2">
+            {/* Cardholder Name - Takes remaining space, shrinks text to fit */}
+            <div className="text-right shrink-0">
               <p className="text-[9px] uppercase tracking-widest text-[var(--brand)]/60 font-semibold">Cardholder</p>
-              <p className={cn("text-[13px] font-mono tracking-wider text-[var(--brand)] uppercase", isCompact ? "truncate max-w-[100px]" : "")}>
+              <p className={cn(
+                "font-mono tracking-wider text-[var(--brand)] uppercase leading-tight",
+                isCompact ? "text-[11px] max-w-[130px]" : "text-[13px]"
+              )}>
                 {cardholderName || "CARDHOLDER"}
               </p>
             </div>
           </div>
 
-          <div className="flex items-end justify-between">
+          <div className="flex items-end justify-between gap-2 mt-auto">
             <div>
               <p className="text-[10px] text-[var(--brand)]/60">Balance</p>
               <p className="text-[20px] font-bold tabular text-[var(--brand)]">{fmt(balance)}</p>
