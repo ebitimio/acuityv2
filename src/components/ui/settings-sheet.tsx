@@ -160,17 +160,12 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
       
       clearDataCache();
       
-      // Explicitly clear the flags that trigger the onboarding sequence
-      try {
-        localStorage.removeItem("acuity:new_signup");
-        localStorage.removeItem("acuity:last_active");
-        localStorage.removeItem("acuity:activeWorkspace");
-        localStorage.removeItem("acuity:pin");
-      } catch {}
+      // Set the flag so page.tsx knows to go to Auth, not Carousel
+      localStorage.setItem("acuity:account_deleted", "true");
       
       toast("Account permanently deleted");
       
-      // Force reload to the auth screen
+      // Force reload
       window.location.href = "/";
     } catch (e: any) {
       toast(e.message || "Could not delete account", "err");
