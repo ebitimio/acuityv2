@@ -274,6 +274,21 @@ export default function SandboxPage() {
   }, [activeWs?.id]);
 
   useEffect(() => {
+    // Check for our hard-logout flag first
+    const wasDeleted = localStorage.getItem("acuity:account_deleted") === "true";
+    
+    if (wasDeleted) {
+      localStorage.removeItem("acuity:account_deleted");
+      localStorage.removeItem("acuity:new_signup");
+      localStorage.removeItem("acuity:last_active");
+      localStorage.removeItem("acuity:activeWorkspace");
+      localStorage.removeItem("acuity:pin");
+      setOnboardingSequence("complete");
+      setSession(null);
+      setIsAuthLoading(false);
+      return;
+    }
+
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setIsAuthLoading(false);
