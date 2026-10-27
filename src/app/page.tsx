@@ -92,7 +92,7 @@ export default function SandboxPage() {
   const [selectedTxn, setSelectedTxn] = useState<Txn | null>(null);
   
   // Monthly Report State
-  const [isReportOpen, setIsReportOpen] = useState(true);
+  const [isReportOpen, setIsReportOpen] = useState(false);
   const [showReportTeaser, setShowReportTeaser] = useState(false);
 
   const [metrics, setMetrics] = useState<HomeMetrics | null>(null);
@@ -134,15 +134,24 @@ export default function SandboxPage() {
 
   // Check for monthly report logic
   useEffect(() => {
-    if (!activeWs?.id) return;
-    const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+    if (!activeWs?.id || !metrics) return;
+    
+    const today = new Date();
+    const currentDay = today.getDate();
+    const currentMonth = today.toISOString().slice(0, 7); // YYYY-MM
+    
+    // 1. Check if we have already seen this month's report
     const lastSeen = localStorage.getItem(`acuity:last_report_seen_${activeWs.id}`);
 
-    // If we haven't seen the report for this month, show it
-    if (lastSeen !== currentMonth) {
+    // 2. Check for data eligibility (must have accounts and some transaction history)
+    const hasAccounts = accounts.length > 0;
+    const hasActivity = metrics.total_income_minor > 0 || metrics.total_spent_minor > 0;
+
+    // 3. Show only on the 29th (or later if they missed it) and not seen yet
+    if (currentDay >= 29 && lastSeen !== currentMonth && hasAccounts && hasActivity) {
       setShowReportTeaser(true);
     }
-  }, [activeWs?.id]);
+  }, [activeWs?.id, metrics, accounts.length]);
 
   const handleViewReport = () => {
     setIsReportOpen(true);
