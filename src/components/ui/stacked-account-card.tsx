@@ -15,6 +15,7 @@ interface StackedAccountCardProps {
   onDelete: () => void;
   cardholderName: string;
   hideActions?: boolean;
+  isCompact?: boolean; // NEW PROP
 }
 
 export function StackedAccountCard({ 
@@ -27,6 +28,7 @@ export function StackedAccountCard({
   onDelete,
   cardholderName,
   hideActions = false,
+  isCompact = false, // Default to false
 }: StackedAccountCardProps) {
   return (
     <motion.div
@@ -38,10 +40,11 @@ export function StackedAccountCard({
       whileTap={{ scale: 0.98 }}
       className={cn(
         "relative w-full overflow-hidden rounded-2xl shadow-xl",
-        "bg-gradient-to-br from-[#1c1c1e] to-[#0b0b0c] border border-[var(--brand)]/30" // Uses brand color for border
+        "bg-gradient-to-br from-[#1c1c1e] to-[#0b0b0c] border border-[var(--brand)]/30",
+        isCompact && "h-[200px]" // Apply fixed height ONLY if compact
       )}
     >
-      <div onClick={onClick} className="relative p-5 cursor-pointer overflow-hidden">
+      <div onClick={onClick} className={cn("relative p-5 cursor-pointer overflow-hidden", isCompact ? "h-full flex flex-col justify-between" : "")}>
         
         {/* WATERMARK */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -54,32 +57,32 @@ export function StackedAccountCard({
         <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full border-[12px] border-[var(--brand)]/10" />
         <div className="absolute -bottom-10 -left-10 h-32 w-32 rounded-full border-[12px] border-[var(--brand)]/10" />
 
-        <div className="relative z-10 flex flex-col h-full justify-between">
+        <div className={cn("relative z-10 flex flex-col", isCompact ? "h-full justify-between" : "h-full justify-between")}>
           <div className="flex items-start justify-between">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--brand)]/20">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand)]/20">
                 <span className="text-[14px] font-bold text-[var(--brand)]">{account.name.charAt(0)}</span>
               </div>
-              <div>
-                <p className="text-[14px] font-bold text-[var(--brand)]">{account.name}</p>
+              <div className="min-w-0">
+                <p className={cn("text-[14px] font-bold text-[var(--brand)]", isCompact ? "truncate" : "")}>{account.name}</p>
                 <p className="text-[10px] text-[var(--brand)]/60 uppercase">{account.type}</p>
               </div>
             </div>
             
-            <div className="text-right">
+            <div className="text-right shrink-0 ml-2">
               <p className="text-[9px] uppercase tracking-widest text-[var(--brand)]/60 font-semibold">Cardholder</p>
-              <p className="text-[13px] font-mono tracking-wider text-[var(--brand)] uppercase">
+              <p className={cn("text-[13px] font-mono tracking-wider text-[var(--brand)] uppercase", isCompact ? "truncate max-w-[100px]" : "")}>
                 {cardholderName || "CARDHOLDER"}
               </p>
             </div>
           </div>
 
-          <div className="mt-8 flex items-end justify-between">
+          <div className="flex items-end justify-between">
             <div>
               <p className="text-[10px] text-[var(--brand)]/60">Balance</p>
               <p className="text-[20px] font-bold tabular text-[var(--brand)]">{fmt(balance)}</p>
             </div>
-            <p className="text-[11px] font-medium text-[var(--brand)]/80">{account.institution}</p>
+            <p className={cn("text-[11px] font-medium text-[var(--brand)]/80 text-right", isCompact ? "truncate max-w-[100px]" : "")}>{account.institution}</p>
           </div>
         </div>
       </div>

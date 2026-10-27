@@ -62,6 +62,9 @@ const ZERO_METRICS: HomeMetrics = {
   uncategorized_count: 0,
 };
 
+// 10 minutes in milliseconds
+const IDLE_TIMEOUT_MS = 600000; 
+
 type ScreenId = TabId | "budget" | "commitments" | "tax" | "needs-review" | "ajo" | "bank-charge" | "transactions";
 
 export default function SandboxPage() {
@@ -212,6 +215,7 @@ export default function SandboxPage() {
   }, [accounts.length, startAutoScroll]);
 
 
+  // UPDATED IDLE TIMEOUT LOGIC
   useEffect(() => {
     if (!session || onboardingSequence !== "complete" || isLocked || !dbPin) return;
 
@@ -231,7 +235,7 @@ export default function SandboxPage() {
 
     const interval = setInterval(() => {
       const lastActive = Number(localStorage.getItem("acuity:last_active") || "0");
-      if (Date.now() - lastActive > 1800000) {
+      if (Date.now() - lastActive > IDLE_TIMEOUT_MS) {
         setIsLocked(true);
       }
     }, 60000);
@@ -342,7 +346,8 @@ export default function SandboxPage() {
             setDbPin(profile.pin);
             
             const lastActive = Number(localStorage.getItem("acuity:last_active") || "0");
-            if (lastActive === 0 || Date.now() - lastActive > 1800000) {
+            // UPDATED: Check against the new 10-minute idle timeout
+            if (lastActive === 0 || Date.now() - lastActive > IDLE_TIMEOUT_MS) {
               setIsLocked(true);
             } else {
               localStorage.setItem("acuity:last_active", String(Date.now()));
@@ -737,6 +742,7 @@ export default function SandboxPage() {
                                 onCheckBalance={() => {}}
                                 onDelete={() => {}}
                                 cardholderName={profileName}
+                                isCompact={true}
                               />
                             </div>
                           ))}

@@ -162,7 +162,7 @@ export function AccountsScreen({
         
         {/* Total Net Worth Hero - Changed to var(--brand) */}
         <div className="p-6 rounded-[24px] shadow-xl text-center" style={{ background: "var(--brand)" }}>
-          <p className="text-[13px] text-black/70 mb-1 font-medium">Total Net Worth</p>
+          <p className="text-[13px] text-black/70 mb-1 font-medium">Total Net</p>
           <p className="text-[36px] font-bold tabular text-black">{fmt(netWorth)}</p>
         </div>
 
