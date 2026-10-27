@@ -3,18 +3,16 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  X, ArrowUp, Loader2, ArrowUpRight, CheckCircle2, Search, FileText, 
-  Pin, Plus, MessageSquare, Wallet, PieChart, Receipt, Lightbulb, Copy, RotateCw
+  X, ArrowUp, Loader2, CheckCircle2, Search, FileText, 
+  Pin, Plus, Wallet, PieChart, Receipt, Lightbulb, Copy
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useWorkspace } from "@/lib/workspace";
 import { useCurrency } from "@/lib/currency";
 import { createClient } from "@/lib/supabase/client";
-// FIX: Import HomeMetrics from types, and SafeToSpend from database
 import type { HomeMetrics } from "@/lib/types";
 import type { SafeToSpend } from "@/lib/supabase/database";
 import { useToast } from "./toast";
-import { NumberRoll } from "./number-roll";
 
 interface Message {
   id: string;
@@ -48,11 +46,28 @@ export function AIDrawer({
   const [streamingContent, setStreamingContent] = useState("");
   const [hasSentFirstMessage, setHasSentFirstMessage] = useState(false);
   
+  // Visual Viewport state to handle iOS keyboard
+  const [vv, setVv] = useState<{ height: number; offsetTop: number } | null>(null);
+  
   const endRef = useRef<HTMLDivElement>(null);
   const { active: activeWs } = useWorkspace();
   const { fmt } = useCurrency();
   const toast = useToast();
   const supabase = createClient();
+
+  // Handle iOS Keyboard so the layout doesn't jump
+  useEffect(() => {
+    const v = window.visualViewport;
+    if (!v) return;
+    const update = () => setVv({ height: v.height, offsetTop: v.offsetTop });
+    update();
+    v.addEventListener("resize", update);
+    v.addEventListener("scroll", update);
+    return () => {
+      v.removeEventListener("resize", update);
+      v.removeEventListener("scroll", update);
+    };
+  }, []);
 
   // Load chat history on mount
   useEffect(() => {
@@ -149,7 +164,6 @@ export function AIDrawer({
         }
       }
 
-      // Finalize the message
       const finalMsg: Message = { id: Date.now().toString(), role: "assistant", content: currentText };
       setMessages((prev) => [...prev, finalMsg]);
       await saveMessageToDb("assistant", currentText);
@@ -203,45 +217,23 @@ export function AIDrawer({
 
   const firstName = fullName.split(" ")[0];
 
-  // Dynamic Suggestion Logic
   const budgetUsedPct = metrics.budget_limit_minor > 0 
     ? Math.round((metrics.total_spent_minor / metrics.budget_limit_minor) * 100) 
     : 0;
 
   const suggestions = [
-    { 
-      title: "How much can I safely spend this week?", 
-      icon: Wallet, 
-      category: "Spending",
-      show: true 
-    },
-    { 
-      title: "Where am I wasting the most money?", 
-      icon: PieChart, 
-      category: "Insights",
-      show: true 
-    },
-    { 
-      title: `You've used ${budgetUsedPct}% of your budget. What should I cut?`, 
-      icon: Receipt, 
-      category: "Budget",
-      show: budgetUsedPct > 80 
-    },
-    { 
-      title: `Payday in ${daysUntilIncome} days. How do I stretch what's left?`, 
-      icon: Lightbulb, 
-      category: "Planning",
-      show: daysUntilIncome > 0 && daysUntilIncome <= 5 
-    },
-    { 
-      title: `Help me categorize my unreviewed transactions.`, 
-      icon: FileText, 
-      category: "Organize",
-      show: metrics.uncategorized_count > 0 
-    }
+    { title: "How much can I safely spend this week?", icon: Wallet, category: "Spending", show: true },
+    { title: "Where am I wasting the most money?", icon: PieChart, category: "Insights", show: true },
+    { title: `You've used ${budgetUsedPct}% of your budget. What should I cut?`, icon: Receipt, category: "Budget", show: budgetUsedPct > 80 },
+    { title: `Payday in ${daysUntilIncome} days. How do I stretch what's left?`, icon: Lightbulb, category: "Planning", show: daysUntilIncome > 0 && daysUntilIncome <= 5 },
+    { title: `Help me categorize my unreviewed transactions.`, icon: FileText, category: "Organize", show: metrics.uncategorized_count > 0 }
   ].filter(s => s.show).slice(0, 4);
 
   if (!isOpen) return null;
+
+  const frame: React.CSSProperties = vv
+    ? { position: "fixed", top: vv.offsetTop, left: 0, right: 0, height: vv.height }
+    : { position: "fixed", inset: 0 };
 
   return (
     <AnimatePresence>
@@ -250,7 +242,8 @@ export function AIDrawer({
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
         transition={{ type: "spring", damping: 25, stiffness: 200 }}
-        className="fixed inset-0 z-[100] flex flex-col h-[100dvh] bg-[var(--bg)] overflow-hidden"
+        className="z-[100] flex flex-col bg-[var(--bg)] overflow-hidden"
+        style={frame}
       >
         {/* Background Orbs */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -302,7 +295,7 @@ export function AIDrawer({
           </div>
         </div>
 
-        {/* Live Context Strip (Collapses after first message) */}
+        {/* Redesigned Live Context Strip */}
         <AnimatePresence>
           {!hasSentFirstMessage && (
             <motion.div 
@@ -310,27 +303,33 @@ export function AIDrawer({
               exit={{ height: 0, opacity: 0 }}
               className="relative z-10 shrink-0 overflow-hidden border-b border-[var(--line)] bg-[var(--surface-1)]/50 backdrop-blur-sm"
             >
-              <div className="flex gap-2 overflow-x-auto px-5 py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                <button onClick={() => send("How much can I safely spend today?")} className="flex shrink-0 flex-col items-start gap-1 rounded-xl bg-[var(--surface-2)] border border-[var(--line)] px-4 py-2.5">
-                  <span className="text-[10px] text-[var(--text-3)] uppercase tracking-wider">Safe to spend</span>
-                  <span className="text-[16px] font-bold text-[var(--brand)] tabular">
+              <div className="flex justify-between items-center px-5 py-3">
+                
+                <button onClick={() => send("How much can I safely spend today?")} className="flex flex-col items-start gap-0.5">
+                  <span className="text-[10px] font-semibold text-[var(--text-3)] uppercase tracking-wider">Safe to spend</span>
+                  <span className="text-[15px] font-bold text-[var(--brand)] tabular">
                     {safeToSpend ? fmt(safeToSpend.daily_safe_minor / 100) : "₦0"}
                   </span>
                 </button>
                 
-                <button onClick={() => send("When is my next payday?")} className="flex shrink-0 flex-col items-start gap-1 rounded-xl bg-[var(--surface-2)] border border-[var(--line)] px-4 py-2.5">
-                  <span className="text-[10px] text-[var(--text-3)] uppercase tracking-wider">Days to payday</span>
-                  <span className="text-[16px] font-bold text-[var(--text-1)] tabular">
+                <div className="w-px h-8 bg-[var(--line)]" />
+
+                <button onClick={() => send("When is my next payday?")} className="flex flex-col items-start gap-0.5">
+                  <span className="text-[10px] font-semibold text-[var(--text-3)] uppercase tracking-wider">Days to payday</span>
+                  <span className="text-[15px] font-bold text-[var(--text-1)] tabular">
                     {daysUntilIncome} days
                   </span>
                 </button>
 
-                <button onClick={() => send("Am I on track with my budget?")} className="flex shrink-0 flex-col items-start gap-1 rounded-xl bg-[var(--surface-2)] border border-[var(--line)] px-4 py-2.5">
-                  <span className="text-[10px] text-[var(--text-3)] uppercase tracking-wider">Budget used</span>
-                  <span className="text-[16px] font-bold text-[var(--text-1)] tabular">
+                <div className="w-px h-8 bg-[var(--line)]" />
+
+                <button onClick={() => send("Am I on track with my budget?")} className="flex flex-col items-start gap-0.5">
+                  <span className="text-[10px] font-semibold text-[var(--text-3)] uppercase tracking-wider">Budget used</span>
+                  <span className="text-[15px] font-bold text-[var(--text-1)] tabular">
                     {budgetUsedPct}%
                   </span>
                 </button>
+
               </div>
             </motion.div>
           )}
@@ -377,7 +376,7 @@ export function AIDrawer({
                   className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}
                 >
                   {msg.role === "user" ? (
-                    <div className="max-w-[85%] rounded-[20px] rounded-tr-sm p-4 text-[15px] leading-relaxed text-white shadow-sm" style={{ background: "var(--brand)" }}>
+                    <div className="max-w-[85%] rounded-[20px] rounded-tr-sm p-4 text-[15px] leading-relaxed shadow-sm" style={{ background: "var(--brand)", color: "var(--brand-ink)" }}>
                       {msg.content}
                     </div>
                   ) : (
@@ -472,7 +471,8 @@ export function AIDrawer({
                 }
               }}
               placeholder={messages.length > 0 ? "Ask a follow up..." : "Ask about your money..."}
-              className="flex-1 max-h-32 min-h-[40px] bg-transparent px-4 py-2.5 text-[15px] text-[var(--text-1)] outline-none placeholder:text-[var(--text-3)] resize-none"
+              /* Added text-[16px] to stop iOS auto-zoom */
+              className="flex-1 max-h-32 min-h-[40px] bg-transparent px-4 py-2.5 text-[16px] text-[var(--text-1)] outline-none placeholder:text-[var(--text-3)] resize-none"
               rows={1}
             />
 

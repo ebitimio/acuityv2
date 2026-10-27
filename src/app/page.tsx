@@ -568,10 +568,8 @@ export default function SandboxPage() {
     return true;
   });
 
-  // --- NEW: Daily AI Insight Logic ---
   const topCategory = categoryRows[0]?.category ?? null;
   const topCategoryAmount = categoryRows[0]?.total_minor ? categoryRows[0].total_minor / 100 : 0;
-  const budgetUsedPct = budgetLimit > 0 ? Math.round((spentThisMonth / budgetLimit) * 100) : 0;
 
   return (
     <main className="relative flex min-h-[100dvh] flex-col overflow-x-hidden" style={{ background: "var(--bg)" }}>
@@ -648,7 +646,7 @@ export default function SandboxPage() {
               <div className="flex flex-col gap-6 px-5 pt-2">
                 <SafeToSpendHero data={safeToSpend} netAcross={netAcrossAccounts} liquidAssets={liquidAssets} spentThisMonth={spentThisMonth} incomeThisMonth={incomeThisMonth} budgetLimit={budgetLimit} periodLabel={periodLabel} daysUntilIncome={daysUntilIncome} nextIncomeDate={nextIncomeDate} />
 
-                {/* NEW: DAILY AI INSIGHT CARD */}
+                {/* FIXED DAILY INSIGHT CARD WITH A. LOGO */}
                 {accounts.length > 0 && (
                   <motion.button
                     whileTap={{ scale: 0.98 }}
@@ -658,7 +656,10 @@ export default function SandboxPage() {
                     <div className="absolute top-0 right-0 w-24 h-24 bg-[var(--brand)]/10 blur-[30px] rounded-full -mr-8 -mt-8 pointer-events-none" />
                     <div className="flex items-center gap-3 relative z-10">
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--brand)]/10">
-                        <Sparkles size={20} className="text-[var(--brand)]" />
+                        <div className="flex items-baseline">
+                          <span className="text-[16px] font-black text-[var(--brand)]">A</span>
+                          <span className="text-[16px] font-black text-[var(--brand)]">.</span>
+                        </div>
                       </div>
                       <div>
                         <p className="text-[11px] font-semibold text-[var(--brand)] uppercase tracking-wider mb-0.5">Daily Insight</p>
@@ -801,7 +802,6 @@ export default function SandboxPage() {
       <FloatingTabBar activeTab={activeScreen === "budget" ? "home" : (activeScreen as TabId)} onTabChange={handleTabChange} onAddClick={handleAddClick} isHidden={navHidden} />
       <ImportSheet isOpen={isImportOpen} onClose={() => setIsImportOpen(false)} onImportSuccess={() => { refreshData(); toast("Statement imported"); }} />
       
-      {/* UPDATED AI DRAWER WITH LIVE CONTEXT */}
       <AIDrawer 
         isOpen={isAdvisorOpen} 
         onClose={() => setIsAdvisorOpen(false)} 
@@ -830,14 +830,12 @@ export default function SandboxPage() {
         </div>
       </Modal>
 
-      {/* MONTHLY REPORT MODAL */}
       <MonthlyReportModal 
         isOpen={isReportOpen} 
         onClose={() => setIsReportOpen(false)} 
         workspaceId={activeWs?.id || ""} 
       />
 
-      {/* --- PREMIUM SUBSCRIPTION MODAL --- */}
       <Modal open={isPremiumModalOpen} onClose={() => setIsPremiumModalOpen(false)} title="Acuity Premium">
         <div className="flex flex-col items-center py-4 space-y-6">
           
