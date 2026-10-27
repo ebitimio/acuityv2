@@ -578,8 +578,7 @@ export async function submitBalanceCheckin(
     adjustment_txn_id = inserted?.id ?? null;
   }
 
-  const resolution: BalanceCheckinResult["difference_minor"] extends never ? never : "reanchor_only" | "reanchor_and_log" | "dismissed" =
-    options.logAdjustment ? "reanchor_and_log" : "reanchor_only";
+  const resolution = options.logAdjustment ? "reanchor_and_log" : "reanchor_only";
 
   const { data: chk, error: chkErr } = await sb
     .from("balance_checkins")
@@ -596,6 +595,7 @@ export async function submitBalanceCheckin(
     .single();
   if (chkErr) throw chkErr;
 
+  // IMPORTANT: Always reanchor the account to the new reported balance
   const { error: reanchorErr } = await sb.rpc("reanchor_account", {
     p_account_id: accountId,
     p_new_balance_minor: reported,

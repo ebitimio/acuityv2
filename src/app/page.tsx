@@ -62,7 +62,6 @@ const ZERO_METRICS: HomeMetrics = {
   uncategorized_count: 0,
 };
 
-// 10 minutes in milliseconds
 const IDLE_TIMEOUT_MS = 600000; 
 
 type ScreenId = TabId | "budget" | "commitments" | "tax" | "needs-review" | "ajo" | "bank-charge" | "transactions";
@@ -94,7 +93,6 @@ export default function SandboxPage() {
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [selectedTxn, setSelectedTxn] = useState<Txn | null>(null);
   
-  // Monthly Report State
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [showReportTeaser, setShowReportTeaser] = useState(false);
 
@@ -135,7 +133,6 @@ export default function SandboxPage() {
     else setNavHidden(false);
   });
 
-  // NEW MONTHLY REPORT LOGIC
   useEffect(() => {
     if (!activeWs?.id || !metrics) return;
     
@@ -215,7 +212,6 @@ export default function SandboxPage() {
   }, [accounts.length, startAutoScroll]);
 
 
-  // UPDATED IDLE TIMEOUT LOGIC
   useEffect(() => {
     if (!session || onboardingSequence !== "complete" || isLocked || !dbPin) return;
 
@@ -346,7 +342,6 @@ export default function SandboxPage() {
             setDbPin(profile.pin);
             
             const lastActive = Number(localStorage.getItem("acuity:last_active") || "0");
-            // UPDATED: Check against the new 10-minute idle timeout
             if (lastActive === 0 || Date.now() - lastActive > IDLE_TIMEOUT_MS) {
               setIsLocked(true);
             } else {
@@ -566,7 +561,10 @@ export default function SandboxPage() {
     ? new Date(nextIncomeDateRaw).toLocaleDateString("en-NG", { day: "numeric", month: "short" })
     : "";
 
+  // FILTER OUT ADJUSTMENTS
   const visibleTransactions = transactions.filter((t) => {
+    if (t.category_name === "Adjustment") return false;
+    
     if (txnFilter === "all") return true;
     if (txnFilter === "credit") return t.direction === "credit";
     if (txnFilter === "debit") return t.direction === "debit";
