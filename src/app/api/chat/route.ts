@@ -15,23 +15,33 @@ export async function POST(req: Request) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
 
-    const workspaceId = body?.workspaceId ?? null; // <--- GET WORKSPACE ID
+    const workspaceId = body?.workspaceId ?? null;
     const workspaceName = body?.workspaceName ?? "Current";
 
-    const tools = buildTools(supabase, workspaceId); // <--- PASS WORKSPACE ID
+    // Fetch basic live context for the prompt
+    const { data: safe } = await supabase.rpc("get_safe_to_spend", { p_workspace_id: workspaceId });
+    const { data: metrics } = await supabase.rpc("get_home_metrics", { p_workspace_id: workspaceId });
+
+    const tools = buildTools(supabase, workspaceId);
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
     const system = `You are the Acuity AI Wealth Manager for Nigerian users.
 ACTIVE WORKSPACE: "${workspaceName}"
 
-CRITICAL RULES:
-1. All tools query the currently active workspace. Never reference data from other workspaces.
-2. If the user just created a new workspace, the data will be sparse or empty. Adjust your tone and advice accordingly — don't invent data.
-3. NEVER invent amounts. Use Naira (₦).
-4. ALWAYS check income, obligations, and budget before giving spending advice.
-5. Be realistic. If math says spend ₦300k/day but budget is ₦50k, warn the user.
-6. Use plain text. Do not use Markdown headers.`;
+LIVE CONTEXT SNAPSHOT (Use this if the user asks a quick question, otherwise call tools for deep dives):
+- Safe to spend today: ₦${((safe?.daily_safe_minor ?? 0) / 100).toLocaleString()}
+- Days until payday: ${safe?.days_until_next_income ?? 0}
+- Total spent this month: ₦${((metrics?.total_spent_minor ?? 0) / 100).toLocaleString()}
+- Monthly Budget Limit: ₦${((metrics?.budget_limit_minor ?? 0) / 100).toLocaleString()}
 
+CRITICAL RULES:
+1. All tools query the currently active workspace.
+2. NEVER invent amounts. Use Naira (₦).
+3. ALWAYS check income, obligations, and budget before giving spending advice.
+4. Be realistic. If math says spend ₦300k/day but budget is ₦50k, warn the user.
+5. Use plain text. Do not use Markdown headers. Use bold for emphasis.`;
+
+    // ... (rest of your existing stream code remains identical)
     const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
       { role: "system", content: system },
       ...incoming

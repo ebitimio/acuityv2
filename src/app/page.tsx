@@ -45,7 +45,7 @@ import { Field, Button } from "@/components/ui/form";
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
 import {
   ChevronRight, Receipt, ChevronDown, Plus, Trash2,
-  PiggyBank, PieChart, ArrowLeftRight, Bell, Crown, Sparkles, Award
+  PiggyBank, PieChart, ArrowLeftRight, Bell, Crown, Sparkles, Award, Lightbulb
 } from "lucide-react";
 import { TransactionsScreen } from "@/components/screens/transactions-screen";
 import { OnboardingCarousel } from "@/components/screens/onboarding-carousel";
@@ -138,36 +138,27 @@ export default function SandboxPage() {
     
     const today = new Date();
     const currentDay = today.getDate();
-    const currentMonth = today.toISOString().slice(0, 7); // YYYY-MM
+    const currentMonth = today.toISOString().slice(0, 7); 
     
-    // Check if we have already generated/viewed a report for this month
     const reportGeneratedFor = localStorage.getItem(`acuity:report_generated_${activeWs.id}`);
-
-    // Check eligibility
     const hasAccounts = accounts.length > 0;
     const hasActivity = metrics.total_income_minor > 0 || metrics.total_spent_minor > 0;
 
-    // If it's a new month, clear the "seen" status so they can see the new report
     if (reportGeneratedFor && reportGeneratedFor !== currentMonth) {
       localStorage.removeItem(`acuity:report_generated_${activeWs.id}`);
     }
 
-    // Show if it's past the 29th, they have data, AND we haven't generated the report for THIS month yet
     if (currentDay >= 29 && reportGeneratedFor !== currentMonth && hasAccounts && hasActivity) {
       setShowReportTeaser(true);
-    } 
-    // If we already generated it this month, keep showing the banner (so they can access it anytime)
-    else if (reportGeneratedFor === currentMonth && hasAccounts && hasActivity) {
+    } else if (reportGeneratedFor === currentMonth && hasAccounts && hasActivity) {
       setShowReportTeaser(true);
-    } 
-    else {
+    } else {
       setShowReportTeaser(false);
     }
   }, [activeWs?.id, metrics, accounts.length]);
 
   const handleViewReport = () => {
     setIsReportOpen(true);
-    // Mark that we have generated the report for this month
     const currentMonth = new Date().toISOString().slice(0, 7);
     localStorage.setItem(`acuity:report_generated_${activeWs?.id}`, currentMonth);
   };
@@ -319,7 +310,6 @@ export default function SandboxPage() {
   }, [activeWs?.id]);
 
   useEffect(() => {
-    // Check for our hard-logout flag first
     const wasDeleted = localStorage.getItem("acuity:account_deleted") === "true";
     
     if (wasDeleted) {
@@ -578,6 +568,11 @@ export default function SandboxPage() {
     return true;
   });
 
+  // --- NEW: Daily AI Insight Logic ---
+  const topCategory = categoryRows[0]?.category ?? null;
+  const topCategoryAmount = categoryRows[0]?.total_minor ? categoryRows[0].total_minor / 100 : 0;
+  const budgetUsedPct = budgetLimit > 0 ? Math.round((spentThisMonth / budgetLimit) * 100) : 0;
+
   return (
     <main className="relative flex min-h-[100dvh] flex-col overflow-x-hidden" style={{ background: "var(--bg)" }}>
       <PullToRefresh onRefresh={refreshData}>
@@ -653,6 +648,29 @@ export default function SandboxPage() {
               <div className="flex flex-col gap-6 px-5 pt-2">
                 <SafeToSpendHero data={safeToSpend} netAcross={netAcrossAccounts} liquidAssets={liquidAssets} spentThisMonth={spentThisMonth} incomeThisMonth={incomeThisMonth} budgetLimit={budgetLimit} periodLabel={periodLabel} daysUntilIncome={daysUntilIncome} nextIncomeDate={nextIncomeDate} />
 
+                {/* NEW: DAILY AI INSIGHT CARD */}
+                {accounts.length > 0 && (
+                  <motion.button
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setIsAdvisorOpen(true)}
+                    className="relative overflow-hidden w-full flex items-center justify-between rounded-[20px] bg-gradient-to-r from-[var(--surface-2)] to-[var(--surface-3)] border border-[var(--line)] p-4 text-left shadow-lg"
+                  >
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-[var(--brand)]/10 blur-[30px] rounded-full -mr-8 -mt-8 pointer-events-none" />
+                    <div className="flex items-center gap-3 relative z-10">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--brand)]/10">
+                        <Sparkles size={20} className="text-[var(--brand)]" />
+                      </div>
+                      <div>
+                        <p className="text-[11px] font-semibold text-[var(--brand)] uppercase tracking-wider mb-0.5">Daily Insight</p>
+                        <p className="text-[13px] font-medium text-[var(--text-1)] leading-snug">
+                          {topCategory ? `You've spent ${fmt(topCategoryAmount)} on ${topCategory} this month.` : "Ask me anything about your finances."}
+                        </p>
+                      </div>
+                    </div>
+                    <ChevronRight size={20} className="text-[var(--text-3)] relative z-10" />
+                  </motion.button>
+                )}
+
                 {/* MONTHLY REPORT TEASER */}
                 {showReportTeaser && (
                   <motion.button
@@ -664,7 +682,7 @@ export default function SandboxPage() {
                     <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--brand)]/20 blur-[40px] rounded-full -mr-10 -mt-10 pointer-events-none" />
                     <div className="flex items-center gap-3 relative z-10">
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--brand)] shadow-lg">
-                        <Sparkles size={20} className="text-[var(--brand-ink)]" />
+                        <Award size={20} className="text-[var(--brand-ink)]" />
                       </div>
                       <div>
                         <p className="text-[14px] font-bold text-white">Your Monthly Report is ready</p>
@@ -782,7 +800,18 @@ export default function SandboxPage() {
 
       <FloatingTabBar activeTab={activeScreen === "budget" ? "home" : (activeScreen as TabId)} onTabChange={handleTabChange} onAddClick={handleAddClick} isHidden={navHidden} />
       <ImportSheet isOpen={isImportOpen} onClose={() => setIsImportOpen(false)} onImportSuccess={() => { refreshData(); toast("Statement imported"); }} />
-      <AIDrawer isOpen={isAdvisorOpen} onClose={() => setIsAdvisorOpen(false)} fullName={profileName} />
+      
+      {/* UPDATED AI DRAWER WITH LIVE CONTEXT */}
+      <AIDrawer 
+        isOpen={isAdvisorOpen} 
+        onClose={() => setIsAdvisorOpen(false)} 
+        fullName={profileName} 
+        safeToSpend={safeToSpend}
+        metrics={m}
+        topCategory={topCategory}
+        daysUntilIncome={daysUntilIncome}
+      />
+
       <SettingsSheet isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} user={{ ...session.user, created_at: session.user.created_at }} onSignOut={handleSignOut} profileName={profileName} onNameUpdated={(name) => setProfileName(name)} />
       
       <NotificationsSheet 
@@ -829,7 +858,6 @@ export default function SandboxPage() {
           </div>
 
           <div className="w-full space-y-3">
-            {/* Monthly Card */}
             <div className="rounded-2xl bg-[var(--surface-2)] border border-[var(--line)] p-5 relative overflow-hidden">
               <div className="flex justify-between items-center mb-1">
                 <p className="text-[15px] font-semibold text-[var(--text-1)]">Monthly Plan</p>
@@ -841,7 +869,6 @@ export default function SandboxPage() {
               <p className="text-[12px] text-[var(--text-2)]">≈ {fmt(3.99 * rate)} / month</p>
             </div>
 
-            {/* Annual Card (Highlighted) */}
             <div className="rounded-2xl bg-[var(--brand)]/10 border border-[var(--brand)]/30 p-5 relative overflow-hidden">
               <div className="absolute top-0 right-0 bg-[var(--brand)] text-[var(--brand-ink)] text-[10px] font-bold px-3 py-1 rounded-bl-lg">
                 SAVE 16%
