@@ -158,9 +158,15 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
         throw new Error(data.error || "Failed to delete account");
       }
       
-      // Clear all local storage and sign out
       clearDataCache();
-      localStorage.clear();
+      
+      // Explicitly clear the flags that trigger the onboarding sequence
+      try {
+        localStorage.removeItem("acuity:new_signup");
+        localStorage.removeItem("acuity:last_active");
+        localStorage.removeItem("acuity:activeWorkspace");
+        localStorage.removeItem("acuity:pin");
+      } catch {}
       
       toast("Account permanently deleted");
       
