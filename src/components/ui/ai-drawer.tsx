@@ -10,7 +10,9 @@ import { cn } from "@/lib/utils";
 import { useWorkspace } from "@/lib/workspace";
 import { useCurrency } from "@/lib/currency";
 import { createClient } from "@/lib/supabase/client";
-import type { HomeMetrics, SafeToSpend } from "@/lib/supabase/database";
+// FIX: Import HomeMetrics from types, and SafeToSpend from database
+import type { HomeMetrics } from "@/lib/types";
+import type { SafeToSpend } from "@/lib/supabase/database";
 import { useToast } from "./toast";
 import { NumberRoll } from "./number-roll";
 
