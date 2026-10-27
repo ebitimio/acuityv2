@@ -38,7 +38,7 @@ export function BalanceCheckinSheet({ isOpen, onClose, onSaved, account }: Props
       const result = await submitBalanceCheckin(account.id, reported, { logAdjustment: true });
       
       if (Math.abs(result.difference_minor) > 100) {
-        toast(`Recorded ${fmt(Math.abs(result.difference_minor / 100))} difference logged as adjustment`);
+        toast(`Balance updated to ${fmt(reported)}`);
       } else {
         toast("Balance confirmed");
       }
@@ -88,9 +88,7 @@ export function BalanceCheckinSheet({ isOpen, onClose, onSaved, account }: Props
             </p>
             
             <p className="text-[11px] text-[var(--text-3)] mt-2 leading-snug">
-              {diff < 0
-                ? "This is likely spending you didn't log. It will be logged as an adjustment."
-                : "This could be income or a transfer you didn't log. It will be logged as an adjustment."}
+              Your account balance will be updated to match this figure.
             </p>
           </div>
         )}
@@ -103,7 +101,7 @@ export function BalanceCheckinSheet({ isOpen, onClose, onSaved, account }: Props
         )}
 
         <Button loading={busy} onClick={submit} disabled={!reported}>
-          {hasDiff ? "Save check-in" : "Confirm balance"}
+          {hasDiff ? "Update balance" : "Confirm balance"}
         </Button>
       </div>
     </Modal>

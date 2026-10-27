@@ -557,28 +557,19 @@ export async function submitBalanceCheckin(
   const { data: acc } = await sb.from("accounts").select("name").eq("id", accountId).single();
   const accountName = acc?.name ?? "Account";
 
-  let adjustment_txn_id: string | null = null;
-  if (options.logAdjustment && diff !== 0) {
-    const { data: inserted, error: txnErr } = await sb
-      .from("transactions")
-      .insert({
-        account_id: accountId,
-        amount_minor: Math.abs(diff),
-        direction: diff > 0 ? "credit" : "debit",
-        description_raw: "Balance check-in adjustment",
-        description_clean: "Balance check-in adjustment",
-        category_name: "Adjustment",
-        date: new Date().toISOString(),
-        source: "adjustment",
-        status: "posted",
-      })
-      .select("id")
-      .single();
-    if (txnErr) throw txnErr;
-    adjustment_txn_id = inserted?.id ?? null;
-  }
+  // 1. Update the account's anchor balance directly in the accounts table
+  // This ensures the balance is exactly what the user typed, without creating a fake transaction.
+  const { error: anchorErr } = await sb
+    .from("accounts")
+    .update({ 
+      balance_minor: reported, 
+      balance_as_of: new Date().toISOString().slice(0, 10) 
+    })
+    .eq("id", accountId);
+  if (anchorErr) throw anchorErr;
 
-  const resolution = options.logAdjustment ? "reanchor_and_log" : "reanchor_only";
+  // 2. Log the check-in for history
+  const resolution = "reanchor_only"; // We no longer log transactions, we just reanchor.
 
   const { data: chk, error: chkErr } = await sb
     .from("balance_checkins")
@@ -589,18 +580,11 @@ export async function submitBalanceCheckin(
       reported_minor: reported,
       difference_minor: diff,
       resolution,
-      adjustment_txn_id,
+      adjustment_txn_id: null, // No transaction ID anymore
     })
     .select("id")
     .single();
   if (chkErr) throw chkErr;
-
-  // IMPORTANT: Always reanchor the account to the new reported balance
-  const { error: reanchorErr } = await sb.rpc("reanchor_account", {
-    p_account_id: accountId,
-    p_new_balance_minor: reported,
-  });
-  if (reanchorErr) throw reanchorErr;
 
   return {
     account_id: accountId,
