@@ -132,7 +132,7 @@ export default function SandboxPage() {
     else setNavHidden(false);
   });
 
-  // Check for monthly report logic
+  // NEW MONTHLY REPORT LOGIC
   useEffect(() => {
     if (!activeWs?.id || !metrics) return;
     
@@ -140,24 +140,36 @@ export default function SandboxPage() {
     const currentDay = today.getDate();
     const currentMonth = today.toISOString().slice(0, 7); // YYYY-MM
     
-    // 1. Check if we have already seen this month's report
-    const lastSeen = localStorage.getItem(`acuity:last_report_seen_${activeWs.id}`);
+    // Check if we have already generated/viewed a report for this month
+    const reportGeneratedFor = localStorage.getItem(`acuity:report_generated_${activeWs.id}`);
 
-    // 2. Check for data eligibility (must have accounts and some transaction history)
+    // Check eligibility
     const hasAccounts = accounts.length > 0;
     const hasActivity = metrics.total_income_minor > 0 || metrics.total_spent_minor > 0;
 
-    // 3. Show only on the 29th (or later if they missed it) and not seen yet
-    if (currentDay >= 29 && lastSeen !== currentMonth && hasAccounts && hasActivity) {
+    // If it's a new month, clear the "seen" status so they can see the new report
+    if (reportGeneratedFor && reportGeneratedFor !== currentMonth) {
+      localStorage.removeItem(`acuity:report_generated_${activeWs.id}`);
+    }
+
+    // Show if it's past the 29th, they have data, AND we haven't generated the report for THIS month yet
+    if (currentDay >= 29 && reportGeneratedFor !== currentMonth && hasAccounts && hasActivity) {
       setShowReportTeaser(true);
+    } 
+    // If we already generated it this month, keep showing the banner (so they can access it anytime)
+    else if (reportGeneratedFor === currentMonth && hasAccounts && hasActivity) {
+      setShowReportTeaser(true);
+    } 
+    else {
+      setShowReportTeaser(false);
     }
   }, [activeWs?.id, metrics, accounts.length]);
 
   const handleViewReport = () => {
     setIsReportOpen(true);
-    setShowReportTeaser(false);
+    // Mark that we have generated the report for this month
     const currentMonth = new Date().toISOString().slice(0, 7);
-    localStorage.setItem(`acuity:last_report_seen_${activeWs?.id}`, currentMonth);
+    localStorage.setItem(`acuity:report_generated_${activeWs?.id}`, currentMonth);
   };
 
   const handleScroll = () => {
