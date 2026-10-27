@@ -46,7 +46,7 @@ export function AIDrawer({
   const [streamingContent, setStreamingContent] = useState("");
   const [hasSentFirstMessage, setHasSentFirstMessage] = useState(false);
   
-  // Visual Viewport state to handle iOS keyboard
+  // Visual Viewport state to handle iOS keyboard perfectly
   const [vv, setVv] = useState<{ height: number; offsetTop: number } | null>(null);
   
   const endRef = useRef<HTMLDivElement>(null);
@@ -55,7 +55,7 @@ export function AIDrawer({
   const toast = useToast();
   const supabase = createClient();
 
-  // Handle iOS Keyboard so the layout doesn't jump
+  // Handle iOS Keyboard layout shift
   useEffect(() => {
     const v = window.visualViewport;
     if (!v) return;
@@ -231,9 +231,10 @@ export function AIDrawer({
 
   if (!isOpen) return null;
 
+  // Lock the drawer to the visual viewport so it doesn't move with the keyboard
   const frame: React.CSSProperties = vv
-    ? { position: "fixed", top: vv.offsetTop, left: 0, right: 0, height: vv.height }
-    : { position: "fixed", inset: 0 };
+    ? { position: "fixed", top: vv.offsetTop, left: 0, right: 0, height: vv.height, zIndex: 100 }
+    : { position: "fixed", inset: 0, zIndex: 100 };
 
   return (
     <AnimatePresence>
@@ -242,7 +243,7 @@ export function AIDrawer({
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
         transition={{ type: "spring", damping: 25, stiffness: 200 }}
-        className="z-[100] flex flex-col bg-[var(--bg)] overflow-hidden"
+        className="flex flex-col bg-[var(--bg)] overflow-hidden"
         style={frame}
       >
         {/* Background Orbs */}
@@ -471,7 +472,7 @@ export function AIDrawer({
                 }
               }}
               placeholder={messages.length > 0 ? "Ask a follow up..." : "Ask about your money..."}
-              /* Added text-[16px] to stop iOS auto-zoom */
+              /* 16px stops iOS from auto-zooming the screen */
               className="flex-1 max-h-32 min-h-[40px] bg-transparent px-4 py-2.5 text-[16px] text-[var(--text-1)] outline-none placeholder:text-[var(--text-3)] resize-none"
               rows={1}
             />
