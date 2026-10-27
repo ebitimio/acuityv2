@@ -45,12 +45,13 @@ import { Field, Button } from "@/components/ui/form";
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
 import {
   ChevronRight, Receipt, ChevronDown, Plus, Trash2,
-  PiggyBank, PieChart, ArrowLeftRight, Bell, Crown
+  PiggyBank, PieChart, ArrowLeftRight, Bell, Crown, Sparkles, Award
 } from "lucide-react";
 import { TransactionsScreen } from "@/components/screens/transactions-screen";
 import { OnboardingCarousel } from "@/components/screens/onboarding-carousel";
 import { PinLockScreen } from "@/components/screens/pin-lock-screen";
 import { StackedAccountCard } from "@/components/ui/stacked-account-card";
+import { MonthlyReportModal } from "@/components/ui/monthly-report-modal";
 import { cn } from "@/lib/utils";
 
 const ZERO_METRICS: HomeMetrics = {
@@ -89,6 +90,10 @@ export default function SandboxPage() {
   const [isAddTxnOpen, setIsAddTxnOpen] = useState(false);
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [selectedTxn, setSelectedTxn] = useState<Txn | null>(null);
+  
+  // Monthly Report State
+  const [isReportOpen, setIsReportOpen] = useState(false);
+  const [showReportTeaser, setShowReportTeaser] = useState(false);
 
   const [metrics, setMetrics] = useState<HomeMetrics | null>(null);
   const [transactions, setTransactions] = useState<Txn[]>([]);
@@ -126,6 +131,27 @@ export default function SandboxPage() {
     if (latest > previous && latest > 100) setNavHidden(true);
     else setNavHidden(false);
   });
+
+  // Check for monthly report logic
+  useEffect(() => {
+    if (!activeWs?.id) return;
+    const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+    const lastSeen = localStorage.getItem(`acuity:last_report_seen_${activeWs.id}`);
+
+    // If we haven't seen the report for this month, show it
+    if (lastSeen !== currentMonth) {
+      setShowReportTeaser(true);
+      // Optional: Auto-open it once
+      // setIsReportOpen(true); 
+    }
+  }, [activeWs?.id]);
+
+  const handleViewReport = () => {
+    setIsReportOpen(true);
+    setShowReportTeaser(false);
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    localStorage.setItem(`acuity:last_report_seen_${activeWs?.id}`, currentMonth);
+  };
 
   const handleScroll = () => {
     if (!scrollContainerRef.current) return;
@@ -608,6 +634,28 @@ export default function SandboxPage() {
               <div className="flex flex-col gap-6 px-5 pt-2">
                 <SafeToSpendHero data={safeToSpend} netAcross={netAcrossAccounts} liquidAssets={liquidAssets} spentThisMonth={spentThisMonth} incomeThisMonth={incomeThisMonth} budgetLimit={budgetLimit} periodLabel={periodLabel} daysUntilIncome={daysUntilIncome} nextIncomeDate={nextIncomeDate} />
 
+                {/* MONTHLY REPORT TEASER */}
+                {showReportTeaser && (
+                  <motion.button
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    onClick={handleViewReport}
+                    className="relative overflow-hidden w-full flex items-center justify-between rounded-[20px] bg-gradient-to-r from-[var(--brand)]/20 to-[var(--surface-2)] border border-[var(--brand)]/30 p-4 text-left shadow-[0_0_20px_rgba(222,49,33,0.15)]"
+                  >
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--brand)]/20 blur-[40px] rounded-full -mr-10 -mt-10 pointer-events-none" />
+                    <div className="flex items-center gap-3 relative z-10">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--brand)] shadow-lg">
+                        <Sparkles size={20} className="text-[var(--brand-ink)]" />
+                      </div>
+                      <div>
+                        <p className="text-[14px] font-bold text-white">Your Monthly Report is ready</p>
+                        <p className="text-[11px] text-[var(--brand)] font-medium">Tap to see your financial report card</p>
+                      </div>
+                    </div>
+                    <Award size={24} className="text-[var(--brand)]/50 relative z-10" />
+                  </motion.button>
+                )}
+
                 <div className="grid grid-cols-3 gap-3">
                   <button onClick={() => setActiveScreen("budget")} className="press flex h-14 items-center justify-center rounded-[18px] border border-white/5 bg-[#1c1c1e]">
                     <PiggyBank size={20} color="var(--brand)" />
@@ -733,6 +781,13 @@ export default function SandboxPage() {
           <Button loading={wsBusy} onClick={handleCreateWorkspace} disabled={!wsNewName.trim()}>Create</Button>
         </div>
       </Modal>
+
+      {/* MONTHLY REPORT MODAL */}
+      <MonthlyReportModal 
+        isOpen={isReportOpen} 
+        onClose={() => setIsReportOpen(false)} 
+        workspaceId={activeWs?.id || ""} 
+      />
 
       {/* --- PREMIUM SUBSCRIPTION MODAL --- */}
       <Modal open={isPremiumModalOpen} onClose={() => setIsPremiumModalOpen(false)} title="Acuity Premium">
