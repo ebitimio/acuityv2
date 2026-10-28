@@ -4,8 +4,8 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, ArrowUp, Loader2, CheckCircle2, Search, FileText,
-  Plus, Wallet, PieChart, Receipt, Lightbulb, Copy,
-  AlertCircle, RefreshCw, XCircle, Menu, X, Sparkles, Mic
+  Pin, Plus, Wallet, PieChart, Receipt, Lightbulb, Copy,
+  AlertCircle, RefreshCw, XCircle, Menu, X, Sparkles, Mic, Camera
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useWorkspace } from "@/lib/workspace";
@@ -73,20 +73,16 @@ export function AIScreen({
   const [thinkingLabel, setThinkingLabel] = useState("Checking your data...");
   const [streamingContent, setStreamingContent] = useState("");
   const [hasSentFirstMessage, setHasSentFirstMessage] = useState(false);
-  const [greeting, setGreeting] = useState("Hello");
+  const [mounted, setMounted] = useState(false);
 
   const endRef = useRef<HTMLDivElement>(null);
   const bufferRef = useRef("");
   const { active: activeWs } = useWorkspace();
   const { fmt } = useCurrency();
   const toast = useToast();
-  
-  const supabase = useMemo(() => createClient(), []);
+  const supabase = createClient();
 
-  useEffect(() => {
-    const hour = new Date().getHours();
-    setGreeting(hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening");
-  }, []);
+  useEffect(() => { setMounted(true); }, []);
 
   // Load conversations list
   useEffect(() => {
@@ -337,6 +333,16 @@ export function AIScreen({
     toast("Action cancelled");
   };
 
+  const handlePinInsight = async (content: string) => {
+    if (!activeWs?.id) return;
+    try {
+      await supabase.from("pinned_insights").insert({ workspace_id: activeWs.id, content });
+      toast("Insight pinned to Home");
+    } catch {
+      toast("Could not pin insight", "err");
+    }
+  };
+
   const renderInline = (text: string) => {
     return text.split(/(\*\*.*?\*\*|₦[\d,]+(?:\.\d+)?)/g).map((part, i) => {
       if (part.startsWith("**") && part.endsWith("**")) {
@@ -369,24 +375,24 @@ export function AIScreen({
   };
 
   const firstName = fullName.split(" ")[0];
-  
-  const budgetUsedPct = metrics && metrics.budget_limit_minor > 0
+  const budgetUsedPct = metrics.budget_limit_minor > 0
     ? Math.round((metrics.total_spent_minor / metrics.budget_limit_minor) * 100)
     : 0;
 
-  const suggestions = useMemo(() => {
-    if (!metrics) return [];
-    return [
-      { title: "How much can I safely spend this week?", icon: Wallet, show: true },
-      { title: "Where am I wasting the most money?", icon: PieChart, show: true },
-      { title: `You've used ${budgetUsedPct}% of your budget. What should I cut?`, icon: Receipt, show: budgetUsedPct > 80 },
-      { title: `Payday in ${daysUntilIncome} days. How do I stretch what's left?`, icon: Lightbulb, show: daysUntilIncome > 0 && daysUntilIncome <= 5 },
-      { title: `Help me categorize my unreviewed transactions.`, icon: FileText, show: metrics.uncategorized_count > 0 }
-    ].filter(s => s.show).slice(0, 4);
-  }, [budgetUsedPct, daysUntilIncome, metrics]);
+  // Gemini-style suggestion list
+  const suggestions = useMemo(() => [
+    { title: "How much can I safely spend this week?", icon: Wallet, show: true },
+    { title: "Where am I wasting the most money?", icon: PieChart, show: true },
+    { title: `You've used ${budgetUsedPct}% of your budget. What should I cut?`, icon: Receipt, show: budgetUsedPct > 80 },
+    { title: `Payday in ${daysUntilIncome} days. How do I stretch what's left?`, icon: Lightbulb, show: daysUntilIncome > 0 && daysUntilIncome <= 5 },
+    { title: `Help me categorize my unreviewed transactions.`, icon: FileText, show: metrics.uncategorized_count > 0 }
+  ].filter(s => s.show).slice(0, 4), [budgetUsedPct, daysUntilIncome, metrics.uncategorized_count]);
+
+  if (!mounted) return null;
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-[var(--bg)] overflow-hidden">
+    <div className="relative flex h-[100dvh] flex-col bg-[var(--bg)] overflow-hidden">
+      {/* Background Glow */}
       <div aria-hidden className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
         <div
           style={{
@@ -400,6 +406,7 @@ export function AIScreen({
         />
       </div>
 
+      {/* Gemini-style Header */}
       <div
         className="relative z-10 shrink-0 flex items-center justify-between px-4 pb-2"
         style={{ paddingTop: "calc(env(safe-area-inset-top) + 12px)" }}
@@ -412,9 +419,10 @@ export function AIScreen({
             <Menu size={18} />
           </button>
           
+          {/* Branding */}
           <div className="flex items-baseline ml-1">
-            <span className="text-[20px] font-black tracking-tighter text-[var(--text-1)]">ACUITY</span>
-            <span className="text-[20px] font-black tracking-tighter text-[var(--brand)]">.</span>
+            <span className="text-[22px] font-black tracking-tighter text-[var(--text-1)]">A</span>
+            <span className="text-[22px] font-black tracking-tighter text-[var(--brand)]">.</span>
           </div>
         </div>
         
@@ -425,12 +433,14 @@ export function AIScreen({
         </div>
       </div>
 
+      {/* Main Content Area */}
       <div className="relative z-10 flex-1 overflow-y-auto px-4" role="log" aria-live="polite">
         {messages.length === 0 && !isThinking ? (
+          /* Gemini-style Empty State */
           <div className="flex flex-col h-full justify-center pb-20">
             <div className="mb-8">
               <h1 className="text-[28px] font-semibold text-[var(--text-1)] mb-1">
-                Good {greeting},
+                Good {new Date().getHours() < 12 ? "morning" : new Date().getHours() < 18 ? "afternoon" : "evening"},
               </h1>
               <h1 className="text-[28px] font-semibold text-[var(--brand)]">
                 {firstName}
@@ -457,6 +467,7 @@ export function AIScreen({
             </div>
           </div>
         ) : (
+          /* Chat List */
           <div className="flex flex-col gap-6 pt-4 pb-4">
             {messages.map((msg) => (
               <motion.div
@@ -466,10 +477,12 @@ export function AIScreen({
                 className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}
               >
                 {msg.role === "user" ? (
+                  /* Gemini style: no bubble, just text right aligned */
                   <div className="max-w-[85%] text-[15px] leading-relaxed text-[var(--text-1)] text-right px-2 py-1">
                     {msg.content}
                   </div>
                 ) : (
+                  /* Gemini style: avatar left, plain text */
                   <div className="w-full flex gap-3">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] mt-1">
                       <span className="text-[14px] font-black text-[var(--brand-ink)]">A.</span>
@@ -528,7 +541,10 @@ export function AIScreen({
 
                       {msg.status !== "error" && (
                         <div className="flex items-center gap-3 mt-3">
-                          <button onClick={() => navigator.clipboard.writeText(msg.content)} className="text-[11px] font-medium text-[var(--text-3)] hover:text-[var(--text-1)] flex items-center gap-1 transition-colors">
+                          <button onClick={() => handlePinInsight(msg.content)} className="text-[11px] font-medium text-[var(--text-3)] hover:text-[var(--brand)] flex items-center gap-1">
+                            <Pin size={12} /> Pin to Home
+                          </button>
+                          <button onClick={() => navigator.clipboard.writeText(msg.content)} className="text-[11px] font-medium text-[var(--text-3)] hover:text-[var(--text-1)] flex items-center gap-1">
                             <Copy size={12} /> Copy
                           </button>
                         </div>
@@ -565,9 +581,10 @@ export function AIScreen({
         )}
       </div>
 
+      {/* Composer (Floats in middle if no messages, bottom if chat) */}
       <div
         className={cn(
-          "relative z-10 shrink-0 px-4 pb-[calc(env(safe-area-inset-bottom)+16px)] bg-[var(--bg)] transition-all duration-300",
+          "relative z-10 shrink-0 px-4 pb-[calc(env(safe-area-inset-bottom)+16px)] transition-all duration-300",
           messages.length === 0 && !isThinking ? "mb-auto mt-0" : ""
         )}
       >
@@ -604,6 +621,7 @@ export function AIScreen({
         </div>
       </div>
 
+      {/* History Sidebar */}
       <AnimatePresence>
         {isSidebarOpen && (
           <>
