@@ -485,7 +485,7 @@ export function AIScreen({
                   /* Gemini style: avatar left, plain text */
                   <div className="w-full flex gap-3">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] mt-1">
-                      <span className="text-[14px] font-black text-[var(--brand-ink)]">ACUITY.</span>
+                      <span className="text-[14px] font-black text-[var(--brand-ink)]">A.</span>
                     </div>
                     <div className="flex-1 min-w-0 pt-0.5">
                       {msg.content && (
