@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
-import { ThemeProvider } from "@/lib/theme";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -47,11 +46,8 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-black text-white min-h-screen`}
       >
-        <Providers>
-          <ThemeProvider>
-            {children}
-          </ThemeProvider>
-        </Providers>
+        {/* CHANGED: removed duplicate <ThemeProvider> — Providers already renders one */}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

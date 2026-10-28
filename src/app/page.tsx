@@ -36,7 +36,7 @@ import { NotificationsSheet } from "@/components/ui/notifications-sheet";
 import { WorkspaceSwitcher } from "@/components/ui/workspace-switcher";
 import { ImportSheet } from "@/components/ui/import-sheet";
 import { TransactionDetailSheet } from "@/components/ui/transaction-detail-sheet";
-import { AIDrawer } from "@/components/ui/ai-drawer";
+import { AIScreen } from "@/components/screens/ai-screen";
 import { AddTransactionSheet } from "@/components/ui/add-transaction-sheet";
 import { QuickAddSheet } from "@/components/ui/quick-add-sheet";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -62,9 +62,10 @@ const ZERO_METRICS: HomeMetrics = {
   uncategorized_count: 0,
 };
 
-const IDLE_TIMEOUT_MS = 600000; 
+const IDLE_TIMEOUT_MS = 600000;
 
-type ScreenId = TabId | "budget" | "commitments" | "tax" | "needs-review" | "ajo" | "bank-charge" | "transactions";
+// CHANGED: "ai" added to ScreenId
+type ScreenId = TabId | "budget" | "commitments" | "tax" | "needs-review" | "ajo" | "bank-charge" | "transactions" | "ai";
 
 export default function SandboxPage() {
   const [session, setSession] = useState<any>(null);
@@ -86,13 +87,13 @@ export default function SandboxPage() {
   const [dbPin, setDbPin] = useState<string | null>(null);
 
   const [isImportOpen, setIsImportOpen] = useState(false);
-  const [isAdvisorOpen, setIsAdvisorOpen] = useState(false);
+  // CHANGED: isAdvisorOpen state removed
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isAddTxnOpen, setIsAddTxnOpen] = useState(false);
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [selectedTxn, setSelectedTxn] = useState<Txn | null>(null);
-  
+
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [showReportTeaser, setShowReportTeaser] = useState(false);
 
@@ -100,7 +101,7 @@ export default function SandboxPage() {
   const [transactions, setTransactions] = useState<Txn[]>([]);
   const [categoryRows, setCategoryRows] = useState<CategorySpendRow[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
-  
+
   const [activeCardIndex, setActiveCardIndex] = useState(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const autoScrollTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -109,7 +110,7 @@ export default function SandboxPage() {
   const [setupError, setSetupError] = useState<string | null>(null);
   const [safeToSpend, setSafeToSpend] = useState<SafeToSpend | null>(null);
   const [cycle, setCycle] = useState<{ cycle_start: string; cycle_end: string } | null>(null);
-  
+
   const [openAddAccount, setOpenAddAccount] = useState(false);
   const [openCommitmentsTab, setOpenCommitmentsTab] = useState<"bill" | "income" | "family" | "rent" | null>(null);
 
@@ -122,7 +123,7 @@ export default function SandboxPage() {
   const [wsCreateOpen, setWsCreateOpen] = useState(false);
   const [wsNewName, setWsNewName] = useState("");
   const [wsBusy, setWsBusy] = useState(false);
-  
+
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
   const isAtWorkspaceLimit = workspaces.length >= 2;
 
@@ -135,11 +136,11 @@ export default function SandboxPage() {
 
   useEffect(() => {
     if (!activeWs?.id || !metrics) return;
-    
+
     const today = new Date();
     const currentDay = today.getDate();
-    const currentMonth = today.toISOString().slice(0, 7); 
-    
+    const currentMonth = today.toISOString().slice(0, 7);
+
     const reportGeneratedFor = localStorage.getItem(`acuity:report_generated_${activeWs.id}`);
     const hasAccounts = accounts.length > 0;
     const hasActivity = metrics.total_income_minor > 0 || metrics.total_spent_minor > 0;
@@ -182,7 +183,7 @@ export default function SandboxPage() {
 
     autoScrollTimerRef.current = setInterval(() => {
       if (!scrollContainerRef.current) return;
-      
+
       const container = scrollContainerRef.current;
       const children = container.children[0]?.children;
       if (!children) return;
@@ -249,7 +250,7 @@ export default function SandboxPage() {
         .then(({ data }) => {
           if (data?.full_name) setProfileName(data.full_name);
           else if (session.user.email) setProfileName(session.user.email.split("@")[0]);
-          
+
           if (data?.pin) setDbPin(data.pin);
         });
     }
@@ -265,22 +266,22 @@ export default function SandboxPage() {
     } catch {}
 
     clearDataCache();
-    
+
     try {
       const [m, t, accs] = await Promise.all([
-        getHomeMetrics(), 
+        getHomeMetrics(),
         getRecentTransactions(20),
         getAccounts()
       ]);
       setMetrics(m ?? ZERO_METRICS);
       setTransactions(t ?? []);
       setAccounts(accs ?? []);
-      
+
       const total = (accs ?? []).reduce((s, a) => s + (a.current_minor ?? a.balance_minor), 0) / 100;
       setLiquidAssets(total);
-    } catch (e: any) { 
-      setMetrics(ZERO_METRICS); 
-      setTransactions([]); 
+    } catch (e: any) {
+      setMetrics(ZERO_METRICS);
+      setTransactions([]);
       setAccounts([]);
       setLiquidAssets(0);
     }
@@ -311,7 +312,7 @@ export default function SandboxPage() {
 
   useEffect(() => {
     const wasDeleted = localStorage.getItem("acuity:account_deleted") === "true";
-    
+
     if (wasDeleted) {
       localStorage.removeItem("acuity:account_deleted");
       localStorage.removeItem("acuity:new_signup");
@@ -327,27 +328,27 @@ export default function SandboxPage() {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setIsAuthLoading(false);
-      
+
       if (session) {
         const isNewSignup = localStorage.getItem("acuity:new_signup") === "true";
-        
+
         if (isNewSignup) {
           setOnboardingSequence("carousel");
         } else {
           const { data: profile } = await supabase.from("profiles").select("pin").eq("id", session.user.id).single();
-          
+
           if (!profile?.pin) {
             setOnboardingSequence("carousel");
           } else {
             setDbPin(profile.pin);
-            
+
             const lastActive = Number(localStorage.getItem("acuity:last_active") || "0");
             if (lastActive === 0 || Date.now() - lastActive > IDLE_TIMEOUT_MS) {
               setIsLocked(true);
             } else {
               localStorage.setItem("acuity:last_active", String(Date.now()));
             }
-            
+
             setOnboardingSequence("complete");
           }
         }
@@ -385,11 +386,8 @@ export default function SandboxPage() {
     window.scrollTo(0, 0);
   }, [activeScreen]);
 
+  // CHANGED: "ai" now routes to a real screen
   const handleTabChange = (tabId: TabId) => {
-    if (tabId === "ai") {
-      setIsAdvisorOpen(true);
-      return;
-    }
     setActiveScreen(tabId);
   };
 
@@ -513,9 +511,9 @@ export default function SandboxPage() {
   };
 
   if (showSplash) return <SplashScreen onComplete={() => setShowSplash(false)} />;
-  
+
   if (isAuthLoading || wsLoading) return <div className="min-h-[100dvh]" style={{ background: "var(--bg)" }} />;
-  
+
   if (!session) return <AuthScreen />;
 
   if (onboardingSequence === "carousel") {
@@ -563,7 +561,7 @@ export default function SandboxPage() {
 
   const visibleTransactions = transactions.filter((t) => {
     if (t.category_name === "Adjustment") return false;
-    
+
     if (txnFilter === "all") return true;
     if (txnFilter === "credit") return t.direction === "credit";
     if (txnFilter === "debit") return t.direction === "debit";
@@ -584,17 +582,17 @@ export default function SandboxPage() {
           ) : activeScreen === "budget" ? (
             <BudgetScreen key={activeWs?.id} onBack={handleBackToHome} />
           ) : activeScreen === "accounts" ? (
-            <AccountsScreen 
-              key={activeWs?.id} 
-              onBack={handleBackToHome} 
-              userName={profileName} 
-              autoOpenAddAccount={openAddAccount} 
+            <AccountsScreen
+              key={activeWs?.id}
+              onBack={handleBackToHome}
+              userName={profileName}
+              autoOpenAddAccount={openAddAccount}
               onAutoOpenHandled={() => setOpenAddAccount(false)}
             />
           ) : activeScreen === "commitments" ? (
-            <CommitmentsScreen 
-              key={activeWs?.id} 
-              onBack={handleBackToHome} 
+            <CommitmentsScreen
+              key={activeWs?.id}
+              onBack={handleBackToHome}
               autoOpenModal={openCommitmentsTab}
               onAutoOpenHandled={() => setOpenCommitmentsTab(null)}
             />
@@ -606,6 +604,17 @@ export default function SandboxPage() {
             <AjoScreen onBack={handleBackToHome} />
           ) : activeScreen === "bank-charge" ? (
             <BankChargeScreen onBack={handleBackToHome} />
+          ) : activeScreen === "ai" ? (
+            // CHANGED: AI is now a screen, not a drawer
+            <AIScreen
+              key={activeWs?.id}
+              onBack={handleBackToHome}
+              fullName={profileName}
+              safeToSpend={safeToSpend}
+              metrics={m}
+              daysUntilIncome={daysUntilIncome}
+              onDataChanged={refreshData}
+            />
           ) : (
             <div className="flex-1 overflow-y-auto pb-32">
               <div
@@ -634,14 +643,14 @@ export default function SandboxPage() {
                 </div>
               </div>
 
-              <WorkspaceSwitcher 
-                isOpen={wsOpen} 
-                onClose={() => setWsOpen(false)} 
-                workspaces={workspaces} 
-                activeId={activeWs?.id} 
-                onSwitch={handleSwitchWorkspace} 
-                onCreate={handleCreateClick} 
-                onDelete={handleDeleteWorkspace} 
+              <WorkspaceSwitcher
+                isOpen={wsOpen}
+                onClose={() => setWsOpen(false)}
+                workspaces={workspaces}
+                activeId={activeWs?.id}
+                onSwitch={handleSwitchWorkspace}
+                onCreate={handleCreateClick}
+                onDelete={handleDeleteWorkspace}
                 isPremium={isAtWorkspaceLimit}
               />
 
@@ -651,7 +660,8 @@ export default function SandboxPage() {
                 {accounts.length > 0 && (
                   <motion.button
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => setIsAdvisorOpen(true)}
+                    // CHANGED: opens the AI screen, not the drawer
+                    onClick={() => setActiveScreen("ai")}
                     className="relative overflow-hidden w-full flex items-center justify-between rounded-[20px] bg-gradient-to-r from-[var(--surface-2)] to-[var(--surface-3)] border border-[var(--line)] p-4 text-left shadow-lg"
                   >
                     <div className="absolute top-0 right-0 w-24 h-24 bg-[var(--brand)]/10 blur-[30px] rounded-full -mr-8 -mt-8 pointer-events-none" />
@@ -716,10 +726,10 @@ export default function SandboxPage() {
                       See all
                     </button>
                   </div>
-                  
+
                   {accounts.length > 0 ? (
                     <>
-                      <div 
+                      <div
                         ref={scrollContainerRef}
                         onScroll={handleScroll}
                         className="-mx-5 overflow-x-auto px-5 pb-4 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
@@ -743,15 +753,15 @@ export default function SandboxPage() {
                           ))}
                         </div>
                       </div>
-                      
+
                       <div className="flex justify-center gap-1.5 mt-1">
                         {accounts.map((_, i) => (
-                          <div 
-                            key={i} 
+                          <div
+                            key={i}
                             className={cn(
                               "h-1.5 rounded-full transition-all duration-300",
                               i === activeCardIndex ? "w-6 bg-[var(--brand)]" : "w-1.5 bg-white/20"
-                            )} 
+                            )}
                           />
                         ))}
                       </div>
@@ -800,32 +810,21 @@ export default function SandboxPage() {
         </ScreenTransition>
       </PullToRefresh>
 
-      <FloatingTabBar 
-        activeTab={activeScreen === "budget" ? "home" : (activeScreen as TabId)} 
-        onTabChange={handleTabChange} 
-        onAddClick={handleAddClick} 
-        isHidden={navHidden || isAdvisorOpen} 
-      />
-      
-      <ImportSheet isOpen={isImportOpen} onClose={() => setIsImportOpen(false)} onImportSuccess={() => { refreshData(); toast("Statement imported"); }} />
-      
-      <AIDrawer 
-        isOpen={isAdvisorOpen} 
-        onClose={() => setIsAdvisorOpen(false)} 
-        fullName={profileName} 
-        safeToSpend={safeToSpend}
-        metrics={m}
-        topCategory={topCategory}
-        daysUntilIncome={daysUntilIncome}
-        onDataChanged={refreshData}
+      <FloatingTabBar
+        activeTab={activeScreen === "budget" ? "home" : (activeScreen as TabId)}
+        onTabChange={handleTabChange}
+        onAddClick={handleAddClick}
+        isHidden={navHidden || activeScreen === "ai"}
       />
 
+      <ImportSheet isOpen={isImportOpen} onClose={() => setIsImportOpen(false)} onImportSuccess={() => { refreshData(); toast("Statement imported"); }} />
+
       <SettingsSheet isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} user={{ ...session.user, created_at: session.user.created_at }} onSignOut={handleSignOut} profileName={profileName} onNameUpdated={(name) => setProfileName(name)} />
-      
-      <NotificationsSheet 
-        isOpen={isNotificationsOpen} 
-        onClose={() => setIsNotificationsOpen(false)} 
-        onDataChanged={refreshData} 
+
+      <NotificationsSheet
+        isOpen={isNotificationsOpen}
+        onClose={() => setIsNotificationsOpen(false)}
+        onDataChanged={refreshData}
       />
 
       <AddTransactionSheet isOpen={isAddTxnOpen} onClose={() => setIsAddTxnOpen(false)} onSaved={refreshData} />
@@ -838,15 +837,15 @@ export default function SandboxPage() {
         </div>
       </Modal>
 
-      <MonthlyReportModal 
-        isOpen={isReportOpen} 
-        onClose={() => setIsReportOpen(false)} 
-        workspaceId={activeWs?.id || ""} 
+      <MonthlyReportModal
+        isOpen={isReportOpen}
+        onClose={() => setIsReportOpen(false)}
+        workspaceId={activeWs?.id || ""}
       />
 
       <Modal open={isPremiumModalOpen} onClose={() => setIsPremiumModalOpen(false)} title="Acuity Premium">
         <div className="flex flex-col items-center py-4 space-y-6">
-          
+
           <div className="flex items-baseline">
             <span className="text-[38px] font-black tracking-tighter text-white">ACUITY</span>
             <span className="text-[38px] font-black tracking-tighter" style={{ color: "var(--brand)" }}>.</span>
@@ -892,8 +891,8 @@ export default function SandboxPage() {
           </div>
 
           <div className="w-full pt-2">
-            <Button 
-              onClick={() => toast("Payment gateway coming soon!")} 
+            <Button
+              onClick={() => toast("Payment gateway coming soon!")}
               className="w-full h-12 text-[15px] font-bold"
             >
               Upgrade Now
