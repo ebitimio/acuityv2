@@ -7,7 +7,7 @@ import {
   Plus, Wallet, PieChart, Receipt, Lightbulb, Copy,
   AlertCircle, RefreshCw, XCircle, Menu, X, Sparkles, Mic
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils"; // <-- THIS WAS MISSING
 import { useWorkspace } from "@/lib/workspace";
 import { useCurrency } from "@/lib/currency";
 import { createClient } from "@/lib/supabase/client";
@@ -380,7 +380,6 @@ export function AIScreen({
   if (!mounted) return null;
 
   return (
-    // CHANGED: fixed inset-0 prevents the page behind from scrolling
     <div className="fixed inset-0 flex flex-col bg-[var(--bg)] overflow-hidden">
       {/* Background Glow */}
       <div aria-hidden className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
@@ -409,7 +408,6 @@ export function AIScreen({
             <Menu size={18} />
           </button>
           
-          {/* CHANGED: ACUITY. branding */}
           <div className="flex items-baseline ml-1">
             <span className="text-[20px] font-black tracking-tighter text-[var(--text-1)]">ACUITY</span>
             <span className="text-[20px] font-black tracking-tighter text-[var(--brand)]">.</span>
@@ -426,7 +424,6 @@ export function AIScreen({
       {/* Main Content Area (Scrollable) */}
       <div className="relative z-10 flex-1 overflow-y-auto px-4" role="log" aria-live="polite">
         {messages.length === 0 && !isThinking ? (
-          /* Empty State */
           <div className="flex flex-col h-full justify-center pb-20">
             <div className="mb-8">
               <h1 className="text-[28px] font-semibold text-[var(--text-1)] mb-1">
@@ -457,7 +454,6 @@ export function AIScreen({
             </div>
           </div>
         ) : (
-          /* Chat List */
           <div className="flex flex-col gap-6 pt-4 pb-4">
             {messages.map((msg) => (
               <motion.div
@@ -527,7 +523,6 @@ export function AIScreen({
                         </div>
                       )}
 
-                      {/* CHANGED: Removed Pin to Home, kept Copy */}
                       {msg.status !== "error" && (
                         <div className="flex items-center gap-3 mt-3">
                           <button onClick={() => navigator.clipboard.writeText(msg.content)} className="text-[11px] font-medium text-[var(--text-3)] hover:text-[var(--text-1)] flex items-center gap-1 transition-colors">
