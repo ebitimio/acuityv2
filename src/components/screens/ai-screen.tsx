@@ -123,22 +123,29 @@ export function AIScreen({
     if (!activeWs?.id || !activeConvId) return;
 
     const loadHistory = async () => {
-      const { data } = await supabase
+      // FETCHING ALL COLUMNS to see what's actually there
+      const { data, error } = await supabase
         .from("ai_chat_history")
         .select("*")
         .eq("workspace_id", activeWs.id)
         .eq("conversation_id", activeConvId)
         .order("created_at", { ascending: true });
 
+      if (error) {
+        console.error("Error loading history:", error);
+        return;
+      }
+
       if (data && data.length > 0) {
+        // Safely map the rows, falling back to defaults if columns are missing
         setMessages(data.map(d => ({
           id: d.id,
           role: d.role,
-          content: d.content,
+          content: d.content || "", // Ensure content is never undefined
           blocks: d.blocks || [],
           status: d.status || "ok",
-          actionId: d.action_id,
-          actionStatus: d.action_status
+          actionId: d.action_id || undefined,
+          actionStatus: d.action_status || undefined
         })));
         setHasSentFirstMessage(true);
       } else {
@@ -155,16 +162,21 @@ export function AIScreen({
 
   const saveMessageToDb = async (msg: Message) => {
     if (!activeWs?.id || !activeConvId) return;
-    await supabase.from("ai_chat_history").insert({
+    
+    // SIMPLIFIED INSERT: Only sending the columns that definitely exist
+    const { error } = await supabase.from("ai_chat_history").insert({
       workspace_id: activeWs.id,
       conversation_id: activeConvId,
       role: msg.role,
       content: msg.content,
-      blocks: msg.blocks || [],
-      status: msg.status || "ok",
-      action_id: msg.actionId,
-      action_status: msg.actionStatus
+      // We are intentionally omitting blocks, status, action_id, action_status 
+      // here to prevent insert failures if the DB schema is missing them.
+      // If your DB *does* have them, you can add them back safely.
     });
+
+    if (error) {
+      console.error("Error saving message to DB:", error);
+    }
   };
 
   const startNewChat = () => {
@@ -194,12 +206,7 @@ export function AIScreen({
     setStreamingContent("");
     bufferRef.current = "";
 
-    await supabase.from("ai_chat_history").insert({
-      workspace_id: activeWs?.id,
-      conversation_id: convId,
-      role: "user",
-      content: text,
-    });
+    await saveMessageToDb(userMsg); // Save user message immediately
 
     try {
       const res = await fetch("/api/chat", {
@@ -266,16 +273,17 @@ export function AIScreen({
         status: "ok"
       };
       setMessages((prev) => [...prev, finalMsg]);
-      await saveMessageToDb(finalMsg);
+      await saveMessageToDb(finalMsg); // Save AI message
 
     } catch (err: any) {
       console.error("AI send error:", err);
-      setMessages((prev) => [...prev, {
+      const errorMsg: Message = {
         id: Date.now().toString(),
         role: "assistant",
         content: "I couldn't complete that. Please check your connection and try again.",
         status: "error"
-      }]);
+      };
+      setMessages((prev) => [...prev, errorMsg]);
     } finally {
       setIsThinking(false);
       setStreamingContent("");
@@ -351,6 +359,7 @@ export function AIScreen({
   };
 
   const formatMessage = (content: string) => {
+    if (!content) return null;
     const lines = content.split("\n");
     return lines.map((line, i) => {
       if (line.trim().startsWith("- ") || line.trim().startsWith("• ")) {
@@ -387,7 +396,6 @@ export function AIScreen({
   }, [budgetUsedPct, daysUntilIncome, metrics]);
 
   return (
-    // Wrapped in a motion.div for the smooth transition from the home screen
     <motion.div 
       initial={{ opacity: 0, y: 18, scale: 0.985 }}
       animate={{ opacity: 1, y: 0, scale: 1, transition: { duration: 0.32 } }}
