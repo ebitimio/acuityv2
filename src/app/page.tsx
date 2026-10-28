@@ -815,7 +815,7 @@ export default function SandboxPage() {
         activeTab={activeScreen === "budget" ? "home" : (activeScreen as TabId)}
         onTabChange={handleTabChange}
         onAddClick={handleAddClick}
-        isHidden={navHidden || activeScreen === "ai"}
+        isHidden={navHidden} // FIXED: Removed activeScreen === "ai" because the early return makes it impossible here
       />
 
       <ImportSheet isOpen={isImportOpen} onClose={() => setIsImportOpen(false)} onImportSuccess={() => { refreshData(); toast("Statement imported"); }} />
