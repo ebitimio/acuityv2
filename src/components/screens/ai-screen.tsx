@@ -7,7 +7,7 @@ import {
   Plus, Wallet, PieChart, Receipt, Lightbulb, Copy,
   AlertCircle, RefreshCw, XCircle, Menu, X, Sparkles, Mic
 } from "lucide-react";
-import { cn } from "@/lib/utils"; // <-- THIS WAS MISSING
+import { cn } from "@/lib/utils";
 import { useWorkspace } from "@/lib/workspace";
 import { useCurrency } from "@/lib/currency";
 import { createClient } from "@/lib/supabase/client";
@@ -73,16 +73,22 @@ export function AIScreen({
   const [thinkingLabel, setThinkingLabel] = useState("Checking your data...");
   const [streamingContent, setStreamingContent] = useState("");
   const [hasSentFirstMessage, setHasSentFirstMessage] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  
+  // CHANGED: Use mounting state for safe time rendering
+  const [greeting, setGreeting] = useState("Hello");
 
   const endRef = useRef<HTMLDivElement>(null);
   const bufferRef = useRef("");
   const { active: activeWs } = useWorkspace();
   const { fmt } = useCurrency();
   const toast = useToast();
-  const supabase = createClient();
+  
+  const supabase = useMemo(() => createClient(), []);
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    const hour = new Date().getHours();
+    setGreeting(hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening");
+  }, []);
 
   // Load conversations list
   useEffect(() => {
@@ -365,23 +371,24 @@ export function AIScreen({
   };
 
   const firstName = fullName.split(" ")[0];
-  const budgetUsedPct = metrics.budget_limit_minor > 0
+  
+  const budgetUsedPct = metrics && metrics.budget_limit_minor > 0
     ? Math.round((metrics.total_spent_minor / metrics.budget_limit_minor) * 100)
     : 0;
 
-  const suggestions = useMemo(() => [
-    { title: "How much can I safely spend this week?", icon: Wallet, show: true },
-    { title: "Where am I wasting the most money?", icon: PieChart, show: true },
-    { title: `You've used ${budgetUsedPct}% of your budget. What should I cut?`, icon: Receipt, show: budgetUsedPct > 80 },
-    { title: `Payday in ${daysUntilIncome} days. How do I stretch what's left?`, icon: Lightbulb, show: daysUntilIncome > 0 && daysUntilIncome <= 5 },
-    { title: `Help me categorize my unreviewed transactions.`, icon: FileText, show: metrics.uncategorized_count > 0 }
-  ].filter(s => s.show).slice(0, 4), [budgetUsedPct, daysUntilIncome, metrics.uncategorized_count]);
-
-  if (!mounted) return null;
+  const suggestions = useMemo(() => {
+    if (!metrics) return [];
+    return [
+      { title: "How much can I safely spend this week?", icon: Wallet, show: true },
+      { title: "Where am I wasting the most money?", icon: PieChart, show: true },
+      { title: `You've used ${budgetUsedPct}% of your budget. What should I cut?`, icon: Receipt, show: budgetUsedPct > 80 },
+      { title: `Payday in ${daysUntilIncome} days. How do I stretch what's left?`, icon: Lightbulb, show: daysUntilIncome > 0 && daysUntilIncome <= 5 },
+      { title: `Help me categorize my unreviewed transactions.`, icon: FileText, show: metrics.uncategorized_count > 0 }
+    ].filter(s => s.show).slice(0, 4);
+  }, [budgetUsedPct, daysUntilIncome, metrics]);
 
   return (
     <div className="fixed inset-0 flex flex-col bg-[var(--bg)] overflow-hidden">
-      {/* Background Glow */}
       <div aria-hidden className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
         <div
           style={{
@@ -395,7 +402,6 @@ export function AIScreen({
         />
       </div>
 
-      {/* Gemini-style Header */}
       <div
         className="relative z-10 shrink-0 flex items-center justify-between px-4 pb-2"
         style={{ paddingTop: "calc(env(safe-area-inset-top) + 12px)" }}
@@ -421,13 +427,12 @@ export function AIScreen({
         </div>
       </div>
 
-      {/* Main Content Area (Scrollable) */}
       <div className="relative z-10 flex-1 overflow-y-auto px-4" role="log" aria-live="polite">
         {messages.length === 0 && !isThinking ? (
           <div className="flex flex-col h-full justify-center pb-20">
             <div className="mb-8">
               <h1 className="text-[28px] font-semibold text-[var(--text-1)] mb-1">
-                Good {new Date().getHours() < 12 ? "morning" : new Date().getHours() < 18 ? "afternoon" : "evening"},
+                Good {greeting},
               </h1>
               <h1 className="text-[28px] font-semibold text-[var(--brand)]">
                 {firstName}
@@ -562,7 +567,6 @@ export function AIScreen({
         )}
       </div>
 
-      {/* Composer (Pinned to bottom, not scrollable) */}
       <div
         className={cn(
           "relative z-10 shrink-0 px-4 pb-[calc(env(safe-area-inset-bottom)+16px)] bg-[var(--bg)] transition-all duration-300",
@@ -602,7 +606,6 @@ export function AIScreen({
         </div>
       </div>
 
-      {/* History Sidebar */}
       <AnimatePresence>
         {isSidebarOpen && (
           <>
