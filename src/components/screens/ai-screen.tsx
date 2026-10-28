@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, ArrowUp, Loader2, CheckCircle2, Search, FileText,
   Plus, Wallet, PieChart, Receipt, Lightbulb, Copy,
-  AlertCircle, RefreshCw, XCircle, Menu, X, Sparkles, Mic
+  AlertCircle, RefreshCw, XCircle, Menu, X, Sparkles, Mic, Trash2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useWorkspace } from "@/lib/workspace";
@@ -123,7 +123,6 @@ export function AIScreen({
     if (!activeWs?.id || !activeConvId) return;
 
     const loadHistory = async () => {
-      // FETCHING ALL COLUMNS to see what's actually there
       const { data, error } = await supabase
         .from("ai_chat_history")
         .select("*")
@@ -137,11 +136,10 @@ export function AIScreen({
       }
 
       if (data && data.length > 0) {
-        // Safely map the rows, falling back to defaults if columns are missing
         setMessages(data.map(d => ({
           id: d.id,
           role: d.role,
-          content: d.content || "", // Ensure content is never undefined
+          content: d.content || "", 
           blocks: d.blocks || [],
           status: d.status || "ok",
           actionId: d.action_id || undefined,
@@ -163,19 +161,44 @@ export function AIScreen({
   const saveMessageToDb = async (msg: Message) => {
     if (!activeWs?.id || !activeConvId) return;
     
-    // SIMPLIFIED INSERT: Only sending the columns that definitely exist
+    // Only inserting the columns guaranteed to exist in the schema.
     const { error } = await supabase.from("ai_chat_history").insert({
       workspace_id: activeWs.id,
       conversation_id: activeConvId,
       role: msg.role,
       content: msg.content,
-      // We are intentionally omitting blocks, status, action_id, action_status 
-      // here to prevent insert failures if the DB schema is missing them.
-      // If your DB *does* have them, you can add them back safely.
     });
 
     if (error) {
       console.error("Error saving message to DB:", error);
+    }
+  };
+
+  const deleteConversation = async (convId: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Stop the sidebar from closing or switching chats
+    if (!activeWs?.id) return;
+
+    if (!confirm("Are you sure you want to delete this conversation?")) return;
+
+    try {
+      const { error } = await supabase
+        .from("ai_chat_history")
+        .delete()
+        .eq("workspace_id", activeWs.id)
+        .eq("conversation_id", convId);
+
+      if (error) throw error;
+
+      setConversations(prev => prev.filter(c => c.id !== convId));
+      
+      // If the deleted conversation was the one currently open, reset the screen
+      if (activeConvId === convId) {
+        setMessages([]);
+        setActiveConvId(null);
+        setHasSentFirstMessage(false);
+      }
+    } catch (err: any) {
+      toast("Failed to delete conversation", "err");
     }
   };
 
@@ -206,7 +229,7 @@ export function AIScreen({
     setStreamingContent("");
     bufferRef.current = "";
 
-    await saveMessageToDb(userMsg); // Save user message immediately
+    await saveMessageToDb(userMsg); 
 
     try {
       const res = await fetch("/api/chat", {
@@ -273,7 +296,7 @@ export function AIScreen({
         status: "ok"
       };
       setMessages((prev) => [...prev, finalMsg]);
-      await saveMessageToDb(finalMsg); // Save AI message
+      await saveMessageToDb(finalMsg);
 
     } catch (err: any) {
       console.error("AI send error:", err);
@@ -656,16 +679,23 @@ export function AIScreen({
                   <Plus size={16} /> New Chat
                 </button>
                 {conversations.map(c => (
-                  <button
+                  <div
                     key={c.id}
-                    onClick={() => { setActiveConvId(c.id); setIsSidebarOpen(false); }}
                     className={cn(
-                      "w-full text-left p-3 rounded-lg text-sm truncate transition-colors",
+                      "group w-full flex items-center justify-between p-3 rounded-lg text-sm transition-colors cursor-pointer",
                       activeConvId === c.id ? "bg-[var(--fill-2)] text-[var(--text-1)]" : "text-[var(--text-2)] hover:bg-[var(--fill-1)]"
                     )}
+                    onClick={() => { setActiveConvId(c.id); setIsSidebarOpen(false); }}
                   >
-                    {c.title}
-                  </button>
+                    <span className="truncate pr-2">{c.title}</span>
+                    <button
+                      onClick={(e) => deleteConversation(c.id, e)}
+                      className="opacity-0 group-hover:opacity-100 text-[var(--text-3)] hover:text-[var(--danger)] p-1 rounded-full transition-all"
+                      title="Delete conversation"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 ))}
                 {conversations.length === 0 && (
                   <p className="text-center text-[var(--text-3)] text-sm mt-10">No past conversations</p>
