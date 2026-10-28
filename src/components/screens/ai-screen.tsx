@@ -316,31 +316,52 @@ export function AIScreen({
     try {
       const { action, payload } = block;
 
-      if (action === "add_transaction") {
-        if (!payload.account_id) throw new Error("No account selected");
-        const direction = payload.direction === "credit" ? "credit" : "debit";
+      if (action === "add_transaction" || action === "add_bill" || action === "add_income") {
+        // SAFETY NET: Check if the AI passed a valid UUID. If not, try to match the name.
+        let finalAccountId = payload.account_id;
         
-        await createTransaction({
-          account_id: payload.account_id,
-          amount: Number(payload.amount) || 0,
-          direction: direction,
-          description: payload.description || "AI Transaction",
-          category: payload.category || "Uncategorized",
-          date: payload.date || new Date().toISOString(),
-        });
+        // Very basic UUID regex check
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(finalAccountId);
+        
+        if (!finalAccountId || !isUUID) {
+          const accounts = await getAccounts();
+          
+          // Try to find an account that matches the text the AI sent (e.g. "main account")
+          const matched = accounts.find(a => 
+            a.name.toLowerCase().includes(String(finalAccountId).toLowerCase()) || 
+            String(finalAccountId).toLowerCase().includes(a.name.toLowerCase()) ||
+            (finalAccountId === "main_account_id" && a.name.toLowerCase().includes("main"))
+          );
+
+          if (!matched) {
+            throw new Error("Could not identify the account. Please specify the account name exactly.");
+          }
+          finalAccountId = matched.id;
+        }
+
+        if (action === "add_transaction") {
+          const direction = payload.direction === "credit" ? "credit" : "debit";
+          
+          await createTransaction({
+            account_id: finalAccountId,
+            amount: Number(payload.amount) || 0,
+            direction: direction,
+            description: payload.description || "AI Transaction",
+            category: payload.category || "Uncategorized",
+            date: payload.date || new Date().toISOString(),
+          });
+        } else {
+          await addRecurringItem({
+            account_id: finalAccountId,
+            name: payload.name || "New Item",
+            kind: action === "add_bill" ? "bill" : "income",
+            amount: Number(payload.amount) || 0,
+            frequency: payload.frequency || "monthly",
+            day: Number(payload.day) || 1,
+          });
+        }
       } else if (action === "set_budget") {
         await setBudget(payload.account_id || null, payload.category, (Number(payload.limit) || 0) * 100);
-      } else if (action === "add_bill" || action === "add_income") {
-        if (!payload.account_id) throw new Error("No account selected");
-        
-        await addRecurringItem({
-          account_id: payload.account_id,
-          name: payload.name || "New Item",
-          kind: action === "add_bill" ? "bill" : "income",
-          amount: Number(payload.amount) || 0,
-          frequency: payload.frequency || "monthly",
-          day: Number(payload.day) || 1,
-        });
       } else if (action === "recategorize") {
         await bulkSetCategory(payload.transaction_ids, payload.category);
       } else if (action === "transfer") {
@@ -588,7 +609,6 @@ export function AIScreen({
                 <div className="flex-1 min-w-0 pt-1">
                   {thinkingLabel && !streamingContent && (
                     <div className="flex items-center gap-3 text-[14px] font-medium text-[var(--brand)] animate-pulse">
-                      {/* CHANGED: Replaced Sparkles with A. */}
                       <span className="text-[14px] font-black text-[var(--brand)] tracking-tighter">A.</span>
                       {thinkingLabel}
                     </div>
