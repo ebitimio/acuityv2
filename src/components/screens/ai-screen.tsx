@@ -4,8 +4,8 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, ArrowUp, Loader2, CheckCircle2, Search, FileText,
-  Pin, Plus, Wallet, PieChart, Receipt, Lightbulb, Copy,
-  AlertCircle, RefreshCw, XCircle, Menu, X, Sparkles, Mic, Camera
+  Plus, Wallet, PieChart, Receipt, Lightbulb, Copy,
+  AlertCircle, RefreshCw, XCircle, Menu, X, Sparkles, Mic
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useWorkspace } from "@/lib/workspace";
@@ -333,16 +333,6 @@ export function AIScreen({
     toast("Action cancelled");
   };
 
-  const handlePinInsight = async (content: string) => {
-    if (!activeWs?.id) return;
-    try {
-      await supabase.from("pinned_insights").insert({ workspace_id: activeWs.id, content });
-      toast("Insight pinned to Home");
-    } catch {
-      toast("Could not pin insight", "err");
-    }
-  };
-
   const renderInline = (text: string) => {
     return text.split(/(\*\*.*?\*\*|₦[\d,]+(?:\.\d+)?)/g).map((part, i) => {
       if (part.startsWith("**") && part.endsWith("**")) {
@@ -379,7 +369,6 @@ export function AIScreen({
     ? Math.round((metrics.total_spent_minor / metrics.budget_limit_minor) * 100)
     : 0;
 
-  // Gemini-style suggestion list
   const suggestions = useMemo(() => [
     { title: "How much can I safely spend this week?", icon: Wallet, show: true },
     { title: "Where am I wasting the most money?", icon: PieChart, show: true },
@@ -391,7 +380,8 @@ export function AIScreen({
   if (!mounted) return null;
 
   return (
-    <div className="relative flex h-[100dvh] flex-col bg-[var(--bg)] overflow-hidden">
+    // CHANGED: fixed inset-0 prevents the page behind from scrolling
+    <div className="fixed inset-0 flex flex-col bg-[var(--bg)] overflow-hidden">
       {/* Background Glow */}
       <div aria-hidden className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
         <div
@@ -419,10 +409,10 @@ export function AIScreen({
             <Menu size={18} />
           </button>
           
-          {/* Branding */}
+          {/* CHANGED: ACUITY. branding */}
           <div className="flex items-baseline ml-1">
-            <span className="text-[22px] font-black tracking-tighter text-[var(--text-1)]">A</span>
-            <span className="text-[22px] font-black tracking-tighter text-[var(--brand)]">.</span>
+            <span className="text-[20px] font-black tracking-tighter text-[var(--text-1)]">ACUITY</span>
+            <span className="text-[20px] font-black tracking-tighter text-[var(--brand)]">.</span>
           </div>
         </div>
         
@@ -433,10 +423,10 @@ export function AIScreen({
         </div>
       </div>
 
-      {/* Main Content Area */}
+      {/* Main Content Area (Scrollable) */}
       <div className="relative z-10 flex-1 overflow-y-auto px-4" role="log" aria-live="polite">
         {messages.length === 0 && !isThinking ? (
-          /* Gemini-style Empty State */
+          /* Empty State */
           <div className="flex flex-col h-full justify-center pb-20">
             <div className="mb-8">
               <h1 className="text-[28px] font-semibold text-[var(--text-1)] mb-1">
@@ -477,12 +467,10 @@ export function AIScreen({
                 className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}
               >
                 {msg.role === "user" ? (
-                  /* Gemini style: no bubble, just text right aligned */
                   <div className="max-w-[85%] text-[15px] leading-relaxed text-[var(--text-1)] text-right px-2 py-1">
                     {msg.content}
                   </div>
                 ) : (
-                  /* Gemini style: avatar left, plain text */
                   <div className="w-full flex gap-3">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] mt-1">
                       <span className="text-[14px] font-black text-[var(--brand-ink)]">A.</span>
@@ -539,12 +527,10 @@ export function AIScreen({
                         </div>
                       )}
 
+                      {/* CHANGED: Removed Pin to Home, kept Copy */}
                       {msg.status !== "error" && (
                         <div className="flex items-center gap-3 mt-3">
-                          <button onClick={() => handlePinInsight(msg.content)} className="text-[11px] font-medium text-[var(--text-3)] hover:text-[var(--brand)] flex items-center gap-1">
-                            <Pin size={12} /> Pin to Home
-                          </button>
-                          <button onClick={() => navigator.clipboard.writeText(msg.content)} className="text-[11px] font-medium text-[var(--text-3)] hover:text-[var(--text-1)] flex items-center gap-1">
+                          <button onClick={() => navigator.clipboard.writeText(msg.content)} className="text-[11px] font-medium text-[var(--text-3)] hover:text-[var(--text-1)] flex items-center gap-1 transition-colors">
                             <Copy size={12} /> Copy
                           </button>
                         </div>
@@ -581,10 +567,10 @@ export function AIScreen({
         )}
       </div>
 
-      {/* Composer (Floats in middle if no messages, bottom if chat) */}
+      {/* Composer (Pinned to bottom, not scrollable) */}
       <div
         className={cn(
-          "relative z-10 shrink-0 px-4 pb-[calc(env(safe-area-inset-bottom)+16px)] transition-all duration-300",
+          "relative z-10 shrink-0 px-4 pb-[calc(env(safe-area-inset-bottom)+16px)] bg-[var(--bg)] transition-all duration-300",
           messages.length === 0 && !isThinking ? "mb-auto mt-0" : ""
         )}
       >
