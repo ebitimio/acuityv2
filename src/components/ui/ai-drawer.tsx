@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   X, ArrowUp, Loader2, CheckCircle2, Search, FileText, 
   Pin, Plus, Wallet, PieChart, Receipt, Lightbulb, Copy, 
-  AlertCircle, RefreshCw, Check, XCircle, ChevronRight
+  AlertCircle, RefreshCw, Check, XCircle, MessageSquare, Menu
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useWorkspace } from "@/lib/workspace";
@@ -19,7 +19,6 @@ import {
   transferFunds, getAccounts 
 } from "@/lib/supabase/database";
 
-// --- Types ---
 interface Block {
   type: "chart" | "table" | "stat" | "action" | "suggestions";
   [key: string]: any;
@@ -33,6 +32,12 @@ interface Message {
   status?: "ok" | "error";
   actionId?: string;
   actionStatus?: "pending" | "applied" | "cancelled" | "failed";
+}
+
+interface Conversation {
+  id: string;
+  title: string;
+  created_at: string;
 }
 
 interface AIDrawerProps {
@@ -55,6 +60,10 @@ export function AIDrawer({
   daysUntilIncome
 }: AIDrawerProps) {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [activeConvId, setActiveConvId] = useState<string | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  
   const [input, setInput] = useState("");
   const [isThinking, setIsThinking] = useState(false);
   const [thinkingLabel, setThinkingLabel] = useState("Checking your data...");
@@ -90,17 +99,46 @@ export function AIDrawer({
     };
   }, []);
 
-  // Load chat history
+  // Load Conversations & History
   useEffect(() => {
     if (!isOpen || !activeWs?.id) return;
+    
+    const loadConversations = async () => {
+      const { data } = await supabase
+        .from("ai_chat_history")
+        .select("conversation_id, created_at, content")
+        .eq("workspace_id", activeWs.id)
+        .eq("role", "user")
+        .order("created_at", { ascending: false });
+        
+      if (data) {
+        // Group by conversation_id and take the first message as title
+        const unique = new Map<string, Conversation>();
+        data.forEach((d: any) => {
+          if (d.conversation_id && !unique.has(d.conversation_id)) {
+            unique.set(d.conversation_id, {
+              id: d.conversation_id,
+              title: d.content.slice(0, 30) + "...",
+              created_at: d.created_at,
+            });
+          }
+        });
+        setConversations(Array.from(unique.values()));
+      }
+    };
+    loadConversations();
+  }, [isOpen, activeWs?.id, supabase]);
+
+  useEffect(() => {
+    if (!isOpen || !activeWs?.id || !activeConvId) return;
     
     const loadHistory = async () => {
       const { data } = await supabase
         .from("ai_chat_history")
         .select("*")
         .eq("workspace_id", activeWs.id)
-        .order("created_at", { ascending: true })
-        .limit(50);
+        .eq("conversation_id", activeConvId)
+        .order("created_at", { ascending: true });
         
       if (data && data.length > 0) {
         setMessages(data.map(d => ({ 
@@ -113,19 +151,23 @@ export function AIDrawer({
           actionStatus: d.action_status
         })));
         setHasSentFirstMessage(true);
+      } else {
+        setMessages([]);
+        setHasSentFirstMessage(false);
       }
     };
     loadHistory();
-  }, [isOpen, activeWs?.id, supabase]);
+  }, [isOpen, activeWs?.id, activeConvId, supabase]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: streamingContent ? "auto" : "smooth" });
   }, [messages, isThinking, streamingContent]);
 
   const saveMessageToDb = async (msg: Message) => {
-    if (!activeWs?.id) return;
+    if (!activeWs?.id || !activeConvId) return;
     await supabase.from("ai_chat_history").insert({
       workspace_id: activeWs.id,
+      conversation_id: activeConvId,
       role: msg.role,
       content: msg.content,
       blocks: msg.blocks || [],
@@ -135,9 +177,25 @@ export function AIDrawer({
     });
   };
 
+  const startNewChat = () => {
+    setMessages([]);
+    setActiveConvId(null);
+    setHasSentFirstMessage(false);
+    setIsSidebarOpen(false);
+  };
+
   const send = async (text: string) => {
     if (!text.trim() || isThinking) return;
     
+    // Generate new conversation ID if needed
+    let convId = activeConvId;
+    if (!convId) {
+      convId = crypto.randomUUID();
+      setActiveConvId(convId);
+      // Add to local conversations list
+      setConversations(prev => [{ id: convId!, title: text.slice(0, 30) + "...", created_at: new Date().toISOString() }, ...prev]);
+    }
+
     setHasSentFirstMessage(true);
     const userMsg: Message = { id: Date.now().toString(), role: "user", content: text };
     const history = [...messages, userMsg];
@@ -148,7 +206,13 @@ export function AIDrawer({
     setStreamingContent("");
     bufferRef.current = "";
 
-    await saveMessageToDb(userMsg);
+    // Save with the new convId
+    await supabase.from("ai_chat_history").insert({
+      workspace_id: activeWs?.id,
+      conversation_id: convId,
+      role: "user",
+      content: text,
+    });
 
     try {
       const res = await fetch("/api/chat", {
@@ -177,7 +241,7 @@ export function AIDrawer({
         bufferRef.current += chunk;
         
         const lines = bufferRef.current.split("\n");
-        bufferRef.current = lines.pop() || ""; // Keep the last partial line
+        bufferRef.current = lines.pop() || "";
 
         for (const line of lines) {
           if (line.startsWith("data: ")) {
@@ -186,7 +250,6 @@ export function AIDrawer({
             
             try {
               const data = JSON.parse(dataStr);
-              
               if (data.type === "thinking") {
                 setThinkingLabel(data.label);
               } else if (data.type === "text") {
@@ -198,7 +261,7 @@ export function AIDrawer({
                 throw new Error(data.message);
               }
             } catch (e) {
-              console.error("Parse error", e, dataStr);
+              console.error("Parse error", e);
             }
           }
         }
@@ -217,20 +280,18 @@ export function AIDrawer({
       }
       
     } catch (err: any) {
-      const errorMsg: Message = { 
+      setMessages((prev) => [...prev, { 
         id: Date.now().toString(), 
         role: "assistant", 
         content: "Sorry, I ran into an issue. Please try again.", 
         status: "error" 
-      };
-      setMessages((prev) => [...prev, errorMsg]);
+      }]);
     } finally {
       setIsThinking(false);
       setStreamingContent("");
     }
   };
 
-  // --- Action Handlers ---
   const handleActionConfirm = async (msgId: string, block: Block) => {
     try {
       const { action, payload } = block;
@@ -240,32 +301,34 @@ export function AIDrawer({
         const accountId = payload.account_id || accounts[0]?.id;
         if (!accountId) throw new Error("No account found");
         
+        // Fallback for missing direction
+        const direction = payload.direction === "credit" ? "credit" : "debit";
+        
         await createTransaction({
           account_id: accountId,
-          amount: payload.amount,
-          direction: payload.direction,
-          description: payload.description,
-          category: payload.category,
+          amount: Number(payload.amount) || 0,
+          direction: direction,
+          description: payload.description || "AI Transaction",
+          category: payload.category || "Uncategorized",
           date: payload.date || new Date().toISOString(),
         });
       } else if (action === "set_budget") {
-        await setBudget(payload.account_id || null, payload.category, payload.limit * 100);
+        await setBudget(payload.account_id || null, payload.category, (Number(payload.limit) || 0) * 100);
       } else if (action === "add_bill" || action === "add_income") {
         await addRecurringItem({
           account_id: payload.account_id || null,
-          name: payload.name,
+          name: payload.name || "New Item",
           kind: action === "add_bill" ? "bill" : "income",
-          amount: payload.amount,
+          amount: Number(payload.amount) || 0,
           frequency: payload.frequency || "monthly",
-          day: payload.day || 1,
+          day: Number(payload.day) || 1,
         });
       } else if (action === "recategorize") {
         await bulkSetCategory(payload.transaction_ids, payload.category);
       } else if (action === "transfer") {
-        await transferFunds(payload.from_account_id, payload.to_account_id, payload.amount * 100, payload.note, new Date().toISOString());
+        await transferFunds(payload.from_account_id, payload.to_account_id, (Number(payload.amount) || 0) * 100, payload.note, new Date().toISOString());
       }
 
-      // Update local state
       setMessages(prev => prev.map(m => 
         m.id === msgId 
           ? { ...m, actionStatus: "applied", blocks: m.blocks?.map(b => b.type === "action" ? { ...b, resolved: true } : b) } 
@@ -301,7 +364,7 @@ export function AIDrawer({
     }
   };
 
-  // --- Formatting Helpers ---
+  // --- Render Helpers ---
   const renderInline = (text: string) => {
     return text.split(/(\*\*.*?\*\*|₦[\d,]+(?:\.\d+)?)/g).map((part, i) => {
       if (part.startsWith("**") && part.endsWith("**")) {
@@ -317,7 +380,6 @@ export function AIDrawer({
   const formatMessage = (content: string) => {
     const lines = content.split("\n");
     return lines.map((line, i) => {
-      // Bullets
       if (line.trim().startsWith("- ") || line.trim().startsWith("• ")) {
         return (
           <div key={i} className="flex items-start gap-2 mt-1.5">
@@ -326,29 +388,10 @@ export function AIDrawer({
           </div>
         );
       }
-      // Numbered lists
-      if (/^\d+\.\s/.test(line.trim())) {
-        return (
-          <div key={i} className="flex items-start gap-2 mt-1.5">
-            <span className="text-[15px] font-bold text-[var(--brand)] tabular mt-0.5 shrink-0">
-              {line.trim().match(/^\d+/)?.[0]}.
-            </span>
-            <p className="text-[15px] leading-relaxed flex-1">{renderInline(line.trim().replace(/^\d+\.\s/, ""))}</p>
-          </div>
-        );
-      }
-      // Headers
       if (line.startsWith("###")) {
-        return (
-          <p key={i} className="mt-3 mb-1 text-[15px] font-bold text-[var(--text-1)] first:mt-0">
-            {line.replace(/^###\s*/, "")}
-          </p>
-        );
+        return <p key={i} className="mt-3 mb-1 text-[15px] font-bold text-[var(--text-1)] first:mt-0">{line.replace(/^###\s*/, "")}</p>;
       }
-      // Empty lines
       if (line.trim() === "") return <div key={i} className="h-2" />;
-      
-      // Paragraphs
       return <p key={i} className="text-[15px] leading-relaxed mb-1">{renderInline(line)}</p>;
     });
   };
@@ -379,9 +422,55 @@ export function AIDrawer({
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
         transition={{ type: "spring", damping: 25, stiffness: 200 }}
-        className="flex flex-col bg-[var(--bg)] overflow-hidden"
+        className="flex flex-col bg-[#0b0b0c] overflow-hidden"
         style={frame}
       >
+        {/* Sidebar Overlay */}
+        <AnimatePresence>
+          {isSidebarOpen && (
+            <>
+              <motion.div 
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-black/60 z-50"
+                onClick={() => setIsSidebarOpen(false)}
+              />
+              <motion.div 
+                initial={{ x: "-100%" }} animate={{ x: 0 }} exit={{ x: "-100%" }}
+                transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                className="absolute top-0 left-0 bottom-0 w-[280px] bg-[#1c1c1e] z-50 flex flex-col border-r border-white/10"
+              >
+                <div className="p-4 border-b border-white/10 flex justify-between items-center">
+                  <span className="font-bold text-white">History</span>
+                  <button onClick={() => setIsSidebarOpen(false)} className="text-white/50 hover:text-white"><X size={18} /></button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-2 space-y-1">
+                  <button 
+                    onClick={startNewChat}
+                    className="w-full flex items-center gap-2 p-3 rounded-lg bg-[var(--brand)]/10 text-[var(--brand)] font-semibold text-sm mb-4"
+                  >
+                    <Plus size={16} /> New Chat
+                  </button>
+                  {conversations.map(c => (
+                    <button
+                      key={c.id}
+                      onClick={() => { setActiveConvId(c.id); setIsSidebarOpen(false); }}
+                      className={cn(
+                        "w-full text-left p-3 rounded-lg text-sm truncate transition-colors",
+                        activeConvId === c.id ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/5"
+                      )}
+                    >
+                      {c.title}
+                    </button>
+                  ))}
+                  {conversations.length === 0 && (
+                    <p className="text-center text-white/40 text-sm mt-10">No past conversations</p>
+                  )}
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+
         {/* Orbs */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <motion.div 
@@ -400,14 +489,13 @@ export function AIDrawer({
 
         {/* Header */}
         <div 
-          className="relative z-10 shrink-0 flex items-center justify-between px-5 pb-4 border-b border-[var(--line)] bg-[var(--bg)]/80 backdrop-blur-md"
+          className="relative z-10 shrink-0 flex items-center justify-between px-5 pb-4 border-b border-[var(--line)] bg-[#0b0b0c]"
           style={{ paddingTop: "calc(env(safe-area-inset-top) + 16px)" }}
         >
           <div className="flex items-center gap-3">
-            <div className="relative flex h-10 w-10 items-center justify-center rounded-full bg-[var(--brand)]/10">
-              <div className="absolute inset-0 rounded-full bg-[var(--brand)]/20 animate-pulse" />
-              <span className="text-[18px] font-black text-[var(--brand)] relative z-10">A.</span>
-            </div>
+            <button onClick={() => setIsSidebarOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text-2)]">
+              <Menu size={18} />
+            </button>
             <div>
               <h1 className="text-[20px] font-bold text-[var(--text-1)] leading-tight">
                 {hasSentFirstMessage ? "Acuity AI" : `Good ${new Date().getHours() < 12 ? "morning" : new Date().getHours() < 18 ? "afternoon" : "evening"}, ${firstName}`}
@@ -420,7 +508,7 @@ export function AIDrawer({
           
           <div className="flex items-center gap-2">
             <button 
-              onClick={() => { setMessages([]); setHasSentFirstMessage(false); }}
+              onClick={startNewChat}
               className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text-2)] hover:text-[var(--text-1)] transition-colors"
               aria-label="New chat"
             >
@@ -435,40 +523,6 @@ export function AIDrawer({
             </button>
           </div>
         </div>
-
-        {/* Context Strip */}
-        <AnimatePresence>
-          {!hasSentFirstMessage && (
-            <motion.div 
-              initial={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="relative z-10 shrink-0 overflow-hidden border-b border-[var(--line)] bg-[var(--surface-1)]/50 backdrop-blur-sm"
-            >
-              <div className="flex justify-between items-center px-5 py-3">
-                <button onClick={() => send("How much can I safely spend today?")} className="flex flex-col items-start gap-0.5">
-                  <span className="text-[10px] font-semibold text-[var(--text-3)] uppercase tracking-wider">Safe to spend</span>
-                  <span className="text-[15px] font-bold text-[var(--brand)] tabular">
-                    {safeToSpend ? fmt(safeToSpend.daily_safe_minor / 100) : "₦0"}
-                  </span>
-                </button>
-                <div className="w-px h-8 bg-[var(--line)]" />
-                <button onClick={() => send("When is my next payday?")} className="flex flex-col items-start gap-0.5">
-                  <span className="text-[10px] font-semibold text-[var(--text-3)] uppercase tracking-wider">Days to payday</span>
-                  <span className="text-[15px] font-bold text-[var(--text-1)] tabular">
-                    {daysUntilIncome} days
-                  </span>
-                </button>
-                <div className="w-px h-8 bg-[var(--line)]" />
-                <button onClick={() => send("Am I on track with my budget?")} className="flex flex-col items-start gap-0.5">
-                  <span className="text-[10px] font-semibold text-[var(--text-3)] uppercase tracking-wider">Budget used</span>
-                  <span className="text-[15px] font-bold text-[var(--text-1)] tabular">
-                    {budgetUsedPct}%
-                  </span>
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         {/* Chat Area */}
         <div className="relative z-10 flex-1 overflow-y-auto px-5 pb-4" role="log" aria-live="polite">
@@ -523,18 +577,15 @@ export function AIDrawer({
                         <span className="text-[14px] font-black text-[var(--brand)]">A.</span>
                       </div>
                       <div className="flex-1 min-w-0">
-                        {/* Text Content */}
                         {msg.content && (
                           <div className="rounded-[20px] rounded-tl-sm bg-[var(--surface-1)] p-4 text-[15px] leading-relaxed text-[var(--text-1)] border border-[var(--line)] shadow-sm">
                             {formatMessage(msg.content)}
                           </div>
                         )}
 
-                        {/* Rich Blocks (Actions) */}
                         {msg.blocks?.map((block, idx) => {
                           if (block.type === "action") {
                             const isResolved = block.resolved || msg.actionStatus === "applied" || msg.actionStatus === "cancelled";
-                            
                             return (
                               <div key={idx} className="mt-3 rounded-[20px] border border-[var(--brand)]/30 bg-[var(--brand)]/5 overflow-hidden">
                                 <div className="p-4">
@@ -550,9 +601,7 @@ export function AIDrawer({
                                       {msg.actionStatus === "applied" ? "Action Applied" : msg.actionStatus === "cancelled" ? "Action Cancelled" : "Confirm Action"}
                                     </span>
                                   </div>
-                                  <p className="text-[14px] text-[var(--text-1)] leading-relaxed">
-                                    {block.summary}
-                                  </p>
+                                  <p className="text-[14px] text-[var(--text-1)] leading-relaxed">{block.summary}</p>
                                   
                                   {!isResolved && (
                                     <div className="flex gap-2 mt-4">
@@ -577,16 +626,6 @@ export function AIDrawer({
                           return null;
                         })}
 
-                        {/* Error Retry */}
-                        {msg.status === "error" && (
-                          <div className="flex items-center gap-2 mt-2 px-1">
-                            <button onClick={() => send(messages[messages.length - 2]?.content || "Retry")} className="text-[11px] font-medium text-[var(--brand)] flex items-center gap-1">
-                              <RefreshCw size={12} /> Retry
-                            </button>
-                          </div>
-                        )}
-
-                        {/* Standard Message Actions */}
                         {msg.status !== "error" && (
                           <div className="flex items-center gap-3 mt-2 px-1">
                             <button onClick={() => handlePinInsight(msg.content)} className="text-[11px] font-medium text-[var(--text-3)] hover:text-[var(--brand)] flex items-center gap-1">
@@ -603,13 +642,8 @@ export function AIDrawer({
                 </motion.div>
               ))}
 
-              {/* Thinking State */}
               {isThinking && (
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="w-full flex gap-3"
-                >
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="w-full flex gap-3">
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand)]/10 mt-1">
                     <Loader2 size={14} className="text-[var(--brand)] animate-spin" />
                   </div>
@@ -622,7 +656,6 @@ export function AIDrawer({
                          </div>
                       </div>
                     )}
-
                     {streamingContent && (
                       <div className="rounded-[20px] rounded-tl-sm bg-[var(--surface-1)] p-4 text-[15px] leading-relaxed text-[var(--text-1)] border border-[var(--line)] shadow-sm">
                         {formatMessage(streamingContent)}
@@ -637,8 +670,8 @@ export function AIDrawer({
           )}
         </div>
 
-        {/* Composer */}
-        <div className="relative z-10 shrink-0 px-4 pb-[calc(env(safe-area-inset-bottom)+8px)] pt-2 bg-[var(--bg)] border-t border-[var(--line)]">
+        {/* Composer - Fixed Gap */}
+        <div className="relative z-10 shrink-0 px-4 pt-2 pb-[calc(env(safe-area-inset-bottom)+12px)] bg-[#0b0b0c] border-t border-[var(--line)]">
           <div className="flex items-end gap-2 rounded-[28px] bg-[var(--surface-2)] p-2 border border-[var(--line-strong)] shadow-sm focus-within:border-[var(--brand)] transition-colors">
             <textarea
               value={input}
@@ -653,7 +686,6 @@ export function AIDrawer({
               className="flex-1 max-h-32 min-h-[40px] bg-transparent px-4 py-2.5 text-[16px] text-[var(--text-1)] outline-none placeholder:text-[var(--text-3)] resize-none"
               rows={1}
             />
-
             <button
               onClick={() => send(input)}
               disabled={!input.trim() || isThinking}
