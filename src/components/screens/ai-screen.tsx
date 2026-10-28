@@ -75,6 +75,9 @@ export function AIScreen({
   const [hasSentFirstMessage, setHasSentFirstMessage] = useState(false);
   
   const [greeting, setGreeting] = useState("Welcome back");
+  
+  // NEW: State for the custom delete modal
+  const [convToDelete, setConvToDelete] = useState<string | null>(null);
 
   const endRef = useRef<HTMLDivElement>(null);
   const bufferRef = useRef("");
@@ -158,7 +161,6 @@ export function AIScreen({
     endRef.current?.scrollIntoView({ behavior: streamingContent ? "auto" : "smooth" });
   }, [messages, isThinking, streamingContent]);
 
-  // FIXED: Accept convId as a parameter to avoid state race condition on first message
   const saveMessageToDb = async (msg: Message, convId: string) => {
     if (!activeWs?.id || !convId) return;
     
@@ -174,28 +176,27 @@ export function AIScreen({
     }
   };
 
-  const deleteConversation = async (convId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!activeWs?.id) return;
-
-    if (!confirm("Are you sure you want to delete this conversation?")) return;
+  // NEW: Handle deletion from the custom modal
+  const confirmDelete = async () => {
+    if (!convToDelete || !activeWs?.id) return;
 
     try {
       const { error } = await supabase
         .from("ai_chat_history")
         .delete()
         .eq("workspace_id", activeWs.id)
-        .eq("conversation_id", convId);
+        .eq("conversation_id", convToDelete);
 
       if (error) throw error;
 
-      setConversations(prev => prev.filter(c => c.id !== convId));
+      setConversations(prev => prev.filter(c => c.id !== convToDelete));
       
-      if (activeConvId === convId) {
+      if (activeConvId === convToDelete) {
         setMessages([]);
         setActiveConvId(null);
         setHasSentFirstMessage(false);
       }
+      setConvToDelete(null);
     } catch (err: any) {
       toast("Failed to delete conversation", "err");
     }
@@ -211,7 +212,6 @@ export function AIScreen({
   const send = async (text: string) => {
     if (!text.trim() || isThinking) return;
 
-    // FIXED: Generate or grab the convId synchronously before the async calls
     let convId = activeConvId;
     if (!convId) {
       convId = crypto.randomUUID();
@@ -229,7 +229,6 @@ export function AIScreen({
     setStreamingContent("");
     bufferRef.current = "";
 
-    // FIXED: Pass convId explicitly
     await saveMessageToDb(userMsg, convId); 
 
     try {
@@ -298,7 +297,6 @@ export function AIScreen({
       };
       setMessages((prev) => [...prev, finalMsg]);
       
-      // FIXED: Pass convId explicitly
       await saveMessageToDb(finalMsg, convId);
 
     } catch (err: any) {
@@ -691,9 +689,10 @@ export function AIScreen({
                     onClick={() => { setActiveConvId(c.id); setIsSidebarOpen(false); }}
                   >
                     <span className="truncate pr-2">{c.title}</span>
-                    {/* FIXED: Made the trash button always visible by removing opacity-0 group-hover:opacity-100 */}
+                    
+                    {/* CHANGED: Trigger custom modal instead of system confirm */}
                     <button
-                      onClick={(e) => deleteConversation(c.id, e)}
+                      onClick={(e) => { e.stopPropagation(); setConvToDelete(c.id); }}
                       className="text-[var(--text-3)] hover:text-[var(--danger)] p-1 rounded-full transition-colors shrink-0"
                       title="Delete conversation"
                     >
@@ -707,6 +706,52 @@ export function AIScreen({
               </div>
             </motion.div>
           </>
+        )}
+      </AnimatePresence>
+
+      {/* NEW: Custom Delete Modal */}
+      <AnimatePresence>
+        {convToDelete && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[300] flex items-center justify-center bg-black/60 backdrop-blur-sm p-6"
+            onClick={() => setConvToDelete(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-sm rounded-[24px] bg-[var(--surface-2)] border border-[var(--line)] p-6 shadow-2xl"
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--danger)]/10">
+                  <AlertCircle size={20} className="text-[var(--danger)]" />
+                </div>
+                <div>
+                  <h3 className="text-[17px] font-bold text-[var(--text-1)]">Delete chat?</h3>
+                  <p className="text-[12px] text-[var(--text-3)]">This action cannot be undone.</p>
+                </div>
+              </div>
+              
+              <div className="flex gap-2 mt-6">
+                <button
+                  onClick={() => setConvToDelete(null)}
+                  className="flex-1 rounded-xl bg-[var(--surface-3)] py-3 text-[14px] font-semibold text-[var(--text-1)] active:scale-95 transition-transform"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  className="flex-1 rounded-xl bg-[var(--danger)] py-3 text-[14px] font-semibold text-white active:scale-95 transition-transform"
+                >
+                  Delete
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
     </motion.div>
