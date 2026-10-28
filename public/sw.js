@@ -1,4 +1,4 @@
-const CACHE = "acuity-v19";
+const CACHE = "acuity-v20"; // CHANGED: Bumped from v19 to force a fresh cache
 
 self.addEventListener("install", () => self.skipWaiting());
 
@@ -41,7 +41,15 @@ self.addEventListener("fetch", (e) => {
       caches.match(req).then((cached) => {
         const fetchPromise = fetch(req)
           .then((res) => {
-            if (res.ok) caches.open(CACHE).then((c) => c.put(req, res.clone()));
+            // CHANGED: Wrapped in try/catch to prevent the Service Worker from crashing the app
+            if (res.ok) {
+              try {
+                const clone = res.clone();
+                caches.open(CACHE).then((c) => c.put(req, clone));
+              } catch (err) {
+                console.warn("Failed to clone response for cache", err);
+              }
+            }
             return res;
           })
           .catch(() => cached);
