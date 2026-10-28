@@ -64,7 +64,6 @@ const ZERO_METRICS: HomeMetrics = {
 
 const IDLE_TIMEOUT_MS = 600000;
 
-// CHANGED: "ai" added to ScreenId
 type ScreenId = TabId | "budget" | "commitments" | "tax" | "needs-review" | "ajo" | "bank-charge" | "transactions" | "ai";
 
 export default function SandboxPage() {
@@ -87,7 +86,6 @@ export default function SandboxPage() {
   const [dbPin, setDbPin] = useState<string | null>(null);
 
   const [isImportOpen, setIsImportOpen] = useState(false);
-  // CHANGED: isAdvisorOpen state removed
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isAddTxnOpen, setIsAddTxnOpen] = useState(false);
@@ -386,7 +384,6 @@ export default function SandboxPage() {
     window.scrollTo(0, 0);
   }, [activeScreen]);
 
-  // CHANGED: "ai" now routes to a real screen
   const handleTabChange = (tabId: TabId) => {
     setActiveScreen(tabId);
   };
@@ -605,13 +602,13 @@ export default function SandboxPage() {
           ) : activeScreen === "bank-charge" ? (
             <BankChargeScreen onBack={handleBackToHome} />
           ) : activeScreen === "ai" ? (
-            // CHANGED: AI is now a screen, not a drawer
             <AIScreen
               key={activeWs?.id}
               onBack={handleBackToHome}
               fullName={profileName}
               safeToSpend={safeToSpend}
               metrics={m}
+              topCategory={topCategory}
               daysUntilIncome={daysUntilIncome}
               onDataChanged={refreshData}
             />
@@ -660,7 +657,6 @@ export default function SandboxPage() {
                 {accounts.length > 0 && (
                   <motion.button
                     whileTap={{ scale: 0.98 }}
-                    // CHANGED: opens the AI screen, not the drawer
                     onClick={() => setActiveScreen("ai")}
                     className="relative overflow-hidden w-full flex items-center justify-between rounded-[20px] bg-gradient-to-r from-[var(--surface-2)] to-[var(--surface-3)] border border-[var(--line)] p-4 text-left shadow-lg"
                   >
