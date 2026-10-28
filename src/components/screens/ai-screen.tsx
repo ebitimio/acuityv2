@@ -158,13 +158,13 @@ export function AIScreen({
     endRef.current?.scrollIntoView({ behavior: streamingContent ? "auto" : "smooth" });
   }, [messages, isThinking, streamingContent]);
 
-  const saveMessageToDb = async (msg: Message) => {
-    if (!activeWs?.id || !activeConvId) return;
+  // FIXED: Accept convId as a parameter to avoid state race condition on first message
+  const saveMessageToDb = async (msg: Message, convId: string) => {
+    if (!activeWs?.id || !convId) return;
     
-    // Only inserting the columns guaranteed to exist in the schema.
     const { error } = await supabase.from("ai_chat_history").insert({
       workspace_id: activeWs.id,
-      conversation_id: activeConvId,
+      conversation_id: convId,
       role: msg.role,
       content: msg.content,
     });
@@ -175,7 +175,7 @@ export function AIScreen({
   };
 
   const deleteConversation = async (convId: string, e: React.MouseEvent) => {
-    e.stopPropagation(); // Stop the sidebar from closing or switching chats
+    e.stopPropagation();
     if (!activeWs?.id) return;
 
     if (!confirm("Are you sure you want to delete this conversation?")) return;
@@ -191,7 +191,6 @@ export function AIScreen({
 
       setConversations(prev => prev.filter(c => c.id !== convId));
       
-      // If the deleted conversation was the one currently open, reset the screen
       if (activeConvId === convId) {
         setMessages([]);
         setActiveConvId(null);
@@ -212,6 +211,7 @@ export function AIScreen({
   const send = async (text: string) => {
     if (!text.trim() || isThinking) return;
 
+    // FIXED: Generate or grab the convId synchronously before the async calls
     let convId = activeConvId;
     if (!convId) {
       convId = crypto.randomUUID();
@@ -229,7 +229,8 @@ export function AIScreen({
     setStreamingContent("");
     bufferRef.current = "";
 
-    await saveMessageToDb(userMsg); 
+    // FIXED: Pass convId explicitly
+    await saveMessageToDb(userMsg, convId); 
 
     try {
       const res = await fetch("/api/chat", {
@@ -296,7 +297,9 @@ export function AIScreen({
         status: "ok"
       };
       setMessages((prev) => [...prev, finalMsg]);
-      await saveMessageToDb(finalMsg);
+      
+      // FIXED: Pass convId explicitly
+      await saveMessageToDb(finalMsg, convId);
 
     } catch (err: any) {
       console.error("AI send error:", err);
@@ -688,12 +691,13 @@ export function AIScreen({
                     onClick={() => { setActiveConvId(c.id); setIsSidebarOpen(false); }}
                   >
                     <span className="truncate pr-2">{c.title}</span>
+                    {/* FIXED: Made the trash button always visible by removing opacity-0 group-hover:opacity-100 */}
                     <button
                       onClick={(e) => deleteConversation(c.id, e)}
-                      className="opacity-0 group-hover:opacity-100 text-[var(--text-3)] hover:text-[var(--danger)] p-1 rounded-full transition-all"
+                      className="text-[var(--text-3)] hover:text-[var(--danger)] p-1 rounded-full transition-colors shrink-0"
                       title="Delete conversation"
                     >
-                      <Trash2 size={14} />
+                      <Trash2 size={16} />
                     </button>
                   </div>
                 ))}
