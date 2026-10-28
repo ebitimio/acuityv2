@@ -1,4 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
+import { detectRecurring } from "@/lib/recurring";
+import { auditCharges } from "@/lib/charges";
+import { computeTax } from "@/lib/tax";
+import { CATEGORY_NAMES } from "@/lib/categories";
 
 const naira = (minor: number) => `₦${Math.round(minor / 100).toLocaleString("en-NG")}`;
 
@@ -19,7 +23,6 @@ export interface ToolDef {
   run: (args: Record<string, unknown>) => Promise<unknown>;
 }
 
-// We now accept workspaceId to ensure the AI looks at the correct data
 export function buildTools(supabase: Awaited<ReturnType<typeof createClient>>, workspaceId: string | null): ToolDef[] {
   return [
     {
@@ -29,8 +32,6 @@ export function buildTools(supabase: Awaited<ReturnType<typeof createClient>>, w
       run: async () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return { error: "not logged in" };
-
-        // Use the active workspace ID passed from the UI
         if (!workspaceId) return { error: "No active workspace selected" };
 
         const [
@@ -48,7 +49,7 @@ export function buildTools(supabase: Awaited<ReturnType<typeof createClient>>, w
           supabase.from("budgets").select("limit_minor").eq("workspace_id", workspaceId),
           supabase.from("recurring_items").select("name,kind,amount_minor,frequency").eq("workspace_id", workspaceId),
           supabase.from("ajo_groups").select("name,contribution_minor,frequency").eq("workspace_id", workspaceId),
-          supabase.from("workspaces").select("budget_limit_minor,family_support_minor").eq("id", workspaceId).single()
+          supabase.from("workspaces").select("budget_limit_minor,family_support_minor,family_support_label").eq("id", workspaceId).single()
         ]);
 
         const accountIds = (accounts ?? []).map(a => a.id);
@@ -62,7 +63,7 @@ export function buildTools(supabase: Awaited<ReturnType<typeof createClient>>, w
         const accountList = (accounts ?? []).map((a) => {
           const bal = balanceMap.get(a.id) ?? 0;
           liquidCash += bal;
-          return { name: a.name, institution: a.institution, type: a.type, balance: naira(bal) };
+          return { id: a.id, name: a.name, institution: a.institution, type: a.type, balance: naira(bal) };
         });
 
         let totalAssets = 0;
@@ -79,7 +80,15 @@ export function buildTools(supabase: Awaited<ReturnType<typeof createClient>>, w
         const billItems = (commitments ?? []).filter(c => c.kind === "bill");
         const totalIncome = incomeItems.reduce((s, c) => s + c.amount_minor, 0);
         const totalBills = billItems.reduce((s, c) => s + c.amount_minor, 0);
-        const familySupport = ws?.family_support_minor ?? 0;
+        
+        // Parse family support JSON
+        let familySupportList = [];
+        try {
+          const parsed = JSON.parse(ws?.family_support_label || "[]");
+          if (Array.isArray(parsed)) familySupportList = parsed;
+        } catch {}
+        
+        const familySupportTotal = ws?.family_support_minor ?? 0;
 
         return {
           liquid_cash: naira(liquidCash),
@@ -89,12 +98,13 @@ export function buildTools(supabase: Awaited<ReturnType<typeof createClient>>, w
           total_net_worth: naira(liquidCash + totalAssets - totalLiabilities),
           monthly_income: naira(totalIncome),
           monthly_bills: naira(totalBills),
-          family_support: naira(familySupport),
-          total_obligations: naira(totalBills + familySupport),
+          family_support: familySupportTotal > 0 ? { total: naira(familySupportTotal), details: familySupportList } : "None",
+          total_obligations: naira(totalBills + familySupportTotal),
           monthly_budget_limit: budgetLimit > 0 ? naira(budgetLimit) : "Not set",
           recurring_income: incomeItems.map(c => ({ name: c.name, amount: naira(c.amount_minor) })),
           recurring_bills: billItems.map(c => ({ name: c.name, amount: naira(c.amount_minor) })),
-          ajo_groups: (ajo ?? []).map(a => ({ name: a.name, contribution: naira(a.contribution_minor), frequency: a.frequency }))
+          ajo_groups: (ajo ?? []).map(a => ({ name: a.name, contribution: naira(a.contribution_minor), frequency: a.frequency })),
+          available_categories: CATEGORY_NAMES,
         };
       },
     },
@@ -128,7 +138,6 @@ export function buildTools(supabase: Awaited<ReturnType<typeof createClient>>, w
         ]);
 
         const accountIds = (accounts ?? []).map(a => a.id);
-        
         const { data: txs } = accountIds.length > 0 ? await supabase.from("transactions").select("amount_minor").in("account_id", accountIds).or(NOT_SPLIT).eq("direction", "debit").gte("date", monthStartISO()) : { data: [] };
         
         const categoryBudget = (budgets ?? []).reduce((s, b) => s + Number(b.limit_minor), 0);
@@ -213,6 +222,107 @@ export function buildTools(supabase: Awaited<ReturnType<typeof createClient>>, w
           amount: `${t.direction === "credit" ? "+" : "-"}${naira(t.amount_minor)}`,
         }));
       },
-    }
+    },
+    // NEW ENGINE TOOLS
+    {
+      name: "find_subscriptions",
+      description: "Detects recurring subscriptions (Netflix, Spotify, etc) by analyzing the last 6 months of transactions.",
+      parameters: { type: "object", properties: {}, additionalProperties: false },
+      run: async () => {
+        if (!workspaceId) return { error: "No active workspace" };
+        const { data: accounts } = await supabase.from("accounts").select("id").eq("workspace_id", workspaceId);
+        const accountIds = (accounts ?? []).map(a => a.id);
+        
+        const { data: txns } = await supabase.from("transactions").select("*").in("account_id", accountIds).or(NOT_SPLIT).eq("direction", "debit").gte("date", monthStartISOAgo(6));
+        const { data: bills } = await supabase.from("recurring_items").select("name").eq("workspace_id", workspaceId).eq("kind", "bill");
+        
+        const knownBills = new Set((bills ?? []).map(b => b.name));
+        const suggestions = detectRecurring((txns as any) || [], knownBills);
+        
+        return suggestions.map(s => ({
+          name: s.name,
+          amount: naira(s.amount_minor),
+          frequency: s.cadence,
+          confidence: Math.round(s.confidence * 100) + "%",
+          next_expected: new Date(s.next_date).toLocaleDateString("en-NG"),
+        }));
+      },
+    },
+    {
+      name: "audit_bank_charges",
+      description: "Audits bank charges for overcharges, stamp duty errors, and duplicate fees.",
+      parameters: { type: "object", properties: {}, additionalProperties: false },
+      run: async () => {
+        if (!workspaceId) return { error: "No active workspace" };
+        const { data: accounts } = await supabase.from("accounts").select("id").eq("workspace_id", workspaceId);
+        const accountIds = (accounts ?? []).map(a => a.id);
+        
+        const { data: txns } = await supabase.from("transactions").select("*").in("account_id", accountIds).or(NOT_SPLIT).eq("status", "posted");
+        const audit = auditCharges((txns as any) || []);
+        
+        return {
+          total_overcharged: naira(audit.totalOver),
+          total_fees_paid: naira(audit.totalFees),
+          flagged_charges: audit.charges.filter(c => c.flag).map(c => ({
+            date: new Date(c.date).toLocaleDateString("en-NG"),
+            description: c.description,
+            amount: naira(c.amount),
+            issue: c.flag,
+          })).slice(0, 10),
+        };
+      },
+    },
+    {
+      name: "estimate_tax",
+      description: "Estimates Nigerian Personal Income Tax (PIT) based on gross income and deductions.",
+      parameters: {
+        type: "object",
+        properties: {
+          gross_annual: { type: "number", description: "Gross annual income in Naira" },
+          annual_rent: { type: "number", description: "Annual rent paid in Naira (optional)" },
+        },
+        required: ["gross_annual"],
+        additionalProperties: false,
+      },
+      run: async (args) => {
+        const gross = Number(args.gross_annual ?? 0);
+        const rent = Number(args.annual_rent ?? 0);
+        const pension = gross * 0.08; // Standard 8% pension
+        
+        const result = computeTax({ gross, pension, nhf: 0, nhis: 0, rent, other: 0 });
+        
+        return {
+          gross_income: naira(gross),
+          pension_estimate: naira(pension),
+          rent_relief: naira(result.rentRelief),
+          taxable_income: naira(result.taxable),
+          estimated_tax: naira(result.tax),
+          monthly_tax: naira(result.monthly),
+          effective_rate: (result.effectiveRate * 100).toFixed(1) + "%",
+          is_exempt: result.isExempt,
+        };
+      },
+    },
+    // NEW ACTION TOOL
+    {
+      name: "propose_action",
+      description: "Propose a change for the user to confirm. You must never claim it has been done.",
+      parameters: {
+        type: "object",
+        properties: {
+          action: { 
+            type: "string", 
+            enum: ["add_transaction","set_budget","add_bill","add_income","recategorize","transfer"] 
+          },
+          payload: { type: "object" },
+          summary: { type: "string", description: "One plain sentence the user will read on the confirm card" }
+        },
+        required: ["action","payload","summary"],
+        additionalProperties: false
+      },
+      run: async (args) => {
+        return { status: "pending_user_confirmation", ...args };
+      },
+    },
   ];
 }
