@@ -160,9 +160,8 @@ export async function createTransaction(i: {
   status?: "posted" | "pending";
   notes?: string;
 }) {
-  const { sb, workspaceId } = await ctx();
+  const { sb } = await ctx();
   const { error } = await sb.from("transactions").insert({
-    workspace_id: workspaceId, // FIXED: Added workspace_id to satisfy RLS
     account_id: i.account_id,
     amount_minor: toMinor(i.amount),
     direction: i.direction,
@@ -196,10 +195,9 @@ export async function splitTransaction(
   parent: Pick<Txn, "id" | "account_id" | "direction" | "description_raw" | "description_clean" | "date">,
   parts: { category: string; amount: number }[]
 ) {
-  const { sb, workspaceId } = await ctx();
+  const { sb } = await ctx();
   const { error: e1 } = await sb.from("transactions").insert(
     parts.map((p) => ({
-      workspace_id: workspaceId, // FIXED: Added workspace_id to satisfy RLS
       account_id: parent.account_id,
       amount_minor: toMinor(p.amount),
       direction: parent.direction,
@@ -220,7 +218,7 @@ export async function splitTransaction(
 /* ---------- TRANSFERS ---------- */
 
 export async function transferFunds(fromAccountId: string, toAccountId: string, amountMinor: number, note: string, dateISO: string) {
-  const { sb, workspaceId } = await ctx();
+  const { sb } = await ctx();
   
   const { data: accs } = await sb.from("accounts").select("id, name").in("id", [fromAccountId, toAccountId]);
   const fromName = accs?.find(a => a.id === fromAccountId)?.name || "Account";
@@ -229,7 +227,6 @@ export async function transferFunds(fromAccountId: string, toAccountId: string, 
   const desc = note ? `${note} (${fromName} to ${toName})` : `Transfer from ${fromName} to ${toName}`;
 
   const { error: e1 } = await sb.from("transactions").insert({
-    workspace_id: workspaceId, // FIXED: Added workspace_id to satisfy RLS
     account_id: fromAccountId,
     amount_minor: amountMinor,
     direction: "debit",
@@ -242,7 +239,6 @@ export async function transferFunds(fromAccountId: string, toAccountId: string, 
   if (e1) throw e1;
 
   const { error: e2 } = await sb.from("transactions").insert({
-    workspace_id: workspaceId, // FIXED: Added workspace_id to satisfy RLS
     account_id: toAccountId,
     amount_minor: amountMinor,
     direction: "credit",
