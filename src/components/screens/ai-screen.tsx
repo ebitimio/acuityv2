@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, ArrowUp, Loader2, CheckCircle2, Search, FileText,
   Pin, Plus, Wallet, PieChart, Receipt, Lightbulb, Copy,
-  AlertCircle, RefreshCw, XCircle, Menu, X
+  AlertCircle, RefreshCw, XCircle, Menu, X, Sparkles, Mic, Camera
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useWorkspace } from "@/lib/workspace";
@@ -83,9 +83,6 @@ export function AIScreen({
   const supabase = createClient();
 
   useEffect(() => { setMounted(true); }, []);
-
-  // CHANGED: no body-scroll lock — this is a screen, not an overlay
-  // (removed the useEffect that set document.body.style.overflow)
 
   // Load conversations list
   useEffect(() => {
@@ -382,21 +379,20 @@ export function AIScreen({
     ? Math.round((metrics.total_spent_minor / metrics.budget_limit_minor) * 100)
     : 0;
 
+  // Gemini-style suggestion list
   const suggestions = useMemo(() => [
-    { title: "How much can I safely spend this week?", icon: Wallet, category: "Spending", show: true },
-    { title: "Where am I wasting the most money?", icon: PieChart, category: "Insights", show: true },
-    { title: `You've used ${budgetUsedPct}% of your budget. What should I cut?`, icon: Receipt, category: "Budget", show: budgetUsedPct > 80 },
-    { title: `Payday in ${daysUntilIncome} days. How do I stretch what's left?`, icon: Lightbulb, category: "Planning", show: daysUntilIncome > 0 && daysUntilIncome <= 5 },
-    { title: `Help me categorize my unreviewed transactions.`, icon: FileText, category: "Organize", show: metrics.uncategorized_count > 0 }
+    { title: "How much can I safely spend this week?", icon: Wallet, show: true },
+    { title: "Where am I wasting the most money?", icon: PieChart, show: true },
+    { title: `You've used ${budgetUsedPct}% of your budget. What should I cut?`, icon: Receipt, show: budgetUsedPct > 80 },
+    { title: `Payday in ${daysUntilIncome} days. How do I stretch what's left?`, icon: Lightbulb, show: daysUntilIncome > 0 && daysUntilIncome <= 5 },
+    { title: `Help me categorize my unreviewed transactions.`, icon: FileText, show: metrics.uncategorized_count > 0 }
   ].filter(s => s.show).slice(0, 4), [budgetUsedPct, daysUntilIncome, metrics.uncategorized_count]);
 
   if (!mounted) return null;
 
-  // CHANGED: whole shell is now a real screen — no portal, no fixed frame, no visualViewport math.
-  // Native 100dvh + flex column handles the keyboard on iOS.
   return (
     <div className="relative flex h-[100dvh] flex-col bg-[var(--bg)] overflow-hidden">
-      {/* CHANGED: single low-opacity radial glow — replaces the two brand blobs that made the olive band */}
+      {/* Background Glow */}
       <div aria-hidden className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
         <div
           style={{
@@ -405,65 +401,53 @@ export function AIScreen({
             right: "-25%",
             width: "90vmax",
             height: "90vmax",
-            background:
-              "radial-gradient(closest-side, color-mix(in srgb, var(--brand) 6%, transparent), transparent 70%)",
+            background: "radial-gradient(closest-side, color-mix(in srgb, var(--brand) 6%, transparent), transparent 70%)",
           }}
         />
       </div>
 
-      {/* Header */}
+      {/* Gemini-style Header */}
       <div
-        className="relative z-10 shrink-0 flex items-center justify-between px-4 pb-3 border-b border-[var(--line)]"
-        style={{
-          paddingTop: "calc(env(safe-area-inset-top) + 12px)",
-          background: "color-mix(in srgb, var(--bg) 82%, transparent)",
-          backdropFilter: "blur(20px)",
-          WebkitBackdropFilter: "blur(20px)",
-        }}
+        className="relative z-10 shrink-0 flex items-center justify-between px-4 pb-2"
+        style={{ paddingTop: "calc(env(safe-area-inset-top) + 12px)" }}
       >
-        <div className="flex items-center gap-2 min-w-0">
-          {/* CHANGED: back chevron replaces the X close button */}
-          <button
-            onClick={onBack}
-            aria-label="Back"
-            className="press flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text-2)]"
-          >
+        <div className="flex items-center gap-3">
+          <button onClick={onBack} className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text-2)]">
             <ChevronLeft size={20} />
           </button>
-          <button
-            onClick={() => setIsSidebarOpen(true)}
-            aria-label="History"
-            className="press flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text-2)]"
-          >
+          <button onClick={() => setIsSidebarOpen(true)} className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text-2)]">
             <Menu size={18} />
           </button>
-          <div className="min-w-0">
-            <h1 className="truncate text-[18px] font-bold text-[var(--text-1)] leading-tight">
-              {hasSentFirstMessage ? "Acuity AI" : `Good ${new Date().getHours() < 12 ? "morning" : new Date().getHours() < 18 ? "afternoon" : "evening"}, ${firstName}`}
-            </h1>
-            <p className="truncate text-[12px] text-[var(--text-3)]">
-              {hasSentFirstMessage && safeToSpend ? `${fmt(safeToSpend.daily_safe_minor / 100)} safe today` : "Ask anything about your money."}
-            </p>
+          
+          {/* Branding */}
+          <div className="flex items-baseline ml-1">
+            <span className="text-[22px] font-black tracking-tighter text-[var(--text-1)]">A</span>
+            <span className="text-[22px] font-black tracking-tighter text-[var(--brand)]">.</span>
           </div>
         </div>
-
-        <button
-          onClick={startNewChat}
-          aria-label="New chat"
-          className="press flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text-2)]"
-        >
-          <Plus size={16} />
-        </button>
+        
+        <div className="flex items-center gap-2">
+          <button onClick={startNewChat} className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text-2)]">
+            <Plus size={16} />
+          </button>
+        </div>
       </div>
 
-      {/* Chat Area */}
-      <div className="relative z-10 flex-1 overflow-y-auto px-4 pb-4" role="log" aria-live="polite">
+      {/* Main Content Area */}
+      <div className="relative z-10 flex-1 overflow-y-auto px-4" role="log" aria-live="polite">
         {messages.length === 0 && !isThinking ? (
-          <div className="flex flex-col gap-4 pt-6">
-            <div className="flex items-center gap-2 mb-2 text-[var(--text-1)]">
-              <span className="text-[14px] font-semibold">Try asking</span>
+          /* Gemini-style Empty State */
+          <div className="flex flex-col h-full justify-center pb-20">
+            <div className="mb-8">
+              <h1 className="text-[28px] font-semibold text-[var(--text-1)] mb-1">
+                Good {new Date().getHours() < 12 ? "morning" : new Date().getHours() < 18 ? "afternoon" : "evening"},
+              </h1>
+              <h1 className="text-[28px] font-semibold text-[var(--brand)]">
+                {firstName}
+              </h1>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+
+            <div className="flex flex-col gap-3">
               {suggestions.map((s, i) => {
                 const Icon = s.icon;
                 return (
@@ -473,22 +457,18 @@ export function AIScreen({
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.05 }}
                     onClick={() => send(s.title)}
-                    className="flex flex-col justify-between rounded-[20px] bg-[var(--surface-2)] p-4 text-left border border-[var(--line)] shadow-sm h-36 hover:bg-[var(--fill-1)] transition-colors"
+                    className="flex items-center gap-3 rounded-full bg-[var(--surface-2)] px-4 py-3 text-left border border-transparent hover:bg-[var(--surface-3)] transition-colors w-full"
                   >
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--brand)]/10">
-                      <Icon size={16} className="text-[var(--brand)]" />
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-semibold text-[var(--text-3)] uppercase tracking-wider">{s.category}</span>
-                      <p className="text-[13px] text-[var(--text-1)] leading-snug mt-0.5">{s.title}</p>
-                    </div>
+                    <Icon size={18} className="text-[var(--text-3)] shrink-0" />
+                    <span className="text-[14px] text-[var(--text-2)] font-medium">{s.title}</span>
                   </motion.button>
                 );
               })}
             </div>
           </div>
         ) : (
-          <div className="flex flex-col gap-6 pt-6">
+          /* Chat List */
+          <div className="flex flex-col gap-6 pt-4 pb-4">
             {messages.map((msg) => (
               <motion.div
                 key={msg.id}
@@ -497,20 +477,19 @@ export function AIScreen({
                 className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}
               >
                 {msg.role === "user" ? (
-                  <div
-                    className="max-w-[85%] rounded-[20px] rounded-tr-sm p-4 text-[15px] leading-relaxed shadow-sm"
-                    style={{ background: "var(--brand)", color: "var(--brand-ink)" }}
-                  >
+                  /* Gemini style: no bubble, just text right aligned */
+                  <div className="max-w-[85%] text-[15px] leading-relaxed text-[var(--text-1)] text-right px-2 py-1">
                     {msg.content}
                   </div>
                 ) : (
+                  /* Gemini style: avatar left, plain text */
                   <div className="w-full flex gap-3">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand)]/10 mt-1">
-                      <span className="text-[14px] font-black text-[var(--brand)]">A.</span>
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] mt-1">
+                      <span className="text-[14px] font-black text-[var(--brand-ink)]">A.</span>
                     </div>
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 pt-0.5">
                       {msg.content && (
-                        <div className="rounded-[20px] rounded-tl-sm bg-[var(--surface-1)] p-4 text-[15px] leading-relaxed text-[var(--text-1)] border border-[var(--line)] shadow-sm">
+                        <div className="text-[15px] leading-relaxed text-[var(--text-1)]">
                           {formatMessage(msg.content)}
                         </div>
                       )}
@@ -534,19 +513,13 @@ export function AIScreen({
                                   </span>
                                 </div>
                                 <p className="text-[14px] text-[var(--text-1)] leading-relaxed">{block.summary}</p>
-
+                                
                                 {!isResolved && (
                                   <div className="flex gap-2 mt-4">
-                                    <button
-                                      onClick={() => handleActionConfirm(msg.id, block)}
-                                      className="flex-1 rounded-xl bg-[var(--brand)] py-2.5 text-[13px] font-bold text-[var(--brand-ink)] active:scale-95 transition-transform"
-                                    >
+                                    <button onClick={() => handleActionConfirm(msg.id, block)} className="flex-1 rounded-xl bg-[var(--brand)] py-2.5 text-[13px] font-bold text-[var(--brand-ink)]">
                                       Confirm
                                     </button>
-                                    <button
-                                      onClick={() => handleActionCancel(msg.id)}
-                                      className="flex-1 rounded-xl bg-[var(--surface-2)] border border-[var(--line)] py-2.5 text-[13px] font-bold text-[var(--text-1)] active:scale-95 transition-transform"
-                                    >
+                                    <button onClick={() => handleActionCancel(msg.id)} className="flex-1 rounded-xl bg-[var(--surface-2)] border border-[var(--line)] py-2.5 text-[13px] font-bold text-[var(--text-1)]">
                                       Cancel
                                     </button>
                                   </div>
@@ -559,18 +532,15 @@ export function AIScreen({
                       })}
 
                       {msg.status === "error" && (
-                        <div className="flex items-center gap-2 mt-2 px-1">
-                          <button
-                            onClick={() => send(messages[messages.length - 2]?.content || "Retry")}
-                            className="text-[11px] font-medium text-[var(--brand)] flex items-center gap-1"
-                          >
+                        <div className="flex items-center gap-2 mt-2">
+                          <button onClick={() => send(messages[messages.length - 2]?.content || "Retry")} className="text-[12px] font-medium text-[var(--brand)] flex items-center gap-1">
                             <RefreshCw size={12} /> Retry
                           </button>
                         </div>
                       )}
 
                       {msg.status !== "error" && (
-                        <div className="flex items-center gap-3 mt-2 px-1">
+                        <div className="flex items-center gap-3 mt-3">
                           <button onClick={() => handlePinInsight(msg.content)} className="text-[11px] font-medium text-[var(--text-3)] hover:text-[var(--brand)] flex items-center gap-1">
                             <Pin size={12} /> Pin to Home
                           </button>
@@ -590,17 +560,15 @@ export function AIScreen({
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand)]/10 mt-1">
                   <Loader2 size={14} className="text-[var(--brand)] animate-spin" />
                 </div>
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 pt-1">
                   {thinkingLabel && !streamingContent && (
-                    <div className="rounded-[20px] rounded-tl-sm bg-[var(--surface-2)] border border-[var(--line)] p-4 shadow-sm w-fit">
-                      <div className="flex items-center gap-3 text-[13px] text-[var(--text-2)] animate-pulse">
-                        <Search size={14} className="text-[var(--text-3)]" />
-                        {thinkingLabel}
-                      </div>
+                    <div className="flex items-center gap-3 text-[14px] font-medium text-[var(--brand)] animate-pulse">
+                      <Sparkles size={14} />
+                      {thinkingLabel}
                     </div>
                   )}
                   {streamingContent && (
-                    <div className="rounded-[20px] rounded-tl-sm bg-[var(--surface-1)] p-4 text-[15px] leading-relaxed text-[var(--text-1)] border border-[var(--line)] shadow-sm">
+                    <div className="text-[15px] leading-relaxed text-[var(--text-1)]">
                       {formatMessage(streamingContent)}
                       <span className="inline-block w-1.5 h-4 ml-1 bg-[var(--brand)] animate-pulse align-middle" />
                     </div>
@@ -613,17 +581,14 @@ export function AIScreen({
         )}
       </div>
 
-      {/* Composer */}
+      {/* Composer (Floats in middle if no messages, bottom if chat) */}
       <div
-        className="relative z-10 shrink-0 px-4 pt-2 border-t border-[var(--line)]"
-        style={{
-          paddingBottom: "calc(env(safe-area-inset-bottom) + 8px)",
-          background: "color-mix(in srgb, var(--bg) 82%, transparent)",
-          backdropFilter: "blur(20px)",
-          WebkitBackdropFilter: "blur(20px)",
-        }}
+        className={cn(
+          "relative z-10 shrink-0 px-4 pb-[calc(env(safe-area-inset-bottom)+16px)] transition-all duration-300",
+          messages.length === 0 && !isThinking ? "mb-auto mt-0" : ""
+        )}
       >
-        <div className="flex items-end gap-2 rounded-[28px] bg-[var(--surface-2)] p-2 border border-[var(--line-strong)] shadow-sm focus-within:border-[var(--brand)] transition-colors">
+        <div className="flex items-end gap-2 rounded-[32px] bg-[var(--surface-2)] p-2 pl-4 border border-[var(--line-strong)] shadow-sm focus-within:border-[var(--brand)] transition-colors">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -633,22 +598,26 @@ export function AIScreen({
                 send(input);
               }
             }}
-            placeholder={hasSentFirstMessage ? "Ask a follow up..." : "Ask about your money..."}
-            className="flex-1 max-h-32 min-h-[40px] bg-transparent px-4 py-2.5 text-[16px] text-[var(--text-1)] outline-none placeholder:text-[var(--text-3)] resize-none"
+            placeholder="Ask about your money..."
+            className="flex-1 max-h-32 min-h-[40px] bg-transparent py-2.5 text-[16px] text-[var(--text-1)] outline-none placeholder:text-[var(--text-3)] resize-none"
             style={{ caretColor: "var(--brand)" }}
             rows={1}
           />
-          <button
-            onClick={() => send(input)}
-            disabled={!input.trim() || isThinking}
-            aria-label="Send message"
-            className={cn(
-              "flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-all active:scale-95",
-              input.trim() && !isThinking ? "bg-[var(--brand)] text-[var(--brand-ink)]" : "bg-[var(--surface-3)] text-[var(--text-3)]"
-            )}
-          >
-            {isThinking ? <Loader2 size={18} className="animate-spin" /> : <ArrowUp size={20} strokeWidth={3} />}
-          </button>
+          <div className="flex items-center gap-1 shrink-0">
+            <button className="flex h-10 w-10 items-center justify-center rounded-full text-[var(--text-2)] hover:bg-[var(--surface-3)]">
+              <Mic size={20} />
+            </button>
+            <button
+              onClick={() => send(input)}
+              disabled={!input.trim() || isThinking}
+              className={cn(
+                "flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-all active:scale-95",
+                input.trim() && !isThinking ? "bg-[var(--brand)] text-[var(--brand-ink)]" : "bg-[var(--surface-3)] text-[var(--text-3)]"
+              )}
+            >
+              {isThinking ? <Loader2 size={18} className="animate-spin" /> : <ArrowUp size={20} strokeWidth={3} />}
+            </button>
+          </div>
         </div>
       </div>
 
