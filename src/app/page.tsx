@@ -561,7 +561,6 @@ export default function SandboxPage() {
     ? new Date(nextIncomeDateRaw).toLocaleDateString("en-NG", { day: "numeric", month: "short" })
     : "";
 
-  // FILTER OUT ADJUSTMENTS
   const visibleTransactions = transactions.filter((t) => {
     if (t.category_name === "Adjustment") return false;
     
@@ -649,7 +648,6 @@ export default function SandboxPage() {
               <div className="flex flex-col gap-6 px-5 pt-2">
                 <SafeToSpendHero data={safeToSpend} netAcross={netAcrossAccounts} liquidAssets={liquidAssets} spentThisMonth={spentThisMonth} incomeThisMonth={incomeThisMonth} budgetLimit={budgetLimit} periodLabel={periodLabel} daysUntilIncome={daysUntilIncome} nextIncomeDate={nextIncomeDate} />
 
-                {/* FIXED DAILY INSIGHT CARD WITH A. LOGO */}
                 {accounts.length > 0 && (
                   <motion.button
                     whileTap={{ scale: 0.98 }}
@@ -675,7 +673,6 @@ export default function SandboxPage() {
                   </motion.button>
                 )}
 
-                {/* MONTHLY REPORT TEASER */}
                 {showReportTeaser && (
                   <motion.button
                     initial={{ opacity: 0, y: 10 }}
@@ -803,7 +800,13 @@ export default function SandboxPage() {
         </ScreenTransition>
       </PullToRefresh>
 
-      <FloatingTabBar activeTab={activeScreen === "budget" ? "home" : (activeScreen as TabId)} onTabChange={handleTabChange} onAddClick={handleAddClick} isHidden={navHidden} />
+      <FloatingTabBar 
+        activeTab={activeScreen === "budget" ? "home" : (activeScreen as TabId)} 
+        onTabChange={handleTabChange} 
+        onAddClick={handleAddClick} 
+        isHidden={navHidden || isAdvisorOpen} 
+      />
+      
       <ImportSheet isOpen={isImportOpen} onClose={() => setIsImportOpen(false)} onImportSuccess={() => { refreshData(); toast("Statement imported"); }} />
       
       <AIDrawer 
@@ -814,6 +817,7 @@ export default function SandboxPage() {
         metrics={m}
         topCategory={topCategory}
         daysUntilIncome={daysUntilIncome}
+        onDataChanged={refreshData}
       />
 
       <SettingsSheet isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} user={{ ...session.user, created_at: session.user.created_at }} onSignOut={handleSignOut} profileName={profileName} onNameUpdated={(name) => setProfileName(name)} />

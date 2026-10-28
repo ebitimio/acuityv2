@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useRef, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   X, ArrowUp, Loader2, CheckCircle2, Search, FileText, 
   Pin, Plus, Wallet, PieChart, Receipt, Lightbulb, Copy, 
-  AlertCircle, RefreshCw, Check, XCircle, MessageSquare, Menu
+  AlertCircle, RefreshCw, XCircle, Menu
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useWorkspace } from "@/lib/workspace";
@@ -48,7 +49,13 @@ interface AIDrawerProps {
   metrics: HomeMetrics;
   topCategory: string | null;
   daysUntilIncome: number;
+  onDataChanged?: () => void; // <-- NEW: called after confirm
 }
+
+const truncateTitle = (t: string) => {
+  const s = t.trim().replace(/\s+/g, " ");
+  return s.length > 40 ? s.slice(0, 40).trimEnd() + "…" : s;
+};
 
 export function AIDrawer({ 
   isOpen, 
@@ -56,8 +63,8 @@ export function AIDrawer({
   fullName = "there",
   safeToSpend,
   metrics,
-  topCategory,
-  daysUntilIncome
+  daysUntilIncome,
+  onDataChanged
 }: AIDrawerProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -70,6 +77,7 @@ export function AIDrawer({
   const [streamingContent, setStreamingContent] = useState("");
   const [hasSentFirstMessage, setHasSentFirstMessage] = useState(false);
   const [vv, setVv] = useState<{ height: number; offsetTop: number } | null>(null);
+  const [mounted, setMounted] = useState(false);
   
   const endRef = useRef<HTMLDivElement>(null);
   const bufferRef = useRef("");
@@ -78,14 +86,14 @@ export function AIDrawer({
   const toast = useToast();
   const supabase = createClient();
 
-  // Lock body scroll
+  useEffect(() => { setMounted(true); }, []);
+
   useEffect(() => {
     if (isOpen) document.body.style.overflow = "hidden";
     else document.body.style.overflow = "";
     return () => { document.body.style.overflow = ""; };
   }, [isOpen]);
 
-  // Visual Viewport for keyboard
   useEffect(() => {
     const v = window.visualViewport;
     if (!v) return;
@@ -99,7 +107,7 @@ export function AIDrawer({
     };
   }, []);
 
-  // Load Conversations & History
+  // Load conversations list
   useEffect(() => {
     if (!isOpen || !activeWs?.id) return;
     
@@ -109,26 +117,26 @@ export function AIDrawer({
         .select("conversation_id, created_at, content")
         .eq("workspace_id", activeWs.id)
         .eq("role", "user")
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: true });
         
       if (data) {
-        // Group by conversation_id and take the first message as title
         const unique = new Map<string, Conversation>();
         data.forEach((d: any) => {
           if (d.conversation_id && !unique.has(d.conversation_id)) {
             unique.set(d.conversation_id, {
               id: d.conversation_id,
-              title: d.content.slice(0, 30) + "...",
+              title: truncateTitle(d.content),
               created_at: d.created_at,
             });
           }
         });
-        setConversations(Array.from(unique.values()));
+        setConversations(Array.from(unique.values()).reverse());
       }
     };
     loadConversations();
   }, [isOpen, activeWs?.id, supabase]);
 
+  // Load messages for the active conversation
   useEffect(() => {
     if (!isOpen || !activeWs?.id || !activeConvId) return;
     
@@ -187,13 +195,11 @@ export function AIDrawer({
   const send = async (text: string) => {
     if (!text.trim() || isThinking) return;
     
-    // Generate new conversation ID if needed
     let convId = activeConvId;
     if (!convId) {
       convId = crypto.randomUUID();
       setActiveConvId(convId);
-      // Add to local conversations list
-      setConversations(prev => [{ id: convId!, title: text.slice(0, 30) + "...", created_at: new Date().toISOString() }, ...prev]);
+      setConversations(prev => [{ id: convId!, title: truncateTitle(text), created_at: new Date().toISOString() }, ...prev]);
     }
 
     setHasSentFirstMessage(true);
@@ -206,7 +212,6 @@ export function AIDrawer({
     setStreamingContent("");
     bufferRef.current = "";
 
-    // Save with the new convId
     await supabase.from("ai_chat_history").insert({
       workspace_id: activeWs?.id,
       conversation_id: convId,
@@ -240,50 +245,56 @@ export function AIDrawer({
         const chunk = decoder.decode(value, { stream: true });
         bufferRef.current += chunk;
         
-        const lines = bufferRef.current.split("\n");
-        bufferRef.current = lines.pop() || "";
+        // Split by double-newline (SSE frame boundary) not single
+        const frames = bufferRef.current.split("\n\n");
+        bufferRef.current = frames.pop() || "";
 
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            const dataStr = line.slice(6).trim();
-            if (dataStr === "[DONE]") continue;
-            
-            try {
-              const data = JSON.parse(dataStr);
-              if (data.type === "thinking") {
-                setThinkingLabel(data.label);
-              } else if (data.type === "text") {
-                currentText += data.content;
-                setStreamingContent(currentText);
-              } else if (data.type === "action") {
-                newBlocks.push({ type: "action", ...data });
-              } else if (data.type === "error") {
-                throw new Error(data.message);
-              }
-            } catch (e) {
-              console.error("Parse error", e);
+        for (const frame of frames) {
+          const line = frame.trim();
+          if (!line.startsWith("data: ")) continue;
+          const dataStr = line.slice(6).trim();
+          if (dataStr === "[DONE]") continue;
+          
+          try {
+            const data = JSON.parse(dataStr);
+            if (data.type === "thinking") {
+              setThinkingLabel(data.label);
+            } else if (data.type === "text") {
+              currentText += data.content;
+              setStreamingContent(currentText);
+            } else if (data.type === "action") {
+              newBlocks.push({ type: "action", ...data });
+            } else if (data.type === "error") {
+              throw new Error(data.message);
             }
+          } catch (e) {
+            console.error("Parse error", e, dataStr);
           }
         }
       }
 
-      if (currentText || newBlocks.length > 0) {
-        const finalMsg: Message = { 
-          id: Date.now().toString(), 
-          role: "assistant", 
-          content: currentText,
-          blocks: newBlocks,
-          status: "ok"
-        };
-        setMessages((prev) => [...prev, finalMsg]);
-        await saveMessageToDb(finalMsg);
+      // Never save empty replies
+      if (!currentText.trim() && newBlocks.length === 0) {
+        throw new Error("empty_response");
       }
+
+      const finalMsg: Message = { 
+        id: Date.now().toString(), 
+        role: "assistant", 
+        content: currentText,
+        blocks: newBlocks,
+        status: "ok"
+      };
+      setMessages((prev) => [...prev, finalMsg]);
+      await saveMessageToDb(finalMsg);
       
     } catch (err: any) {
+      console.error("AI send error:", err);
+      // Don't save error to DB, just show it
       setMessages((prev) => [...prev, { 
         id: Date.now().toString(), 
         role: "assistant", 
-        content: "Sorry, I ran into an issue. Please try again.", 
+        content: "I couldn't complete that. Please check your connection and try again.", 
         status: "error" 
       }]);
     } finally {
@@ -300,8 +311,6 @@ export function AIDrawer({
         const accounts = await getAccounts();
         const accountId = payload.account_id || accounts[0]?.id;
         if (!accountId) throw new Error("No account found");
-        
-        // Fallback for missing direction
         const direction = payload.direction === "credit" ? "credit" : "debit";
         
         await createTransaction({
@@ -335,13 +344,9 @@ export function AIDrawer({
           : m
       ));
       toast("Action completed successfully");
+      onDataChanged?.(); // <-- CRITICAL: refresh parent so header number updates
     } catch (e: any) {
       toast(e.message || "Action failed", "err");
-      setMessages(prev => prev.map(m => 
-        m.id === msgId 
-          ? { ...m, actionStatus: "failed", blocks: m.blocks?.map(b => b.type === "action" ? { ...b, resolved: true } : b) } 
-          : m
-      ));
     }
   };
 
@@ -364,7 +369,6 @@ export function AIDrawer({
     }
   };
 
-  // --- Render Helpers ---
   const renderInline = (text: string) => {
     return text.split(/(\*\*.*?\*\*|₦[\d,]+(?:\.\d+)?)/g).map((part, i) => {
       if (part.startsWith("**") && part.endsWith("**")) {
@@ -409,68 +413,30 @@ export function AIDrawer({
     { title: `Help me categorize my unreviewed transactions.`, icon: FileText, category: "Organize", show: metrics.uncategorized_count > 0 }
   ].filter(s => s.show).slice(0, 4), [budgetUsedPct, daysUntilIncome, metrics.uncategorized_count]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
+
+  const kbOpen = vv ? (window.innerHeight - vv.height - vv.offsetTop > 80) : false;
 
   const frame: React.CSSProperties = vv
     ? { position: "fixed", top: vv.offsetTop, left: 0, right: 0, height: vv.height, zIndex: 100 }
     : { position: "fixed", inset: 0, zIndex: 100 };
 
-  return (
+  return createPortal(
     <AnimatePresence>
+      {/* Full-screen opaque layer behind the drawer to hide the Home tab bar */}
+      <div 
+        className="fixed inset-0 bg-[var(--bg)]" 
+        style={{ zIndex: 99 }} 
+        aria-hidden 
+      />
       <motion.div 
         initial={{ y: "100%" }}
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
         transition={{ type: "spring", damping: 25, stiffness: 200 }}
-        className="flex flex-col bg-[#0b0b0c] overflow-hidden"
+        className="flex flex-col bg-[var(--bg)] overflow-hidden"
         style={frame}
       >
-        {/* Sidebar Overlay */}
-        <AnimatePresence>
-          {isSidebarOpen && (
-            <>
-              <motion.div 
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="absolute inset-0 bg-black/60 z-50"
-                onClick={() => setIsSidebarOpen(false)}
-              />
-              <motion.div 
-                initial={{ x: "-100%" }} animate={{ x: 0 }} exit={{ x: "-100%" }}
-                transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                className="absolute top-0 left-0 bottom-0 w-[280px] bg-[#1c1c1e] z-50 flex flex-col border-r border-white/10"
-              >
-                <div className="p-4 border-b border-white/10 flex justify-between items-center">
-                  <span className="font-bold text-white">History</span>
-                  <button onClick={() => setIsSidebarOpen(false)} className="text-white/50 hover:text-white"><X size={18} /></button>
-                </div>
-                <div className="flex-1 overflow-y-auto p-2 space-y-1">
-                  <button 
-                    onClick={startNewChat}
-                    className="w-full flex items-center gap-2 p-3 rounded-lg bg-[var(--brand)]/10 text-[var(--brand)] font-semibold text-sm mb-4"
-                  >
-                    <Plus size={16} /> New Chat
-                  </button>
-                  {conversations.map(c => (
-                    <button
-                      key={c.id}
-                      onClick={() => { setActiveConvId(c.id); setIsSidebarOpen(false); }}
-                      className={cn(
-                        "w-full text-left p-3 rounded-lg text-sm truncate transition-colors",
-                        activeConvId === c.id ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/5"
-                      )}
-                    >
-                      {c.title}
-                    </button>
-                  ))}
-                  {conversations.length === 0 && (
-                    <p className="text-center text-white/40 text-sm mt-10">No past conversations</p>
-                  )}
-                </div>
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
-
         {/* Orbs */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
           <motion.div 
@@ -489,7 +455,7 @@ export function AIDrawer({
 
         {/* Header */}
         <div 
-          className="relative z-10 shrink-0 flex items-center justify-between px-5 pb-4 border-b border-[var(--line)] bg-[#0b0b0c]"
+          className="relative z-10 shrink-0 flex items-center justify-between px-5 pb-4 border-b border-[var(--line)] bg-[var(--bg)]"
           style={{ paddingTop: "calc(env(safe-area-inset-top) + 16px)" }}
         >
           <div className="flex items-center gap-3">
@@ -626,6 +592,17 @@ export function AIDrawer({
                           return null;
                         })}
 
+                        {msg.status === "error" && (
+                          <div className="flex items-center gap-2 mt-2 px-1">
+                            <button 
+                              onClick={() => send(messages[messages.length - 2]?.content || "Retry")} 
+                              className="text-[11px] font-medium text-[var(--brand)] flex items-center gap-1"
+                            >
+                              <RefreshCw size={12} /> Retry
+                            </button>
+                          </div>
+                        )}
+
                         {msg.status !== "error" && (
                           <div className="flex items-center gap-3 mt-2 px-1">
                             <button onClick={() => handlePinInsight(msg.content)} className="text-[11px] font-medium text-[var(--text-3)] hover:text-[var(--brand)] flex items-center gap-1">
@@ -670,8 +647,11 @@ export function AIDrawer({
           )}
         </div>
 
-        {/* Composer - Fixed Gap */}
-        <div className="relative z-10 shrink-0 px-4 pt-2 pb-[calc(env(safe-area-inset-bottom)+12px)] bg-[#0b0b0c] border-t border-[var(--line)]">
+        {/* Composer */}
+        <div 
+          className="relative z-10 shrink-0 px-4 pt-2 bg-[var(--bg)] border-t border-[var(--line)]"
+          style={{ paddingBottom: kbOpen ? 8 : "calc(env(safe-area-inset-bottom) + 8px)" }}
+        >
           <div className="flex items-end gap-2 rounded-[28px] bg-[var(--surface-2)] p-2 border border-[var(--line-strong)] shadow-sm focus-within:border-[var(--brand)] transition-colors">
             <textarea
               value={input}
@@ -684,6 +664,7 @@ export function AIDrawer({
               }}
               placeholder={hasSentFirstMessage ? "Ask a follow up..." : "Ask about your money..."}
               className="flex-1 max-h-32 min-h-[40px] bg-transparent px-4 py-2.5 text-[16px] text-[var(--text-1)] outline-none placeholder:text-[var(--text-3)] resize-none"
+              style={{ caretColor: "var(--brand)" }}
               rows={1}
             />
             <button
@@ -699,7 +680,58 @@ export function AIDrawer({
             </button>
           </div>
         </div>
+
+        {/* History Sidebar */}
+        <AnimatePresence>
+          {isSidebarOpen && (
+            <>
+              <motion.div 
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-black/60 z-[110]"
+                onClick={() => setIsSidebarOpen(false)}
+              />
+              <motion.div 
+                initial={{ x: "-100%" }} animate={{ x: 0 }} exit={{ x: "-100%" }}
+                transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                className="absolute top-0 left-0 bottom-0 w-[280px] bg-[var(--surface-1)] z-[120] flex flex-col border-r border-[var(--line)]"
+                style={{
+                  paddingTop: "calc(env(safe-area-inset-top) + 12px)",
+                  paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)",
+                }}
+              >
+                <div className="px-4 pb-3 border-b border-[var(--line)] flex justify-between items-center">
+                  <span className="font-bold text-[var(--text-1)]">History</span>
+                  <button onClick={() => setIsSidebarOpen(false)} className="text-[var(--text-3)] hover:text-[var(--text-1)]"><X size={18} /></button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-2 space-y-1">
+                  <button 
+                    onClick={startNewChat}
+                    className="w-full flex items-center gap-2 p-3 rounded-lg bg-[var(--brand)]/10 text-[var(--brand)] font-semibold text-sm mb-4"
+                  >
+                    <Plus size={16} /> New Chat
+                  </button>
+                  {conversations.map(c => (
+                    <button
+                      key={c.id}
+                      onClick={() => { setActiveConvId(c.id); setIsSidebarOpen(false); }}
+                      className={cn(
+                        "w-full text-left p-3 rounded-lg text-sm truncate transition-colors",
+                        activeConvId === c.id ? "bg-[var(--fill-2)] text-[var(--text-1)]" : "text-[var(--text-2)] hover:bg-[var(--fill-1)]"
+                      )}
+                    >
+                      {c.title}
+                    </button>
+                  ))}
+                  {conversations.length === 0 && (
+                    <p className="text-center text-[var(--text-3)] text-sm mt-10">No past conversations</p>
+                  )}
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
       </motion.div>
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }
