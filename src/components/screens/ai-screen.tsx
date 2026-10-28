@@ -74,7 +74,6 @@ export function AIScreen({
   const [streamingContent, setStreamingContent] = useState("");
   const [hasSentFirstMessage, setHasSentFirstMessage] = useState(false);
   
-  // CHANGED: We use a static greeting state to avoid hydration crashes
   const [greeting, setGreeting] = useState("Welcome back");
 
   const endRef = useRef<HTMLDivElement>(null);
@@ -84,7 +83,6 @@ export function AIScreen({
   const toast = useToast();
   const supabase = useMemo(() => createClient(), []);
 
-  // CHANGED: Safely set greeting after mount to prevent SSR crash
   useEffect(() => {
     const hour = new Date().getHours();
     const timeOfDay = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
@@ -373,7 +371,6 @@ export function AIScreen({
 
   const firstName = fullName.split(" ")[0];
   
-  // CHANGED: Safely check metrics to prevent crashes
   const budgetUsedPct = metrics && metrics.budget_limit_minor > 0
     ? Math.round((metrics.total_spent_minor / metrics.budget_limit_minor) * 100)
     : 0;
@@ -390,8 +387,14 @@ export function AIScreen({
   }, [budgetUsedPct, daysUntilIncome, metrics]);
 
   return (
-    // CHANGED: Use h-[100dvh] instead of fixed inset-0 to prevent Safari black screen crashes
-    <div className="relative flex h-[100dvh] flex-col bg-[var(--bg)] overflow-hidden">
+    // Wrapped in a motion.div for the smooth transition from the home screen
+    <motion.div 
+      initial={{ opacity: 0, y: 18, scale: 0.985 }}
+      animate={{ opacity: 1, y: 0, scale: 1, transition: { duration: 0.32 } }}
+      exit={{ opacity: 0, y: -8, scale: 0.992, transition: { duration: 0.16 } }}
+      className="fixed inset-0 flex flex-col bg-[var(--bg)] overflow-hidden" 
+      style={{ touchAction: "none" }} 
+    >
       {/* Background Glow */}
       <div aria-hidden className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
         <div
@@ -419,7 +422,6 @@ export function AIScreen({
             <Menu size={18} />
           </button>
           
-          {/* CHANGED: ACUITY. branding */}
           <div className="flex items-baseline ml-1">
             <span className="text-[20px] font-black tracking-tighter text-[var(--text-1)]">ACUITY</span>
             <span className="text-[20px] font-black tracking-tighter text-[var(--brand)]">.</span>
@@ -535,7 +537,6 @@ export function AIScreen({
                         </div>
                       )}
 
-                      {/* CHANGED: Removed Pin to Home, kept Copy */}
                       {msg.status !== "error" && (
                         <div className="flex items-center gap-3 mt-3">
                           <button onClick={() => navigator.clipboard.writeText(msg.content)} className="text-[11px] font-medium text-[var(--text-3)] hover:text-[var(--text-1)] flex items-center gap-1 transition-colors">
@@ -666,6 +667,6 @@ export function AIScreen({
           </>
         )}
       </AnimatePresence>
-    </div>
+    </motion.div>
   );
 }

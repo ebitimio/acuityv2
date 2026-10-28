@@ -568,6 +568,22 @@ export default function SandboxPage() {
   const topCategory = categoryRows[0]?.category ?? null;
   const topCategoryAmount = categoryRows[0]?.total_minor ? categoryRows[0].total_minor / 100 : 0;
 
+  // ISOLATION FIX: Render the AI screen completely outside of PullToRefresh
+  if (activeScreen === "ai") {
+    return (
+      <AIScreen
+        key={activeWs?.id}
+        onBack={handleBackToHome}
+        fullName={profileName}
+        safeToSpend={safeToSpend}
+        metrics={m}
+        topCategory={topCategory}
+        daysUntilIncome={daysUntilIncome}
+        onDataChanged={refreshData}
+      />
+    );
+  }
+
   return (
     <main className="relative flex min-h-[100dvh] flex-col overflow-x-hidden" style={{ background: "var(--bg)" }}>
       <PullToRefresh onRefresh={refreshData}>
@@ -601,17 +617,6 @@ export default function SandboxPage() {
             <AjoScreen onBack={handleBackToHome} />
           ) : activeScreen === "bank-charge" ? (
             <BankChargeScreen onBack={handleBackToHome} />
-          ) : activeScreen === "ai" ? (
-            <AIScreen
-              key={activeWs?.id}
-              onBack={handleBackToHome}
-              fullName={profileName}
-              safeToSpend={safeToSpend}
-              metrics={m}
-              topCategory={topCategory}
-              daysUntilIncome={daysUntilIncome}
-              onDataChanged={refreshData}
-            />
           ) : (
             <div className="flex-1 overflow-y-auto pb-32">
               <div
