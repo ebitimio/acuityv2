@@ -27,7 +27,7 @@ export function buildTools(supabase: Awaited<ReturnType<typeof createClient>>, w
   return [
     {
       name: "get_financial_context",
-      description: "CRITICAL: Call this first before answering any question about the user's finances. Returns their full net worth, offline assets, liabilities, liquid cash, income, bills, family support, and budgets.",
+      description: "CRITICAL: Call this first before answering any question about the user's finances. Returns their full net worth, offline assets, liabilities, liquid cash, income, bills, family support, and budgets. It also returns the exact account IDs you must use for propose_action.",
       parameters: { type: "object", properties: {}, additionalProperties: false },
       run: async () => {
         const { data: { user } } = await supabase.auth.getUser();
@@ -81,7 +81,6 @@ export function buildTools(supabase: Awaited<ReturnType<typeof createClient>>, w
         const totalIncome = incomeItems.reduce((s, c) => s + c.amount_minor, 0);
         const totalBills = billItems.reduce((s, c) => s + c.amount_minor, 0);
         
-        // Parse family support JSON
         let familySupportList = [];
         try {
           const parsed = JSON.parse(ws?.family_support_label || "[]");
@@ -223,7 +222,6 @@ export function buildTools(supabase: Awaited<ReturnType<typeof createClient>>, w
         }));
       },
     },
-    // NEW ENGINE TOOLS
     {
       name: "find_subscriptions",
       description: "Detects recurring subscriptions (Netflix, Spotify, etc) by analyzing the last 6 months of transactions.",
@@ -287,7 +285,7 @@ export function buildTools(supabase: Awaited<ReturnType<typeof createClient>>, w
       run: async (args) => {
         const gross = Number(args.gross_annual ?? 0);
         const rent = Number(args.annual_rent ?? 0);
-        const pension = gross * 0.08; // Standard 8% pension
+        const pension = gross * 0.08;
         
         const result = computeTax({ gross, pension, nhf: 0, nhis: 0, rent, other: 0 });
         
@@ -303,10 +301,9 @@ export function buildTools(supabase: Awaited<ReturnType<typeof createClient>>, w
         };
       },
     },
-    // NEW ACTION TOOL
     {
       name: "propose_action",
-      description: "Propose a change for the user to confirm. You must never claim it has been done.",
+      description: "Propose a change for the user to confirm. You must never claim it has been done. CRITICAL: For 'add_transaction', 'add_bill', and 'add_income', you MUST include the correct 'account_id' in the payload. Do not guess; ask the user if unsure.",
       parameters: {
         type: "object",
         properties: {
@@ -314,7 +311,10 @@ export function buildTools(supabase: Awaited<ReturnType<typeof createClient>>, w
             type: "string", 
             enum: ["add_transaction","set_budget","add_bill","add_income","recategorize","transfer"] 
           },
-          payload: { type: "object" },
+          payload: { 
+            type: "object", 
+            description: "The action data. MUST include account_id for add_transaction, add_bill, and add_income." 
+          },
           summary: { type: "string", description: "One plain sentence the user will read on the confirm card" }
         },
         required: ["action","payload","summary"],

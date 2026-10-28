@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, ArrowUp, Loader2, CheckCircle2, Search, FileText,
   Plus, Wallet, PieChart, Receipt, Lightbulb, Copy,
-  AlertCircle, RefreshCw, XCircle, Menu, X, Sparkles, Mic, Trash2
+  AlertCircle, RefreshCw, XCircle, Menu, X, Mic, Trash2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useWorkspace } from "@/lib/workspace";
@@ -76,7 +76,6 @@ export function AIScreen({
   
   const [greeting, setGreeting] = useState("Welcome back");
   
-  // NEW: State for the custom delete modal
   const [convToDelete, setConvToDelete] = useState<string | null>(null);
 
   const endRef = useRef<HTMLDivElement>(null);
@@ -176,7 +175,6 @@ export function AIScreen({
     }
   };
 
-  // NEW: Handle deletion from the custom modal
   const confirmDelete = async () => {
     if (!convToDelete || !activeWs?.id) return;
 
@@ -319,13 +317,11 @@ export function AIScreen({
       const { action, payload } = block;
 
       if (action === "add_transaction") {
-        const accounts = await getAccounts();
-        const accountId = payload.account_id || accounts[0]?.id;
-        if (!accountId) throw new Error("No account found");
+        if (!payload.account_id) throw new Error("No account selected");
         const direction = payload.direction === "credit" ? "credit" : "debit";
-
+        
         await createTransaction({
-          account_id: accountId,
+          account_id: payload.account_id,
           amount: Number(payload.amount) || 0,
           direction: direction,
           description: payload.description || "AI Transaction",
@@ -335,8 +331,10 @@ export function AIScreen({
       } else if (action === "set_budget") {
         await setBudget(payload.account_id || null, payload.category, (Number(payload.limit) || 0) * 100);
       } else if (action === "add_bill" || action === "add_income") {
+        if (!payload.account_id) throw new Error("No account selected");
+        
         await addRecurringItem({
-          account_id: payload.account_id || null,
+          account_id: payload.account_id,
           name: payload.name || "New Item",
           kind: action === "add_bill" ? "bill" : "income",
           amount: Number(payload.amount) || 0,
@@ -590,7 +588,8 @@ export function AIScreen({
                 <div className="flex-1 min-w-0 pt-1">
                   {thinkingLabel && !streamingContent && (
                     <div className="flex items-center gap-3 text-[14px] font-medium text-[var(--brand)] animate-pulse">
-                      <Sparkles size={14} />
+                      {/* CHANGED: Replaced Sparkles with A. */}
+                      <span className="text-[14px] font-black text-[var(--brand)] tracking-tighter">A.</span>
                       {thinkingLabel}
                     </div>
                   )}
@@ -690,7 +689,6 @@ export function AIScreen({
                   >
                     <span className="truncate pr-2">{c.title}</span>
                     
-                    {/* CHANGED: Trigger custom modal instead of system confirm */}
                     <button
                       onClick={(e) => { e.stopPropagation(); setConvToDelete(c.id); }}
                       className="text-[var(--text-3)] hover:text-[var(--danger)] p-1 rounded-full transition-colors shrink-0"
@@ -709,7 +707,7 @@ export function AIScreen({
         )}
       </AnimatePresence>
 
-      {/* NEW: Custom Delete Modal */}
+      {/* Custom Delete Modal */}
       <AnimatePresence>
         {convToDelete && (
           <motion.div
