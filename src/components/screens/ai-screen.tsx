@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, ArrowUp, Loader2, CheckCircle2, Search, FileText,
   Plus, Wallet, PieChart, Receipt, Lightbulb, Copy,
-  AlertCircle, RefreshCw, XCircle, Menu, X, Sparkles, Mic, Camera
+  AlertCircle, RefreshCw, XCircle, Menu, X, Sparkles, Mic
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useWorkspace } from "@/lib/workspace";
@@ -73,16 +73,23 @@ export function AIScreen({
   const [thinkingLabel, setThinkingLabel] = useState("Checking your data...");
   const [streamingContent, setStreamingContent] = useState("");
   const [hasSentFirstMessage, setHasSentFirstMessage] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  
+  // CHANGED: We use a static greeting state to avoid hydration crashes
+  const [greeting, setGreeting] = useState("Welcome back");
 
   const endRef = useRef<HTMLDivElement>(null);
   const bufferRef = useRef("");
   const { active: activeWs } = useWorkspace();
   const { fmt } = useCurrency();
   const toast = useToast();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
-  useEffect(() => { setMounted(true); }, []);
+  // CHANGED: Safely set greeting after mount to prevent SSR crash
+  useEffect(() => {
+    const hour = new Date().getHours();
+    const timeOfDay = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+    setGreeting(timeOfDay);
+  }, []);
 
   // Load conversations list
   useEffect(() => {
@@ -365,24 +372,26 @@ export function AIScreen({
   };
 
   const firstName = fullName.split(" ")[0];
-  const budgetUsedPct = metrics.budget_limit_minor > 0
+  
+  // CHANGED: Safely check metrics to prevent crashes
+  const budgetUsedPct = metrics && metrics.budget_limit_minor > 0
     ? Math.round((metrics.total_spent_minor / metrics.budget_limit_minor) * 100)
     : 0;
 
-  // Gemini-style suggestion list
-  const suggestions = useMemo(() => [
-    { title: "How much can I safely spend this week?", icon: Wallet, show: true },
-    { title: "Where am I wasting the most money?", icon: PieChart, show: true },
-    { title: `You've used ${budgetUsedPct}% of your budget. What should I cut?`, icon: Receipt, show: budgetUsedPct > 80 },
-    { title: `Payday in ${daysUntilIncome} days. How do I stretch what's left?`, icon: Lightbulb, show: daysUntilIncome > 0 && daysUntilIncome <= 5 },
-    { title: `Help me categorize my unreviewed transactions.`, icon: FileText, show: metrics.uncategorized_count > 0 }
-  ].filter(s => s.show).slice(0, 4), [budgetUsedPct, daysUntilIncome, metrics.uncategorized_count]);
-
-  if (!mounted) return null;
+  const suggestions = useMemo(() => {
+    if (!metrics) return [];
+    return [
+      { title: "How much can I safely spend this week?", icon: Wallet, show: true },
+      { title: "Where am I wasting the most money?", icon: PieChart, show: true },
+      { title: `You've used ${budgetUsedPct}% of your budget. What should I cut?`, icon: Receipt, show: budgetUsedPct > 80 },
+      { title: `Payday in ${daysUntilIncome} days. How do I stretch what's left?`, icon: Lightbulb, show: daysUntilIncome > 0 && daysUntilIncome <= 5 },
+      { title: `Help me categorize my unreviewed transactions.`, icon: FileText, show: metrics.uncategorized_count > 0 }
+    ].filter(s => s.show).slice(0, 4);
+  }, [budgetUsedPct, daysUntilIncome, metrics]);
 
   return (
-    // FIXED: Locked the screen to fixed inset-0 so the background page doesn't scroll
-    <div className="fixed inset-0 flex flex-col bg-[var(--bg)] overflow-hidden">
+    // CHANGED: Use h-[100dvh] instead of fixed inset-0 to prevent Safari black screen crashes
+    <div className="relative flex h-[100dvh] flex-col bg-[var(--bg)] overflow-hidden">
       {/* Background Glow */}
       <div aria-hidden className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
         <div
@@ -410,7 +419,7 @@ export function AIScreen({
             <Menu size={18} />
           </button>
           
-          {/* FIXED: ACUITY. branding */}
+          {/* CHANGED: ACUITY. branding */}
           <div className="flex items-baseline ml-1">
             <span className="text-[20px] font-black tracking-tighter text-[var(--text-1)]">ACUITY</span>
             <span className="text-[20px] font-black tracking-tighter text-[var(--brand)]">.</span>
@@ -427,11 +436,10 @@ export function AIScreen({
       {/* Main Content Area (Scrollable) */}
       <div className="relative z-10 flex-1 overflow-y-auto px-4" role="log" aria-live="polite">
         {messages.length === 0 && !isThinking ? (
-          /* Gemini-style Empty State */
           <div className="flex flex-col h-full justify-center pb-20">
             <div className="mb-8">
               <h1 className="text-[28px] font-semibold text-[var(--text-1)] mb-1">
-                Good {new Date().getHours() < 12 ? "morning" : new Date().getHours() < 18 ? "afternoon" : "evening"},
+                {greeting},
               </h1>
               <h1 className="text-[28px] font-semibold text-[var(--brand)]">
                 {firstName}
@@ -458,7 +466,6 @@ export function AIScreen({
             </div>
           </div>
         ) : (
-          /* Chat List */
           <div className="flex flex-col gap-6 pt-4 pb-4">
             {messages.map((msg) => (
               <motion.div
@@ -468,12 +475,10 @@ export function AIScreen({
                 className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}
               >
                 {msg.role === "user" ? (
-                  /* Gemini style: no bubble, just text right aligned */
                   <div className="max-w-[85%] text-[15px] leading-relaxed text-[var(--text-1)] text-right px-2 py-1">
                     {msg.content}
                   </div>
                 ) : (
-                  /* Gemini style: avatar left, plain text */
                   <div className="w-full flex gap-3">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] mt-1">
                       <span className="text-[14px] font-black text-[var(--brand-ink)]">A.</span>
@@ -530,7 +535,7 @@ export function AIScreen({
                         </div>
                       )}
 
-                      {/* FIXED: Removed Pin to Home, kept Copy */}
+                      {/* CHANGED: Removed Pin to Home, kept Copy */}
                       {msg.status !== "error" && (
                         <div className="flex items-center gap-3 mt-3">
                           <button onClick={() => navigator.clipboard.writeText(msg.content)} className="text-[11px] font-medium text-[var(--text-3)] hover:text-[var(--text-1)] flex items-center gap-1 transition-colors">
