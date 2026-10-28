@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, ArrowUp, Loader2, CheckCircle2, Search, FileText,
-  Pin, Plus, Wallet, PieChart, Receipt, Lightbulb, Copy,
+  Plus, Wallet, PieChart, Receipt, Lightbulb, Copy,
   AlertCircle, RefreshCw, XCircle, Menu, X, Sparkles, Mic, Camera
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -333,16 +333,6 @@ export function AIScreen({
     toast("Action cancelled");
   };
 
-  const handlePinInsight = async (content: string) => {
-    if (!activeWs?.id) return;
-    try {
-      await supabase.from("pinned_insights").insert({ workspace_id: activeWs.id, content });
-      toast("Insight pinned to Home");
-    } catch {
-      toast("Could not pin insight", "err");
-    }
-  };
-
   const renderInline = (text: string) => {
     return text.split(/(\*\*.*?\*\*|₦[\d,]+(?:\.\d+)?)/g).map((part, i) => {
       if (part.startsWith("**") && part.endsWith("**")) {
@@ -391,7 +381,8 @@ export function AIScreen({
   if (!mounted) return null;
 
   return (
-    <div className="relative flex h-[100dvh] flex-col bg-[var(--bg)] overflow-hidden">
+    // FIXED: Locked the screen to fixed inset-0 so the background page doesn't scroll
+    <div className="fixed inset-0 flex flex-col bg-[var(--bg)] overflow-hidden">
       {/* Background Glow */}
       <div aria-hidden className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
         <div
@@ -419,10 +410,10 @@ export function AIScreen({
             <Menu size={18} />
           </button>
           
-          {/* Branding */}
+          {/* FIXED: ACUITY. branding */}
           <div className="flex items-baseline ml-1">
-            <span className="text-[22px] font-black tracking-tighter text-[var(--text-1)]">A</span>
-            <span className="text-[22px] font-black tracking-tighter text-[var(--brand)]">.</span>
+            <span className="text-[20px] font-black tracking-tighter text-[var(--text-1)]">ACUITY</span>
+            <span className="text-[20px] font-black tracking-tighter text-[var(--brand)]">.</span>
           </div>
         </div>
         
@@ -433,7 +424,7 @@ export function AIScreen({
         </div>
       </div>
 
-      {/* Main Content Area */}
+      {/* Main Content Area (Scrollable) */}
       <div className="relative z-10 flex-1 overflow-y-auto px-4" role="log" aria-live="polite">
         {messages.length === 0 && !isThinking ? (
           /* Gemini-style Empty State */
@@ -539,12 +530,10 @@ export function AIScreen({
                         </div>
                       )}
 
+                      {/* FIXED: Removed Pin to Home, kept Copy */}
                       {msg.status !== "error" && (
                         <div className="flex items-center gap-3 mt-3">
-                          <button onClick={() => handlePinInsight(msg.content)} className="text-[11px] font-medium text-[var(--text-3)] hover:text-[var(--brand)] flex items-center gap-1">
-                            <Pin size={12} /> Pin to Home
-                          </button>
-                          <button onClick={() => navigator.clipboard.writeText(msg.content)} className="text-[11px] font-medium text-[var(--text-3)] hover:text-[var(--text-1)] flex items-center gap-1">
+                          <button onClick={() => navigator.clipboard.writeText(msg.content)} className="text-[11px] font-medium text-[var(--text-3)] hover:text-[var(--text-1)] flex items-center gap-1 transition-colors">
                             <Copy size={12} /> Copy
                           </button>
                         </div>
@@ -581,10 +570,10 @@ export function AIScreen({
         )}
       </div>
 
-      {/* Composer (Floats in middle if no messages, bottom if chat) */}
+      {/* Composer (Pinned to bottom, not scrollable) */}
       <div
         className={cn(
-          "relative z-10 shrink-0 px-4 pb-[calc(env(safe-area-inset-bottom)+16px)] transition-all duration-300",
+          "relative z-10 shrink-0 px-4 pb-[calc(env(safe-area-inset-bottom)+16px)] bg-[var(--bg)] transition-all duration-300",
           messages.length === 0 && !isThinking ? "mb-auto mt-0" : ""
         )}
       >
