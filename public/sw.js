@@ -1,4 +1,4 @@
-const CACHE = "acuity-v20"; // CHANGED: Bumped from v19 to force a fresh cache
+const CACHE = "acuity-v21";
 
 self.addEventListener("install", () => self.skipWaiting());
 
@@ -24,7 +24,8 @@ self.addEventListener("fetch", (e) => {
     url.pathname.startsWith("/_next") ||
     url.pathname.endsWith(".json") ||
     req.destination === "document" ||
-    req.destination === "script"
+    req.destination === "script" ||
+    req.destination === "empty" // FIXED: Next.js chunks use "empty"
   ) {
     return;
   }
@@ -41,13 +42,12 @@ self.addEventListener("fetch", (e) => {
       caches.match(req).then((cached) => {
         const fetchPromise = fetch(req)
           .then((res) => {
-            // CHANGED: Wrapped in try/catch to prevent the Service Worker from crashing the app
             if (res.ok) {
               try {
                 const clone = res.clone();
                 caches.open(CACHE).then((c) => c.put(req, clone));
               } catch (err) {
-                console.warn("Failed to clone response for cache", err);
+                // Silently fail
               }
             }
             return res;
@@ -57,5 +57,4 @@ self.addEventListener("fetch", (e) => {
       })
     );
   }
-  // Everything else — network only, no SW interference
 });

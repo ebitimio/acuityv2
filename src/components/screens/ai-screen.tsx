@@ -73,8 +73,6 @@ export function AIScreen({
   const [thinkingLabel, setThinkingLabel] = useState("Checking your data...");
   const [streamingContent, setStreamingContent] = useState("");
   const [hasSentFirstMessage, setHasSentFirstMessage] = useState(false);
-  
-  // CHANGED: Use mounting state for safe time rendering
   const [greeting, setGreeting] = useState("Hello");
 
   const endRef = useRef<HTMLDivElement>(null);
