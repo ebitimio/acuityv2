@@ -40,7 +40,6 @@ async function ctx() {
   return { sb, user, workspaceId: ws.id };
 }
 
-// Helper to get all account IDs for the active workspace
 async function getWorkspaceAccountIds(sb: any, workspaceId: string): Promise<string[]> {
   const { data, error } = await sb.from("accounts").select("id").eq("workspace_id", workspaceId);
   if (error) throw error;
@@ -160,7 +159,9 @@ export async function createTransaction(i: {
   status?: "posted" | "pending";
   notes?: string;
 }) {
-  const { sb } = await ctx();
+  const { sb, workspaceId } = await ctx();
+
+  // 1. Insert the transaction
   const { error } = await sb.from("transactions").insert({
     account_id: i.account_id,
     amount_minor: toMinor(i.amount),
@@ -173,7 +174,22 @@ export async function createTransaction(i: {
     status: i.status ?? "posted",
     notes: i.notes ?? null,
   });
+  
   if (error) throw error;
+
+  // 2. Manually update the account balance to ensure it reflects immediately
+  // Fetch current balance
+  const { data: account } = await sb.from("accounts").select("balance_minor").eq("id", i.account_id).single();
+  if (account) {
+    const currentMinor = account.balance_minor ?? 0;
+    const amountMinor = toMinor(i.amount);
+    const newBalance = i.direction === "credit" ? currentMinor + amountMinor : currentMinor - amountMinor;
+
+    await sb.from("accounts").update({ 
+      balance_minor: newBalance, 
+      balance_as_of: i.date 
+    }).eq("id", i.account_id);
+  }
 }
 
 export async function updateTransaction(id: string, patch: { description_clean?: string; category_name?: string; notes?: string }) {
@@ -232,7 +248,7 @@ export async function transferFunds(fromAccountId: string, toAccountId: string, 
     direction: "debit",
     description_clean: desc,
     description_raw: desc,
-    category_name: "Transfers", // CHANGED
+    category_name: "Transfers",
     date: dateISO,
     status: "posted",
   });
@@ -244,11 +260,18 @@ export async function transferFunds(fromAccountId: string, toAccountId: string, 
     direction: "credit",
     description_clean: desc,
     description_raw: desc,
-    category_name: "Transfers", // CHANGED
+    category_name: "Transfers",
     date: dateISO,
     status: "posted",
   });
   if (e2) throw e2;
+
+  // Update balances manually for transfers
+  const { data: fromAcc } = await sb.from("accounts").select("balance_minor").eq("id", fromAccountId).single();
+  if (fromAcc) await sb.from("accounts").update({ balance_minor: (fromAcc.balance_minor ?? 0) - amountMinor }).eq("id", fromAccountId);
+
+  const { data: toAcc } = await sb.from("accounts").select("balance_minor").eq("id", toAccountId).single();
+  if (toAcc) await sb.from("accounts").update({ balance_minor: (toAcc.balance_minor ?? 0) + amountMinor }).eq("id", toAccountId);
 }
 
 /* ---------- accounts ---------- */
@@ -558,7 +581,6 @@ export async function submitBalanceCheckin(
   const accountName = acc?.name ?? "Account";
 
   // 1. Update the account's anchor balance directly in the accounts table
-  // This ensures the balance is exactly what the user typed, without creating a fake transaction.
   const { error: anchorErr } = await sb
     .from("accounts")
     .update({ 
@@ -569,7 +591,7 @@ export async function submitBalanceCheckin(
   if (anchorErr) throw anchorErr;
 
   // 2. Log the check-in for history
-  const resolution = "reanchor_only"; // We no longer log transactions, we just reanchor.
+  const resolution = "reanchor_only";
 
   const { data: chk, error: chkErr } = await sb
     .from("balance_checkins")
@@ -580,7 +602,7 @@ export async function submitBalanceCheckin(
       reported_minor: reported,
       difference_minor: diff,
       resolution,
-      adjustment_txn_id: null, // No transaction ID anymore
+      adjustment_txn_id: null, 
     })
     .select("id")
     .single();
@@ -627,7 +649,7 @@ export async function getCategorySpend(sinceISO: string): Promise<CategorySpendR
     .or(NOT_SPLIT)
     .eq("direction", "debit")
     .eq("status", "posted")
-    .neq("category_name", "Transfers") // CHANGED
+    .neq("category_name", "Transfers") 
     .gte("date", sinceISO)
     .limit(2000);
   if (error) throw error;
