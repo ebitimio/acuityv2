@@ -63,9 +63,12 @@ export function AccountsScreen({
   const load = async () => {
     if (!activeWs?.id) return;
     clearDataCache();
+    // CHANGED: Force fresh fetch
     const [a, s] = await Promise.all([getAccounts(), getAssets()]);
     setAccounts(a);
     setAssets(s);
+    
+    // Update the checkin modal data if it's open
     if (checkinAccount) {
       const refreshed = a.find((x) => x.id === checkinAccount.id);
       if (refreshed) setCheckinAccount(refreshed);
@@ -160,13 +163,11 @@ export function AccountsScreen({
 
       <div className="px-4 pt-6 space-y-6">
         
-        {/* Total Net Worth Hero - Changed to var(--brand) */}
         <div className="p-6 rounded-[24px] shadow-xl text-center" style={{ background: "var(--brand)" }}>
           <p className="text-[13px] text-black/70 mb-1 font-medium">Total Net</p>
           <p className="text-[36px] font-bold tabular text-black">{fmt(netWorth)}</p>
         </div>
 
-        {/* Stacked ATM Cards */}
         <div>
           <h3 className="text-[15px] font-semibold mb-3 px-1 text-[var(--text-1)]">Your Accounts</h3>
           <div className="relative flex flex-col">
@@ -202,7 +203,6 @@ export function AccountsScreen({
           </div>
         </div>
 
-        {/* Assets & Liabilities */}
         <div>
           <div className="flex items-center justify-between mb-3 px-1">
             <h3 className="text-[15px] font-semibold text-[var(--text-1)]">Offline Assets & Liabilities</h3>
@@ -263,14 +263,14 @@ export function AccountsScreen({
       <TransferSheet
         isOpen={isTransferOpen}
         onClose={() => setIsTransferOpen(false)}
-        onSuccess={() => { load(); }} // <-- Refresh after transfer
+        onSuccess={() => { load(); }}
         accounts={accounts}
       />
 
       <CryptoSheet
         isOpen={isCryptoOpen}
         onClose={() => setIsCryptoOpen(false)}
-        onSuccess={() => { load(); }} // <-- Refresh after adding crypto
+        onSuccess={() => { load(); }}
       />
 
       <Modal open={modal === "account"} onClose={() => setModal(null)} title="Add Account">
@@ -308,10 +308,7 @@ export function AccountsScreen({
       <BalanceCheckinSheet
         isOpen={!!checkinAccount}
         onClose={() => setCheckinAccount(null)}
-        onSaved={() => {
-          // CHANGED: Force the account screen to re-fetch so the new balance shows instantly
-          load();
-        }}
+        onSaved={load}
         account={checkinAccount ? { id: checkinAccount.id, name: checkinAccount.name, current_minor: checkinAccount.current_minor ?? checkinAccount.balance_minor } : null}
       />
     </div>

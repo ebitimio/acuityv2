@@ -43,6 +43,7 @@ export function BalanceCheckinSheet({ isOpen, onClose, onSaved, account }: Props
         toast("Balance confirmed");
       }
       
+      // CHANGED: Call onSaved FIRST to trigger the parent refresh, then close
       onSaved();
       onClose();
       setReported(0);
@@ -58,7 +59,7 @@ export function BalanceCheckinSheet({ isOpen, onClose, onSaved, account }: Props
       <div className="space-y-4">
         <div className="rounded-2xl bg-[var(--surface-1)] border border-[var(--line)] p-4">
           <p className="text-[12px] text-[var(--text-3)] mb-1">Acuity's expected balance</p>
-          <p className="text-[20px] font-bold tabular">{fmt(expected)}</p>
+          <p className="text-[20px] font-bold tabular text-[var(--text-1)]">{fmt(expected)}</p>
         </div>
 
         <CurrencyField
