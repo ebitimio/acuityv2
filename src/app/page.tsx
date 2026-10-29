@@ -558,7 +558,8 @@ export default function SandboxPage() {
 
   const visibleTransactions = transactions.filter((t) => {
     if (t.category_name === "Adjustment") return false;
-
+    if (t.category_name === "Transfers") return false; // CHANGED
+    
     if (txnFilter === "all") return true;
     if (txnFilter === "credit") return t.direction === "credit";
     if (txnFilter === "debit") return t.direction === "debit";
@@ -568,7 +569,6 @@ export default function SandboxPage() {
   const topCategory = categoryRows[0]?.category ?? null;
   const topCategoryAmount = categoryRows[0]?.total_minor ? categoryRows[0].total_minor / 100 : 0;
 
-  // ISOLATION FIX: Render the AI screen completely outside of PullToRefresh
   if (activeScreen === "ai") {
     return (
       <AIScreen
@@ -815,7 +815,7 @@ export default function SandboxPage() {
         activeTab={activeScreen === "budget" ? "home" : (activeScreen as TabId)}
         onTabChange={handleTabChange}
         onAddClick={handleAddClick}
-        isHidden={navHidden} // FIXED: Removed activeScreen === "ai" because the early return makes it impossible here
+        isHidden={navHidden}
       />
 
       <ImportSheet isOpen={isImportOpen} onClose={() => setIsImportOpen(false)} onImportSuccess={() => { refreshData(); toast("Statement imported"); }} />

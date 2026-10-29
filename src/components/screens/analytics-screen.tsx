@@ -63,7 +63,8 @@ export function AnalyticsScreen({ onBack, onNavigateTransactions }: { onBack: ()
     if (selectedAccountId !== "all") {
       base = base.filter(t => t.account_id === selectedAccountId);
     }
-    return base.filter(t => t.category_name !== "Transfer");
+    // CHANGED: Exclude "Transfers" and "Adjustment" from spending calculations
+    return base.filter(t => t.category_name !== "Transfers" && t.category_name !== "Adjustment");
   }, [txns, selectedAccountId]);
 
   const totalExpense = filteredTxns.filter(t => t.direction === "debit").reduce((s, t) => s + t.amount_minor, 0) / 100;

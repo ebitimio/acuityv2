@@ -232,7 +232,7 @@ export async function transferFunds(fromAccountId: string, toAccountId: string, 
     direction: "debit",
     description_clean: desc,
     description_raw: desc,
-    category_name: "Transfer",
+    category_name: "Transfers", // CHANGED
     date: dateISO,
     status: "posted",
   });
@@ -244,7 +244,7 @@ export async function transferFunds(fromAccountId: string, toAccountId: string, 
     direction: "credit",
     description_clean: desc,
     description_raw: desc,
-    category_name: "Transfer",
+    category_name: "Transfers", // CHANGED
     date: dateISO,
     status: "posted",
   });
@@ -627,6 +627,7 @@ export async function getCategorySpend(sinceISO: string): Promise<CategorySpendR
     .or(NOT_SPLIT)
     .eq("direction", "debit")
     .eq("status", "posted")
+    .neq("category_name", "Transfers") // CHANGED
     .gte("date", sinceISO)
     .limit(2000);
   if (error) throw error;
