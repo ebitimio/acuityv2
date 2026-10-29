@@ -64,19 +64,18 @@ export function SafeToSpendHero({
 
   const actualIncome = expectedIncome - totalObligations;
 
-  // Use var(--brand) so it changes dynamically
   const heroBg = "var(--brand)";
-
   const displayValue = hidden ? "₦••••••" : fmt(netAcross);
 
   return (
     <div className="p-5 rounded-[24px]" style={{ background: heroBg }}>
-      <p className="text-center text-[13px] font-semibold text-black/70">
+      {/* CHANGED: Text is now solid black or black/80 for contrast on lime */}
+      <p className="text-center text-[13px] font-semibold text-black/80">
         {periodLabel}
       </p>
 
       <div className="mt-3">
-        <p className="text-[12px] text-black/70">Net across accounts</p>
+        <p className="text-[12px] text-black/80">Net across accounts</p>
         
         <div className="mt-1 flex items-center gap-2">
           <div className="text-[38px] font-bold leading-none tracking-tight text-black">
@@ -97,7 +96,7 @@ export function SafeToSpendHero({
           </button>
         </div>
 
-        <p className="mt-1 text-[12px] text-black/70">
+        <p className="mt-1 text-[12px] text-black/80">
           {hidden ? "₦•••• spent this month" : `${fmt(spentThisMonth)} spent this month`}
         </p>
       </div>
@@ -113,13 +112,13 @@ export function SafeToSpendHero({
 
       <div className="mt-4 grid grid-cols-2 gap-3">
         <div>
-          <p className="text-[11px] text-black/70">Income</p>
-          <p className="mt-0.5 text-[15px] font-semibold" style={{ color: "#22c55e" }}>
+          <p className="text-[11px] text-black/80">Income</p>
+          <p className="mt-0.5 text-[15px] font-semibold text-black">
             {hidden ? "₦••••" : fmt(actualIncome > 0 ? actualIncome : 0)}
           </p>
         </div>
         <div>
-          <p className="text-[11px] text-black/70">Net liquid assets</p>
+          <p className="text-[11px] text-black/80">Net liquid assets</p>
           <p className="mt-0.5 text-[15px] font-semibold text-black">
             {hidden ? "₦••••" : fmt(liquidAssets)}
           </p>
@@ -133,8 +132,8 @@ export function SafeToSpendHero({
         />
         <div className="min-w-0">
           <div className="flex items-baseline justify-between gap-2">
-            <p className="truncate text-[11px] text-black/70">Monthly budget</p>
-            <p className="tabular shrink-0 text-[11px] text-black/80">
+            <p className="truncate text-[11px] text-black/80">Monthly budget</p>
+            <p className="tabular shrink-0 text-[11px] text-black/90">
               {hasBudget ? (hidden ? "₦•••• left" : `${fmt(budgetRemaining)} left`) : "Not set"}
             </p>
           </div>
@@ -146,8 +145,8 @@ export function SafeToSpendHero({
           </div>
           
           <div className="mt-2 flex items-baseline justify-between gap-2">
-            <p className="truncate text-[11px] text-black/70">Cycle progress</p>
-            <p className="tabular shrink-0 text-[11px] text-black/80">
+            <p className="truncate text-[11px] text-black/80">Cycle progress</p>
+            <p className="tabular shrink-0 text-[11px] text-black/90">
               {daysUntilIncome > 0 ? `${daysUntilIncome}d until ${nextIncomeDate}` : "No income set"}
             </p>
           </div>

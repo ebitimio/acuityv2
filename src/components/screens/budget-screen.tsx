@@ -73,7 +73,6 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
       const accs = await getAccounts();
       setAccounts(accs ?? []);
       if (accs && accs.length > 0) {
-        // Only default to first account if the currently selected one isn't in the list
         if (!selectedAccount || !accs.some(a => a.id === selectedAccount)) {
           setSelectedAccount(accs[0].id);
         }
@@ -86,7 +85,6 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
   };
 
   useEffect(() => { 
-    // Reset local state when workspace changes
     setMetrics(ZERO_METRICS);
     setTxns([]);
     setAccounts([]);
@@ -142,8 +140,9 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
   };
 
   const filteredTxns = selectedAccount
-    ? txns.filter((t) => t.account_id === selectedAccount)
+    ? txns.filter((t) => t.account_id === selectedAccount && t.category_name !== "Transfers" && t.category_name !== "Adjustment")
     : [];
+  
   const spent = filteredTxns.filter((t) => t.direction === "debit").reduce((s, t) => s + t.amount_minor, 0) / 100;
   const totalBudget = Object.values(categoryLimits).reduce((s, v) => s + v, 0);
   const pct = totalBudget > 0 ? Math.min((spent / totalBudget) * 100, 100) : 0;
@@ -199,7 +198,8 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
                 key={a.id}
                 onClick={() => setSelectedAccount(a.id)}
                 className={`px-3 py-1.5 rounded-full text-[12px] font-semibold whitespace-nowrap shrink-0 ${
-                  selectedAccount === a.id ? "bg-[var(--brand)] text-[var(--text-1)]" : "bg-[var(--fill-2)] text-[var(--text-2)]"
+                  // CHANGED: Forced active pill text to black for contrast on lime
+                  selectedAccount === a.id ? "bg-[var(--brand)] text-black" : "bg-[var(--fill-2)] text-[var(--text-2)]"
                 }`}
               >
                 {a.name}
@@ -219,22 +219,22 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
           <div className="rounded-3xl bg-[var(--surface-2)] border border-[var(--line)] p-6 flex flex-col items-center">
             <GaugeArc percentage={pct} />
             <p className="text-[13px] text-[var(--text-2)] mt-4">Left to spend</p>
-            <p className="text-[28px] font-bold tabular">{fmt(Math.max(totalBudget - spent, 0))}</p>
+            <p className="text-[28px] font-bold tabular text-[var(--text-1)]">{fmt(Math.max(totalBudget - spent, 0))}</p>
             <div className="w-full flex justify-between mt-4 pt-4 border-t border-[var(--line)] text-[13px]">
               <div>
                 <p className="text-[var(--text-3)]">Total budget</p>
-                <p className="font-semibold">{fmt(totalBudget)}</p>
+                <p className="font-semibold text-[var(--text-1)]">{fmt(totalBudget)}</p>
               </div>
               <div className="text-right">
                 <p className="text-[var(--text-3)]">Spent</p>
-                <p className="font-semibold">{fmt(spent)}</p>
+                <p className="font-semibold text-[var(--text-1)]">{fmt(spent)}</p>
               </div>
             </div>
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-3 px-1">
-              <h3 className="text-[15px] font-semibold">Category budgets</h3>
+              <h3 className="text-[15px] font-semibold text-[var(--text-1)]">Category budgets</h3>
               <button onClick={() => setIsBudgetEditorOpen(true)} className="text-[13px] text-[var(--brand)] font-semibold flex items-center gap-1">
                 <Plus size={14} /> Edit amounts
               </button>
@@ -249,7 +249,7 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
                       <Icon size={16} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[14px] font-medium truncate">{row.name}</p>
+                      <p className="text-[14px] font-medium truncate text-[var(--text-1)]">{row.name}</p>
                       <p className="text-[11px] text-[var(--text-3)] tabular">
                         {fmt(row.spent)} {row.limit > 0 ? `of ${fmt(row.limit)}` : "· no limit set"}
                       </p>
@@ -290,7 +290,7 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
                 value={newCatName}
                 onChange={(e) => setNewCatName(e.target.value)}
                 placeholder="e.g. Church, Black tax"
-                className="flex-1 h-11 px-3 rounded-xl bg-[var(--surface-1)] border border-[var(--line-strong)] text-[14px]"
+                className="flex-1 h-11 px-3 rounded-xl bg-[var(--surface-1)] border border-[var(--line-strong)] text-[14px] text-[var(--text-1)]"
                 style={{ fontSize: 16 }}
               />
               <Button onClick={addCat} className="!w-auto px-4 !h-11">Add</Button>
@@ -298,7 +298,7 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
             <div className="space-y-1">
               {categories.map((c) => (
                 <div key={c.id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-[var(--surface-1)]">
-                  <span className="text-[14px]">{c.name}</span>
+                  <span className="text-[14px] text-[var(--text-1)]">{c.name}</span>
                   <button onClick={() => removeCat(c.id, c.name)} className="text-[var(--danger)]"><Trash2 size={14} /></button>
                 </div>
               ))}
