@@ -263,14 +263,14 @@ export function AccountsScreen({
       <TransferSheet
         isOpen={isTransferOpen}
         onClose={() => setIsTransferOpen(false)}
-        onSuccess={load}
+        onSuccess={() => { load(); }} // <-- Refresh after transfer
         accounts={accounts}
       />
 
       <CryptoSheet
         isOpen={isCryptoOpen}
         onClose={() => setIsCryptoOpen(false)}
-        onSuccess={load}
+        onSuccess={() => { load(); }} // <-- Refresh after adding crypto
       />
 
       <Modal open={modal === "account"} onClose={() => setModal(null)} title="Add Account">
@@ -308,7 +308,10 @@ export function AccountsScreen({
       <BalanceCheckinSheet
         isOpen={!!checkinAccount}
         onClose={() => setCheckinAccount(null)}
-        onSaved={load}
+        onSaved={() => {
+          // CHANGED: Force the account screen to re-fetch so the new balance shows instantly
+          load();
+        }}
         account={checkinAccount ? { id: checkinAccount.id, name: checkinAccount.name, current_minor: checkinAccount.current_minor ?? checkinAccount.balance_minor } : null}
       />
     </div>

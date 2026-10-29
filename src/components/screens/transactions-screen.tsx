@@ -25,7 +25,10 @@ export function TransactionsScreen({ onBack, onDataChanged }: { onBack: () => vo
     const d = new Date();
     d.setMonth(d.getMonth() - 6);
     const data = await getTransactionsSince(d.toISOString());
-    setTxns(data || []);
+    
+    // CHANGED: Filter out internal transfers right when they are fetched
+    const filtered = (data || []).filter(t => t.category_name !== "Transfers" && t.category_name !== "Adjustment");
+    setTxns(filtered);
   };
 
   useEffect(() => { 

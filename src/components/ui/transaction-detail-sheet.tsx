@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Modal } from "./modal";
 import { Field, SelectField, Button } from "./form";
 import { CATEGORY_NAMES, getCategory } from "@/lib/categories";
@@ -19,6 +19,13 @@ export function TransactionDetailSheet({ isOpen, onClose, onSaved, transaction }
   const { fmt } = useCurrency();
   const toast = useToast();
 
+  useEffect(() => {
+    if (transaction) {
+      setDesc(transaction.description_clean || "");
+      setCategory(transaction.category_name || "");
+    }
+  }, [transaction]);
+
   if (!transaction) return null;
   const cat = getCategory(transaction.category_name);
 
@@ -28,8 +35,8 @@ export function TransactionDetailSheet({ isOpen, onClose, onSaved, transaction }
     setBusy(true);
     try {
       const patch: any = {};
-      if (desc) patch.description_clean = desc;
-      if (category) patch.category_name = category;
+      if (desc && desc !== transaction.description_clean) patch.description_clean = desc;
+      if (category && category !== transaction.category_name) patch.category_name = category;
       if (Object.keys(patch).length) await updateTransaction(transaction.id, patch);
       toast("Saved");
       onSaved(); onClose(); reset();
@@ -59,6 +66,13 @@ export function TransactionDetailSheet({ isOpen, onClose, onSaved, transaction }
     finally { setBusy(false); }
   };
 
+  // SAFETY: If the transaction category is "Transfers" or "Split Parent" but not in CATEGORY_NAMES, 
+  // we add it to the list of options temporarily so the dropdown doesn't incorrectly default to Groceries.
+  const availableCategories = Array.from(new Set([
+    ...CATEGORY_NAMES,
+    transaction.category_name || ""
+  ])).filter(Boolean);
+
   return (
     <Modal open={isOpen} onClose={() => { onClose(); reset(); }} title={mode === "split" ? "Split Transaction" : "Transaction"}>
       {mode === "view" ? (
@@ -69,19 +83,24 @@ export function TransactionDetailSheet({ isOpen, onClose, onSaved, transaction }
             </div>
             <p className="text-[17px] font-medium">{transaction.description_clean || transaction.description_raw}</p>
             <p className={`text-[32px] font-bold tabular ${transaction.direction === "credit" ? "text-[var(--gain)]" : ""}`}>
-              {/* FIX: show + for credit, - for debit */}
               {transaction.direction === "credit" ? "+" : "-"}
               {fmt(transaction.amount_minor / 100)}
             </p>
           </div>
 
           <Field label="Description" value={desc} onChange={(e) => setDesc(e.target.value)} placeholder={transaction.description_clean || transaction.description_raw || ""} />
-          <SelectField label="Category" value={category || (transaction.category_name ?? "Uncategorized")} onChange={(e) => setCategory(e.target.value)}>
-            {CATEGORY_NAMES.map((c) => <option key={c}>{c}</option>)}
+          
+          <SelectField label="Category" value={category} onChange={(e) => setCategory(e.target.value)}>
+            {availableCategories.map((c) => <option key={c}>{c}</option>)}
           </SelectField>
 
           <Button loading={busy} onClick={save}>Save Changes</Button>
-          <Button variant="ghost" onClick={() => setMode("split")}>Split Transaction</Button>
+          
+          {/* Only show split if it's not already a split or transfer */}
+          {transaction.category_name !== "Split Parent" && transaction.category_name !== "Transfers" && (
+            <Button variant="ghost" onClick={() => setMode("split")}>Split Transaction</Button>
+          )}
+          
           <Button variant="danger" loading={busy} onClick={del}>Delete</Button>
         </div>
       ) : (
