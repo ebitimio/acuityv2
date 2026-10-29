@@ -43,13 +43,21 @@ export async function POST(req: Request) {
       .gte("date", prevStart.toISOString())
       .lt("date", prevEnd.toISOString());
 
-    // 3. Calculate metrics
+    // 3. Calculate metrics (CHANGED: Filter out bad categories)
     const calcMetrics = (txns: any[]) => {
       let income = 0, spent = 0;
       const byCat: Record<string, number> = {};
-      for (const t of txns ?? []) {
-        if (t.direction === "credit") income += t.amount_minor;
-        else {
+      
+      const validTxns = (txns ?? []).filter((t: any) => 
+        t.category_name !== "Transfers" && 
+        t.category_name !== "Adjustment" && 
+        t.category_name !== "Split Parent"
+      );
+
+      for (const t of validTxns) {
+        if (t.direction === "credit") {
+          income += t.amount_minor;
+        } else {
           spent += t.amount_minor;
           const c = t.category_name || "Uncategorized";
           byCat[c] = (byCat[c] || 0) + t.amount_minor;
@@ -99,7 +107,10 @@ export async function POST(req: Request) {
       spent: current.spent,
       prevIncome: prev.income,
       prevSpent: prev.spent,
-      topCats: Object.entries(current.byCat).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([name, amount]) => ({ name, amount: amount / 100 })),
+      topCats: Object.entries(current.byCat)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([name, amount]) => ({ name, amount: amount / 100 })),
       aiSummary,
     });
 
