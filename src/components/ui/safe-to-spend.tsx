@@ -69,7 +69,6 @@ export function SafeToSpendHero({
 
   return (
     <div className="p-5 rounded-[24px]" style={{ background: heroBg }}>
-      {/* CHANGED: Text is now solid black or black/80 for contrast on lime */}
       <p className="text-center text-[13px] font-semibold text-black/80">
         {periodLabel}
       </p>

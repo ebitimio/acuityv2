@@ -5,9 +5,10 @@ import { createClient } from "@/lib/supabase/client";
 import {
   getHomeMetrics, getRecentTransactions, deleteTransaction, clearDataCache,
   getSetupStatus, completeOnboarding, getSafeToSpend,
-  getCurrentCycle, getCategorySpend, getPeriodLabel, getAccounts,
+  getCurrentCycle, getCategorySpend, getPeriodLabel, getAccounts, getTransactionsSince,
   type SetupStatus, type SafeToSpend, type CategorySpendRow,
 } from "@/lib/supabase/database";
+import { startOfMonthISO } from "@/lib/dates";
 import { useWorkspace } from "@/lib/workspace";
 import type { Txn, HomeMetrics, Account } from "@/lib/types";
 import { AuthScreen } from "@/components/screens/auth-screen";
@@ -99,6 +100,9 @@ export default function SandboxPage() {
   const [transactions, setTransactions] = useState<Txn[]>([]);
   const [categoryRows, setCategoryRows] = useState<CategorySpendRow[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
+  
+  // CHANGED: Store the calculated spent amount for the main account
+  const [heroSpent, setHeroSpent] = useState(0);
 
   const [activeCardIndex, setActiveCardIndex] = useState(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -277,11 +281,26 @@ export default function SandboxPage() {
 
       const total = (accs ?? []).reduce((s, a) => s + (a.current_minor ?? a.balance_minor), 0) / 100;
       setLiquidAssets(total);
+
+      // CHANGED: Calculate the exact "Spent" for the FIRST account (Main) ignoring transfers
+      const firstAccountId = accs?.[0]?.id;
+      if (firstAccountId) {
+        const monthTxns = await getTransactionsSince(startOfMonthISO());
+        const validTxns = monthTxns.filter(t => 
+          t.account_id === firstAccountId && 
+          t.direction === "debit" && 
+          t.category_name !== "Transfers" && 
+          t.category_name !== "Adjustment"
+        );
+        const totalSpent = validTxns.reduce((sum, tx) => sum + tx.amount_minor, 0) / 100;
+        setHeroSpent(totalSpent);
+      }
     } catch (e: any) {
       setMetrics(ZERO_METRICS);
       setTransactions([]);
       setAccounts([]);
       setLiquidAssets(0);
+      setHeroSpent(0);
     }
 
     try {
@@ -371,6 +390,7 @@ export default function SandboxPage() {
     setSafeToSpend(null);
     setLiquidAssets(0);
     setAccounts([]);
+    setHeroSpent(0);
   }, [activeWs?.id]);
 
   useEffect(() => {
@@ -545,7 +565,6 @@ export default function SandboxPage() {
 
   const m = metrics ?? ZERO_METRICS;
   const netAcrossAccounts = m.net_worth_minor / 100;
-  const spentThisMonth = m.total_spent_minor / 100;
   const incomeThisMonth = m.total_income_minor / 100;
   const budgetLimit = m.budget_limit_minor / 100;
   const showChecklist = !!setupStatus && !setupStatus.is_complete && !checklistDismissed;
@@ -558,7 +577,7 @@ export default function SandboxPage() {
 
   const visibleTransactions = transactions.filter((t) => {
     if (t.category_name === "Adjustment") return false;
-    if (t.category_name === "Transfers") return false; // CHANGED
+    if (t.category_name === "Transfers") return false;
     
     if (txnFilter === "all") return true;
     if (txnFilter === "credit") return t.direction === "credit";
@@ -657,7 +676,18 @@ export default function SandboxPage() {
               />
 
               <div className="flex flex-col gap-6 px-5 pt-2">
-                <SafeToSpendHero data={safeToSpend} netAcross={netAcrossAccounts} liquidAssets={liquidAssets} spentThisMonth={spentThisMonth} incomeThisMonth={incomeThisMonth} budgetLimit={budgetLimit} periodLabel={periodLabel} daysUntilIncome={daysUntilIncome} nextIncomeDate={nextIncomeDate} />
+                {/* CHANGED: Pass heroSpent instead of spentThisMonth to match the Budget screen math */}
+                <SafeToSpendHero 
+                  data={safeToSpend} 
+                  netAcross={netAcrossAccounts} 
+                  liquidAssets={liquidAssets} 
+                  spentThisMonth={heroSpent} 
+                  incomeThisMonth={incomeThisMonth} 
+                  budgetLimit={budgetLimit} 
+                  periodLabel={periodLabel} 
+                  daysUntilIncome={daysUntilIncome} 
+                  nextIncomeDate={nextIncomeDate} 
+                />
 
                 {accounts.length > 0 && (
                   <motion.button
