@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { ScreenHeader, IconButton } from "@/components/ui/screen-header";
 import { Plus, Trash2, ArrowRightLeft, TrendingUp, Scale, Coins, Pencil, Link as LinkIcon, Loader2 } from "lucide-react";
 import {
@@ -19,7 +19,6 @@ import { useWorkspace } from "@/lib/workspace";
 import type { Account, Asset } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-// @ts-expect-error Mono Connect does not ship with types
 import Connect from '@mono.co/connect.js';
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
@@ -58,43 +57,14 @@ export function AccountsScreen({
   const toast = useToast();
   const { active: activeWs } = useWorkspace();
 
-  useEffect(() => {
-    if (autoOpenAddAccount) {
-      setModal("account");
-      onAutoOpenHandled?.();
-    }
-  }, [autoOpenAddAccount, onAutoOpenHandled]);
+  const publicKey = process.env.NEXT_PUBLIC_MONO_PUBLIC_KEY;
 
-  const load = async () => {
-    if (!activeWs?.id) return;
-    clearDataCache();
-    const [a, s] = await Promise.all([getAccounts(), getAssets()]);
-    setAccounts(a);
-    setAssets(s);
-    if (checkinAccount) {
-      const refreshed = a.find((x) => x.id === checkinAccount.id);
-      if (refreshed) setCheckinAccount(refreshed);
-    }
-  };
-
-  useEffect(() => { 
-    setAccounts([]);
-    setAssets([]);
-    setExpandedCard(null);
-    load(); 
-  }, [activeWs?.id]);
-
-  const handleConnectBank = () => {
-    const publicKey = process.env.NEXT_PUBLIC_MONO_PUBLIC_KEY;
-    if (!publicKey) {
-      toast("Mono API key missing", "err");
-      return;
-    }
-
-    setIsConnecting(true);
+  // Create the Mono instance ONCE when the component mounts.
+  const monoConnect = useMemo(() => {
+    if (!publicKey) return null;
     
     try {
-      const connect = new Connect({
+      return new Connect({
         key: publicKey,
         scope: "auth",
         data: {
@@ -127,8 +97,47 @@ export function AccountsScreen({
           console.log("Mono window closed");
         },
       });
-      
-      connect.open();
+    } catch (e) {
+      console.error("Failed to initialize Mono", e);
+      return null;
+    }
+  }, [publicKey, userName]); 
+
+  useEffect(() => {
+    if (autoOpenAddAccount) {
+      setModal("account");
+      onAutoOpenHandled?.();
+    }
+  }, [autoOpenAddAccount, onAutoOpenHandled]);
+
+  const load = async () => {
+    if (!activeWs?.id) return;
+    clearDataCache();
+    const [a, s] = await Promise.all([getAccounts(), getAssets()]);
+    setAccounts(a);
+    setAssets(s);
+    if (checkinAccount) {
+      const refreshed = a.find((x) => x.id === checkinAccount.id);
+      if (refreshed) setCheckinAccount(refreshed);
+    }
+  };
+
+  useEffect(() => { 
+    setAccounts([]);
+    setAssets([]);
+    setExpandedCard(null);
+    load(); 
+  }, [activeWs?.id]);
+
+  const handleConnectBank = () => {
+    if (!monoConnect) {
+      toast("Mono failed to initialize. Check console.", "err");
+      return;
+    }
+
+    setIsConnecting(true);
+    try {
+      monoConnect.open();
     } catch (err: any) {
       setIsConnecting(false);
       console.error("Mono Launch Error:", err);
