@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ScreenHeader, IconButton } from "@/components/ui/screen-header";
-import { Plus, Trash2, ArrowRightLeft, TrendingUp, Scale, Coins, Pencil, Link as LinkIcon } from "lucide-react";
+import { Plus, Trash2, ArrowRightLeft, TrendingUp, Scale, Coins, Pencil, Link as LinkIcon, Loader2 } from "lucide-react";
 import {
   getAccounts, createAccount, deleteAccount, getAssets, addAsset, updateAsset, deleteAsset, clearDataCache,
 } from "@/lib/supabase/database";
@@ -21,6 +21,12 @@ import { cn } from "@/lib/utils";
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
+declare global {
+  interface Window {
+    Mono: any;
+  }
+}
+
 export function AccountsScreen({ 
   onBack, 
   userName = "there",
@@ -38,6 +44,8 @@ export function AccountsScreen({
   const [checkinAccount, setCheckinAccount] = useState<Account | null>(null);
   const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [isCryptoOpen, setIsCryptoOpen] = useState(false);
+  
+  const [isConnecting, setIsConnecting] = useState(false);
   
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [editingAssetId, setEditingAssetId] = useState<string | null>(null);
@@ -79,9 +87,76 @@ export function AccountsScreen({
     load(); 
   }, [activeWs?.id]);
 
-  // Simple redirect to the backend link generator
   const handleConnectBank = () => {
-    window.location.href = "/connect";
+    const publicKey = process.env.NEXT_PUBLIC_MONO_PUBLIC_KEY;
+    if (!publicKey) {
+      toast("Mono API key missing", "err");
+      return;
+    }
+
+    // If Mono is already loaded, just open it
+    if (window.Mono) {
+      openMonoWidget(publicKey);
+      return;
+    }
+
+    // Otherwise, load the script dynamically right now
+    setIsConnecting(true);
+    const script = document.createElement("script");
+    script.src = "https://connect.withmono.com/connect.js";
+    script.async = true;
+    
+    script.onload = () => {
+      setIsConnecting(false);
+      if (window.Mono) {
+        openMonoWidget(publicKey);
+      } else {
+        toast("Mono failed to initialize.", "err");
+      }
+    };
+    
+    script.onerror = () => {
+      setIsConnecting(false);
+      toast("Failed to reach Mono. Check your internet connection.", "err");
+    };
+    
+    document.body.appendChild(script);
+  };
+
+  const openMonoWidget = (publicKey: string) => {
+    try {
+      const connect = new (window as any).Mono({
+        key: publicKey,
+        onSuccess: async (response: any) => {
+          try {
+            toast("Bank linked! Syncing account details...");
+            // Note: We are still using the API route to exchange the code.
+            // If Mono still blocks this, we might need a different exchange method.
+            const res = await fetch("/api/mono/exchange", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ code: response.code }),
+            });
+            const data = await res.json();
+            
+            if (data.error) throw new Error(data.error);
+            
+            toast("Account synced successfully!");
+            load(); 
+          } catch (e: any) {
+            toast(e.message || "Failed to link account", "err");
+          }
+        },
+        onClose: () => {
+          console.log("Mono window closed");
+        },
+      });
+      
+      connect.open();
+    } catch (err: any) {
+      console.error("Mono Launch Error:", err);
+      toast(err.message || "Failed to launch Mono", "err");
+    }
   };
 
   const addAcc = async () => {
@@ -153,10 +228,12 @@ export function AccountsScreen({
             </IconButton>
             <button 
               onClick={handleConnectBank}
-              className="press flex h-9 px-3 items-center justify-center rounded-full text-[12px] font-bold gap-1"
+              disabled={isConnecting}
+              className="press flex h-9 px-3 items-center justify-center rounded-full text-[12px] font-bold gap-1 disabled:opacity-50"
               style={{ background: "var(--brand)", color: "var(--brand-ink)" }}
             >
-              <LinkIcon size={14} /> Connect
+              {isConnecting ? <Loader2 size={14} className="animate-spin" /> : <LinkIcon size={14} />}
+              {isConnecting ? "Loading..." : "Connect"}
             </button>
             <button 
               data-setup-btn="add-account" 

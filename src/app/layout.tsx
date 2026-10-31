@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import Script from "next/script";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 
@@ -47,12 +46,6 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-black text-white min-h-screen`}
       >
-        {/* Load Mono Script globally */}
-        <Script 
-          src="https://connect.withmono.com/connect.js" 
-          strategy="beforeInteractive" 
-        />
-        
         <Providers>{children}</Providers>
       </body>
     </html>
