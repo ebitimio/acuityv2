@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ScreenHeader, IconButton } from "@/components/ui/screen-header";
-import { Plus, Trash2, ArrowRightLeft, TrendingUp, Scale, Coins, Pencil, Link as LinkIcon } from "lucide-react";
+import { Plus, Trash2, ArrowRightLeft, TrendingUp, Scale, Coins, Pencil, Link as LinkIcon, Loader2 } from "lucide-react";
 import {
   getAccounts, createAccount, deleteAccount, getAssets, addAsset, updateAsset, deleteAsset, clearDataCache,
 } from "@/lib/supabase/database";
@@ -38,6 +38,9 @@ export function AccountsScreen({
   const [checkinAccount, setCheckinAccount] = useState<Account | null>(null);
   const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [isCryptoOpen, setIsCryptoOpen] = useState(false);
+  
+  // CHANGED: Added loading state for the connect button
+  const [isConnecting, setIsConnecting] = useState(false);
   
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [editingAssetId, setEditingAssetId] = useState<string | null>(null);
@@ -79,9 +82,21 @@ export function AccountsScreen({
     load(); 
   }, [activeWs?.id]);
 
-  const handleConnectBank = () => {
-    // Simply redirect to the Mono hosted page
-    window.location.href = "/connect";
+  // CHANGED: Use the API-based flow
+  const handleConnectBank = async () => {
+    setIsConnecting(true);
+    try {
+      const res = await fetch("/api/mono/create-link", { method: "POST" });
+      const data = await res.json();
+      
+      if (!res.ok) throw new Error(data.error || "Failed to create link");
+      
+      // Redirect to Mono's hosted page
+      window.location.href = data.url;
+    } catch (e: any) {
+      toast(e.message || "Failed to connect bank", "err");
+      setIsConnecting(false);
+    }
   };
 
   const addAcc = async () => {
@@ -153,10 +168,12 @@ export function AccountsScreen({
             </IconButton>
             <button 
               onClick={handleConnectBank}
-              className="press flex h-9 px-3 items-center justify-center rounded-full text-[12px] font-bold gap-1"
+              disabled={isConnecting}
+              className="press flex h-9 px-3 items-center justify-center rounded-full text-[12px] font-bold gap-1 disabled:opacity-50"
               style={{ background: "var(--brand)", color: "var(--brand-ink)" }}
             >
-              <LinkIcon size={14} /> Connect Bank
+              {isConnecting ? <Loader2 size={14} className="animate-spin" /> : <LinkIcon size={14} />}
+              {isConnecting ? "Redirecting..." : "Connect Bank"}
             </button>
             <button 
               data-setup-btn="add-account" 
