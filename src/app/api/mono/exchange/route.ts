@@ -31,9 +31,14 @@ export async function POST(req: Request) {
       throw new Error(exchangeData.message || "Failed to exchange code");
     }
 
-    const monoAccountId = exchangeData.id;
+    // CHANGED: Safely extract the ID whether it is nested or not
+    const monoAccountId = exchangeData.id || exchangeData.data?.id || exchangeData.data?._id;
 
-    // 2. Fetch account details (Back to /v2/ endpoint)
+    if (!monoAccountId) {
+      throw new Error("Could not find account ID in Mono response");
+    }
+
+    // 2. Fetch account details
     const detailsRes = await fetch(`https://api.withmono.com/v2/accounts/${monoAccountId}`, {
       headers: { 
         "mono-sec-key": key,
@@ -52,14 +57,18 @@ export async function POST(req: Request) {
     if (!ws) throw new Error("No workspace found");
 
     // 4. Save to Supabase
+    // Note: Mono's V2 details endpoint returns data inside a `data` object
+    const accountData = details.data || details;
+    const institutionData = accountData.institution || accountData.bank || {};
+
     const { data: newAccount, error: insertError } = await supabase
       .from("accounts")
       .insert({
         workspace_id: ws.id,
-        name: details.account?.name || "Linked Bank Account",
-        institution: details.institution?.name || "Mono",
+        name: accountData.name || accountData.account_name || "Linked Bank Account",
+        institution: institutionData.name || "Mono Bank",
         type: "checking",
-        balance_minor: Math.round((details.account?.balance || 0) * 100),
+        balance_minor: Math.round(Number(accountData.balance || 0) * 100),
         balance_as_of: new Date().toISOString(),
         mono_account_id: monoAccountId, 
       })

@@ -224,3 +224,78 @@ Acuity uses Framer Motion for:
 ## 9. Conclusion
 
 Acuity is more than a finance app — it is a **financial command center**. It combines the elegance of a premium mobile app with the intelligence of a personal CFO. Whether you are a young professional trying to survive to payday or a high-net-worth individual tracking land, crypto, and multi-account cash flow, Acuity gives you the clarity and confidence to make smarter money decisions every day.
+
+# Acuity: AI Wealth Manager
+
+Acuity is a mobile-first, AI-powered personal finance and wealth management PWA built for the Nigerian market. It combines manual tracking with automated bank linking (via Mono) and an intelligent AI advisor that analyzes your real financial data.
+
+## ✨ Features
+
+### Core Financial Tracking
+- **Accounts:** Create and manage multiple accounts (Current, Savings, Wallet, Domiciliary).
+- **Transactions:** Log manual transactions, split transactions across categories, and review recent activity.
+- **Internal Transfers:** Move money between accounts without affecting total spending analytics.
+- **Offline Assets & Liabilities:** Track land, crypto, and debts outside of your linked bank accounts.
+
+### Intelligent AI Advisor
+- **Powered by OpenAI (GPT-4o-mini):** Chat with an AI that has full context of your accounts, budgets, and transactions.
+- **Tool Calling:** The AI can calculate your safe-to-spend, detect subscriptions, audit bank charges, and estimate taxes.
+- **Propose Actions:** The AI suggests transactions or bills, but they only get recorded when you click "Confirm" on the action card.
+- **Context-Aware:** The AI knows which workspace you are in, your payday cycle, and your monthly budget.
+
+### Automated Bank Linking (Premium)
+- **Mono Integration:** Link your real Nigerian bank accounts securely via Mono Connect.
+- **Real-Time Sync:** Transactions and balances flow into Acuity automatically via Mono Webhooks.
+- **Read-Only:** Acuity uses Mono for read-only data access; it cannot debit or move your money.
+- **Sandbox Ready:** Fully tested against Mono's Sandbox environment.
+
+### Budgeting & Commitments
+- **Payday Cycles:** Set your salary day, and Acuity will calculate your budget cycle automatically.
+- **Category Budgets:** Set limits for Groceries, Transport, Bills, etc., with visual gauges.
+- **Recurring Bills & Income:** Track rent, subscriptions, and salary.
+- **Family Support (Black Tax):** Track monthly support sent to family members.
+- **Ajo Groups:** Manage cooperative savings circles with member tracking.
+
+### Analytics & Tax
+- **Spending Analytics:** View 30-day heatmaps, category breakdowns, and month-over-month comparisons.
+- **Nigerian Tax Estimator:** Calculate PIT with rent relief, pension, NHF, and NHIS deductions.
+- **Bank Charge Auditor:** Detects stamp duty, transfer fees, and duplicate charges.
+- **Monthly Report Card:** AI-generated summary of your financial habits over the last 30 days.
+
+### Workspaces & Security
+- **Multi-Workspace:** Manage personal and business finances separately.
+- **PIN Lock:** Secure the app with a 4-digit PIN and automatic idle lock.
+- **Biometric-ready:** Designed for PWA installation on iOS and Android.
+
+---
+
+## 🛠 Tech Stack
+
+- **Framework:** Next.js 16 (App Router, Turbopack)
+- **Language:** TypeScript
+- **Styling:** Tailwind CSS v4
+- **Animation:** Framer Motion
+- **Icons:** Lucide React
+- **Backend:** Supabase (PostgreSQL, Auth, RLS)
+- **AI:** OpenAI (GPT-4o-mini)
+- **Bank Linking:** Mono Connect (`@mono.co/connect.js`)
+- **Charts:** Custom SVG components
+- **Hosting:** Vercel
+- **Email:** Zoho Mail (Custom Domain: `acuityfinance.win`)
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js 20+
+- A Supabase project
+- An OpenAI API Key
+- A Mono account (for bank linking)
+
+### 1. Installation
+```bash
+git clone https://github.com/ebitimio/acuityv2.git
+cd acuityv2
+npm install "@mono.co/connect.js"
+npm install
