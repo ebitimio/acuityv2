@@ -49,7 +49,7 @@ export function AccountsScreen({
   const [balanceAsOf, setBalanceAsOf] = useState(todayISO());
   const [assetType, setAssetType] = useState<"asset" | "liability">("asset");
 
-  // --- NEW: Mono API State ---
+  // --- Mono API State ---
   const [institutions, setInstitutions] = useState<any[]>([]);
   const [selectedInstitution, setSelectedInstitution] = useState<any>(null);
   const [session, setSession] = useState<any>(null);
@@ -89,7 +89,7 @@ export function AccountsScreen({
     load(); 
   }, [activeWs?.id]);
 
-  // --- NEW: Mono Flow Handlers ---
+  // --- Mono Flow Handlers ---
   const handleOpenConnect = () => {
     setModal("connect");
     setSelectedInstitution(null);
@@ -98,7 +98,6 @@ export function AccountsScreen({
     setOtp("");
     setRequiresOtp(false);
     
-    // Fetch institutions
     fetch("/api/mono/institutions")
       .then(res => res.json())
       .then(data => setInstitutions(data.data || []))
@@ -112,7 +111,7 @@ export function AccountsScreen({
       const res = await fetch("/api/mono/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ institutionId: inst._id }),
+        body: JSON.stringify({ institutionId: inst._id || inst.id }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to start session");
@@ -425,7 +424,7 @@ export function AccountsScreen({
         account={checkinAccount ? { id: checkinAccount.id, name: checkinAccount.name, current_minor: checkinAccount.current_minor ?? checkinAccount.balance_minor } : null}
       />
 
-      {/* --- NEW: MONO API FLOW MODAL --- */}
+      {/* --- MONO API FLOW MODAL --- */}
       <Modal open={modal === "connect"} onClose={() => setModal(null)} title="Connect Bank">
         <div className="space-y-4 pb-4">
           
@@ -433,19 +432,29 @@ export function AccountsScreen({
             <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-2">
               <p className="text-[13px] text-[var(--text-2)] mb-2">Select your bank to link:</p>
               {institutions.length === 0 && <p className="text-center text-[13px] py-4">Loading banks...</p>}
-              {institutions.map((inst: any) => (
-                <button
-                  key={inst._id}
-                  onClick={() => handleSelectBank(inst)}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl border border-[var(--line)] bg-[var(--surface-1)] hover:bg-[var(--surface-2)] transition-colors"
-                >
-                  {/* Assuming inst.logo is a URL, if not we just use initial */}
-                  <div className="h-8 w-8 rounded-full bg-white flex items-center justify-center p-1">
-                    <img src={inst.logo || `https://ui-avatars.com/api/?name=${inst.name}`} alt={inst.name} className="h-full object-contain" />
-                  </div>
-                  <span className="font-semibold text-[14px] text-[var(--text-1)]">{inst.name}</span>
-                </button>
-              ))}
+              {institutions.map((inst: any) => {
+                // Safely extract the name and logo
+                const bankName = inst.name || inst.institution?.name || "Unknown Bank";
+                const bankLogo = inst.logo || inst.institution?.logo || `https://ui-avatars.com/api/?name=${encodeURIComponent(bankName)}`;
+
+                return (
+                  <button
+                    key={inst._id || inst.id}
+                    onClick={() => handleSelectBank(inst)}
+                    className="w-full flex items-center gap-3 p-3 rounded-xl border border-[var(--line)] bg-[var(--surface-1)] hover:bg-[var(--surface-2)] transition-colors"
+                  >
+                    <div className="h-8 w-8 rounded-full bg-white flex items-center justify-center p-1 shrink-0">
+                      <img 
+                        src={bankLogo} 
+                        alt={bankName} 
+                        className="h-full object-contain" 
+                        onError={(e) => { (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(bankName)}`; }}
+                      />
+                    </div>
+                    <span className="font-semibold text-[14px] text-[var(--text-1)]">{bankName}</span>
+                  </button>
+                );
+              })}
             </div>
           ) : requiresOtp ? (
             <div className="space-y-4">
@@ -460,8 +469,7 @@ export function AccountsScreen({
             </div>
           ) : (
             <div className="space-y-4">
-              <p className="text-[13px] text-[var(--text-2)]">Log in to {selectedInstitution.name}</p>
-              {/* Render dynamic fields from Mono */}
+              <p className="text-[13px] text-[var(--text-2)]">Log in to {selectedInstitution.name || "your bank"}</p>
               {session?.data?.ui?.form?.map((field: any) => (
                 <Field
                   key={field.name}
