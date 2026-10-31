@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ScreenHeader, IconButton } from "@/components/ui/screen-header";
-import { Plus, Trash2, ArrowRightLeft, TrendingUp, Scale, Coins, Pencil, Link as LinkIcon } from "lucide-react";
+import { Plus, Trash2, ArrowRightLeft, TrendingUp, Scale, Coins, Pencil, Link as LinkIcon, Loader2 } from "lucide-react";
 import {
   getAccounts, createAccount, deleteAccount, getAssets, addAsset, updateAsset, deleteAsset, clearDataCache,
 } from "@/lib/supabase/database";
@@ -45,6 +45,9 @@ export function AccountsScreen({
   const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [isCryptoOpen, setIsCryptoOpen] = useState(false);
   
+  // CHANGED: Added monoReady state
+  const [monoReady, setMonoReady] = useState(false);
+  
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [editingAssetId, setEditingAssetId] = useState<string | null>(null);
 
@@ -59,13 +62,22 @@ export function AccountsScreen({
   const toast = useToast();
   const { active: activeWs } = useWorkspace();
 
-  // Load Mono Script
+  // CHANGED: Robust script loading
   useEffect(() => {
+    if (window.Mono) {
+      setMonoReady(true);
+      return;
+    }
+    
     const script = document.createElement("script");
     script.src = "https://connect.withmono.com/connect.js";
     script.async = true;
+    script.onload = () => setMonoReady(true);
     document.body.appendChild(script);
-    return () => { document.body.removeChild(script); };
+    
+    return () => { 
+      // Don't remove the script on unmount to avoid breaking it if they navigate back and forth
+    };
   }, []);
 
   useEffect(() => {
@@ -99,35 +111,47 @@ export function AccountsScreen({
       toast("Mono API key missing", "err");
       return;
     }
-
-    // In a real app, you would check if the user is premium here.
-    // For now, it will launch for everyone.
+    if (!monoReady || !window.Mono) {
+      toast("Still loading Mono... please try again in a second.", "err");
+      return;
+    }
     
-    const connect = new window.Mono({
-      key: process.env.NEXT_PUBLIC_MONO_PUBLIC_KEY,
-      onSuccess: async (response: any) => {
-        try {
-          toast("Bank linked! Syncing account details...");
-          const res = await fetch("/api/mono/exchange", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ code: response.code }),
-          });
-          const data = await res.json();
-          
-          if (data.error) throw new Error(data.error);
-          
-          toast("Account synced successfully!");
-          load(); // Refresh the list
-        } catch (e: any) {
-          toast(e.message || "Failed to link account", "err");
-        }
-      },
-      onClose: () => {},
-      onEvent: (eventName: string, data: any) => {},
-    });
+    console.log("Opening Mono with key:", process.env.NEXT_PUBLIC_MONO_PUBLIC_KEY);
     
-    connect.open();
+    try {
+      const connect = new window.Mono({
+        key: process.env.NEXT_PUBLIC_MONO_PUBLIC_KEY,
+        onSuccess: async (response: any) => {
+          try {
+            toast("Bank linked! Syncing account details...");
+            const res = await fetch("/api/mono/exchange", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ code: response.code }),
+            });
+            const data = await res.json();
+            
+            if (data.error) throw new Error(data.error);
+            
+            toast("Account synced successfully!");
+            load(); // Refresh the list
+          } catch (e: any) {
+            toast(e.message || "Failed to link account", "err");
+          }
+        },
+        onClose: () => {
+            console.log("Mono window closed by user");
+        },
+        onEvent: (eventName: string, data: any) => {
+            console.log("Mono event:", eventName, data);
+        },
+      });
+      
+      connect.open();
+    } catch (err: any) {
+      console.error("Mono Launch Error:", err);
+      toast(err.message || "Failed to launch Mono", "err");
+    }
   };
 
   const addAcc = async () => {
@@ -199,10 +223,11 @@ export function AccountsScreen({
             </IconButton>
             <button 
               onClick={handleConnectBank}
-              className="press flex h-9 px-3 items-center justify-center rounded-full text-[12px] font-bold gap-1"
+              className="press flex h-9 px-3 items-center justify-center rounded-full text-[12px] font-bold gap-1 disabled:opacity-50"
               style={{ background: "var(--brand)", color: "var(--brand-ink)" }}
             >
-              <LinkIcon size={14} /> Connect Bank
+              {!monoReady ? <Loader2 size={14} className="animate-spin" /> : <LinkIcon size={14} />}
+              {monoReady ? "Connect Bank" : "Loading..."}
             </button>
             <button 
               data-setup-btn="add-account" 
@@ -258,7 +283,6 @@ export function AccountsScreen({
           </div>
         </div>
 
-        {/* Assets & Liabilities (Kept exactly as it was) */}
         <div>
           <div className="flex items-center justify-between mb-3 px-1">
             <h3 className="text-[15px] font-semibold text-[var(--text-1)]">Offline Assets & Liabilities</h3>
