@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ScreenHeader, IconButton } from "@/components/ui/screen-header";
-import { Plus, Trash2, ArrowRightLeft, TrendingUp, Scale, Coins, Pencil } from "lucide-react";
+import { Plus, Trash2, ArrowRightLeft, TrendingUp, Scale, Coins, Pencil, Link as LinkIcon } from "lucide-react";
 import {
   getAccounts, createAccount, deleteAccount, getAssets, addAsset, updateAsset, deleteAsset, clearDataCache,
 } from "@/lib/supabase/database";
@@ -20,6 +20,12 @@ import type { Account, Asset } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
+
+declare global {
+  interface Window {
+    Mono: any;
+  }
+}
 
 export function AccountsScreen({ 
   onBack, 
@@ -53,6 +59,15 @@ export function AccountsScreen({
   const toast = useToast();
   const { active: activeWs } = useWorkspace();
 
+  // Load Mono Script
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.src = "https://connect.withmono.com/connect.js";
+    script.async = true;
+    document.body.appendChild(script);
+    return () => { document.body.removeChild(script); };
+  }, []);
+
   useEffect(() => {
     if (autoOpenAddAccount) {
       setModal("account");
@@ -63,12 +78,9 @@ export function AccountsScreen({
   const load = async () => {
     if (!activeWs?.id) return;
     clearDataCache();
-    // CHANGED: Force fresh fetch
     const [a, s] = await Promise.all([getAccounts(), getAssets()]);
     setAccounts(a);
     setAssets(s);
-    
-    // Update the checkin modal data if it's open
     if (checkinAccount) {
       const refreshed = a.find((x) => x.id === checkinAccount.id);
       if (refreshed) setCheckinAccount(refreshed);
@@ -81,6 +93,42 @@ export function AccountsScreen({
     setExpandedCard(null);
     load(); 
   }, [activeWs?.id]);
+
+  const handleConnectBank = () => {
+    if (!process.env.NEXT_PUBLIC_MONO_PUBLIC_KEY) {
+      toast("Mono API key missing", "err");
+      return;
+    }
+
+    // In a real app, you would check if the user is premium here.
+    // For now, it will launch for everyone.
+    
+    const connect = new window.Mono({
+      key: process.env.NEXT_PUBLIC_MONO_PUBLIC_KEY,
+      onSuccess: async (response: any) => {
+        try {
+          toast("Bank linked! Syncing account details...");
+          const res = await fetch("/api/mono/exchange", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code: response.code }),
+          });
+          const data = await res.json();
+          
+          if (data.error) throw new Error(data.error);
+          
+          toast("Account synced successfully!");
+          load(); // Refresh the list
+        } catch (e: any) {
+          toast(e.message || "Failed to link account", "err");
+        }
+      },
+      onClose: () => {},
+      onEvent: (eventName: string, data: any) => {},
+    });
+    
+    connect.open();
+  };
 
   const addAcc = async () => {
     if (!name || !institution || !balance) {
@@ -150,6 +198,13 @@ export function AccountsScreen({
               <ArrowRightLeft size={16} />
             </IconButton>
             <button 
+              onClick={handleConnectBank}
+              className="press flex h-9 px-3 items-center justify-center rounded-full text-[12px] font-bold gap-1"
+              style={{ background: "var(--brand)", color: "var(--brand-ink)" }}
+            >
+              <LinkIcon size={14} /> Connect Bank
+            </button>
+            <button 
               data-setup-btn="add-account" 
               onClick={() => setModal("account")} 
               className="press flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--text-2)]"
@@ -203,6 +258,7 @@ export function AccountsScreen({
           </div>
         </div>
 
+        {/* Assets & Liabilities (Kept exactly as it was) */}
         <div>
           <div className="flex items-center justify-between mb-3 px-1">
             <h3 className="text-[15px] font-semibold text-[var(--text-1)]">Offline Assets & Liabilities</h3>
@@ -308,7 +364,7 @@ export function AccountsScreen({
       <BalanceCheckinSheet
         isOpen={!!checkinAccount}
         onClose={() => setCheckinAccount(null)}
-        onSaved={load}
+        onSaved={() => { load(); }}
         account={checkinAccount ? { id: checkinAccount.id, name: checkinAccount.name, current_minor: checkinAccount.current_minor ?? checkinAccount.balance_minor } : null}
       />
     </div>
