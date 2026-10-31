@@ -19,13 +19,10 @@ import { useWorkspace } from "@/lib/workspace";
 import type { Account, Asset } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-const todayISO = () => new Date().toISOString().slice(0, 10);
+// @ts-expect-error Mono Connect does not ship with types
+import Connect from '@mono.co/connect.js';
 
-declare global {
-  interface Window {
-    Mono: any;
-  }
-}
+const todayISO = () => new Date().toISOString().slice(0, 10);
 
 export function AccountsScreen({ 
   onBack, 
@@ -94,52 +91,30 @@ export function AccountsScreen({
       return;
     }
 
-    // If Mono is already loaded, just open it
-    if (window.Mono) {
-      openMonoWidget(publicKey);
-      return;
-    }
-
-    // Otherwise, load the script dynamically right now
     setIsConnecting(true);
-    const script = document.createElement("script");
-    script.src = "https://connect.withmono.com/connect.js";
-    script.async = true;
     
-    script.onload = () => {
-      setIsConnecting(false);
-      if (window.Mono) {
-        openMonoWidget(publicKey);
-      } else {
-        toast("Mono failed to initialize.", "err");
-      }
-    };
-    
-    script.onerror = () => {
-      setIsConnecting(false);
-      toast("Failed to reach Mono. Check your internet connection.", "err");
-    };
-    
-    document.body.appendChild(script);
-  };
-
-  const openMonoWidget = (publicKey: string) => {
     try {
-      const connect = new (window as any).Mono({
+      const connect = new Connect({
         key: publicKey,
-        onSuccess: async (response: any) => {
+        scope: "auth",
+        data: {
+          customer: {
+            name: userName,
+            email: `${userName.replace(/\s+/g, '.').toLowerCase()}@acuity.foo.ng`,
+          }
+        },
+        onSuccess: async (data: any) => {
+          setIsConnecting(false);
           try {
             toast("Bank linked! Syncing account details...");
-            // Note: We are still using the API route to exchange the code.
-            // If Mono still blocks this, we might need a different exchange method.
             const res = await fetch("/api/mono/exchange", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ code: response.code }),
+              body: JSON.stringify({ code: data.code }),
             });
-            const data = await res.json();
+            const resData = await res.json();
             
-            if (data.error) throw new Error(data.error);
+            if (resData.error) throw new Error(resData.error);
             
             toast("Account synced successfully!");
             load(); 
@@ -148,12 +123,14 @@ export function AccountsScreen({
           }
         },
         onClose: () => {
+          setIsConnecting(false);
           console.log("Mono window closed");
         },
       });
       
       connect.open();
     } catch (err: any) {
+      setIsConnecting(false);
       console.error("Mono Launch Error:", err);
       toast(err.message || "Failed to launch Mono", "err");
     }
@@ -233,7 +210,7 @@ export function AccountsScreen({
               style={{ background: "var(--brand)", color: "var(--brand-ink)" }}
             >
               {isConnecting ? <Loader2 size={14} className="animate-spin" /> : <LinkIcon size={14} />}
-              {isConnecting ? "Loading..." : "Connect"}
+              {isConnecting ? "Connecting..." : "Connect"}
             </button>
             <button 
               data-setup-btn="add-account" 
