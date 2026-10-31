@@ -39,6 +39,8 @@ export function AccountsScreen({
   const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [isCryptoOpen, setIsCryptoOpen] = useState(false);
   
+  const [monoReady, setMonoReady] = useState(false);
+  
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [editingAssetId, setEditingAssetId] = useState<string | null>(null);
 
@@ -52,6 +54,19 @@ export function AccountsScreen({
   const { fmt } = useCurrency();
   const toast = useToast();
   const { active: activeWs } = useWorkspace();
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && (window as any).Mono) {
+      setMonoReady(true);
+      return;
+    }
+    
+    const script = document.createElement("script");
+    script.src = "https://connect.withmono.com/connect.js";
+    script.async = true;
+    script.onload = () => setMonoReady(true);
+    document.body.appendChild(script);
+  }, []);
 
   useEffect(() => {
     if (autoOpenAddAccount) {
@@ -85,16 +100,41 @@ export function AccountsScreen({
       toast("Mono API key missing", "err");
       return;
     }
-
-    // CHANGED: Instead of relying on the injected script, we open Mono's official hosted connect page
-    const scope = "auth"; 
-    const redirectUrl = `${window.location.origin}/connect/callback`; // We will create this page next
+    if (!monoReady || !(window as any).Mono) {
+      toast("Mono is still loading. Please wait a moment and try again.", "err");
+      return;
+    }
     
-    // We use the Mono Connect URL directly
-    const monoUrl = `https://connect.withmono.com/?key=${publicKey}&scope=${scope}&redirect_url=${encodeURIComponent(redirectUrl)}`;
-    
-    // Open in a new window/popup
-    window.location.href = monoUrl;
+    try {
+      const connect = new (window as any).Mono({
+        key: publicKey,
+        onSuccess: async (response: any) => {
+          try {
+            toast("Bank linked! Syncing account details...");
+            const res = await fetch("/api/mono/exchange", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ code: response.code }),
+            });
+            const data = await res.json();
+            
+            if (data.error) throw new Error(data.error);
+            
+            toast("Account synced successfully!");
+            load(); 
+          } catch (e: any) {
+            toast(e.message || "Failed to link account", "err");
+          }
+        },
+        onClose: () => {},
+        onEvent: (eventName: string, data: any) => {},
+      });
+      
+      connect.open();
+    } catch (err: any) {
+      console.error("Mono Launch Error:", err);
+      toast(err.message || "Failed to launch Mono", "err");
+    }
   };
 
   const addAcc = async () => {
@@ -166,10 +206,11 @@ export function AccountsScreen({
             </IconButton>
             <button 
               onClick={handleConnectBank}
-              className="press flex h-9 px-3 items-center justify-center rounded-full text-[12px] font-bold gap-1"
+              className="press flex h-9 px-3 items-center justify-center rounded-full text-[12px] font-bold gap-1 disabled:opacity-50"
               style={{ background: "var(--brand)", color: "var(--brand-ink)" }}
             >
-              <LinkIcon size={14} /> Connect Bank
+              {!monoReady ? <Loader2 size={14} className="animate-spin" /> : <LinkIcon size={14} />}
+              {monoReady ? "Connect Bank" : "Loading..."}
             </button>
             <button 
               data-setup-btn="add-account" 
