@@ -34,13 +34,10 @@ export function AccountsScreen({
 }) {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
-  const [modal, setModal] = useState<"account" | "asset" | null>(null);
+  const [modal, setModal] = useState<"account" | "asset" | "connect" | null>(null);
   const [checkinAccount, setCheckinAccount] = useState<Account | null>(null);
   const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [isCryptoOpen, setIsCryptoOpen] = useState(false);
-  
-  // CHANGED: Added loading state for the connect button
-  const [isConnecting, setIsConnecting] = useState(false);
   
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [editingAssetId, setEditingAssetId] = useState<string | null>(null);
@@ -51,6 +48,16 @@ export function AccountsScreen({
   const [balance, setBalance] = useState(0);
   const [balanceAsOf, setBalanceAsOf] = useState(todayISO());
   const [assetType, setAssetType] = useState<"asset" | "liability">("asset");
+
+  // --- NEW: Mono API State ---
+  const [institutions, setInstitutions] = useState<any[]>([]);
+  const [selectedInstitution, setSelectedInstitution] = useState<any>(null);
+  const [session, setSession] = useState<any>(null);
+  const [loginForm, setLoginForm] = useState<any>({});
+  const [otp, setOtp] = useState("");
+  const [requiresOtp, setRequiresOtp] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+  // ---------------------------
 
   const { fmt } = useCurrency();
   const toast = useToast();
@@ -82,22 +89,103 @@ export function AccountsScreen({
     load(); 
   }, [activeWs?.id]);
 
-  // CHANGED: Use the API-based flow
-  const handleConnectBank = async () => {
+  // --- NEW: Mono Flow Handlers ---
+  const handleOpenConnect = () => {
+    setModal("connect");
+    setSelectedInstitution(null);
+    setSession(null);
+    setLoginForm({});
+    setOtp("");
+    setRequiresOtp(false);
+    
+    // Fetch institutions
+    fetch("/api/mono/institutions")
+      .then(res => res.json())
+      .then(data => setInstitutions(data.data || []))
+      .catch(() => toast("Failed to load banks", "err"));
+  };
+
+  const handleSelectBank = async (inst: any) => {
+    setSelectedInstitution(inst);
     setIsConnecting(true);
     try {
-      const res = await fetch("/api/mono/create-link", { method: "POST" });
+      const res = await fetch("/api/mono/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ institutionId: inst._id }),
+      });
       const data = await res.json();
-      
-      if (!res.ok) throw new Error(data.error || "Failed to create link");
-      
-      // Redirect to Mono's hosted page
-      window.location.href = data.url;
+      if (!res.ok) throw new Error(data.error || "Failed to start session");
+      setSession(data);
     } catch (e: any) {
-      toast(e.message || "Failed to connect bank", "err");
+      toast(e.message, "err");
+      setSelectedInstitution(null);
+    } finally {
       setIsConnecting(false);
     }
   };
+
+  const handleLogin = async () => {
+    setIsConnecting(true);
+    try {
+      const res = await fetch("/api/mono/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId: session.data.session_id, credentials: loginForm }),
+      });
+      const data = await res.json();
+      
+      if (data.data?.responseCode === 102) {
+        setRequiresOtp(true); 
+      } else if (data.data?.responseCode === 99) {
+        await exchangeCode(data.data.code);
+      } else {
+        throw new Error(data.message || "Login failed");
+      }
+    } catch (e: any) {
+      toast(e.message, "err");
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  const handleCommit = async () => {
+    setIsConnecting(true);
+    try {
+      const res = await fetch("/api/mono/commit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          sessionId: session.data.session_id, 
+          userInput: { otp } 
+        }),
+      });
+      const data = await res.json();
+      if (data.data?.code) {
+        await exchangeCode(data.data.code);
+      } else {
+        throw new Error(data.message || "Invalid OTP");
+      }
+    } catch (e: any) {
+      toast(e.message, "err");
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  const exchangeCode = async (code: string) => {
+    const res = await fetch("/api/mono/exchange", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code }),
+    });
+    if (!res.ok) throw new Error("Failed to sync account");
+    
+    toast("Bank linked successfully!");
+    setModal(null);
+    load();
+  };
+  // --------------------------------
 
   const addAcc = async () => {
     if (!name || !institution || !balance) {
@@ -167,13 +255,11 @@ export function AccountsScreen({
               <ArrowRightLeft size={16} />
             </IconButton>
             <button 
-              onClick={handleConnectBank}
-              disabled={isConnecting}
-              className="press flex h-9 px-3 items-center justify-center rounded-full text-[12px] font-bold gap-1 disabled:opacity-50"
+              onClick={handleOpenConnect}
+              className="press flex h-9 px-3 items-center justify-center rounded-full text-[12px] font-bold gap-1"
               style={{ background: "var(--brand)", color: "var(--brand-ink)" }}
             >
-              {isConnecting ? <Loader2 size={14} className="animate-spin" /> : <LinkIcon size={14} />}
-              {isConnecting ? "Redirecting..." : "Connect Bank"}
+              <LinkIcon size={14} /> Connect Bank
             </button>
             <button 
               data-setup-btn="add-account" 
@@ -286,6 +372,7 @@ export function AccountsScreen({
         </div>
       </div>
 
+      {/* --- EXISTING MODALS --- */}
       <TransferSheet
         isOpen={isTransferOpen}
         onClose={() => setIsTransferOpen(false)}
@@ -337,6 +424,59 @@ export function AccountsScreen({
         onSaved={() => { load(); }}
         account={checkinAccount ? { id: checkinAccount.id, name: checkinAccount.name, current_minor: checkinAccount.current_minor ?? checkinAccount.balance_minor } : null}
       />
+
+      {/* --- NEW: MONO API FLOW MODAL --- */}
+      <Modal open={modal === "connect"} onClose={() => setModal(null)} title="Connect Bank">
+        <div className="space-y-4 pb-4">
+          
+          {!selectedInstitution ? (
+            <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-2">
+              <p className="text-[13px] text-[var(--text-2)] mb-2">Select your bank to link:</p>
+              {institutions.length === 0 && <p className="text-center text-[13px] py-4">Loading banks...</p>}
+              {institutions.map((inst: any) => (
+                <button
+                  key={inst._id}
+                  onClick={() => handleSelectBank(inst)}
+                  className="w-full flex items-center gap-3 p-3 rounded-xl border border-[var(--line)] bg-[var(--surface-1)] hover:bg-[var(--surface-2)] transition-colors"
+                >
+                  {/* Assuming inst.logo is a URL, if not we just use initial */}
+                  <div className="h-8 w-8 rounded-full bg-white flex items-center justify-center p-1">
+                    <img src={inst.logo || `https://ui-avatars.com/api/?name=${inst.name}`} alt={inst.name} className="h-full object-contain" />
+                  </div>
+                  <span className="font-semibold text-[14px] text-[var(--text-1)]">{inst.name}</span>
+                </button>
+              ))}
+            </div>
+          ) : requiresOtp ? (
+            <div className="space-y-4">
+              <p className="text-[13px] text-[var(--text-2)]">Enter the OTP sent to your phone.</p>
+              <input
+                value={otp}
+                onChange={e => setOtp(e.target.value)}
+                placeholder="e.g. 123456"
+                className="w-full p-3 border border-[var(--line-strong)] rounded-xl bg-[var(--surface-1)] text-[var(--text-1)]"
+              />
+              <Button onClick={handleCommit} loading={isConnecting} className="w-full">Submit OTP</Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <p className="text-[13px] text-[var(--text-2)]">Log in to {selectedInstitution.name}</p>
+              {/* Render dynamic fields from Mono */}
+              {session?.data?.ui?.form?.map((field: any) => (
+                <Field
+                  key={field.name}
+                  label={field.name.charAt(0).toUpperCase() + field.name.slice(1)}
+                  type={field.type === "password" ? "password" : "text"}
+                  placeholder={field.hint || `Enter your ${field.name}`}
+                  onChange={(e: any) => setLoginForm({ ...loginForm, [field.name]: e.target.value })}
+                />
+              ))}
+              <Button onClick={handleLogin} loading={isConnecting} className="w-full">Login</Button>
+              <Button variant="ghost" onClick={() => setSelectedInstitution(null)} className="w-full">Back to Banks</Button>
+            </div>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 }
