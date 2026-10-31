@@ -21,6 +21,12 @@ import { cn } from "@/lib/utils";
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
+declare global {
+  interface Window {
+    Mono: any;
+  }
+}
+
 export function AccountsScreen({ 
   onBack, 
   userName = "there",
@@ -55,8 +61,9 @@ export function AccountsScreen({
   const toast = useToast();
   const { active: activeWs } = useWorkspace();
 
+  // CHANGED: Preload the Mono script on mount so it's ready when the user clicks
   useEffect(() => {
-    if (typeof window !== "undefined" && (window as any).Mono) {
+    if (typeof window !== "undefined" && window.Mono) {
       setMonoReady(true);
       return;
     }
@@ -100,13 +107,13 @@ export function AccountsScreen({
       toast("Mono API key missing", "err");
       return;
     }
-    if (!monoReady || !(window as any).Mono) {
-      toast("Mono is still loading. Please wait a moment and try again.", "err");
+    if (!monoReady || !window.Mono) {
+      toast("Mono is still loading. Please wait a moment.", "err");
       return;
     }
     
     try {
-      const connect = new (window as any).Mono({
+      const connect = new window.Mono({
         key: publicKey,
         onSuccess: async (response: any) => {
           try {
