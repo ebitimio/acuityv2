@@ -8,7 +8,6 @@ export async function POST(req: Request) {
     
     const key = process.env.MONO_SECRET_KEY;
     if (!key) {
-      console.error("Missing MONO_SECRET_KEY in Vercel");
       return NextResponse.json({ error: "Mono not configured" }, { status: 500 });
     }
 
@@ -27,25 +26,24 @@ export async function POST(req: Request) {
     });
 
     const exchangeData = await exchangeRes.json();
-    console.log("Mono Exchange Response:", exchangeData);
     
     if (!exchangeRes.ok) {
-      console.error("Mono Exchange API Error:", exchangeData);
       throw new Error(exchangeData.message || "Failed to exchange code");
     }
 
     const monoAccountId = exchangeData.id;
 
-    // 2. Fetch account details (CHANGED: Using /v1/accounts/:id)
-    const detailsRes = await fetch(`https://api.withmono.com/v1/accounts/${monoAccountId}`, {
-      headers: { "mono-sec-key": key },
+    // 2. Fetch account details (Back to /v2/ endpoint)
+    const detailsRes = await fetch(`https://api.withmono.com/v2/accounts/${monoAccountId}`, {
+      headers: { 
+        "mono-sec-key": key,
+        "Content-Type": "application/json"
+      },
     });
     
     const details = await detailsRes.json();
-    console.log("Mono Account Details Response:", details);
 
     if (!detailsRes.ok) {
-      console.error("Mono Details API Error:", details);
       throw new Error(details.message || "Failed to fetch account details");
     }
 
