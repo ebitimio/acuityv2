@@ -27,8 +27,8 @@ export async function POST(req: Request) {
     });
 
     const exchangeData = await exchangeRes.json();
+    console.log("Mono Exchange Response:", exchangeData);
     
-    // Log the exact error if Mono rejects it
     if (!exchangeRes.ok) {
       console.error("Mono Exchange API Error:", exchangeData);
       throw new Error(exchangeData.message || "Failed to exchange code");
@@ -36,12 +36,18 @@ export async function POST(req: Request) {
 
     const monoAccountId = exchangeData.id;
 
-    // 2. Fetch account details
-    const detailsRes = await fetch(`https://api.withmono.com/v2/accounts/${monoAccountId}`, {
+    // 2. Fetch account details (CHANGED: Using /v1/accounts/:id)
+    const detailsRes = await fetch(`https://api.withmono.com/v1/accounts/${monoAccountId}`, {
       headers: { "mono-sec-key": key },
     });
+    
     const details = await detailsRes.json();
-    if (!detailsRes.ok) throw new Error("Failed to fetch account details");
+    console.log("Mono Account Details Response:", details);
+
+    if (!detailsRes.ok) {
+      console.error("Mono Details API Error:", details);
+      throw new Error(details.message || "Failed to fetch account details");
+    }
 
     // 3. Get workspace
     const { data: ws } = await supabase.from("workspaces").select("id").eq("owner_id", user.id).limit(1).single();
@@ -52,10 +58,10 @@ export async function POST(req: Request) {
       .from("accounts")
       .insert({
         workspace_id: ws.id,
-        name: details.account.name || "Linked Bank Account",
-        institution: details.institution.name || "Mono",
+        name: details.account?.name || "Linked Bank Account",
+        institution: details.institution?.name || "Mono",
         type: "checking",
-        balance_minor: Math.round((details.account.balance || 0) * 100),
+        balance_minor: Math.round((details.account?.balance || 0) * 100),
         balance_as_of: new Date().toISOString(),
         mono_account_id: monoAccountId, 
       })
