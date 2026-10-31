@@ -5,30 +5,40 @@ export async function POST(req: Request) {
   try {
     const { code } = await req.json();
     if (!code) return NextResponse.json({ error: "Missing code" }, { status: 400 });
-    if (!process.env.MONO_SECRET_KEY) return NextResponse.json({ error: "Mono not configured" }, { status: 500 });
+    
+    const key = process.env.MONO_SECRET_KEY;
+    if (!key) {
+      console.error("Missing MONO_SECRET_KEY in Vercel");
+      return NextResponse.json({ error: "Mono not configured" }, { status: 500 });
+    }
 
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     // 1. Exchange code for Mono Account ID
-    const exchangeRes = await fetch("https://api.withmono.com/account/auth", {
+    const exchangeRes = await fetch("https://api.withmono.com/v2/accounts/auth", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "mono-sec-key": process.env.MONO_SECRET_KEY,
+        "mono-sec-key": key,
       },
       body: JSON.stringify({ code }),
     });
 
     const exchangeData = await exchangeRes.json();
-    if (!exchangeRes.ok) throw new Error(exchangeData.message || "Failed to exchange code");
+    
+    // Log the exact error if Mono rejects it
+    if (!exchangeRes.ok) {
+      console.error("Mono Exchange API Error:", exchangeData);
+      throw new Error(exchangeData.message || "Failed to exchange code");
+    }
 
     const monoAccountId = exchangeData.id;
 
     // 2. Fetch account details
-    const detailsRes = await fetch(`https://api.withmono.com/accounts/${monoAccountId}`, {
-      headers: { "mono-sec-key": process.env.MONO_SECRET_KEY },
+    const detailsRes = await fetch(`https://api.withmono.com/v2/accounts/${monoAccountId}`, {
+      headers: { "mono-sec-key": key },
     });
     const details = await detailsRes.json();
     if (!detailsRes.ok) throw new Error("Failed to fetch account details");
