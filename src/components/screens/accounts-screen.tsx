@@ -61,18 +61,21 @@ export function AccountsScreen({
   const toast = useToast();
   const { active: activeWs } = useWorkspace();
 
-  // CHANGED: Preload the Mono script on mount so it's ready when the user clicks
+  // Check if Mono is loaded on mount
   useEffect(() => {
-    if (typeof window !== "undefined" && window.Mono) {
-      setMonoReady(true);
-      return;
+    if (typeof window !== "undefined") {
+      if (window.Mono) {
+        setMonoReady(true);
+      } else {
+        const interval = setInterval(() => {
+          if (window.Mono) {
+            setMonoReady(true);
+            clearInterval(interval);
+          }
+        }, 500);
+        return () => clearInterval(interval);
+      }
     }
-    
-    const script = document.createElement("script");
-    script.src = "https://connect.withmono.com/connect.js";
-    script.async = true;
-    script.onload = () => setMonoReady(true);
-    document.body.appendChild(script);
   }, []);
 
   useEffect(() => {
@@ -108,7 +111,7 @@ export function AccountsScreen({
       return;
     }
     if (!monoReady || !window.Mono) {
-      toast("Mono is still loading. Please wait a moment.", "err");
+      toast("Mono is still loading. Please pull to refresh the page.", "err");
       return;
     }
     
