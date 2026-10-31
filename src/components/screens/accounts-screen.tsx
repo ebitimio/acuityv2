@@ -57,6 +57,7 @@ export function AccountsScreen({
   const [otp, setOtp] = useState("");
   const [requiresOtp, setRequiresOtp] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [isLoadingBanks, setIsLoadingBanks] = useState(false);
   // ---------------------------
 
   const { fmt } = useCurrency();
@@ -90,18 +91,28 @@ export function AccountsScreen({
   }, [activeWs?.id]);
 
   // --- Mono Flow Handlers ---
-  const handleOpenConnect = () => {
+  const handleOpenConnect = async () => {
     setModal("connect");
     setSelectedInstitution(null);
     setSession(null);
     setLoginForm({});
     setOtp("");
     setRequiresOtp(false);
+    setIsLoadingBanks(true);
     
-    fetch("/api/mono/institutions")
-      .then(res => res.json())
-      .then(data => setInstitutions(data.data || []))
-      .catch(() => toast("Failed to load banks", "err"));
+    try {
+      const res = await fetch("/api/mono/institutions");
+      const data = await res.json();
+      
+      // If Mono rejects the request, this will trigger the red toast
+      if (!res.ok) throw new Error(data.error || "Failed to load banks");
+      
+      setInstitutions(data.data || []);
+    } catch (e: any) {
+      toast(e.message, "err");
+    } finally {
+      setIsLoadingBanks(false);
+    }
   };
 
   const handleSelectBank = async (inst: any) => {
@@ -431,9 +442,14 @@ export function AccountsScreen({
           {!selectedInstitution ? (
             <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-2">
               <p className="text-[13px] text-[var(--text-2)] mb-2">Select your bank to link:</p>
-              {institutions.length === 0 && <p className="text-center text-[13px] py-4">Loading banks...</p>}
+              
+              {isLoadingBanks && <p className="text-center text-[13px] py-4">Loading banks...</p>}
+              
+              {!isLoadingBanks && institutions.length === 0 && (
+                <p className="text-center text-[13px] text-[var(--danger)] py-4">Failed to load banks. Check console.</p>
+              )}
+
               {institutions.map((inst: any) => {
-                // Safely extract the name and logo
                 const bankName = inst.name || inst.institution?.name || "Unknown Bank";
                 const bankLogo = inst.logo || inst.institution?.logo || `https://ui-avatars.com/api/?name=${encodeURIComponent(bankName)}`;
 
