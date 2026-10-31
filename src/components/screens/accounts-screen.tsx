@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ScreenHeader, IconButton } from "@/components/ui/screen-header";
-import { Plus, Trash2, ArrowRightLeft, TrendingUp, Scale, Coins, Pencil, Link as LinkIcon, Loader2 } from "lucide-react";
+import { Plus, Trash2, ArrowRightLeft, TrendingUp, Scale, Coins, Pencil, Link as LinkIcon } from "lucide-react";
 import {
   getAccounts, createAccount, deleteAccount, getAssets, addAsset, updateAsset, deleteAsset, clearDataCache,
 } from "@/lib/supabase/database";
@@ -20,12 +20,6 @@ import type { Account, Asset } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
-
-declare global {
-  interface Window {
-    Mono: any;
-  }
-}
 
 export function AccountsScreen({ 
   onBack, 
@@ -45,8 +39,6 @@ export function AccountsScreen({
   const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [isCryptoOpen, setIsCryptoOpen] = useState(false);
   
-  const [monoReady, setMonoReady] = useState(false);
-  
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [editingAssetId, setEditingAssetId] = useState<string | null>(null);
 
@@ -60,23 +52,6 @@ export function AccountsScreen({
   const { fmt } = useCurrency();
   const toast = useToast();
   const { active: activeWs } = useWorkspace();
-
-  // Check if Mono is loaded on mount
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      if (window.Mono) {
-        setMonoReady(true);
-      } else {
-        const interval = setInterval(() => {
-          if (window.Mono) {
-            setMonoReady(true);
-            clearInterval(interval);
-          }
-        }, 500);
-        return () => clearInterval(interval);
-      }
-    }
-  }, []);
 
   useEffect(() => {
     if (autoOpenAddAccount) {
@@ -105,46 +80,8 @@ export function AccountsScreen({
   }, [activeWs?.id]);
 
   const handleConnectBank = () => {
-    const publicKey = process.env.NEXT_PUBLIC_MONO_PUBLIC_KEY;
-    if (!publicKey) {
-      toast("Mono API key missing", "err");
-      return;
-    }
-    if (!monoReady || !window.Mono) {
-      toast("Mono is still loading. Please pull to refresh the page.", "err");
-      return;
-    }
-    
-    try {
-      const connect = new window.Mono({
-        key: publicKey,
-        onSuccess: async (response: any) => {
-          try {
-            toast("Bank linked! Syncing account details...");
-            const res = await fetch("/api/mono/exchange", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ code: response.code }),
-            });
-            const data = await res.json();
-            
-            if (data.error) throw new Error(data.error);
-            
-            toast("Account synced successfully!");
-            load(); 
-          } catch (e: any) {
-            toast(e.message || "Failed to link account", "err");
-          }
-        },
-        onClose: () => {},
-        onEvent: (eventName: string, data: any) => {},
-      });
-      
-      connect.open();
-    } catch (err: any) {
-      console.error("Mono Launch Error:", err);
-      toast(err.message || "Failed to launch Mono", "err");
-    }
+    // Simply redirect to the Mono hosted page
+    window.location.href = "/connect";
   };
 
   const addAcc = async () => {
@@ -216,11 +153,10 @@ export function AccountsScreen({
             </IconButton>
             <button 
               onClick={handleConnectBank}
-              className="press flex h-9 px-3 items-center justify-center rounded-full text-[12px] font-bold gap-1 disabled:opacity-50"
+              className="press flex h-9 px-3 items-center justify-center rounded-full text-[12px] font-bold gap-1"
               style={{ background: "var(--brand)", color: "var(--brand-ink)" }}
             >
-              {!monoReady ? <Loader2 size={14} className="animate-spin" /> : <LinkIcon size={14} />}
-              {monoReady ? "Connect Bank" : "Loading..."}
+              <LinkIcon size={14} /> Connect Bank
             </button>
             <button 
               data-setup-btn="add-account" 
