@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { ScreenHeader, IconButton } from "@/components/ui/screen-header";
 import { Plus, Trash2, ArrowRightLeft, TrendingUp, Scale, Coins, Pencil, Link as LinkIcon, Loader2 } from "lucide-react";
 import {
@@ -42,7 +42,6 @@ export function AccountsScreen({
   const [isCryptoOpen, setIsCryptoOpen] = useState(false);
   
   const [isConnecting, setIsConnecting] = useState(false);
-  const [isMonoLoaded, setIsMonoLoaded] = useState(false); // NEW: Track if widget is ready
   
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [editingAssetId, setEditingAssetId] = useState<string | null>(null);
@@ -59,52 +58,6 @@ export function AccountsScreen({
   const { active: activeWs } = useWorkspace();
 
   const publicKey = process.env.NEXT_PUBLIC_MONO_PUBLIC_KEY;
-
-  const monoConnect = useMemo(() => {
-    if (!publicKey) return null;
-    
-    try {
-      return new Connect({
-        key: publicKey,
-        scope: "auth",
-        data: {
-          customer: {
-            name: userName,
-            email: `${userName.replace(/\s+/g, '.').toLowerCase()}@acuity.foo.ng`,
-          }
-        },
-        onLoad: () => {
-          setIsMonoLoaded(true); // NEW: Widget is ready
-        },
-        onSuccess: async (data: any) => {
-          setIsConnecting(false);
-          try {
-            toast("Bank linked! Syncing account details...");
-            const res = await fetch("/api/mono/exchange", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ code: data.code }),
-            });
-            const resData = await res.json();
-            
-            if (resData.error) throw new Error(resData.error);
-            
-            toast("Account synced successfully!");
-            load(); 
-          } catch (e: any) {
-            toast(e.message || "Failed to link account", "err");
-          }
-        },
-        onClose: () => {
-          setIsConnecting(false);
-          console.log("Mono window closed");
-        },
-      });
-    } catch (e) {
-      console.error("Failed to initialize Mono", e);
-      return null;
-    }
-  }, [publicKey, userName]); 
 
   useEffect(() => {
     if (autoOpenAddAccount) {
@@ -133,20 +86,53 @@ export function AccountsScreen({
   }, [activeWs?.id]);
 
   const handleConnectBank = () => {
-    if (!monoConnect) {
-      toast("Mono failed to initialize. Check console.", "err");
-      return;
-    }
-
-    // Don't open if the widget hasn't fully loaded its iframe
-    if (!isMonoLoaded) {
-      toast("Mono is still loading. Please wait a moment.", "err");
+    if (!publicKey) {
+      toast("Mono API key missing", "err");
       return;
     }
 
     setIsConnecting(true);
+    
     try {
-      monoConnect.open();
+      // Create the instance exactly when clicked to prevent the "e.style" null crash
+      const connect = new Connect({
+        key: publicKey,
+        scope: "auth",
+        data: {
+          customer: {
+            name: userName,
+            email: `${userName.replace(/\s+/g, '.').toLowerCase()}@acuity.foo.ng`,
+          }
+        },
+        onSuccess: async (data: any) => {
+          setIsConnecting(false);
+          try {
+            toast("Bank linked! Syncing account details...");
+            const res = await fetch("/api/mono/exchange", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ code: data.code }),
+            });
+            const resData = await res.json();
+            
+            if (resData.error) throw new Error(resData.error);
+            
+            toast("Account synced successfully!");
+            load(); 
+          } catch (e: any) {
+            toast(e.message || "Failed to link account", "err");
+          }
+        },
+        onClose: () => {
+          setIsConnecting(false);
+          console.log("Mono window closed");
+        },
+      });
+      
+      // setup() injects the iframe, open() makes it visible
+      connect.setup();
+      connect.open();
+      
     } catch (err: any) {
       setIsConnecting(false);
       console.error("Mono Launch Error:", err);
@@ -223,12 +209,12 @@ export function AccountsScreen({
             </IconButton>
             <button 
               onClick={handleConnectBank}
-              disabled={isConnecting || !isMonoLoaded}
+              disabled={isConnecting}
               className="press flex h-9 px-3 items-center justify-center rounded-full text-[12px] font-bold gap-1 disabled:opacity-50"
               style={{ background: "var(--brand)", color: "var(--brand-ink)" }}
             >
-              {isConnecting || !isMonoLoaded ? <Loader2 size={14} className="animate-spin" /> : <LinkIcon size={14} />}
-              {isConnecting ? "Connecting..." : !isMonoLoaded ? "Loading..." : "Connect"}
+              {isConnecting ? <Loader2 size={14} className="animate-spin" /> : <LinkIcon size={14} />}
+              {isConnecting ? "Connecting..." : "Connect"}
             </button>
             <button 
               data-setup-btn="add-account" 
