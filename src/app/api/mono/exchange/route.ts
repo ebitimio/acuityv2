@@ -26,14 +26,14 @@ export async function POST(req: Request) {
 
     const monoAccountId = exchangeData.id;
 
-    // 2. Fetch account details (Balance, Bank Name, Account Name)
+    // 2. Fetch account details
     const detailsRes = await fetch(`https://api.withmono.com/accounts/${monoAccountId}`, {
       headers: { "mono-sec-key": process.env.MONO_SECRET_KEY },
     });
     const details = await detailsRes.json();
     if (!detailsRes.ok) throw new Error("Failed to fetch account details");
 
-    // 3. Get the user's active workspace
+    // 3. Get workspace
     const { data: ws } = await supabase.from("workspaces").select("id").eq("owner_id", user.id).limit(1).single();
     if (!ws) throw new Error("No workspace found");
 
