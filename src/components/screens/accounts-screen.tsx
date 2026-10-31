@@ -79,49 +79,9 @@ export function AccountsScreen({
     load(); 
   }, [activeWs?.id]);
 
+  // Simple redirect to the backend link generator
   const handleConnectBank = () => {
-    const publicKey = process.env.NEXT_PUBLIC_MONO_PUBLIC_KEY;
-    if (!publicKey) {
-      toast("Mono API key missing", "err");
-      return;
-    }
-
-    if (typeof window === "undefined" || !(window as any).Mono) {
-      toast("Mono is still loading. Please refresh the page.", "err");
-      return;
-    }
-    
-    try {
-      const connect = new (window as any).Mono({
-        key: publicKey,
-        onSuccess: async (response: any) => {
-          try {
-            toast("Bank linked! Syncing account details...");
-            const res = await fetch("/api/mono/exchange", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ code: response.code }),
-            });
-            const data = await res.json();
-            
-            if (data.error) throw new Error(data.error);
-            
-            toast("Account synced successfully!");
-            load(); 
-          } catch (e: any) {
-            toast(e.message || "Failed to link account", "err");
-          }
-        },
-        onClose: () => {
-          console.log("Mono window closed");
-        },
-      });
-      
-      connect.open();
-    } catch (err: any) {
-      console.error("Mono Launch Error:", err);
-      toast(err.message || "Failed to launch Mono", "err");
-    }
+    window.location.href = "/connect";
   };
 
   const addAcc = async () => {

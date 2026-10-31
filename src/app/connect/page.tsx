@@ -1,26 +1,42 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 
 export default function MonoRedirect() {
+  const [error, setError] = useState("");
+
   useEffect(() => {
-    const publicKey = process.env.NEXT_PUBLIC_MONO_PUBLIC_KEY;
-    if (!publicKey) return;
-
-    // Construct the Mono Hosted Connect URL
-    // We point the redirect_url back to our callback page
-    const redirectUrl = `${window.location.origin}/connect/callback`;
-    const monoUrl = `https://connect.withmono.com/?key=${publicKey}&redirect_url=${encodeURIComponent(redirectUrl)}`;
-
-    // Redirect the whole window
-    window.location.href = monoUrl;
+    const getLink = async () => {
+      try {
+        const res = await fetch("/api/mono/create-link", { method: "POST" });
+        const data = await res.json();
+        
+        if (!res.ok) throw new Error(data.error || "Failed to generate link");
+        
+        // Redirect to the Mono URL
+        window.location.href = data.url;
+      } catch (e: any) {
+        setError(e.message);
+      }
+    };
+    
+    getLink();
   }, []);
 
   return (
     <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-[#0b0b0c] text-white">
-      <Loader2 className="animate-spin text-[var(--brand)] mb-4" size={32} />
-      <p className="text-[15px] font-medium">Redirecting to Mono...</p>
+      {error ? (
+        <div className="text-center px-6">
+          <p className="text-[var(--danger)] font-bold mb-2">Connection Failed</p>
+          <p className="text-[14px] text-[var(--text-2)]">{error}</p>
+        </div>
+      ) : (
+        <>
+          <Loader2 className="animate-spin text-[var(--brand)] mb-4" size={32} />
+          <p className="text-[15px] font-medium">Redirecting to Mono...</p>
+        </>
+      )}
     </div>
   );
-}
+}a
