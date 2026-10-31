@@ -1,40 +1,21 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 
 export async function POST() {
   try {
-    if (!process.env.MONO_SECRET_KEY) {
-      return NextResponse.json({ error: "Mono not configured" }, { status: 500 });
+    const publicKey = process.env.NEXT_PUBLIC_MONO_PUBLIC_KEY;
+    
+    if (!publicKey) {
+      return NextResponse.json({ error: "Mono Public Key not configured in Vercel" }, { status: 500 });
     }
 
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // Generate the hosted Connect URL directly.
+    // We don't need the secret key for this step.
+    const redirectUrl = "https://acuity.foo.ng/connect/callback";
+    const monoUrl = `https://connect.withmono.com/?key=${publicKey}&redirect_url=${encodeURIComponent(redirectUrl)}`;
 
-    // Generate the hosted Connect link
-    const res = await fetch("https://api.withmono.com/v2/accounts/initiate", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "mono-sec-key": process.env.MONO_SECRET_KEY,
-      },
-      body: JSON.stringify({
-        scope: "auth",
-        redirect_url: "https://acuity.foo.ng/connect/callback", // Must match your callback
-        customer: {
-          name: user.user_metadata?.full_name || "Acuity User",
-          email: user.email,
-        },
-      }),
-    });
-
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "Failed to create link");
-
-    // The API returns a hosted URL
-    return NextResponse.json({ url: data.data.mono_url });
+    return NextResponse.json({ url: monoUrl });
   } catch (error: any) {
-    console.error("Mono Link Error:", error);
+    console.error("Mono Create Link Error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
