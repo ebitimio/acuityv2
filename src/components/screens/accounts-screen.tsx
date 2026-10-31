@@ -42,6 +42,7 @@ export function AccountsScreen({
   const [isCryptoOpen, setIsCryptoOpen] = useState(false);
   
   const [isConnecting, setIsConnecting] = useState(false);
+  const [isMonoLoaded, setIsMonoLoaded] = useState(false); // NEW: Track if widget is ready
   
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [editingAssetId, setEditingAssetId] = useState<string | null>(null);
@@ -59,7 +60,6 @@ export function AccountsScreen({
 
   const publicKey = process.env.NEXT_PUBLIC_MONO_PUBLIC_KEY;
 
-  // Create the Mono instance ONCE when the component mounts.
   const monoConnect = useMemo(() => {
     if (!publicKey) return null;
     
@@ -72,6 +72,9 @@ export function AccountsScreen({
             name: userName,
             email: `${userName.replace(/\s+/g, '.').toLowerCase()}@acuity.foo.ng`,
           }
+        },
+        onLoad: () => {
+          setIsMonoLoaded(true); // NEW: Widget is ready
         },
         onSuccess: async (data: any) => {
           setIsConnecting(false);
@@ -132,6 +135,12 @@ export function AccountsScreen({
   const handleConnectBank = () => {
     if (!monoConnect) {
       toast("Mono failed to initialize. Check console.", "err");
+      return;
+    }
+
+    // Don't open if the widget hasn't fully loaded its iframe
+    if (!isMonoLoaded) {
+      toast("Mono is still loading. Please wait a moment.", "err");
       return;
     }
 
@@ -214,12 +223,12 @@ export function AccountsScreen({
             </IconButton>
             <button 
               onClick={handleConnectBank}
-              disabled={isConnecting}
+              disabled={isConnecting || !isMonoLoaded}
               className="press flex h-9 px-3 items-center justify-center rounded-full text-[12px] font-bold gap-1 disabled:opacity-50"
               style={{ background: "var(--brand)", color: "var(--brand-ink)" }}
             >
-              {isConnecting ? <Loader2 size={14} className="animate-spin" /> : <LinkIcon size={14} />}
-              {isConnecting ? "Connecting..." : "Connect"}
+              {isConnecting || !isMonoLoaded ? <Loader2 size={14} className="animate-spin" /> : <LinkIcon size={14} />}
+              {isConnecting ? "Connecting..." : !isMonoLoaded ? "Loading..." : "Connect"}
             </button>
             <button 
               data-setup-btn="add-account" 
