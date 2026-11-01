@@ -34,15 +34,14 @@ export async function POST(req: Request) {
     if (!detailsRes.ok) throw new Error(details.message || "Failed to fetch account details");
 
     // 3. Safely extract nested data
-    // Mono V2 returns { data: { account: {...}, institution: {...} } }
     const rawData = details.data || details;
     const accountInfo = rawData.account || rawData;
     
-    // CHANGED: Look for the institution in multiple possible places
-    const institutionInfo = rawData.institution || rawData.bank || {};
+    // CHANGED: Mono returns the bank details in rawData.institution
+    const institutionInfo = rawData.institution || {};
 
-    // CHANGED: Extract the real bank name
-    const bankName = institutionInfo.name || accountInfo.bank || "Linked Bank";
+    // CHANGED: Extracts the actual bank name (e.g., GTBank)
+    const bankName = institutionInfo.name || "Linked Bank";
     
     // Use the custom name passed from the frontend, or fallback to Mono's name
     const accountName = customName || accountInfo.name || accountInfo.account_name || "Linked Bank Account";
@@ -59,7 +58,7 @@ export async function POST(req: Request) {
       .insert({
         workspace_id: ws.id,
         name: accountName,
-        institution: bankName, // Now uses the extracted real bank name
+        institution: bankName, 
         type: "checking",
         balance_minor: balanceMinor, 
         balance_as_of: new Date().toISOString(),
