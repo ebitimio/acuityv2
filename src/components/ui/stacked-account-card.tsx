@@ -41,10 +41,10 @@ export function StackedAccountCard({
       className={cn(
         "relative w-full overflow-hidden rounded-2xl shadow-xl",
         "bg-gradient-to-br from-[#1c1c1e] to-[#0b0b0c] border border-[var(--brand)]/30",
-        isCompact && "h-[220px]" // Increased from 200px to give more breathing room
+        isCompact && "h-[220px]" 
       )}
     >
-      <div onClick={onClick} className={cn("relative p-5 cursor-pointer overflow-hidden flex flex-col h-full justify-between", isCompact ? "" : "min-h-[180px]")}>
+      <div onClick={onClick} className={cn("relative p-5 cursor-pointer overflow-hidden h-full flex flex-col justify-between")}>
         
         {/* WATERMARK */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -57,8 +57,8 @@ export function StackedAccountCard({
         <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full border-[12px] border-[var(--brand)]/10" />
         <div className="absolute -bottom-10 -left-10 h-32 w-32 rounded-full border-[12px] border-[var(--brand)]/10" />
 
-        {/* EMV Chip - Now Black with App Color Outlines */}
-        <div className="absolute right-6 top-1/2 -translate-y-1/2 w-11 h-9">
+        {/* EMV Chip - Black with App Color Outlines */}
+        <div className="absolute right-5 top-1/2 -translate-y-1/2 w-11 h-9">
           <svg viewBox="0 0 40 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full opacity-80">
             <rect width="40" height="32" rx="6" fill="#1a1a1c" />
             <rect x="1" y="1" width="38" height="30" rx="5" stroke="var(--brand)" strokeWidth="1.5" strokeOpacity="0.6" />
@@ -73,7 +73,7 @@ export function StackedAccountCard({
         </div>
 
         {/* Top Row: Account Info & Cardholder */}
-        <div className="relative z-10 flex items-start justify-between gap-4 pr-14 mt-1">
+        <div className="relative z-10 flex items-start justify-between gap-4 pr-12 mt-1">
           {/* Account Info */}
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--brand)]/20">
@@ -85,25 +85,29 @@ export function StackedAccountCard({
             </div>
           </div>
           
-          {/* Cardholder Name */}
+          {/* Cardholder Name - Restored to Top Right */}
           <div className="text-right shrink-0">
             <p className="text-[10px] uppercase tracking-widest text-[var(--brand)]/50 font-semibold mb-0.5">Cardholder</p>
             <p className={cn(
               "font-mono tracking-wider text-[var(--brand)] uppercase leading-tight break-words",
-              isCompact ? "text-[12px] max-w-[120px]" : "text-[14px]"
+              isCompact ? "text-[12px] max-w-[110px]" : "text-[14px]"
             )}>
               {cardholderName || "CARDHOLDER"}
             </p>
           </div>
         </div>
             
-        {/* Bottom Row: Balance & Bank Name */}
-        <div className="relative z-10 flex items-end justify-between gap-4 pr-14 mb-1">
+        {/* Bottom Row: Balance & Bank Name - Restored */}
+        <div className="relative z-10 flex items-end justify-between gap-4 pr-12 mb-1">
           <div className="min-w-0">
             <p className="text-[11px] text-[var(--brand)]/60 mb-1">Balance</p>
             <p className="text-[24px] font-bold tabular text-[var(--brand)] truncate leading-none">{fmt(balance)}</p>
           </div>
-          <p className="text-[12px] font-medium text-[var(--brand)]/80 text-right truncate max-w-[100px]">{account.institution}</p>
+          
+          {/* Bank Name - Restored to Bottom Right */}
+          <p className="text-[12px] font-medium text-[var(--brand)]/80 text-right truncate max-w-[110px]">
+            {account.institution}
+          </p>
         </div>
       </div>
 
