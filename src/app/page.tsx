@@ -778,7 +778,7 @@ export default function SandboxPage() {
                                 onCheckBalance={() => {}}
                                 onDelete={() => {}}
                                 cardholderName={profileName}
-                                showChip={true}
+                                isCompact={true}
                               />
                             </div>
                           ))}
