@@ -145,13 +145,21 @@ export function AccountsScreen({
       toast("Please enter a name for the account", "err");
       return;
     }
+    if (!activeWs?.id) {
+      toast("No active workspace found", "err");
+      return;
+    }
 
     setIsSavingLink(true);
     try {
       const res = await fetch("/api/mono/exchange", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: linkedCode, customName: linkedAccountName }),
+        body: JSON.stringify({ 
+          code: linkedCode, 
+          customName: linkedAccountName,
+          workspaceId: activeWs.id // CHANGED: Send active workspace ID
+        }),
       });
       const resData = await res.json();
       
@@ -416,14 +424,25 @@ export function AccountsScreen({
             <Sparkles size={14} className="text-[var(--brand)] absolute -top-1 -right-1" />
           </div>
           <div>
-            <h3 className="text-[18px] font-bold text-[var(--text-1)]">Upgrade to Premium</h3>
+            <h3 className="text-[18px] font-bold text-[var(--text-1)]">Upgrade to Acuity Premium</h3>
             <p className="text-[13px] text-[var(--text-2)] mt-2 max-w-[280px] mx-auto leading-relaxed">
-              Automated bank linking is a premium feature. Upgrade to securely connect your bank and track your transactions automatically.
+              Connect your bank to automatically track your spending, categorize transactions with AI, and see your real-time balance.
             </p>
           </div>
-          <Button onClick={() => setModal(null)} className="mt-4 w-full max-w-[200px]">
-            Got it
-          </Button>
+          <div className="w-full pt-4 space-y-2">
+            <Button 
+              onClick={() => {
+                setModal(null);
+                toast("Payment gateway coming soon!");
+              }} 
+              className="w-full h-12 text-[15px] font-bold"
+            >
+              Upgrade for ₦2,500 / month
+            </Button>
+            <Button variant="ghost" onClick={() => setModal(null)} className="w-full">
+              Maybe later
+            </Button>
+          </div>
         </div>
       </Modal>
 
