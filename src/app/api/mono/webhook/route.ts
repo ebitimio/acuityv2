@@ -5,9 +5,13 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     
-    // Mono sends a specific event when new transactions occur
     if (body.event === "mono.events.account_updated") {
-      const monoAccountId = body.data.account?._id || body.data.account?.id;
+      // CHANGED: Fallback to account_number if _id is missing in sandbox payload
+      const monoAccountId = 
+        body.data.account?._id || 
+        body.data.account?.id || 
+        body.data.account?.account_number;
+        
       const transactions = body.data.transactions || [];
 
       if (!monoAccountId || transactions.length === 0) {
@@ -31,7 +35,7 @@ export async function POST(req: Request) {
         const rows = transactions.map((t: any) => ({
           workspace_id: account.workspace_id,
           account_id: account.id,
-          amount_minor: Math.round(Number(t.amount) || 0), // Mono sends kobo
+          amount_minor: Math.round(Number(t.amount) || 0), 
           direction: t.type === "credit" ? "credit" : "debit",
           description_raw: t.narration || "Mono Transaction",
           description_clean: t.narration || "Mono Transaction",
@@ -41,9 +45,9 @@ export async function POST(req: Request) {
           source: "alert",
         }));
 
-        // Note: Mono's webhook doesn't send unique transaction IDs yet, so 
-        // we insert them. Your DB trigger will automatically update the balance.
-        await supabaseAdmin.from("transactions").insert(rows);
+        // Insert the transactions (The DB Trigger will auto-update the balance)
+        const { error } = await supabaseAdmin.from("transactions").insert(rows);
+        if (error) throw error;
       }
     }
 

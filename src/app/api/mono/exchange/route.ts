@@ -23,10 +23,11 @@ export async function POST(req: Request) {
     const exchangeData = await exchangeRes.json();
     if (!exchangeRes.ok) throw new Error(exchangeData.message || "Failed to exchange code");
 
-    const monoAccountId = exchangeData.id || exchangeData.data?.id;
-
     // 2. Fetch Details
-    const detailsRes = await fetch(`https://api.withmono.com/v2/accounts/${monoAccountId}`, {
+    // We need the ID from the exchange first
+    const tempId = exchangeData.id || exchangeData.data?.id;
+    
+    const detailsRes = await fetch(`https://api.withmono.com/v2/accounts/${tempId}`, {
       headers: { "mono-sec-key": key },
     });
     
@@ -40,17 +41,15 @@ export async function POST(req: Request) {
 
     // Safely find the bank name
     const bankName = institutionInfo.name || accountInfo.institution?.name || "Linked Bank";
-    
-    // Use the custom name from the frontend
     const accountName = customName || accountInfo.name || "Linked Bank Account";
     
-    // CHANGED: Mono V2 returns balance in kobo. Do NOT multiply by 100.
-    // If by chance it's a raw number like 100000, this math safely handles it.
-    let balanceMinor = Number(accountInfo.balance) || 0;
-    if (balanceMinor < 1000) {
-       // If the balance is suspiciously low, it might be in Naira already.
-       balanceMinor = Math.round(balanceMinor * 100);
-    }
+    // CHANGED: Mono V2 sandbox returns account_number instead of _id in some cases
+    const monoAccountId = tempId || accountInfo._id || accountInfo.account_number;
+
+    if (!monoAccountId) throw new Error("Could not find account ID or number in Mono response");
+
+    // CHANGED: Mono returns balance in kobo, so we do NOT multiply by 100 again
+    const balanceMinor = Math.round(Number(accountInfo.balance) || 0);
 
     // 4. Save to Supabase
     const { data: ws } = await supabase.from("workspaces").select("id").eq("owner_id", user.id).limit(1).single();
