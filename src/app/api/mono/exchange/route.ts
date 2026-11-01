@@ -19,8 +19,9 @@ export async function POST(req: Request) {
       headers: { "Content-Type": "application/json", "mono-sec-key": key },
       body: JSON.stringify({ code }),
     });
+    
     const exchangeData = await exchangeRes.json();
-    if (!exchangeRes.ok) throw new Error(exchangeData.message);
+    if (!exchangeRes.ok) throw new Error(exchangeData.message || "Failed to exchange code");
 
     const monoAccountId = exchangeData.id || exchangeData.data?.id;
 
@@ -28,12 +29,22 @@ export async function POST(req: Request) {
     const detailsRes = await fetch(`https://api.withmono.com/v2/accounts/${monoAccountId}`, {
       headers: { "mono-sec-key": key },
     });
+    
     const details = await detailsRes.json();
-    if (!detailsRes.ok) throw new Error(details.message);
+    if (!detailsRes.ok) throw new Error(details.message || "Failed to fetch account details");
 
-    // 3. Extract from the correct nested path
-    const accountInfo = details.data.account;
-    const institutionInfo = details.data.institution;
+    // 3. Safely extract nested data with fallbacks
+    // Mono V2 sometimes returns { data: { account: {...}, institution: {...} } }
+    const rawData = details.data || details;
+    const accountInfo = rawData.account || rawData;
+    const institutionInfo = rawData.institution || rawData.bank || {};
+
+    const accountName = accountInfo.name || accountInfo.account_name || "Linked Bank Account";
+    const bankName = institutionInfo.name || "Mono Bank";
+    
+    // Safely parse balance, defaulting to 0
+    const balance = Number(accountInfo.balance) || 0;
+    const balanceMinor = Math.round(balance * 100);
 
     // 4. Save to Supabase
     const { data: ws } = await supabase.from("workspaces").select("id").eq("owner_id", user.id).limit(1).single();
@@ -43,11 +54,10 @@ export async function POST(req: Request) {
       .from("accounts")
       .insert({
         workspace_id: ws.id,
-        name: accountInfo.name || "Linked Bank Account",
-        institution: institutionInfo.name || "Mono Bank",
+        name: accountName,
+        institution: bankName,
         type: "checking",
-        // CHANGED: Correctly maps the balance from the nested data object
-        balance_minor: Math.round(Number(accountInfo.balance) * 100), 
+        balance_minor: balanceMinor, 
         balance_as_of: new Date().toISOString(),
         mono_account_id: monoAccountId, 
       })
@@ -58,6 +68,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, account: newAccount });
   } catch (error: any) {
+    console.error("Mono Exchange Error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
