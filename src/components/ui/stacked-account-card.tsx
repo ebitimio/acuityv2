@@ -30,7 +30,7 @@ export function StackedAccountCard({
   cardholderName,
   hideActions = false,
   isCompact = false, 
-  showChip = true, // Defaults to true now
+  showChip = false,
 }: StackedAccountCardProps) {
   return (
     <motion.div
@@ -43,10 +43,10 @@ export function StackedAccountCard({
       className={cn(
         "relative w-full overflow-hidden rounded-2xl shadow-xl",
         "bg-gradient-to-br from-[#1c1c1e] to-[#0b0b0c] border border-[var(--brand)]/30",
-        isCompact ? "h-[220px]" : "min-h-[220px]" // Forces height regardless of compact prop
+        // Removed the forced h-[220px] so it can expand naturally with actions
       )}
     >
-      <div onClick={onClick} className={cn("relative p-5 cursor-pointer overflow-hidden h-full flex flex-col justify-between")}>
+      <div onClick={onClick} className="relative p-5 cursor-pointer overflow-hidden flex flex-col justify-between min-h-[190px]">
         
         {/* WATERMARK */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -59,9 +59,9 @@ export function StackedAccountCard({
         <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full border-[12px] border-[var(--brand)]/10" />
         <div className="absolute -bottom-10 -left-10 h-32 w-32 rounded-full border-[12px] border-[var(--brand)]/10" />
 
-        {/* EMV Chip */}
+        {/* EMV Chip - Only shows if showChip is true */}
         {showChip && (
-          <div className="absolute right-5 top-1/2 -translate-y-1/2 w-10 h-8 z-0">
+          <div className="absolute right-6 top-1/2 -translate-y-1/2 w-10 h-8 z-0">
             <svg viewBox="0 0 40 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full opacity-60">
               <rect width="40" height="32" rx="6" fill="#1a1a1c" />
               <rect x="1" y="1" width="38" height="30" rx="5" stroke="var(--brand)" strokeWidth="1.5" strokeOpacity="0.6" />
@@ -77,7 +77,7 @@ export function StackedAccountCard({
         )}
 
         {/* Top Row: Account Info & Cardholder */}
-        <div className={cn("relative z-10 flex items-start justify-between gap-4 mt-1", showChip ? "pr-14" : "")}>
+        <div className={cn("relative z-10 flex items-start justify-between gap-4 mt-1", showChip ? "pr-12" : "")}>
           {/* Account Info */}
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--brand)]/20">
@@ -94,7 +94,7 @@ export function StackedAccountCard({
             <p className="text-[10px] uppercase tracking-widest text-[var(--brand)]/50 font-semibold mb-0.5">Cardholder</p>
             <p className={cn(
               "font-mono tracking-wider text-[var(--brand)] uppercase leading-tight break-words",
-              isCompact ? "text-[12px] max-w-[110px]" : "text-[14px]"
+              isCompact ? "text-[12px] max-w-[110px]" : "text-[13px]"
             )}>
               {cardholderName || "CARDHOLDER"}
             </p>
@@ -102,7 +102,7 @@ export function StackedAccountCard({
         </div>
             
         {/* Bottom Row: Balance & Bank Name */}
-        <div className={cn("relative z-10 flex items-end justify-between gap-4 mb-1", showChip ? "pr-14" : "")}>
+        <div className={cn("relative z-10 flex items-end justify-between gap-4 mt-6", showChip ? "pr-12" : "")}>
           <div className="min-w-0">
             <p className="text-[11px] text-[var(--brand)]/60 mb-1">Balance</p>
             <p className="text-[24px] font-bold tabular text-[var(--brand)] truncate leading-none">{fmt(balance)}</p>
