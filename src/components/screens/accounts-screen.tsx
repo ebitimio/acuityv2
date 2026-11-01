@@ -41,6 +41,7 @@ export function AccountsScreen({
   
   const [linkedCode, setLinkedCode] = useState<string | null>(null);
   const [linkedAccountName, setLinkedAccountName] = useState("");
+  const [linkedAccountType, setLinkedAccountType] = useState("checking"); // NEW: State for type
 
   const [checkinAccount, setCheckinAccount] = useState<Account | null>(null);
   const [isTransferOpen, setIsTransferOpen] = useState(false);
@@ -124,6 +125,7 @@ export function AccountsScreen({
           setIsConnecting(false);
           setLinkedCode(data.code);
           setLinkedAccountName(""); 
+          setLinkedAccountType("checking"); // Reset type
           setModal("name_linked_account");
         },
         onClose: () => {
@@ -158,7 +160,8 @@ export function AccountsScreen({
         body: JSON.stringify({ 
           code: linkedCode, 
           customName: linkedAccountName,
-          workspaceId: activeWs.id // CHANGED: Send active workspace ID
+          workspaceId: activeWs.id,
+          accountType: linkedAccountType // CHANGED: Send the type
         }),
       });
       const resData = await res.json();
@@ -459,7 +462,19 @@ export function AccountsScreen({
             placeholder="e.g. Main GTBank" 
             autoFocus
           />
-          <Button onClick={saveLinkedAccount} loading={isSavingLink} disabled={!linkedAccountName.trim()} className="w-full">
+          
+          <SelectField 
+            label="Account Type" 
+            value={linkedAccountType} 
+            onChange={(e) => setLinkedAccountType(e.target.value)}
+          >
+            <option value="checking">Current</option>
+            <option value="savings">Savings</option>
+            <option value="wallet">Wallet</option>
+            <option value="dom">Domiciliary</option>
+          </SelectField>
+
+          <Button onClick={saveLinkedAccount} loading={isSavingLink} disabled={!linkedAccountName.trim()} className="w-full mt-2">
             Save Account
           </Button>
         </div>

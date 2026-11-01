@@ -57,9 +57,24 @@ export function StackedAccountCard({
         <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full border-[12px] border-[var(--brand)]/10" />
         <div className="absolute -bottom-10 -left-10 h-32 w-32 rounded-full border-[12px] border-[var(--brand)]/10" />
 
+        {/* EMV Chip */}
+        <div className="absolute right-5 top-1/2 -translate-y-1/2 w-10 h-8">
+          <svg viewBox="0 0 40 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full opacity-60">
+            <rect width="40" height="32" rx="6" fill="#E8B84A" />
+            <rect x="1" y="1" width="38" height="30" rx="5" stroke="#D4A33B" strokeWidth="2" />
+            <path d="M13 0V32" stroke="#D4A33B" strokeWidth="2" />
+            <path d="M27 0V32" stroke="#D4A33B" strokeWidth="2" />
+            <path d="M0 10H13" stroke="#D4A33B" strokeWidth="2" />
+            <path d="M0 22H13" stroke="#D4A33B" strokeWidth="2" />
+            <path d="M27 10H40" stroke="#D4A33B" strokeWidth="2" />
+            <path d="M27 22H40" stroke="#D4A33B" strokeWidth="2" />
+            <rect x="13" y="10" width="14" height="12" fill="#D4A33B" fillOpacity="0.5" />
+          </svg>
+        </div>
+
         <div className={cn("relative z-10 flex flex-col", isCompact ? "h-full justify-between" : "h-full justify-between")}>
-          <div className="flex items-start justify-between gap-2">
-            {/* Account Info - Takes limited space */}
+          <div className="flex items-start justify-between gap-2 pr-12">
+            {/* Account Info */}
             <div className="flex items-center gap-2 min-w-0 flex-1">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand)]/20">
                 <span className="text-[14px] font-bold text-[var(--brand)]">{account.name.charAt(0)}</span>
@@ -70,7 +85,7 @@ export function StackedAccountCard({
               </div>
             </div>
             
-            {/* Cardholder Name - Takes remaining space, shrinks text to fit */}
+            {/* Cardholder Name */}
             <div className="text-right shrink-0">
               <p className="text-[9px] uppercase tracking-widest text-[var(--brand)]/60 font-semibold">Cardholder</p>
               <p className={cn(
@@ -81,8 +96,8 @@ export function StackedAccountCard({
               </p>
             </div>
           </div>
-
-          <div className="flex items-end justify-between gap-2 mt-auto">
+              
+          <div className="flex items-end justify-between gap-2 mt-auto pr-12">
             <div>
               <p className="text-[10px] text-[var(--brand)]/60">Balance</p>
               <p className="text-[20px] font-bold tabular text-[var(--brand)]">{fmt(balance)}</p>

@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function POST(req: Request) {
   try {
-    const { code, customName, workspaceId } = await req.json();
+    const { code, customName, workspaceId, accountType } = await req.json();
     if (!code || !workspaceId) return NextResponse.json({ error: "Missing data" }, { status: 400 });
     
     const key = process.env.MONO_SECRET_KEY;
@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     const { data: ws } = await supabase.from("workspaces").select("id").eq("id", workspaceId).eq("owner_id", user.id).single();
     if (!ws) return NextResponse.json({ error: "Invalid workspace" }, { status: 403 });
 
-    // 3. Exchange code... (rest of the Mono API calls remain the same)
+    // 3. Exchange code for Account ID
     const exchangeRes = await fetch("https://api.withmono.com/v2/accounts/auth", {
       method: "POST",
       headers: { "Content-Type": "application/json", "mono-sec-key": key },
@@ -42,18 +42,16 @@ export async function POST(req: Request) {
 
     const bankName = institutionInfo.name || "Linked Bank";
     const accountName = customName || accountInfo.name || "Linked Bank Account";
-    
-    // Use accountNumber as fallback if _id is missing (Fixing Fix #7)
     const monoAccountId = tempId || accountInfo._id || accountInfo.account_number;
 
-    // Save with unique constraint preventing double linking
+    // 4. Save with dynamic type
     const { data: newAccount, error: insertError } = await supabase
       .from("accounts")
       .insert({
         workspace_id: ws.id,
         name: accountName,
         institution: bankName, 
-        type: "checking",
+        type: accountType || "checking", // CHANGED: Use user-selected type
         balance_minor: Math.round(Number(accountInfo.balance) || 0), 
         balance_as_of: new Date().toISOString(),
         mono_account_id: monoAccountId, 
@@ -62,7 +60,7 @@ export async function POST(req: Request) {
       .single();
 
     if (insertError) {
-      if (insertError.code === "23505") { // Unique violation
+      if (insertError.code === "23505") { 
         return NextResponse.json({ error: "This bank account is already linked." }, { status: 400 });
       }
       throw insertError;
