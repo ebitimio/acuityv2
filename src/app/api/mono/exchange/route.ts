@@ -3,8 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function POST(req: Request) {
   try {
-    const { code, customName, workspaceId } = await req.json();
-    if (!code || !workspaceId) return NextResponse.json({ error: "Missing data" }, { status: 400 });
+    const { code, customName } = await req.json();
+    if (!code) return NextResponse.json({ error: "Missing code" }, { status: 400 });
     
     const key = process.env.MONO_SECRET_KEY;
     if (!key) return NextResponse.json({ error: "Mono not configured" }, { status: 500 });
@@ -13,62 +13,74 @@ export async function POST(req: Request) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    // 1. Verify Premium Tier
-    const { data: profile } = await supabase.from("profiles").select("tier").eq("id", user.id).single();
-    if (profile?.tier !== "premium") {
-      return NextResponse.json({ error: "Upgrade to premium required" }, { status: 403 });
-    }
-
-    // 2. Verify Workspace Ownership
-    const { data: ws } = await supabase.from("workspaces").select("id").eq("id", workspaceId).eq("owner_id", user.id).single();
-    if (!ws) return NextResponse.json({ error: "Invalid workspace" }, { status: 403 });
-
-    // 3. Exchange code for account ID
+    // 1. Exchange code for Account ID
     const exchangeRes = await fetch("https://api.withmono.com/v2/accounts/auth", {
       method: "POST",
       headers: { "Content-Type": "application/json", "mono-sec-key": key },
       body: JSON.stringify({ code }),
     });
+    
     const exchangeData = await exchangeRes.json();
     if (!exchangeRes.ok) throw new Error(exchangeData.message || "Failed to exchange code");
 
-    const tempId = exchangeData.id || exchangeData.data?.id;
+    const monoAccountId = exchangeData.id || exchangeData.data?.id;
+
+    // 2. Fetch Details
+    const detailsRes = await fetch(`https://api.withmono.com/v2/accounts/${monoAccountId}`, {
+      headers: { "mono-sec-key": key },
+    });
     
-    // 4. Fetch full account details
-    const detailsRes = await fetch(`https://api.withmono.com/v2/accounts/${tempId}`, { headers: { "mono-sec-key": key } });
     const details = await detailsRes.json();
-    
+    if (!detailsRes.ok) throw new Error(details.message || "Failed to fetch account details");
+
+    // Log the full response so we can see exactly what Mono sends
+    console.log("Full Mono Account Details:", JSON.stringify(details, null, 2));
+
+    // 3. Safely extract nested data
     const rawData = details.data || details;
     const accountInfo = rawData.account || rawData;
-    const institutionInfo = rawData.institution || {};
-
-    // Extract the real bank name safely
-    const bankName = institutionInfo.name || rawData.institution_name || accountInfo.bank_name || "Linked Bank";
-    const accountName = customName || accountInfo.name || "Linked Bank Account";
     
-    const monoAccountId = tempId || accountInfo._id || accountInfo.account_number;
+    // CHANGED: Look for the bank name in all possible places
+    let bankName = "Linked Bank";
+    
+    // Check top-level institution
+    if (rawData.institution?.name) {
+      bankName = rawData.institution.name;
+    } 
+    // Check account-level institution
+    else if (accountInfo.institution?.name) {
+      bankName = accountInfo.institution.name;
+    }
+    // Check if bank is just a string
+    else if (typeof accountInfo.bank === "string") {
+      bankName = accountInfo.bank;
+    }
 
-    // Save to Supabase
+    // Use the custom name passed from the frontend, or fallback to Mono's name
+    const accountName = customName || accountInfo.name || accountInfo.account_name || "Linked Bank Account";
+    
+    // Mono returns balance in kobo, so we do NOT multiply by 100 again
+    const balanceMinor = Math.round(Number(accountInfo.balance) || 0);
+
+    // 4. Save to Supabase
+    const { data: ws } = await supabase.from("workspaces").select("id").eq("owner_id", user.id).limit(1).single();
+    if (!ws) throw new Error("No workspace found");
+
     const { data: newAccount, error: insertError } = await supabase
       .from("accounts")
       .insert({
         workspace_id: ws.id,
         name: accountName,
         institution: bankName, 
-        type: "savings", // Defaulting to savings; update this if you add a type selector
-        balance_minor: Math.round(Number(accountInfo.balance) || 0), 
+        type: "checking",
+        balance_minor: balanceMinor, 
         balance_as_of: new Date().toISOString(),
         mono_account_id: monoAccountId, 
       })
       .select()
       .single();
 
-    if (insertError) {
-      if (insertError.code === "23505") {
-        return NextResponse.json({ error: "This bank account is already linked." }, { status: 400 });
-      }
-      throw insertError;
-    }
+    if (insertError) throw insertError;
 
     return NextResponse.json({ success: true, account: newAccount });
   } catch (error: any) {
