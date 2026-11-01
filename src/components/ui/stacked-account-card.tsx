@@ -57,9 +57,9 @@ export function StackedAccountCard({
         <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full border-[12px] border-[var(--brand)]/10" />
         <div className="absolute -bottom-10 -left-10 h-32 w-32 rounded-full border-[12px] border-[var(--brand)]/10" />
 
-        {/* EMV Chip - Black with App Color Outlines */}
-        <div className="absolute right-6 top-1/2 -translate-y-1/2 w-11 h-9 z-0">
-          <svg viewBox="0 0 40 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full opacity-40">
+        {/* EMV Chip - Positioned to sit in the gap */}
+        <div className="absolute right-5 top-1/2 -translate-y-1/2 w-10 h-8 z-0">
+          <svg viewBox="0 0 40 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full opacity-60">
             <rect width="40" height="32" rx="6" fill="#1a1a1c" />
             <rect x="1" y="1" width="38" height="30" rx="5" stroke="var(--brand)" strokeWidth="1.5" strokeOpacity="0.6" />
             <path d="M13 0V32" stroke="var(--brand)" strokeWidth="1.5" strokeOpacity="0.6" />
@@ -85,8 +85,8 @@ export function StackedAccountCard({
             </div>
           </div>
           
-          {/* Cardholder Name - Pushed to Extreme Right */}
-          <div className="text-right shrink-0">
+          {/* Cardholder Name - Added pr-14 to clear the chip */}
+          <div className="text-right shrink-0 pr-14">
             <p className="text-[10px] uppercase tracking-widest text-[var(--brand)]/50 font-semibold mb-0.5">Cardholder</p>
             <p className={cn(
               "font-mono tracking-wider text-[var(--brand)] uppercase leading-tight break-words",
@@ -104,8 +104,8 @@ export function StackedAccountCard({
             <p className="text-[24px] font-bold tabular text-[var(--brand)] truncate leading-none">{fmt(balance)}</p>
           </div>
           
-          {/* Bank Name - Pushed to Extreme Right */}
-          <p className="text-[12px] font-medium text-[var(--brand)]/80 text-right truncate max-w-[110px]">
+          {/* Bank Name - Added pr-14 to clear the chip */}
+          <p className="text-[12px] font-medium text-[var(--brand)]/80 text-right truncate max-w-[110px] pr-14">
             {account.institution}
           </p>
         </div>
