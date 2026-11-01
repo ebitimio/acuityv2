@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { ScreenHeader, IconButton } from "@/components/ui/screen-header";
-import { Plus, Trash2, ArrowRightLeft, TrendingUp, Scale, Coins, Pencil, Link as LinkIcon, Loader2 } from "lucide-react";
+import { Plus, Trash2, ArrowRightLeft, TrendingUp, Scale, Coins, Pencil, Link as LinkIcon, Loader2, HardHat } from "lucide-react";
 import {
   getAccounts, createAccount, deleteAccount, getAssets, addAsset, updateAsset, deleteAsset, clearDataCache,
 } from "@/lib/supabase/database";
+import { createClient } from "@/lib/supabase/client";
 import { Modal } from "@/components/ui/modal";
 import { Field, SelectField, Button } from "@/components/ui/form";
 import { CurrencyField } from "@/components/ui/currency-field";
@@ -36,7 +37,7 @@ export function AccountsScreen({
 }) {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
-  const [modal, setModal] = useState<"account" | "asset" | null>(null);
+  const [modal, setModal] = useState<"account" | "asset" | "under_construction" | null>(null);
   const [checkinAccount, setCheckinAccount] = useState<Account | null>(null);
   const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [isCryptoOpen, setIsCryptoOpen] = useState(false);
@@ -56,6 +57,7 @@ export function AccountsScreen({
   const { fmt } = useCurrency();
   const toast = useToast();
   const { active: activeWs } = useWorkspace();
+  const supabase = createClient();
 
   const publicKey = process.env.NEXT_PUBLIC_MONO_PUBLIC_KEY;
 
@@ -85,7 +87,27 @@ export function AccountsScreen({
     load(); 
   }, [activeWs?.id]);
 
-  const handleConnectBank = () => {
+  const handleConnectBank = async () => {
+    // 1. Get current session
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // 2. Fetch user's profile to check their email
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("email")
+      .eq("id", user.id)
+      .single();
+
+    // 3. Check if the profile email matches YOUR personal Gmail
+    const ADMIN_EMAIL = "timloglafa096@gmail.com";
+
+    if (!profile || profile.email !== ADMIN_EMAIL) {
+      setModal("under_construction");
+      return;
+    }
+
+    // 4. Admin path: Proceed with Mono
     if (!publicKey) {
       toast("Mono API key missing", "err");
       return;
@@ -94,14 +116,13 @@ export function AccountsScreen({
     setIsConnecting(true);
     
     try {
-      // Create the instance exactly when clicked to prevent the "e.style" null crash
       const connect = new Connect({
         key: publicKey,
         scope: "auth",
         data: {
           customer: {
             name: userName,
-            email: `${userName.replace(/\s+/g, '.').toLowerCase()}@acuity.foo.ng`,
+            email: profile.email,
           }
         },
         onSuccess: async (data: any) => {
@@ -129,7 +150,6 @@ export function AccountsScreen({
         },
       });
       
-      // setup() injects the iframe, open() makes it visible
       connect.setup();
       connect.open();
       
@@ -378,6 +398,24 @@ export function AccountsScreen({
         onSaved={() => { load(); }}
         account={checkinAccount ? { id: checkinAccount.id, name: checkinAccount.name, current_minor: checkinAccount.current_minor ?? checkinAccount.balance_minor } : null}
       />
+
+      {/* --- UNDER CONSTRUCTION MODAL --- */}
+      <Modal open={modal === "under_construction"} onClose={() => setModal(null)} title="Feature in Development">
+        <div className="flex flex-col items-center py-6 space-y-4 text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--warn)]/10">
+            <HardHat size={32} className="text-[var(--warn)]" />
+          </div>
+          <div>
+            <h3 className="text-[18px] font-bold text-[var(--text-1)]">Coming Soon</h3>
+            <p className="text-[13px] text-[var(--text-2)] mt-2 max-w-[260px] mx-auto leading-relaxed">
+              We're currently perfecting the automated bank linking feature. Sit tight, it will be available to everyone very soon!
+            </p>
+          </div>
+          <Button onClick={() => setModal(null)} className="mt-4 w-full max-w-[200px]">
+            Got it
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }
