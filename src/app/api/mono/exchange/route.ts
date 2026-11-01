@@ -33,14 +33,19 @@ export async function POST(req: Request) {
     const details = await detailsRes.json();
     if (!detailsRes.ok) throw new Error(details.message || "Failed to fetch account details");
 
-    // 3. Safely extract nested data with fallbacks
+    // 3. Safely extract nested data
+    // Mono V2 returns { data: { account: {...}, institution: {...} } }
     const rawData = details.data || details;
     const accountInfo = rawData.account || rawData;
+    
+    // CHANGED: Look for the institution in multiple possible places
     const institutionInfo = rawData.institution || rawData.bank || {};
 
+    // CHANGED: Extract the real bank name
+    const bankName = institutionInfo.name || accountInfo.bank || "Linked Bank";
+    
     // Use the custom name passed from the frontend, or fallback to Mono's name
     const accountName = customName || accountInfo.name || accountInfo.account_name || "Linked Bank Account";
-    const bankName = institutionInfo.name || "Mono Bank";
     
     // Mono returns balance in kobo, so we do NOT multiply by 100 again
     const balanceMinor = Math.round(Number(accountInfo.balance) || 0);
@@ -54,7 +59,7 @@ export async function POST(req: Request) {
       .insert({
         workspace_id: ws.id,
         name: accountName,
-        institution: bankName,
+        institution: bankName, // Now uses the extracted real bank name
         type: "checking",
         balance_minor: balanceMinor, 
         balance_as_of: new Date().toISOString(),
