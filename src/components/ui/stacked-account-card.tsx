@@ -41,15 +41,15 @@ export function StackedAccountCard({
       className={cn(
         "relative w-full overflow-hidden rounded-2xl shadow-xl",
         "bg-gradient-to-br from-[#1c1c1e] to-[#0b0b0c] border border-[var(--brand)]/30",
-        isCompact && "h-[200px]" 
+        isCompact && "h-[220px]" // Increased from 200px to give more breathing room
       )}
     >
-      <div onClick={onClick} className={cn("relative p-5 cursor-pointer overflow-hidden", isCompact ? "h-full flex flex-col justify-between" : "")}>
+      <div onClick={onClick} className={cn("relative p-5 cursor-pointer overflow-hidden flex flex-col h-full justify-between", isCompact ? "" : "min-h-[180px]")}>
         
         {/* WATERMARK */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <p className="text-[48px] font-black tracking-tighter text-[var(--brand)]/[0.04] select-none">
-            ACUITY<span className="text-[var(--brand)]/[0.08]">.</span>
+          <p className="text-[48px] font-black tracking-tighter text-[var(--brand)]/[0.03] select-none">
+            ACUITY<span className="text-[var(--brand)]/[0.06]">.</span>
           </p>
         </div>
 
@@ -57,53 +57,53 @@ export function StackedAccountCard({
         <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full border-[12px] border-[var(--brand)]/10" />
         <div className="absolute -bottom-10 -left-10 h-32 w-32 rounded-full border-[12px] border-[var(--brand)]/10" />
 
-        {/* EMV Chip */}
-        <div className="absolute right-5 top-1/2 -translate-y-1/2 w-10 h-8">
-          <svg viewBox="0 0 40 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full opacity-60">
-            <rect width="40" height="32" rx="6" fill="#E8B84A" />
-            <rect x="1" y="1" width="38" height="30" rx="5" stroke="#D4A33B" strokeWidth="2" />
-            <path d="M13 0V32" stroke="#D4A33B" strokeWidth="2" />
-            <path d="M27 0V32" stroke="#D4A33B" strokeWidth="2" />
-            <path d="M0 10H13" stroke="#D4A33B" strokeWidth="2" />
-            <path d="M0 22H13" stroke="#D4A33B" strokeWidth="2" />
-            <path d="M27 10H40" stroke="#D4A33B" strokeWidth="2" />
-            <path d="M27 22H40" stroke="#D4A33B" strokeWidth="2" />
-            <rect x="13" y="10" width="14" height="12" fill="#D4A33B" fillOpacity="0.5" />
+        {/* EMV Chip - Now Black with App Color Outlines */}
+        <div className="absolute right-6 top-1/2 -translate-y-1/2 w-11 h-9">
+          <svg viewBox="0 0 40 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full opacity-80">
+            <rect width="40" height="32" rx="6" fill="#1a1a1c" />
+            <rect x="1" y="1" width="38" height="30" rx="5" stroke="var(--brand)" strokeWidth="1.5" strokeOpacity="0.6" />
+            <path d="M13 0V32" stroke="var(--brand)" strokeWidth="1.5" strokeOpacity="0.6" />
+            <path d="M27 0V32" stroke="var(--brand)" strokeWidth="1.5" strokeOpacity="0.6" />
+            <path d="M0 10H13" stroke="var(--brand)" strokeWidth="1.5" strokeOpacity="0.6" />
+            <path d="M0 22H13" stroke="var(--brand)" strokeWidth="1.5" strokeOpacity="0.6" />
+            <path d="M27 10H40" stroke="var(--brand)" strokeWidth="1.5" strokeOpacity="0.6" />
+            <path d="M27 22H40" stroke="var(--brand)" strokeWidth="1.5" strokeOpacity="0.6" />
+            <rect x="13" y="10" width="14" height="12" fill="var(--brand)" fillOpacity="0.2" />
           </svg>
         </div>
 
-        <div className={cn("relative z-10 flex flex-col", isCompact ? "h-full justify-between" : "h-full justify-between")}>
-          <div className="flex items-start justify-between gap-2 pr-12">
-            {/* Account Info */}
-            <div className="flex items-center gap-2 min-w-0 flex-1">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand)]/20">
-                <span className="text-[14px] font-bold text-[var(--brand)]">{account.name.charAt(0)}</span>
-              </div>
-              <div className="min-w-0">
-                <p className={cn("text-[14px] font-bold text-[var(--brand)]", isCompact ? "truncate" : "")}>{account.name}</p>
-                <p className="text-[10px] text-[var(--brand)]/60 uppercase">{account.type}</p>
-              </div>
+        {/* Top Row: Account Info & Cardholder */}
+        <div className="relative z-10 flex items-start justify-between gap-4 pr-14 mt-1">
+          {/* Account Info */}
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--brand)]/20">
+              <span className="text-[16px] font-bold text-[var(--brand)]">{account.name.charAt(0)}</span>
             </div>
+            <div className="min-w-0">
+              <p className="text-[15px] font-bold text-[var(--brand)] truncate">{account.name}</p>
+              <p className="text-[11px] text-[var(--brand)]/60 uppercase tracking-wider">{account.type}</p>
+            </div>
+          </div>
+          
+          {/* Cardholder Name */}
+          <div className="text-right shrink-0">
+            <p className="text-[10px] uppercase tracking-widest text-[var(--brand)]/50 font-semibold mb-0.5">Cardholder</p>
+            <p className={cn(
+              "font-mono tracking-wider text-[var(--brand)] uppercase leading-tight break-words",
+              isCompact ? "text-[12px] max-w-[120px]" : "text-[14px]"
+            )}>
+              {cardholderName || "CARDHOLDER"}
+            </p>
+          </div>
+        </div>
             
-            {/* Cardholder Name */}
-            <div className="text-right shrink-0">
-              <p className="text-[9px] uppercase tracking-widest text-[var(--brand)]/60 font-semibold">Cardholder</p>
-              <p className={cn(
-                "font-mono tracking-wider text-[var(--brand)] uppercase leading-tight",
-                isCompact ? "text-[11px] max-w-[130px]" : "text-[13px]"
-              )}>
-                {cardholderName || "CARDHOLDER"}
-              </p>
-            </div>
+        {/* Bottom Row: Balance & Bank Name */}
+        <div className="relative z-10 flex items-end justify-between gap-4 pr-14 mb-1">
+          <div className="min-w-0">
+            <p className="text-[11px] text-[var(--brand)]/60 mb-1">Balance</p>
+            <p className="text-[24px] font-bold tabular text-[var(--brand)] truncate leading-none">{fmt(balance)}</p>
           </div>
-              
-          <div className="flex items-end justify-between gap-2 mt-auto pr-12">
-            <div>
-              <p className="text-[10px] text-[var(--brand)]/60">Balance</p>
-              <p className="text-[20px] font-bold tabular text-[var(--brand)]">{fmt(balance)}</p>
-            </div>
-            <p className={cn("text-[11px] font-medium text-[var(--brand)]/80 text-right", isCompact ? "truncate max-w-[100px]" : "")}>{account.institution}</p>
-          </div>
+          <p className="text-[12px] font-medium text-[var(--brand)]/80 text-right truncate max-w-[100px]">{account.institution}</p>
         </div>
       </div>
 
@@ -118,13 +118,13 @@ export function StackedAccountCard({
             <div className="flex justify-end gap-5 px-5 py-3">
               <button 
                 onClick={(e) => { e.stopPropagation(); onCheckBalance(); }} 
-                className="flex items-center gap-1.5 text-[12px] font-semibold text-[var(--brand)]"
+                className="flex items-center gap-1.5 text-[12px] font-semibold text-[var(--brand)] hover:opacity-80 transition-opacity"
               >
                 <RefreshCw size={13} /> Check Balance
               </button>
               <button 
                 onClick={(e) => { e.stopPropagation(); onDelete(); }} 
-                className="flex items-center gap-1.5 text-[12px] font-semibold text-[var(--danger)]"
+                className="flex items-center gap-1.5 text-[12px] font-semibold text-[var(--danger)] hover:opacity-80 transition-opacity"
               >
                 <Trash2 size={13} /> Delete
               </button>
