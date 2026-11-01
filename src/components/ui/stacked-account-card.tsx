@@ -16,6 +16,7 @@ interface StackedAccountCardProps {
   cardholderName: string;
   hideActions?: boolean;
   isCompact?: boolean; 
+  showChip?: boolean;
 }
 
 export function StackedAccountCard({ 
@@ -29,6 +30,7 @@ export function StackedAccountCard({
   cardholderName,
   hideActions = false,
   isCompact = false, 
+  showChip = false, // Defaults to false
 }: StackedAccountCardProps) {
   return (
     <motion.div
@@ -41,7 +43,7 @@ export function StackedAccountCard({
       className={cn(
         "relative w-full overflow-hidden rounded-2xl shadow-xl",
         "bg-gradient-to-br from-[#1c1c1e] to-[#0b0b0c] border border-[var(--brand)]/30",
-        isCompact && "h-[200px]" // Restored to exactly 200px like the original
+        isCompact && "h-[200px]" 
       )}
     >
       <div onClick={onClick} className={cn("relative p-5 cursor-pointer overflow-hidden", isCompact ? "h-full flex flex-col justify-between" : "")}>
@@ -57,20 +59,22 @@ export function StackedAccountCard({
         <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full border-[12px] border-[var(--brand)]/10" />
         <div className="absolute -bottom-10 -left-10 h-32 w-32 rounded-full border-[12px] border-[var(--brand)]/10" />
 
-        {/* EMV Chip - Centered exactly where it was in your second image */}
-        <div className="absolute right-5 top-1/2 -translate-y-1/2 w-10 h-8 z-0">
-          <svg viewBox="0 0 40 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full opacity-60">
-            <rect width="40" height="32" rx="6" fill="#1a1a1c" />
-            <rect x="1" y="1" width="38" height="30" rx="5" stroke="var(--brand)" strokeWidth="1.5" strokeOpacity="0.6" />
-            <path d="M13 0V32" stroke="var(--brand)" strokeWidth="1.5" strokeOpacity="0.6" />
-            <path d="M27 0V32" stroke="var(--brand)" strokeWidth="1.5" strokeOpacity="0.6" />
-            <path d="M0 10H13" stroke="var(--brand)" strokeWidth="1.5" strokeOpacity="0.6" />
-            <path d="M0 22H13" stroke="var(--brand)" strokeWidth="1.5" strokeOpacity="0.6" />
-            <path d="M27 10H40" stroke="var(--brand)" strokeWidth="1.5" strokeOpacity="0.6" />
-            <path d="M27 22H40" stroke="var(--brand)" strokeWidth="1.5" strokeOpacity="0.6" />
-            <rect x="13" y="10" width="14" height="12" fill="var(--brand)" fillOpacity="0.2" />
-          </svg>
-        </div>
+        {/* EMV Chip - Only renders if showChip is true */}
+        {showChip && (
+          <div className="absolute right-5 top-1/2 -translate-y-1/2 w-10 h-8 z-0">
+            <svg viewBox="0 0 40 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full opacity-60">
+              <rect width="40" height="32" rx="6" fill="#1a1a1c" />
+              <rect x="1" y="1" width="38" height="30" rx="5" stroke="var(--brand)" strokeWidth="1.5" strokeOpacity="0.6" />
+              <path d="M13 0V32" stroke="var(--brand)" strokeWidth="1.5" strokeOpacity="0.6" />
+              <path d="M27 0V32" stroke="var(--brand)" strokeWidth="1.5" strokeOpacity="0.6" />
+              <path d="M0 10H13" stroke="var(--brand)" strokeWidth="1.5" strokeOpacity="0.6" />
+              <path d="M0 22H13" stroke="var(--brand)" strokeWidth="1.5" strokeOpacity="0.6" />
+              <path d="M27 10H40" stroke="var(--brand)" strokeWidth="1.5" strokeOpacity="0.6" />
+              <path d="M27 22H40" stroke="var(--brand)" strokeWidth="1.5" strokeOpacity="0.6" />
+              <rect x="13" y="10" width="14" height="12" fill="var(--brand)" fillOpacity="0.2" />
+            </svg>
+          </div>
+        )}
 
         <div className={cn("relative z-10 flex flex-col", isCompact ? "h-full justify-between" : "h-full justify-between")}>
           <div className="flex items-start justify-between gap-2">
@@ -85,7 +89,7 @@ export function StackedAccountCard({
               </div>
             </div>
             
-            {/* Cardholder Name - Flush Right */}
+            {/* Cardholder Name */}
             <div className="text-right shrink-0">
               <p className="text-[9px] uppercase tracking-widest text-[var(--brand)]/60 font-semibold">Cardholder</p>
               <p className={cn(
@@ -102,7 +106,7 @@ export function StackedAccountCard({
               <p className="text-[10px] text-[var(--brand)]/60">Balance</p>
               <p className="text-[20px] font-bold tabular text-[var(--brand)]">{fmt(balance)}</p>
             </div>
-            {/* Bank Name - Flush Right */}
+            {/* Bank Name */}
             <p className={cn("text-[11px] font-medium text-[var(--brand)]/80 text-right", isCompact ? "truncate max-w-[100px]" : "")}>{account.institution}</p>
           </div>
         </div>
