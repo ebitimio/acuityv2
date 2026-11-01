@@ -33,16 +33,29 @@ export async function POST(req: Request) {
     const details = await detailsRes.json();
     if (!detailsRes.ok) throw new Error(details.message || "Failed to fetch account details");
 
+    // Log the full response so we can see exactly what Mono sends
+    console.log("Full Mono Account Details:", JSON.stringify(details, null, 2));
+
     // 3. Safely extract nested data
     const rawData = details.data || details;
     const accountInfo = rawData.account || rawData;
     
-    // CHANGED: Mono returns the bank details in rawData.institution
-    const institutionInfo = rawData.institution || {};
-
-    // CHANGED: Extracts the actual bank name (e.g., GTBank)
-    const bankName = institutionInfo.name || "Linked Bank";
+    // CHANGED: Look for the bank name in all possible places
+    let bankName = "Linked Bank";
     
+    // Check top-level institution
+    if (rawData.institution?.name) {
+      bankName = rawData.institution.name;
+    } 
+    // Check account-level institution
+    else if (accountInfo.institution?.name) {
+      bankName = accountInfo.institution.name;
+    }
+    // Check if bank is just a string
+    else if (typeof accountInfo.bank === "string") {
+      bankName = accountInfo.bank;
+    }
+
     // Use the custom name passed from the frontend, or fallback to Mono's name
     const accountName = customName || accountInfo.name || accountInfo.account_name || "Linked Bank Account";
     
