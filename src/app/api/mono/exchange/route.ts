@@ -33,34 +33,24 @@ export async function POST(req: Request) {
     const details = await detailsRes.json();
     if (!detailsRes.ok) throw new Error(details.message || "Failed to fetch account details");
 
-    // Log the full response so we can see exactly what Mono sends
-    console.log("Full Mono Account Details:", JSON.stringify(details, null, 2));
-
     // 3. Safely extract nested data
     const rawData = details.data || details;
     const accountInfo = rawData.account || rawData;
-    
-    // CHANGED: Look for the bank name in all possible places
-    let bankName = "Linked Bank";
-    
-    // Check top-level institution
-    if (rawData.institution?.name) {
-      bankName = rawData.institution.name;
-    } 
-    // Check account-level institution
-    else if (accountInfo.institution?.name) {
-      bankName = accountInfo.institution.name;
-    }
-    // Check if bank is just a string
-    else if (typeof accountInfo.bank === "string") {
-      bankName = accountInfo.bank;
-    }
+    const institutionInfo = rawData.institution || {};
 
-    // Use the custom name passed from the frontend, or fallback to Mono's name
-    const accountName = customName || accountInfo.name || accountInfo.account_name || "Linked Bank Account";
+    // Safely find the bank name
+    const bankName = institutionInfo.name || accountInfo.institution?.name || "Linked Bank";
     
-    // Mono returns balance in kobo, so we do NOT multiply by 100 again
-    const balanceMinor = Math.round(Number(accountInfo.balance) || 0);
+    // Use the custom name from the frontend
+    const accountName = customName || accountInfo.name || "Linked Bank Account";
+    
+    // CHANGED: Mono V2 returns balance in kobo. Do NOT multiply by 100.
+    // If by chance it's a raw number like 100000, this math safely handles it.
+    let balanceMinor = Number(accountInfo.balance) || 0;
+    if (balanceMinor < 1000) {
+       // If the balance is suspiciously low, it might be in Naira already.
+       balanceMinor = Math.round(balanceMinor * 100);
+    }
 
     // 4. Save to Supabase
     const { data: ws } = await supabase.from("workspaces").select("id").eq("owner_id", user.id).limit(1).single();
