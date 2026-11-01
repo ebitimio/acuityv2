@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ScreenHeader, IconButton } from "@/components/ui/screen-header";
-import { Plus, Trash2, ArrowRightLeft, TrendingUp, Scale, Coins, Pencil, Link as LinkIcon, Loader2, HardHat } from "lucide-react";
+import { Plus, Trash2, ArrowRightLeft, TrendingUp, Scale, Coins, Pencil, Link as LinkIcon, Loader2, Crown, Sparkles } from "lucide-react";
 import {
   getAccounts, createAccount, deleteAccount, getAssets, addAsset, updateAsset, deleteAsset, clearDataCache,
 } from "@/lib/supabase/database";
@@ -37,7 +37,8 @@ export function AccountsScreen({
 }) {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
-  const [modal, setModal] = useState<"account" | "asset" | "under_construction" | null>(null);
+  // Changed to "premium_locked" for the new modal
+  const [modal, setModal] = useState<"account" | "asset" | "premium_locked" | null>(null);
   const [checkinAccount, setCheckinAccount] = useState<Account | null>(null);
   const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [isCryptoOpen, setIsCryptoOpen] = useState(false);
@@ -92,22 +93,21 @@ export function AccountsScreen({
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // 2. Fetch user's profile to check their email
+    // 2. Fetch user's profile to check their tier
     const { data: profile } = await supabase
       .from("profiles")
-      .select("email")
+      .select("tier")
       .eq("id", user.id)
       .single();
 
-    // 3. Check if the profile email matches YOUR personal Gmail
-    const ADMIN_EMAIL = "timloglafa096@gmail.com";
-
-    if (!profile || profile.email !== ADMIN_EMAIL) {
-      setModal("under_construction");
+    // 3. Check if the user is premium
+    if (!profile || profile.tier !== "premium") {
+      // Show the Premium Locked modal for basic users
+      setModal("premium_locked");
       return;
     }
 
-    // 4. Admin path: Proceed with Mono
+    // 4. Premium path: Proceed with Mono
     if (!publicKey) {
       toast("Mono API key missing", "err");
       return;
@@ -122,7 +122,7 @@ export function AccountsScreen({
         data: {
           customer: {
             name: userName,
-            email: profile.email,
+            email: user.email,
           }
         },
         onSuccess: async (data: any) => {
@@ -399,16 +399,17 @@ export function AccountsScreen({
         account={checkinAccount ? { id: checkinAccount.id, name: checkinAccount.name, current_minor: checkinAccount.current_minor ?? checkinAccount.balance_minor } : null}
       />
 
-      {/* --- UNDER CONSTRUCTION MODAL --- */}
-      <Modal open={modal === "under_construction"} onClose={() => setModal(null)} title="Feature in Development">
+      {/* --- PREMIUM LOCKED MODAL --- */}
+      <Modal open={modal === "premium_locked"} onClose={() => setModal(null)} title="Premium Feature">
         <div className="flex flex-col items-center py-6 space-y-4 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--warn)]/10">
-            <HardHat size={32} className="text-[var(--warn)]" />
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--brand)]/10 relative">
+            <Crown size={32} className="text-[var(--brand)]" />
+            <Sparkles size={14} className="text-[var(--brand)] absolute -top-1 -right-1" />
           </div>
           <div>
-            <h3 className="text-[18px] font-bold text-[var(--text-1)]">Coming Soon</h3>
-            <p className="text-[13px] text-[var(--text-2)] mt-2 max-w-[260px] mx-auto leading-relaxed">
-              We're currently perfecting the automated bank linking feature. Sit tight, it will be available to everyone very soon!
+            <h3 className="text-[18px] font-bold text-[var(--text-1)]">Upgrade to Premium</h3>
+            <p className="text-[13px] text-[var(--text-2)] mt-2 max-w-[280px] mx-auto leading-relaxed">
+              Automated bank linking is a premium feature. Upgrade to securely connect your bank and track your transactions automatically.
             </p>
           </div>
           <Button onClick={() => setModal(null)} className="mt-4 w-full max-w-[200px]">
