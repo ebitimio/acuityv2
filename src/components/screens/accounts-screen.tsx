@@ -37,13 +37,17 @@ export function AccountsScreen({
 }) {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
-  // Changed to "premium_locked" for the new modal
-  const [modal, setModal] = useState<"account" | "asset" | "premium_locked" | null>(null);
+  const [modal, setModal] = useState<"account" | "asset" | "premium_locked" | "name_linked_account" | null>(null);
+  
+  const [linkedCode, setLinkedCode] = useState<string | null>(null);
+  const [linkedAccountName, setLinkedAccountName] = useState("");
+
   const [checkinAccount, setCheckinAccount] = useState<Account | null>(null);
   const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [isCryptoOpen, setIsCryptoOpen] = useState(false);
   
   const [isConnecting, setIsConnecting] = useState(false);
+  const [isSavingLink, setIsSavingLink] = useState(false);
   
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [editingAssetId, setEditingAssetId] = useState<string | null>(null);
@@ -89,25 +93,16 @@ export function AccountsScreen({
   }, [activeWs?.id]);
 
   const handleConnectBank = async () => {
-    // 1. Get current session
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // 2. Fetch user's profile to check their tier
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("tier")
-      .eq("id", user.id)
-      .single();
+    const { data: profile } = await supabase.from("profiles").select("tier").eq("id", user.id).single();
 
-    // 3. Check if the user is premium
     if (!profile || profile.tier !== "premium") {
-      // Show the Premium Locked modal for basic users
       setModal("premium_locked");
       return;
     }
 
-    // 4. Premium path: Proceed with Mono
     if (!publicKey) {
       toast("Mono API key missing", "err");
       return;
@@ -125,28 +120,14 @@ export function AccountsScreen({
             email: user.email,
           }
         },
-        onSuccess: async (data: any) => {
+        onSuccess: (data: any) => {
           setIsConnecting(false);
-          try {
-            toast("Bank linked! Syncing account details...");
-            const res = await fetch("/api/mono/exchange", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ code: data.code }),
-            });
-            const resData = await res.json();
-            
-            if (resData.error) throw new Error(resData.error);
-            
-            toast("Account synced successfully!");
-            load(); 
-          } catch (e: any) {
-            toast(e.message || "Failed to link account", "err");
-          }
+          setLinkedCode(data.code);
+          setLinkedAccountName(""); 
+          setModal("name_linked_account");
         },
         onClose: () => {
           setIsConnecting(false);
-          console.log("Mono window closed");
         },
       });
       
@@ -155,8 +136,36 @@ export function AccountsScreen({
       
     } catch (err: any) {
       setIsConnecting(false);
-      console.error("Mono Launch Error:", err);
       toast(err.message || "Failed to launch Mono", "err");
+    }
+  };
+
+  const saveLinkedAccount = async () => {
+    if (!linkedCode || !linkedAccountName.trim()) {
+      toast("Please enter a name for the account", "err");
+      return;
+    }
+
+    setIsSavingLink(true);
+    try {
+      const res = await fetch("/api/mono/exchange", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: linkedCode, customName: linkedAccountName }),
+      });
+      const resData = await res.json();
+      
+      if (resData.error) throw new Error(resData.error);
+      
+      toast("Account linked successfully!");
+      setModal(null);
+      setLinkedCode(null);
+      setLinkedAccountName("");
+      load(); 
+    } catch (e: any) {
+      toast(e.message || "Failed to link account", "err");
+    } finally {
+      setIsSavingLink(false);
     }
   };
 
@@ -414,6 +423,25 @@ export function AccountsScreen({
           </div>
           <Button onClick={() => setModal(null)} className="mt-4 w-full max-w-[200px]">
             Got it
+          </Button>
+        </div>
+      </Modal>
+
+      {/* --- NAME LINKED ACCOUNT MODAL --- */}
+      <Modal open={modal === "name_linked_account"} onClose={() => setModal(null)} title="Name Your Account">
+        <div className="space-y-4 pb-4">
+          <p className="text-[13px] text-[var(--text-2)] mb-2">
+            Bank linked successfully! What would you like to call this account?
+          </p>
+          <Field 
+            label="Account Name" 
+            value={linkedAccountName} 
+            onChange={(e) => setLinkedAccountName(e.target.value)} 
+            placeholder="e.g. Main GTBank" 
+            autoFocus
+          />
+          <Button onClick={saveLinkedAccount} loading={isSavingLink} disabled={!linkedAccountName.trim()} className="w-full">
+            Save Account
           </Button>
         </div>
       </Modal>

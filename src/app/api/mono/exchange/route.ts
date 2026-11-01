@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function POST(req: Request) {
   try {
-    const { code } = await req.json();
+    const { code, customName } = await req.json();
     if (!code) return NextResponse.json({ error: "Missing code" }, { status: 400 });
     
     const key = process.env.MONO_SECRET_KEY;
@@ -34,17 +34,16 @@ export async function POST(req: Request) {
     if (!detailsRes.ok) throw new Error(details.message || "Failed to fetch account details");
 
     // 3. Safely extract nested data with fallbacks
-    // Mono V2 sometimes returns { data: { account: {...}, institution: {...} } }
     const rawData = details.data || details;
     const accountInfo = rawData.account || rawData;
     const institutionInfo = rawData.institution || rawData.bank || {};
 
-    const accountName = accountInfo.name || accountInfo.account_name || "Linked Bank Account";
+    // Use the custom name passed from the frontend, or fallback to Mono's name
+    const accountName = customName || accountInfo.name || accountInfo.account_name || "Linked Bank Account";
     const bankName = institutionInfo.name || "Mono Bank";
     
-    // Safely parse balance, defaulting to 0
-    const balance = Number(accountInfo.balance) || 0;
-    const balanceMinor = Math.round(balance * 100);
+    // Mono returns balance in kobo, so we do NOT multiply by 100 again
+    const balanceMinor = Math.round(Number(accountInfo.balance) || 0);
 
     // 4. Save to Supabase
     const { data: ws } = await supabase.from("workspaces").select("id").eq("owner_id", user.id).limit(1).single();
