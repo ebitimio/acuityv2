@@ -31,11 +31,8 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 
   const reload = useCallback(async () => {
     setLoading(true);
-    
-    // FIX: Wait slightly for the session to propagate on email sign-in
-    await new Promise(resolve => setTimeout(resolve, 100));
-
     const { data: { user } } = await supabase.auth.getUser();
+    
     if (!user) {
       setWorkspaces([]);
       setActiveState(null);
@@ -61,7 +58,6 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     let storedId: string | null = null;
     try { storedId = localStorage.getItem(KEY); } catch {}
     
-    // FIX: Specifically look for the workspace named "Personal" if the stored one is missing
     const personalWs = list.find(w => w.name.toLowerCase() === "personal");
     const stored = list.find(w => w.id === storedId);
     
@@ -78,8 +74,23 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   }, [supabase]);
 
   useEffect(() => {
+    // Initial load
     reload();
-  }, [reload]);
+
+    // Listen for auth changes (fixes the email login race condition)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN') {
+        reload();
+      } else if (event === 'SIGNED_OUT') {
+        setWorkspaces([]);
+        setActiveState(null);
+        setLoading(false);
+        try { localStorage.removeItem(KEY); } catch {}
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [reload, supabase.auth]);
 
   const setActive = useCallback((id: string) => {
     const ws = workspaces.find(w => w.id === id);
