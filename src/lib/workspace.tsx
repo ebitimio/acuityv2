@@ -31,6 +31,10 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 
   const reload = useCallback(async () => {
     setLoading(true);
+    
+    // FIX: Wait slightly for the session to propagate on email sign-in
+    await new Promise(resolve => setTimeout(resolve, 100));
+
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       setWorkspaces([]);
@@ -57,9 +61,15 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     let storedId: string | null = null;
     try { storedId = localStorage.getItem(KEY); } catch {}
     
+    // FIX: Specifically look for the workspace named "Personal" if the stored one is missing
+    const personalWs = list.find(w => w.name.toLowerCase() === "personal");
     const stored = list.find(w => w.id === storedId);
+    
     if (stored) {
       setActiveState(stored);
+    } else if (personalWs) {
+      setActiveState(personalWs);
+      try { localStorage.setItem(KEY, personalWs.id); } catch {}
     } else {
       setActiveState(list[0]);
       try { localStorage.setItem(KEY, list[0].id); } catch {}
