@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { motion } from "framer-motion";
+import { CreditCard, TrendingUp, Sparkles } from "lucide-react";
 
 export function SplashScreen({ onComplete }: { onComplete: () => void }) {
   useEffect(() => {
@@ -12,26 +13,44 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
   return (
     <div className="fixed inset-0 w-full h-[100lvh] z-[100] flex flex-col items-center justify-center bg-[#050505] overflow-hidden">
       
-      {/* BACKGROUND GRADIENT (Darker & fills entirely) */}
-      <div 
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background: `
-            radial-gradient(circle at 10% 10%, rgba(40, 20, 60, 0.15) 0%, transparent 60%),
-            radial-gradient(circle at 90% 90%, rgba(60, 15, 25, 0.15) 0%, transparent 60%),
-            radial-gradient(circle at 50% 50%, rgba(10, 10, 20, 0.05) 0%, transparent 70%),
-            linear-gradient(to bottom, rgba(5,5,5,0) 70%, rgba(5,5,5,1) 100%)
-          `
-        }}
-      />
+      {/* BACKGROUND DOODLES */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {/* Doodle 1: Credit Card (Top Left) */}
+        <motion.div
+          animate={{ y: [0, -15, 0], rotate: [-10, -5, -10] }}
+          transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-[15%] left-[10%] opacity-[0.03]"
+        >
+          <CreditCard size={120} strokeWidth={1} />
+        </motion.div>
 
-      {/* NOISE TEXTURE OVERLAY */}
-      <div 
-        className="absolute inset-0 opacity-[0.08] mix-blend-overlay pointer-events-none"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
-        }}
-      />
+        {/* Doodle 2: Trending Up (Bottom Right) */}
+        <motion.div
+          animate={{ y: [0, 15, 0], rotate: [10, 15, 10] }}
+          transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+          className="absolute bottom-[20%] right-[10%] opacity-[0.03]"
+        >
+          <TrendingUp size={140} strokeWidth={1} />
+        </motion.div>
+
+        {/* Doodle 3: Sparkle/Coin (Top Right) */}
+        <motion.div
+          animate={{ scale: [1, 1.1, 1], opacity: [0.02, 0.04, 0.02] }}
+          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+          className="absolute top-[25%] right-[15%] opacity-[0.03]"
+        >
+          <Sparkles size={90} strokeWidth={1} />
+        </motion.div>
+
+        {/* Doodle 4: Tiny dot (Bottom Left) */}
+        <motion.div
+          animate={{ y: [0, -10, 0] }}
+          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+          className="absolute bottom-[25%] left-[15%] opacity-[0.03]"
+        >
+          <div className="w-16 h-16 rounded-full border-[3px] border-white" />
+        </motion.div>
+      </div>
 
       {/* MAIN LOGO */}
       <motion.div
@@ -62,7 +81,7 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
         </motion.span>
       </motion.div>
 
-      {/* THE FIX: A physical black block at the bottom to force iOS to paint the safe area */}
+      {/* SAFE AREA FILL (Ensures the bottom is purely black) */}
       <div 
         className="absolute bottom-0 left-0 right-0 bg-[#050505]"
         style={{ height: "env(safe-area-inset-bottom, 0px)", minHeight: "1px" }} 
