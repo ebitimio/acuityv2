@@ -8,7 +8,7 @@ const tabs = [
   { id: "home", label: "Home", icon: Home },
   { id: "analytics", label: "Analytics", icon: PieChart },
   { id: "accounts", label: "Accounts", icon: Wallet },
-  { id: "ai", label: "AI Advisor", icon: null }, // Replaced with custom A.
+  { id: "ai", label: "AI Advisor", icon: null },
 ] as const;
 
 export type TabId = (typeof tabs)[number]["id"];
@@ -30,8 +30,7 @@ export function FloatingTabBar({ activeTab, onTabChange, onAddClick, isHidden }:
     >
       <div className="relative flex w-full max-w-md items-center justify-between px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pointer-events-auto">
         
-        {/* Main Nav Pill - Now uses Liquid Glass */}
-        <div className="flex flex-1 items-center justify-around rounded-full glass glass-thick px-2 py-2 shadow-2xl shadow-black/60">
+        <div className="flex flex-1 items-center justify-around rounded-full glass glass-thick [&::after]:hidden px-2 py-2 shadow-2xl shadow-black/60">
           {tabs.map(({ id, label, icon: Icon }) => {
             const isActive = activeTab === id;
             return (
@@ -64,15 +63,13 @@ export function FloatingTabBar({ activeTab, onTabChange, onAddClick, isHidden }:
           })}
         </div>
 
-        {/* Floating Add Button - Now uses Liquid Glass with brand tint */}
         {onAddClick && (
           <button
             onClick={onAddClick}
-            className="ml-3 flex h-14 w-14 shrink-0 items-center justify-center rounded-full glass glass-regular glass-press shadow-xl shadow-black/40"
+            className="ml-3 flex h-14 w-14 shrink-0 items-center justify-center rounded-full glass glass-regular glass-press [&::after]:hidden shadow-xl shadow-black/40"
             style={{ backgroundColor: "var(--brand)", color: "var(--brand-ink)" }}
             aria-label="Quick add"
           >
-            {/* Specular highlight for the + button */}
             <span className="absolute inset-0 pointer-events-none glass-specular opacity-50 rounded-full" />
             <Plus size={24} strokeWidth={3} className="relative z-10" />
           </button>

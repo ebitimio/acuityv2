@@ -29,11 +29,10 @@ export function SelectField({ label, className, children, ...rest }: SelectHTMLA
 }
 
 export function Button({ variant = "primary", loading, className, children, disabled, type, ...rest }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "white" | "ghost" | "danger"; loading?: boolean }) {
-  // Map variants to the new glass system
   const glassClass = 
-    variant === "ghost" ? "glass glass-thin glass-press" :
-    variant === "danger" ? "glass glass-thin glass-press" :
-    "glass glass-regular glass-press"; // Primary and white get heavier glass
+    variant === "ghost" ? "glass glass-thin glass-press [&::after]:hidden" :
+    variant === "danger" ? "glass glass-thin glass-press [&::after]:hidden" :
+    "glass glass-regular glass-press [&::after]:hidden";
 
   return (
     <button 
@@ -41,9 +40,8 @@ export function Button({ variant = "primary", loading, className, children, disa
       type={type ?? "button"} 
       disabled={disabled || loading} 
       className={cn(
-        "btn relative overflow-hidden flex items-center justify-center", // Keep base btn layout
+        "btn relative overflow-hidden flex items-center justify-center",
         glassClass,
-        // Text colors based on variant
         (variant === "primary" || variant === "white") ? "text-[var(--brand-ink)]" : "",
         variant === "danger" ? "text-[var(--danger)]" : "",
         variant === "ghost" ? "text-[var(--text-1)]" : "",
@@ -59,10 +57,7 @@ export function Button({ variant = "primary", loading, className, children, disa
           : undefined
       }
     >
-      {/* Specular highlight overlay */}
       <span className="absolute inset-0 pointer-events-none glass-specular opacity-50" />
-      
-      {/* Content */}
       <span className="relative z-10 flex items-center justify-center gap-2">
         {loading ? <Loader2 size={18} className="animate-spin" /> : children}
       </span>
