@@ -20,13 +20,16 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
         transition={{ duration: 0.6, ease: [0.2, 0.8, 0.2, 1] }}
         className="flex items-baseline"
       >
-        <span className="text-[48px] font-black tracking-tighter text-white">ACUITY</span>
+        {/* Increased size to 64px and made it extra bold */}
+        <span className="text-[64px] font-black tracking-tighter text-white drop-shadow-lg">
+          ACUITY
+        </span>
         
-        {/* The dot pulses slightly while loading */}
+        {/* The dot pulses slightly while loading, and is also scaled up */}
         <motion.span 
           animate={{ opacity: [0.4, 1, 0.4] }}
           transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-          className="text-[48px] font-black tracking-tighter" 
+          className="text-[64px] font-black tracking-tighter drop-shadow-lg" 
           style={{ color: "#DE3121" }}
         >
           .
