@@ -28,7 +28,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#050505",
+  themeColor: "#0a0a0a",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -42,11 +42,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    // Added bg-[#050505] to the html tag
-    <html lang="en" className="dark bg-[#050505]" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased text-white min-h-[100lvh] w-full`}
-      >
+    <html lang="en" className="dark bg-[#0a0a0a]" suppressHydrationWarning>
+      {/* Removed min-h-[100lvh] to stop the body from scrolling past the screen */}
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased text-white w-full`}>
         <Providers>{children}</Providers>
       </body>
     </html>
