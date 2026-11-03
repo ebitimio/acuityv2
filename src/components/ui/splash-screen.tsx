@@ -5,12 +5,12 @@ import { motion } from "framer-motion";
 
 export function SplashScreen({ onComplete }: { onComplete: () => void }) {
   useEffect(() => {
-    // Force the body background to match the gradient
+    // Force the body background to match the gradient and fade to black
     const originalBg = document.body.style.background;
     document.body.style.background = `
-      radial-gradient(circle at 10% 10%, rgba(40, 20, 60, 0.2) 0%, transparent 60%),
-      radial-gradient(circle at 90% 90%, rgba(60, 15, 25, 0.2) 0%, transparent 60%),
-      radial-gradient(circle at 50% 50%, rgba(10, 10, 20, 0.1) 0%, transparent 70%),
+      linear-gradient(to bottom, rgba(5,5,5,0) 70%, rgba(5,5,5,1) 100%),
+      radial-gradient(circle at 10% 10%, rgba(30, 15, 45, 0.25) 0%, transparent 60%),
+      radial-gradient(circle at 90% 90%, rgba(40, 10, 20, 0.2) 0%, transparent 60%),
       #050505
     `;
     document.body.style.backgroundAttachment = "fixed";
@@ -31,9 +31,9 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
   return (
     <div className="fixed inset-0 w-full h-[100lvh] z-[100] flex flex-col items-center justify-center pointer-events-none">
       
-      {/* NOISE TEXTURE OVERLAY */}
+      {/* NOISE TEXTURE OVERLAY (Slightly darkened) */}
       <div 
-        className="absolute inset-0 opacity-[0.1] mix-blend-overlay pointer-events-none"
+        className="absolute inset-0 opacity-[0.08] mix-blend-overlay pointer-events-none"
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
         }}
