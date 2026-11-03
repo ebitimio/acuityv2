@@ -30,8 +30,11 @@ export function StackedAccountCard({
   cardholderName,
   hideActions = false,
   isCompact = false, 
-  showChip = false, // Defaults to false
+  showChip = false,
 }: StackedAccountCardProps) {
+  
+  const shouldShowChip = showChip || !hideActions;
+
   return (
     <motion.div
       layout
@@ -41,28 +44,43 @@ export function StackedAccountCard({
       }}
       whileTap={{ scale: 0.98 }}
       className={cn(
-        "relative w-full overflow-hidden rounded-2xl shadow-xl",
-        "bg-gradient-to-br from-[#1c1c1e] to-[#0b0b0c] border border-[var(--brand)]/30",
-        isCompact && "h-[200px]" 
+        "relative w-full overflow-hidden rounded-2xl shadow-xl border border-white/10",
+        // METALLIC BACKGROUND: A deep, dark metallic gradient
+        "bg-gradient-to-br from-[#3a3b3e] via-[#1c1c1e] to-[#0b0b0c]",
+        isCompact ? "h-[220px]" : "h-[220px]"
       )}
     >
-      <div onClick={onClick} className={cn("relative p-5 cursor-pointer overflow-hidden", isCompact ? "h-full flex flex-col justify-between" : "")}>
+      {/* METALLIC TEXTURE OVERLAY (Brushed Metal Noise) */}
+      <div 
+        className="absolute inset-0 opacity-[0.15] mix-blend-overlay pointer-events-none"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+        }}
+      />
+
+      {/* DIAGONAL LIGHT SWEEP (Simulates light catching the metal) */}
+      <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.05] to-transparent pointer-events-none" />
+
+      {/* Top Edge Highlight */}
+      <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none" />
+
+      <div onClick={onClick} className={cn("relative p-5 cursor-pointer overflow-hidden h-full flex flex-col justify-between z-10")}>
         
         {/* WATERMARK */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <p className="text-[48px] font-black tracking-tighter text-[var(--brand)]/[0.04] select-none">
-            ACUITY<span className="text-[var(--brand)]/[0.08]">.</span>
+          <p className="text-[48px] font-black tracking-tighter text-[var(--brand)]/[0.06] select-none drop-shadow-md">
+            ACUITY<span className="text-[var(--brand)]/[0.1]">.</span>
           </p>
         </div>
 
-        {/* Decorative circles */}
-        <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full border-[12px] border-[var(--brand)]/10" />
-        <div className="absolute -bottom-10 -left-10 h-32 w-32 rounded-full border-[12px] border-[var(--brand)]/10" />
+        {/* Decorative circles (tweaked to look embossed on metal) */}
+        <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full border-[12px] border-[var(--brand)]/10 shadow-inner" />
+        <div className="absolute -bottom-10 -left-10 h-32 w-32 rounded-full border-[12px] border-[var(--brand)]/10 shadow-inner" />
 
-        {/* EMV Chip - Only renders if showChip is true */}
-        {showChip && (
-          <div className="absolute right-5 top-1/2 -translate-y-1/2 w-10 h-8 z-0">
-            <svg viewBox="0 0 40 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full opacity-60">
+        {/* EMV Chip - Only shows if shouldShowChip is true */}
+        {shouldShowChip && (
+          <div className="absolute right-5 top-1/2 -translate-y-1/2 w-10 h-8 z-0 drop-shadow-md">
+            <svg viewBox="0 0 40 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full opacity-80">
               <rect width="40" height="32" rx="6" fill="#1a1a1c" />
               <rect x="1" y="1" width="38" height="30" rx="5" stroke="var(--brand)" strokeWidth="1.5" strokeOpacity="0.6" />
               <path d="M13 0V32" stroke="var(--brand)" strokeWidth="1.5" strokeOpacity="0.6" />
@@ -76,39 +94,40 @@ export function StackedAccountCard({
           </div>
         )}
 
-        <div className={cn("relative z-10 flex flex-col", isCompact ? "h-full justify-between" : "h-full justify-between")}>
-          <div className="flex items-start justify-between gap-2">
-            {/* Account Info */}
-            <div className="flex items-center gap-2 min-w-0 flex-1">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand)]/20">
-                <span className="text-[14px] font-bold text-[var(--brand)]">{account.name.charAt(0)}</span>
-              </div>
-              <div className="min-w-0">
-                <p className={cn("text-[14px] font-bold text-[var(--brand)]", isCompact ? "truncate" : "")}>{account.name}</p>
-                <p className="text-[10px] text-[var(--brand)]/60 uppercase">{account.type}</p>
-              </div>
+        {/* Top Row: Account Info & Cardholder */}
+        <div className={cn("relative z-10 flex items-start justify-between gap-4 mt-1", shouldShowChip ? "pr-12" : "")}>
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--brand)]/20 shadow-inner backdrop-blur-sm">
+              <span className="text-[16px] font-bold text-[var(--brand)] drop-shadow-sm">{account.name.charAt(0)}</span>
             </div>
+            <div className="min-w-0">
+              <p className="text-[15px] font-bold text-white truncate drop-shadow-sm">{account.name}</p>
+              <p className="text-[11px] text-white/60 uppercase tracking-wider">{account.type}</p>
+            </div>
+          </div>
+          
+          {/* Cardholder Name */}
+          <div className="text-right shrink-0 flex flex-col items-end">
+            <p className="text-[10px] uppercase tracking-widest text-white/50 font-semibold mb-0.5">Cardholder</p>
+            <p className={cn(
+              "font-mono tracking-wider text-white uppercase leading-tight break-words text-right drop-shadow-sm",
+              isCompact ? "text-[12px] max-w-[110px]" : "text-[13px]"
+            )}>
+              {cardholderName || "CARDHOLDER"}
+            </p>
+          </div>
+        </div>
             
-            {/* Cardholder Name */}
-            <div className="text-right shrink-0">
-              <p className="text-[9px] uppercase tracking-widest text-[var(--brand)]/60 font-semibold">Cardholder</p>
-              <p className={cn(
-                "font-mono tracking-wider text-[var(--brand)] uppercase leading-tight",
-                isCompact ? "text-[11px] max-w-[130px]" : "text-[13px]"
-              )}>
-                {cardholderName || "CARDHOLDER"}
-              </p>
-            </div>
+        {/* Bottom Row: Balance & Bank Name */}
+        <div className={cn("relative z-10 flex items-end justify-between gap-4 mt-6", shouldShowChip ? "pr-12" : "")}>
+          <div className="min-w-0">
+            <p className="text-[11px] text-white/60 mb-1">Balance</p>
+            <p className="text-[24px] font-bold tabular text-white truncate leading-none drop-shadow-md">{fmt(balance)}</p>
           </div>
-              
-          <div className="flex items-end justify-between gap-2 mt-auto">
-            <div>
-              <p className="text-[10px] text-[var(--brand)]/60">Balance</p>
-              <p className="text-[20px] font-bold tabular text-[var(--brand)]">{fmt(balance)}</p>
-            </div>
-            {/* Bank Name */}
-            <p className={cn("text-[11px] font-medium text-[var(--brand)]/80 text-right", isCompact ? "truncate max-w-[100px]" : "")}>{account.institution}</p>
-          </div>
+          
+          <p className="text-[12px] font-medium text-white/80 text-right truncate max-w-[110px] drop-shadow-sm">
+            {account.institution}
+          </p>
         </div>
       </div>
 
@@ -118,18 +137,18 @@ export function StackedAccountCard({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden border-t border-[var(--brand)]/20 bg-[#0b0b0c]/60"
+            className="relative z-20 overflow-hidden border-t border-white/10 bg-black/40 backdrop-blur-md"
           >
             <div className="flex justify-end gap-5 px-5 py-3">
               <button 
                 onClick={(e) => { e.stopPropagation(); onCheckBalance(); }} 
-                className="flex items-center gap-1.5 text-[12px] font-semibold text-[var(--brand)]"
+                className="flex items-center gap-1.5 text-[12px] font-semibold text-[var(--brand)] hover:opacity-80 transition-opacity"
               >
                 <RefreshCw size={13} /> Check Balance
               </button>
               <button 
                 onClick={(e) => { e.stopPropagation(); onDelete(); }} 
-                className="flex items-center gap-1.5 text-[12px] font-semibold text-[var(--danger)]"
+                className="flex items-center gap-1.5 text-[12px] font-semibold text-[var(--danger)] hover:opacity-80 transition-opacity"
               >
                 <Trash2 size={13} /> Delete
               </button>
