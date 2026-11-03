@@ -17,6 +17,7 @@ interface StackedAccountCardProps {
   hideActions?: boolean;
   isCompact?: boolean; 
   showChip?: boolean;
+  isMetallic?: boolean; // NEW PROP
 }
 
 export function StackedAccountCard({ 
@@ -31,6 +32,7 @@ export function StackedAccountCard({
   hideActions = false,
   isCompact = false, 
   showChip = false,
+  isMetallic = false, // Default to false
 }: StackedAccountCardProps) {
   
   const shouldShowChip = showChip || !hideActions;
@@ -45,31 +47,35 @@ export function StackedAccountCard({
       whileTap={{ scale: 0.98 }}
       className={cn(
         "relative w-full overflow-hidden rounded-2xl shadow-xl border border-white/10",
-        // METALLIC BACKGROUND: Deep obsidian black with a very subtle metallic lift
-        "bg-gradient-to-br from-[#1a1a1c] via-[#0d0d0f] to-[#050505]",
-        isCompact ? "h-[220px]" : "h-[220px]"
+        // If metallic, use the dark metallic gradient. Otherwise, use original dark bg.
+        isMetallic 
+          ? "bg-gradient-to-br from-[#1a1a1c] via-[#0d0d0f] to-[#050505]"
+          : "bg-gradient-to-br from-[#1c1c1e] to-[#0b0b0c]",
+        // Only force fixed height if it's compact AND metallic. 
+        // Accounts page needs to expand to show buttons.
+        (isCompact && isMetallic) ? "h-[220px]" : ""
       )}
     >
-      {/* METALLIC TEXTURE OVERLAY (Very subtle brushed metal noise) */}
-      <div 
-        className="absolute inset-0 opacity-[0.08] mix-blend-overlay pointer-events-none"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
-        }}
-      />
+      {/* METALLIC EFFECTS (Only render if isMetallic is true) */}
+      {isMetallic && (
+        <>
+          <div 
+            className="absolute inset-0 opacity-[0.08] mix-blend-overlay pointer-events-none"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+            }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.08] to-transparent pointer-events-none" />
+          <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
+        </>
+      )}
 
-      {/* DIAGONAL LIGHT SWEEP (Simulates light catching the metal) */}
-      <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.08] to-transparent pointer-events-none" />
-
-      {/* Top Edge Highlight */}
-      <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
-
-      <div onClick={onClick} className={cn("relative p-5 cursor-pointer overflow-hidden h-full flex flex-col justify-between z-10")}>
+      <div onClick={onClick} className={cn("relative p-5 cursor-pointer overflow-hidden h-full flex flex-col justify-between z-10", !isMetallic && "min-h-[190px]")}>
         
         {/* WATERMARK */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <p className="text-[48px] font-black tracking-tighter text-[var(--brand)]/[0.04] select-none">
-            ACUITY<span className="text-[var(--brand)]/[0.08]">.</span>
+          <p className={cn("text-[48px] font-black tracking-tighter select-none", isMetallic ? "text-[var(--brand)]/[0.04]" : "text-[var(--brand)]/[0.03]")}>
+            ACUITY<span className={isMetallic ? "text-[var(--brand)]/[0.08]" : "text-[var(--brand)]/[0.06]"}>.</span>
           </p>
         </div>
 
@@ -77,7 +83,7 @@ export function StackedAccountCard({
         <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full border-[12px] border-[var(--brand)]/10 shadow-inner" />
         <div className="absolute -bottom-10 -left-10 h-32 w-32 rounded-full border-[12px] border-[var(--brand)]/10 shadow-inner" />
 
-        {/* EMV Chip - Centered under the text */}
+        {/* EMV Chip */}
         {shouldShowChip && (
           <div className="absolute right-5 top-1/2 -translate-y-1/2 w-10 h-8 z-0">
             <svg viewBox="0 0 40 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full opacity-60">
@@ -106,7 +112,7 @@ export function StackedAccountCard({
             </div>
           </div>
           
-          {/* Cardholder Name - Extreme Right, No Padding */}
+          {/* Cardholder Name */}
           <div className="text-right shrink-0 flex flex-col items-end">
             <p className="text-[10px] uppercase tracking-widest text-white/50 font-semibold mb-0.5">Cardholder</p>
             <p className={cn(
@@ -125,7 +131,6 @@ export function StackedAccountCard({
             <p className="text-[24px] font-bold tabular text-white truncate leading-none drop-shadow-md">{fmt(balance)}</p>
           </div>
           
-          {/* Bank Name - Extreme Right, No Padding */}
           <p className="text-[12px] font-medium text-white/80 text-right truncate max-w-[110px] drop-shadow-sm">
             {account.institution}
           </p>

@@ -780,6 +780,7 @@ export default function SandboxPage() {
                                 cardholderName={profileName}
                                 isCompact={true}
                                 showChip={true}
+                                isMetallic={true}
                               />
                             </div>
                           ))}
