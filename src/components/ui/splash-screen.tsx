@@ -26,112 +26,309 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
   }, [onComplete]);
 
   return (
-    // Use h-[100dvh] and overflow-hidden to force exact screen fit
-    <div className="fixed inset-0 h-[100dvh] w-full z-[100] flex flex-col items-center justify-center bg-[#0a0a0a] overflow-hidden">
+    <div className="fixed inset-0 h-[100dvh] w-full z-[100] flex flex-col items-center justify-center bg-black overflow-hidden">
       
-      {/* BRANDED ACUITY DOODLE PATTERN */}
-      <div className="absolute inset-0 pointer-events-none opacity-40">
-        <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+      {/* 
+        GENERATED DOODLE BACKGROUND 
+        Uses your exact layout but with Acuity brand colors (#DE3121)
+      */}
+      <div className="absolute inset-0 pointer-events-none">
+        <svg 
+          className="w-full h-full block" 
+          viewBox="0 0 400 860" 
+          xmlns="http://www.w3.org/2000/svg"
+          preserveAspectRatio="xMidYMid slice"
+        >
           <defs>
-            <pattern id="acuity-doodles" x="0" y="0" width="400" height="400" patternUnits="userSpaceOnUse">
-              <g stroke="#DE3121" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                
-                {/* --- ROW 1 --- */}
-                <rect x="20" y="20" width="55" height="35" rx="6" transform="rotate(-15 20 20)" />
-                <circle cx="45" cy="35" r="3" fill="#DE3121" transform="rotate(-15 20 20)" />
-                <path d="M 25 25 L 35 25" transform="rotate(-15 20 20)" strokeWidth="1.5" />
-                
-                <path d="M 110 45 L 120 15 L 130 45" />
-                <line x1="113" y1="35" x2="127" y2="35" />
-                <circle cx="135" cy="45" r="2.5" fill="#DE3121" />
-
-                <path d="M 170 20 L 170 50 M 160 30 L 180 30 M 160 40 L 180 40" />
-
-                <path d="M 210 45 L 210 30 L 215 35 L 220 25 L 225 35 L 230 30 L 230 45 Z" />
-                
-                <rect x="260" y="20" width="70" height="10" rx="5" />
-                <rect x="260" y="20" width="40" height="10" rx="5" fill="#DE3121" fillOpacity="0.4" />
-
-                <path d="M 350 30 L 350 50 M 340 40 L 360 40" />
-                <path d="M 345 35 L 355 45 M 345 45 L 355 35" strokeWidth="1" />
-
-                {/* --- ROW 2 --- */}
-                <path d="M 40 90 Q 40 75 50 75 Q 60 75 60 90 L 65 100 L 35 100 Z" />
-                <circle cx="50" cy="105" r="3" fill="#DE3121" />
-
-                <rect x="100" y="90" width="55" height="35" rx="6" transform="rotate(10 100 90)" />
-                <path d="M 110 105 L 130 105" transform="rotate(10 100 90)" strokeWidth="1" />
-                <circle cx="140" cy="115" r="2" fill="#DE3121" transform="rotate(10 100 90)" />
-
-                <circle cx="200" cy="105" r="15" />
-                <circle cx="195" cy="100" r="1.5" fill="#DE3121" />
-                <circle cx="205" cy="100" r="1.5" fill="#DE3121" />
-                <path d="M 192 110 Q 200 118, 208 110" />
-
-                <path d="M 250 120 Q 270 80, 290 110 T 330 90" />
-                <path d="M 325 85 L 330 90 L 325 95" />
-                <circle cx="270" cy="100" r="2" fill="#DE3121" />
-
-                <path d="M 370 95 L 375 80 L 380 95" />
-                <circle cx="385" cy="95" r="1.5" fill="#DE3121" />
-
-                {/* --- ROW 3 --- */}
-                <path d="M 20 180 L 20 210 M 10 190 L 30 190 M 10 200 L 30 200" strokeWidth="1.5" />
-
-                <path d="M 70 190 L 70 205 M 62.5 197.5 L 77.5 197.5" strokeWidth="1" />
-                <path d="M 90 220 L 90 230 M 85 225 L 95 225" strokeWidth="1" />
-
-                <rect x="120" y="180" width="45" height="28" rx="5" transform="rotate(-5 120 180)" />
-                <circle cx="140" cy="195" r="2" fill="#DE3121" transform="rotate(-5 120 180)" />
-
-                <path d="M 180 200 L 190 185 L 200 215 L 210 190 L 220 210" />
-
-                <path d="M 260 210 L 275 170 L 290 210" />
-                <line x1="266" y1="198" x2="284" y2="198" />
-                <circle cx="298" cy="210" r="2.5" fill="#DE3121" />
-
-                <rect x="320" y="190" width="60" height="8" rx="4" />
-                <rect x="320" y="190" width="30" height="8" rx="4" fill="#DE3121" fillOpacity="0.4" />
-
-                {/* --- ROW 4 --- */}
-                <rect x="30" y="270" width="55" height="35" rx="6" transform="rotate(15 30 270)" />
-                <path d="M 45 285 L 65 285" transform="rotate(15 30 270)" strokeWidth="1" />
-                
-                <path d="M 110 280 L 110 305 M 100 290 L 120 290 M 100 298 L 120 298" strokeWidth="1.5" />
-
-                <path d="M 150 300 L 150 285 L 155 290 L 160 280 L 165 290 L 170 285 L 170 300 Z" />
-
-                <rect x="200" y="270" width="50" height="30" rx="5" transform="rotate(-10 200 270)" />
-                <circle cx="220" cy="285" r="2" fill="#DE3121" transform="rotate(-10 200 270)" />
-
-                <path d="M 270 280 Q 270 265 280 265 Q 290 265 290 280 L 295 290 L 265 290 Z" />
-                <circle cx="280" cy="295" r="3" fill="#DE3121" />
-
-                <path d="M 330 280 L 330 300 M 320 290 L 340 290" />
-                <path d="M 325 285 L 335 295 M 325 295 L 335 285" strokeWidth="1" />
-
-                <circle cx="370" cy="270" r="1.5" fill="#DE3121" />
-                <circle cx="385" cy="300" r="1.5" fill="#DE3121" />
-
-                {/* --- SCATTERED FILLERS --- */}
-                <circle cx="80" cy="60" r="2" fill="#DE3121" />
-                <circle cx="180" cy="140" r="2" fill="#DE3121" />
-                <circle cx="310" cy="130" r="2" fill="#DE3121" />
-                <circle cx="40" cy="230" r="2" fill="#DE3121" />
-                <circle cx="160" cy="240" r="2" fill="#DE3121" />
-                <circle cx="360" cy="230" r="2" fill="#DE3121" />
-                <circle cx="90" cy="340" r="2" fill="#DE3121" />
-                <circle cx="250" cy="330" r="2" fill="#DE3121" />
-                <circle cx="340" cy="340" r="2" fill="#DE3121" />
-
-                <path d="M 140 80 L 145 85 M 145 80 L 140 85" strokeWidth="1" />
-                <path d="M 280 220 L 285 225 M 285 220 L 280 225" strokeWidth="1" />
-                <path d="M 30 330 L 35 335 M 35 330 L 30 335" strokeWidth="1" />
-
-              </g>
-            </pattern>
+            <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#DE3121"/>
+              <stop offset="100%" stopColor="#A81D13"/>
+            </linearGradient>
           </defs>
-          <rect width="100%" height="100%" fill="url(#acuity-doodles)" />
+
+          {/* Background color */}
+          <rect x="0" y="0" width="100%" height="100%" fill="#000000"/>
+
+          {/* Group containing all generated minimalist doodles */}
+          <g className="animate-doodle">
+            
+            {/* Top Left Dot */}
+            <g transform="translate(43, 54) rotate(17.8, 4, 4) scale(1.15)" opacity="0.34">
+              <circle cx="4" cy="4" r="2.5" fill="#DE3121"/>
+            </g>
+            
+            {/* Top Center Bell */}
+            <g transform="translate(102, 39) rotate(9.4, 20, 18) scale(1.00)" opacity="0.32">
+              <g stroke="#DE3121" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 4 C 18 2, 22 2, 22 4 C 28 6, 32 12, 32 20 L 34 26 L 6 26 L 8 20 C 8 12, 12 6, 18 4 Z"/>
+                <path d="M16 29 C 16 31.5, 18 33, 20 33 C 22 33, 24 31.5, 24 29"/>
+              </g>
+            </g>
+
+            {/* Top Right Crown */}
+            <g transform="translate(148, 7) rotate(-3.2, 24, 16) scale(0.98)" opacity="0.31">
+              <g stroke="#DE3121" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 26 L4 10 L16 18 L24 6 L32 18 L44 10 L44 26 Z"/>
+                <circle cx="4" cy="9" r="1.5" fill="#DE3121"/>
+                <circle cx="24" cy="5" r="1.5" fill="#DE3121"/>
+                <circle cx="44" cy="9" r="1.5" fill="#DE3121"/>
+              </g>
+            </g>
+
+            {/* Acuity 'A.' Logo */}
+            <g transform="translate(184, 20) rotate(-13.5, 22, 20) scale(1.19)" opacity="0.31">
+              <g stroke="#DE3121" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 34 L18 6 L30 34"/>
+                <path d="M10 24 L26 24"/>
+                <circle cx="37" cy="33" r="2.2" fill="#DE3121" stroke="none"/>
+              </g>
+            </g>
+
+            {/* AI Sparkle */}
+            <g transform="translate(267, 16) rotate(-3.0, 8, 8) scale(1.20)" opacity="0.28">
+              <g stroke="#DE3121" strokeWidth="2.6" fill="none" strokeLinecap="round">
+                <line x1="8" y1="2" x2="8" y2="14"/>
+                <line x1="2" y1="8" x2="14" y2="8"/>
+              </g>
+            </g>
+
+            {/* Smiley Face */}
+            <g transform="translate(340, 31) rotate(-9.5, 16, 16) scale(1.01)" opacity="0.28">
+              <g stroke="#DE3121" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="16" cy="16" r="14"/>
+                <circle cx="11" cy="12" r="1.5" fill="#DE3121"/>
+                <circle cx="21" cy="12" r="1.5" fill="#DE3121"/>
+                <path d="M10 19 C 12 23, 20 23, 22 19"/>
+              </g>
+            </g>
+
+            {/* Trend Line */}
+            <g transform="translate(-7, 117) rotate(-15.2, 24, 16) scale(1.11)" opacity="0.28">
+              <g stroke="#DE3121" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 26 L14 10 L24 24 L34 8 L45 26"/>
+              </g>
+            </g>
+
+            {/* Safe-to-spend Bar */}
+            <g transform="translate(67, 87) rotate(14.6, 26, 15) scale(1.16)" opacity="0.26">
+              <g stroke="#DE3121" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="6" width="46" height="18" rx="9"/>
+                <line x1="26" y1="6" x2="26" y2="24"/>
+              </g>
+            </g>
+
+            {/* Another Crown */}
+            <g transform="translate(135, 96) rotate(12.2, 24, 16) scale(1.00)" opacity="0.24">
+              <g stroke="#DE3121" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 26 L4 10 L16 18 L24 6 L32 18 L44 10 L44 26 Z"/>
+                <circle cx="4" cy="9" r="1.5" fill="#DE3121"/>
+                <circle cx="24" cy="5" r="1.5" fill="#DE3121"/>
+                <circle cx="44" cy="9" r="1.5" fill="#DE3121"/>
+              </g>
+            </g>
+
+            {/* Naira Symbol */}
+            <g transform="translate(281, 112) rotate(-11.9, 16, 14) scale(0.98)" opacity="0.30">
+              <g stroke="#DE3121" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="10" y1="2" x2="10" y2="26"/>
+                <line x1="22" y1="2" x2="22" y2="26"/>
+                <line x1="2" y1="8" x2="30" y2="8"/>
+                <line x1="2" y1="18" x2="30" y2="18"/>
+              </g>
+            </g>
+
+            {/* Arrow Trend */}
+            <g transform="translate(354, 108) rotate(13.5, 28, 19) scale(0.91)" opacity="0.35">
+              <g stroke="#DE3121" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 28 C 14 36, 20 8, 32 18 C 40 24, 46 10, 52 4"/>
+                <polyline points="44,4 52,4 52,12"/>
+                <circle cx="4" cy="28" r="1.8" fill="#DE3121"/>
+                <circle cx="32" cy="18" r="1.8" fill="#DE3121"/>
+              </g>
+            </g>
+
+            {/* Credit Card */}
+            <g transform="translate(4, 157) rotate(6.2, 25, 19) scale(1.18)" opacity="0.33">
+              <g stroke="#DE3121" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="4" width="46" height="30" rx="6"/>
+                <line x1="2" y1="13" x2="48" y2="13"/>
+                <circle cx="12" cy="24" r="2" fill="#DE3121" stroke="none"/>
+                <line x1="20" y1="24" x2="38" y2="24" strokeDasharray="3 3"/>
+              </g>
+            </g>
+
+            {/* Acuity 'A.' Logo */}
+            <g transform="translate(153, 171) rotate(-15.6, 22, 20) scale(1.02)" opacity="0.28">
+              <g stroke="#DE3121" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 34 L18 6 L30 34"/>
+                <path d="M10 24 L26 24"/>
+                <circle cx="37" cy="33" r="2.2" fill="#DE3121" stroke="none"/>
+              </g>
+            </g>
+
+            {/* Wallet/Card */}
+            <g transform="translate(209, 199) rotate(-14.9, 25, 17) scale(1.13)" opacity="0.25">
+              <g stroke="#DE3121" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="44" height="28" rx="5"/>
+                <circle cx="14" cy="17" r="2.8"/>
+                <line x1="24" y1="17" x2="38" y2="17"/>
+              </g>
+            </g>
+
+            {/* AI Sparkle */}
+            <g transform="translate(282, 205) rotate(11.0, 14, 14) scale(0.89)" opacity="0.29">
+              <g stroke="#DE3121" strokeWidth="2.6" fill="none" strokeLinecap="round">
+                <line x1="14" y1="2" x2="14" y2="26"/>
+                <line x1="2" y1="14" x2="26" y2="14"/>
+                <line x1="6" y1="6" x2="22" y2="22" strokeWidth="1.8"/>
+                <line x1="22" y1="6" x2="6" y2="22" strokeWidth="1.8"/>
+              </g>
+            </g>
+
+            {/* Trend Line */}
+            <g transform="translate(334, 192) rotate(1.4, 24, 16) scale(1.02)" opacity="0.31">
+              <g stroke="#DE3121" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 26 L14 10 L24 24 L34 8 L45 26"/>
+              </g>
+            </g>
+
+            {/* Acuity 'A.' Logo */}
+            <g transform="translate(-6, 232) rotate(-1.6, 22, 20) scale(0.97)" opacity="0.27">
+              <g stroke="#DE3121" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 34 L18 6 L30 34"/>
+                <path d="M10 24 L26 24"/>
+                <circle cx="37" cy="33" r="2.2" fill="#DE3121" stroke="none"/>
+              </g>
+            </g>
+
+            {/* Crown */}
+            <g transform="translate(75, 260) rotate(15.3, 24, 16) scale(0.99)" opacity="0.30">
+              <g stroke="#DE3121" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 26 L4 10 L16 18 L24 6 L32 18 L44 10 L44 26 Z"/>
+                <circle cx="4" cy="9" r="1.5" fill="#DE3121"/>
+                <circle cx="24" cy="5" r="1.5" fill="#DE3121"/>
+                <circle cx="44" cy="9" r="1.5" fill="#DE3121"/>
+              </g>
+            </g>
+
+            {/* Wallet/Card */}
+            <g transform="translate(131, 280) rotate(-7.8, 25, 17) scale(1.09)" opacity="0.32">
+              <g stroke="#DE3121" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="44" height="28" rx="5"/>
+                <circle cx="14" cy="17" r="2.8"/>
+                <line x1="24" y1="17" x2="38" y2="17"/>
+              </g>
+            </g>
+
+            {/* Acuity 'A.' Logo */}
+            <g transform="translate(232, 276) rotate(-10.4, 22, 20) scale(0.98)" opacity="0.29">
+              <g stroke="#DE3121" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 34 L18 6 L30 34"/>
+                <path d="M10 24 L26 24"/>
+                <circle cx="37" cy="33" r="2.2" fill="#DE3121" stroke="none"/>
+              </g>
+            </g>
+
+            {/* Naira Symbol */}
+            <g transform="translate(146, 325) rotate(8.7, 16, 14) scale(1.15)" opacity="0.31">
+              <g stroke="#DE3121" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="10" y1="2" x2="10" y2="26"/>
+                <line x1="22" y1="2" x2="22" y2="26"/>
+                <line x1="2" y1="8" x2="30" y2="8"/>
+                <line x1="2" y1="18" x2="30" y2="18"/>
+              </g>
+            </g>
+
+            {/* Credit Card */}
+            <g transform="translate(61, 561) rotate(11.9, 25, 17) scale(0.93)" opacity="0.31">
+              <g stroke="#DE3121" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="44" height="28" rx="5"/>
+                <circle cx="14" cy="17" r="2.8"/>
+                <line x1="24" y1="17" x2="38" y2="17"/>
+              </g>
+            </g>
+
+            {/* Trend Line */}
+            <g transform="translate(127, 575) rotate(-15.0, 24, 16) scale(0.90)" opacity="0.29">
+              <g stroke="#DE3121" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 26 L14 10 L24 24 L34 8 L45 26"/>
+              </g>
+            </g>
+
+            {/* Bell */}
+            <g transform="translate(17, 661) rotate(6.7, 20, 18) scale(1.03)" opacity="0.25">
+              <g stroke="#DE3121" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 4 C 18 2, 22 2, 22 4 C 28 6, 32 12, 32 20 L 34 26 L 6 26 L 8 20 C 8 12, 12 6, 18 4 Z"/>
+                <path d="M16 29 C 16 31.5, 18 33, 20 33 C 22 33, 24 31.5, 24 29"/>
+              </g>
+            </g>
+
+            {/* Acuity 'A.' Logo */}
+            <g transform="translate(348, 396) rotate(-12.2, 22, 20) scale(0.93)" opacity="0.32">
+              <g stroke="#DE3121" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 34 L18 6 L30 34"/>
+                <path d="M10 24 L26 24"/>
+                <circle cx="37" cy="33" r="2.2" fill="#DE3121" stroke="none"/>
+              </g>
+            </g>
+
+            {/* Crown */}
+            <g transform="translate(5, 484) rotate(-6.7, 24, 16) scale(1.01)" opacity="0.29">
+              <g stroke="#DE3121" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 26 L4 10 L16 18 L24 6 L32 18 L44 10 L44 26 Z"/>
+                <circle cx="4" cy="9" r="1.5" fill="#DE3121"/>
+                <circle cx="24" cy="5" r="1.5" fill="#DE3121"/>
+                <circle cx="44" cy="9" r="1.5" fill="#DE3121"/>
+              </g>
+            </g>
+
+            {/* Credit Card */}
+            <g transform="translate(341, 720) rotate(-1.2, 25, 17) scale(1.05)" opacity="0.34">
+              <g stroke="#DE3121" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="44" height="28" rx="5"/>
+                <circle cx="14" cy="17" r="2.8"/>
+                <line x1="24" y1="17" x2="38" y2="17"/>
+              </g>
+            </g>
+
+            {/* Arrow Trend */}
+            <g transform="translate(-13, 778) rotate(-1.4, 24, 16) scale(1.17)" opacity="0.23">
+              <g stroke="#DE3121" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 26 L14 10 L24 24 L34 8 L45 26"/>
+              </g>
+            </g>
+
+            {/* Trend Line */}
+            <g transform="translate(48, 810) rotate(6.1, 26, 15) scale(1.17)" opacity="0.33">
+              <g stroke="#DE3121" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="6" width="46" height="18" rx="9"/>
+                <line x1="26" y1="6" x2="26" y2="24"/>
+              </g>
+            </g>
+
+            {/* Crown */}
+            <g transform="translate(129, 781) rotate(13.1, 24, 16) scale(0.91)" opacity="0.34">
+              <g stroke="#DE3121" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 26 L4 10 L16 18 L24 6 L32 18 L44 10 L44 26 Z"/>
+                <circle cx="4" cy="9" r="1.5" fill="#DE3121"/>
+                <circle cx="24" cy="5" r="1.5" fill="#DE3121"/>
+                <circle cx="44" cy="9" r="1.5" fill="#DE3121"/>
+              </g>
+            </g>
+
+            {/* Credit Card */}
+            <g transform="translate(278, 791) rotate(-16.3, 25, 19) scale(1.02)" opacity="0.30">
+              <g stroke="#DE3121" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="4" width="46" height="30" rx="6"/>
+                <line x1="2" y1="13" x2="48" y2="13"/>
+                <circle cx="12" cy="24" r="2" fill="#DE3121" stroke="none"/>
+                <line x1="20" y1="24" x2="38" y2="24" strokeDasharray="3 3"/>
+              </g>
+            </g>
+
+          </g>
+
+          {/* Center Logo Anchor Group (Hidden, we render it via React for the pulse animation) */}
         </svg>
       </div>
 
@@ -139,7 +336,7 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
       <div 
         className="absolute inset-0 pointer-events-none"
         style={{
-          background: `radial-gradient(circle at center, rgba(10,10,10,0.92) 0%, rgba(10,10,10,0.6) 40%, rgba(10,10,10,0.1) 100%)`
+          background: `radial-gradient(circle at center, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.6) 40%, rgba(0,0,0,0.1) 100%)`
         }}
       />
 
