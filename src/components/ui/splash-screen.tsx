@@ -10,23 +10,23 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
   }, [onComplete]);
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#050505] overflow-hidden">
+    <div className="fixed inset-0 w-screen h-[100dvh] z-[100] flex flex-col items-center justify-center bg-[#050505] overflow-hidden">
       
-      {/* BACKGROUND GRADIENT (Flows all the way to the bottom) */}
+      {/* BACKGROUND GRADIENT (Darker & fills entirely) */}
       <div 
         className="absolute inset-0 pointer-events-none"
         style={{
           background: `
-            radial-gradient(circle at 10% 10%, rgba(60, 30, 90, 0.4) 0%, transparent 60%),
-            radial-gradient(circle at 90% 90%, rgba(100, 25, 40, 0.35) 0%, transparent 60%),
-            radial-gradient(circle at 50% 50%, rgba(20, 20, 40, 0.2) 0%, transparent 70%)
+            radial-gradient(circle at 10% 10%, rgba(40, 20, 60, 0.2) 0%, transparent 60%),
+            radial-gradient(circle at 90% 90%, rgba(60, 15, 25, 0.2) 0%, transparent 60%),
+            radial-gradient(circle at 50% 50%, rgba(10, 10, 20, 0.1) 0%, transparent 70%)
           `
         }}
       />
 
-      {/* NOISE TEXTURE OVERLAY (For the cinematic look) */}
+      {/* NOISE TEXTURE OVERLAY */}
       <div 
-        className="absolute inset-0 opacity-[0.12] mix-blend-overlay pointer-events-none"
+        className="absolute inset-0 opacity-[0.1] mix-blend-overlay pointer-events-none"
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
         }}
@@ -39,7 +39,7 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
         transition={{ duration: 0.8, ease: [0.2, 0.8, 0.2, 1] }}
         className="relative z-10 flex items-baseline"
       >
-        <span className="text-[52px] font-black tracking-tighter text-white">
+        <span className="text-[52px] font-black tracking-tighter text-white drop-shadow-2xl">
           ACUITY
         </span>
         
@@ -54,7 +54,7 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
             repeat: Infinity, 
             ease: "easeInOut" 
           }}
-          className="text-[52px] font-black tracking-tighter ml-0.5" 
+          className="text-[52px] font-black tracking-tighter ml-0.5 drop-shadow-2xl" 
           style={{ color: "#DE3121" }}
         >
           .
