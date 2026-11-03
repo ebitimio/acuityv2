@@ -30,8 +30,8 @@ export function FloatingTabBar({ activeTab, onTabChange, onAddClick, isHidden }:
     >
       <div className="relative flex w-full max-w-md items-center justify-between px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pointer-events-auto">
         
-        {/* Main Nav Pill */}
-        <div className="flex flex-1 items-center justify-around rounded-full border border-white/10 bg-[#1c1c1e]/95 px-2 py-2 shadow-2xl shadow-black/60 backdrop-blur-xl">
+        {/* Main Nav Pill - Now uses Liquid Glass */}
+        <div className="flex flex-1 items-center justify-around rounded-full glass glass-thick px-2 py-2 shadow-2xl shadow-black/60">
           {tabs.map(({ id, label, icon: Icon }) => {
             const isActive = activeTab === id;
             return (
@@ -41,7 +41,7 @@ export function FloatingTabBar({ activeTab, onTabChange, onAddClick, isHidden }:
                 aria-label={label}
                 className={cn(
                   "relative flex h-12 w-14 items-center justify-center rounded-full transition-colors",
-                  isActive ? "text-white" : "text-white/40 hover:text-white/70"
+                  isActive ? "text-[var(--text-1)]" : "text-[var(--text-3)] hover:text-[var(--text-2)]"
                 )}
               >
                 {isActive && (
@@ -55,7 +55,7 @@ export function FloatingTabBar({ activeTab, onTabChange, onAddClick, isHidden }:
                   <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
                 ) : (
                   <div className="flex items-baseline">
-                    <span className={cn("text-[18px] font-black tracking-tighter", isActive ? "text-white" : "text-white/40")}>A</span>
+                    <span className={cn("text-[18px] font-black tracking-tighter", isActive ? "text-[var(--text-1)]" : "text-[var(--text-3)]")}>A</span>
                     <span className={cn("text-[18px] font-black tracking-tighter", isActive ? "opacity-100" : "opacity-40")} style={{ color: "var(--brand)" }}>.</span>
                   </div>
                 )}
@@ -64,15 +64,17 @@ export function FloatingTabBar({ activeTab, onTabChange, onAddClick, isHidden }:
           })}
         </div>
 
-        {/* Floating Add Button */}
+        {/* Floating Add Button - Now uses Liquid Glass with brand tint */}
         {onAddClick && (
           <button
             onClick={onAddClick}
-            className="ml-3 flex h-14 w-14 shrink-0 items-center justify-center rounded-full shadow-xl shadow-black/40 transition-transform active:scale-95"
-            style={{ backgroundColor: "var(--brand)" }}
+            className="ml-3 flex h-14 w-14 shrink-0 items-center justify-center rounded-full glass glass-regular glass-press shadow-xl shadow-black/40"
+            style={{ backgroundColor: "var(--brand)", color: "var(--brand-ink)" }}
             aria-label="Quick add"
           >
-            <Plus size={24} strokeWidth={3} style={{ color: "#000000" }} />
+            {/* Specular highlight for the + button */}
+            <span className="absolute inset-0 pointer-events-none glass-specular opacity-50 rounded-full" />
+            <Plus size={24} strokeWidth={3} className="relative z-10" />
           </button>
         )}
       </div>
