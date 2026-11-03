@@ -10,7 +10,7 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
   }, [onComplete]);
 
   return (
-    <div className="fixed inset-0 w-screen h-[100dvh] z-[100] flex flex-col items-center justify-center bg-[#050505] overflow-hidden">
+    <div className="fixed inset-0 w-full h-[100lvh] z-[100] flex flex-col items-center justify-center bg-[#050505] overflow-hidden">
       
       {/* BACKGROUND GRADIENT (Darker & fills entirely) */}
       <div 

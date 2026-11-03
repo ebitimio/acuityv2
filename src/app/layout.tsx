@@ -28,7 +28,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#000000",
+  themeColor: "#050505",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -44,7 +44,8 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-black text-white min-h-screen`}
+        // ADDED bg-[#050505] and min-h-[100lvh] to force full screen coverage
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#050505] text-white min-h-[100lvh] w-full`}
       >
         <Providers>{children}</Providers>
       </body>
