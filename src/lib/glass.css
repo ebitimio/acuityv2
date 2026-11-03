@@ -24,17 +24,7 @@
   }
   .glass-norim::before { display: none; }
 
-  .glass::after {
-    content: "";
-    position: absolute; inset: 0; z-index: -1;
-    border-radius: inherit; pointer-events: none;
-    background: radial-gradient(180px circle at var(--mx, 30%) var(--my, 0%), rgba(255,255,255,0.5), transparent 65%);
-    opacity: var(--glass-spec);
-    transition: opacity 0.3s ease;
-  }
-  .glass:hover, .glass:active {
-    --glass-spec: calc(var(--glass-spec) * 1.8);
-  }
+  /* REMOVED: The .glass::after rule that was causing the white glare */
 
   .glass-press { 
     transition: transform 0.38s cubic-bezier(0.3, 1.6, 0.5, 1), box-shadow 0.2s ease; 
