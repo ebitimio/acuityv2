@@ -5,25 +5,32 @@ import { motion } from "framer-motion";
 
 export function SplashScreen({ onComplete }: { onComplete: () => void }) {
   useEffect(() => {
-    const timer = setTimeout(onComplete, 2500);
-    return () => clearTimeout(timer);
+    // Force the body background to match the gradient
+    const originalBg = document.body.style.background;
+    document.body.style.background = `
+      radial-gradient(circle at 10% 10%, rgba(40, 20, 60, 0.2) 0%, transparent 60%),
+      radial-gradient(circle at 90% 90%, rgba(60, 15, 25, 0.2) 0%, transparent 60%),
+      radial-gradient(circle at 50% 50%, rgba(10, 10, 20, 0.1) 0%, transparent 70%),
+      #050505
+    `;
+    document.body.style.backgroundAttachment = "fixed";
+    document.body.style.backgroundSize = "cover";
+
+    const timer = setTimeout(() => {
+      onComplete();
+      // Restore original background when done
+      document.body.style.background = originalBg;
+    }, 2500);
+
+    return () => {
+      clearTimeout(timer);
+      document.body.style.background = originalBg;
+    };
   }, [onComplete]);
 
   return (
-    <div className="fixed inset-0 w-full h-[100lvh] z-[100] flex flex-col items-center justify-center bg-[#050505] overflow-hidden">
+    <div className="fixed inset-0 w-full h-[100lvh] z-[100] flex flex-col items-center justify-center pointer-events-none">
       
-      {/* BACKGROUND GRADIENT (Darker & fills entirely) */}
-      <div 
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background: `
-            radial-gradient(circle at 10% 10%, rgba(40, 20, 60, 0.2) 0%, transparent 60%),
-            radial-gradient(circle at 90% 90%, rgba(60, 15, 25, 0.2) 0%, transparent 60%),
-            radial-gradient(circle at 50% 50%, rgba(10, 10, 20, 0.1) 0%, transparent 70%)
-          `
-        }}
-      />
-
       {/* NOISE TEXTURE OVERLAY */}
       <div 
         className="absolute inset-0 opacity-[0.1] mix-blend-overlay pointer-events-none"
@@ -37,7 +44,7 @@ export function SplashScreen({ onComplete }: { onComplete: () => void }) {
         initial={{ opacity: 0, scale: 0.98, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.8, ease: [0.2, 0.8, 0.2, 1] }}
-        className="relative z-10 flex items-baseline"
+        className="relative z-10 flex items-baseline pointer-events-auto"
       >
         <span className="text-[52px] font-black tracking-tighter text-white drop-shadow-2xl">
           ACUITY

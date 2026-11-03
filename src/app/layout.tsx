@@ -42,10 +42,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
+    // Added bg-[#050505] to the html tag
+    <html lang="en" className="dark bg-[#050505]" suppressHydrationWarning>
       <body
-        // ADDED bg-[#050505] and min-h-[100lvh] to force full screen coverage
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#050505] text-white min-h-[100lvh] w-full`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased text-white min-h-[100lvh] w-full`}
       >
         <Providers>{children}</Providers>
       </body>
