@@ -3,7 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function POST(req: Request) {
   try {
-    const { code, customName } = await req.json();
+    // 1. Destructure accountType and workspaceId from the request
+    const { code, customName, workspaceId, accountType } = await req.json();
     if (!code) return NextResponse.json({ error: "Missing code" }, { status: 400 });
     
     const key = process.env.MONO_SECRET_KEY;
@@ -13,7 +14,7 @@ export async function POST(req: Request) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    // 1. Exchange code for Account ID
+    // 2. Exchange code for Account ID
     const exchangeRes = await fetch("https://api.withmono.com/v2/accounts/auth", {
       method: "POST",
       headers: { "Content-Type": "application/json", "mono-sec-key": key },
@@ -25,7 +26,7 @@ export async function POST(req: Request) {
 
     const monoAccountId = exchangeData.id || exchangeData.data?.id;
 
-    // 2. Fetch Details
+    // 3. Fetch Details
     const detailsRes = await fetch(`https://api.withmono.com/v2/accounts/${monoAccountId}`, {
       headers: { "mono-sec-key": key },
     });
@@ -36,11 +37,11 @@ export async function POST(req: Request) {
     // Log the full response so we can see exactly what Mono sends
     console.log("Full Mono Account Details:", JSON.stringify(details, null, 2));
 
-    // 3. Safely extract nested data
+    // 4. Safely extract nested data (YOUR EXACT LOGIC RESTORED)
     const rawData = details.data || details;
     const accountInfo = rawData.account || rawData;
     
-    // CHANGED: Look for the bank name in all possible places
+    // Look for the bank name in all possible places
     let bankName = "Linked Bank";
     
     // Check top-level institution
@@ -62,17 +63,26 @@ export async function POST(req: Request) {
     // Mono returns balance in kobo, so we do NOT multiply by 100 again
     const balanceMinor = Math.round(Number(accountInfo.balance) || 0);
 
-    // 4. Save to Supabase
-    const { data: ws } = await supabase.from("workspaces").select("id").eq("owner_id", user.id).limit(1).single();
-    if (!ws) throw new Error("No workspace found");
+    // 5. Determine the Workspace
+    let targetWorkspaceId = workspaceId;
 
+    if (!targetWorkspaceId) {
+      const { data: ws } = await supabase.from("workspaces").select("id").eq("owner_id", user.id).limit(1).single();
+      if (!ws) throw new Error("No workspace found");
+      targetWorkspaceId = ws.id;
+    } else {
+      const { data: ws } = await supabase.from("workspaces").select("id").eq("id", targetWorkspaceId).eq("owner_id", user.id).single();
+      if (!ws) throw new Error("Invalid workspace");
+    }
+
+    // 6. Save to Supabase using the selected accountType
     const { data: newAccount, error: insertError } = await supabase
       .from("accounts")
       .insert({
-        workspace_id: ws.id,
+        workspace_id: targetWorkspaceId,
         name: accountName,
         institution: bankName, 
-        type: "checking",
+        type: accountType || "checking", // <-- Saves the selected type
         balance_minor: balanceMinor, 
         balance_as_of: new Date().toISOString(),
         mono_account_id: monoAccountId, 
