@@ -605,7 +605,10 @@ export default function SandboxPage() {
 
   return (
     <main className="relative flex min-h-[100dvh] flex-col overflow-x-hidden" style={{ background: "var(--bg)" }}>
-      <PullToRefresh onRefresh={refreshData}>
+      <PullToRefresh 
+         onRefresh={refreshData}
+         notificationText="We're getting your balance, please hold on..."
+         >
         <ScreenTransition id={activeScreen}>
           {activeScreen === "analytics" ? (
             <AnalyticsScreen key={activeWs?.id} onBack={handleBackToHome} onNavigateTransactions={() => setActiveScreen("transactions")} />

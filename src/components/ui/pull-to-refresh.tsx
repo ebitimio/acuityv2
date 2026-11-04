@@ -1,21 +1,23 @@
 "use client";
 
 import { useState, useRef, ReactNode, useEffect } from "react";
-import { RefreshCw } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Loader2 } from "lucide-react";
 
 export function PullToRefresh({
   children,
   onRefresh,
+  notificationText = "We're getting your balance, please hold on...",
 }: {
   children: ReactNode;
   onRefresh: () => Promise<void> | void;
+  notificationText?: string;
 }) {
   const [pullY, setPullY] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const startY = useRef<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Allow pull-to-refresh only when the page is scrolled to the top
   const isAtTop = () => {
     return (window.scrollY || document.documentElement.scrollTop) <= 0;
   };
@@ -36,7 +38,6 @@ export function PullToRefresh({
       if (startY.current === null || isRefreshing) return;
       const delta = e.touches[0].clientY - startY.current;
       if (delta > 0) {
-        // Only prevent scroll when the pull is meaningful
         if (delta > 5) e.preventDefault();
         setPullY(Math.min(delta * 0.5, 90));
       }
@@ -49,12 +50,11 @@ export function PullToRefresh({
 
       if (shouldRefresh) {
         setIsRefreshing(true);
-        setPullY(50);
+        setPullY(0);
         try {
           await onRefresh();
         } finally {
           setIsRefreshing(false);
-          setPullY(0);
         }
       } else {
         setPullY(0);
@@ -74,28 +74,31 @@ export function PullToRefresh({
 
   return (
     <div ref={containerRef} className="relative">
-      {/* Spinner that appears as you pull */}
-      <div
-        className="absolute inset-x-0 top-0 z-50 flex justify-center transition-opacity duration-200"
-        style={{
-          height: pullY,
-          opacity: pullY > 10 ? 1 : 0,
-          paddingTop: 16,
-        }}
-      >
-        <div className="bg-[var(--surface-3)] p-2 rounded-full shadow-lg">
-          <RefreshCw
-            size={20}
-            className={isRefreshing ? "animate-spin" : ""}
-            style={{
-              transform: `rotate(${pullY * 4}deg)`,
-              transition: isRefreshing ? undefined : "transform 0.05s",
+      
+      {/* FLOATING NOTIFICATION BAR */}
+      <AnimatePresence>
+        {isRefreshing && (
+          <motion.div
+            initial={{ y: -100, opacity: 0, x: "-50%" }}
+            animate={{ y: 16, opacity: 1, x: "-50%" }}
+            exit={{ y: -100, opacity: 0, x: "-50%" }}
+            transition={{ type: "spring", stiffness: 400, damping: 30 }}
+            className="fixed top-0 left-1/2 z-[100] w-[90%] max-w-sm flex items-center justify-center gap-2 rounded-full border-2 px-4 py-2.5 shadow-2xl backdrop-blur-md"
+            style={{ 
+              backgroundColor: "#000000", 
+              borderColor: "#DE3121",
+              color: "#DE3121"
             }}
-          />
-        </div>
-      </div>
+          >
+            <Loader2 size={16} className="animate-spin" />
+            <span className="text-[13px] font-bold tracking-wide">
+              {notificationText}
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Content wrapper — translated down as you pull */}
+      {/* Content wrapper */}
       <div
         style={{
           transform: `translateY(${pullY}px)`,
