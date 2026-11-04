@@ -682,17 +682,17 @@ export default function SandboxPage() {
               <div className="flex flex-col gap-6 px-5 pt-2">
                                 {isRefreshingHome && (
                   <div 
-                    className="flex items-center justify-center gap-2 rounded-xl border px-4 py-2.5 w-full animate-in fade-in slide-in-from-top-2"
+                    className="flex items-center justify-center gap-2 rounded-xl border px-4 py-2 w-full"
                     style={{ 
-                      backgroundColor: "var(--brand)", 
-                      borderColor: "color-mix(in srgb, var(--brand) 80%, black)",
-                      color: "var(--brand-ink)"
+                      backgroundColor: "#000000", 
+                      borderColor: "var(--brand)",
+                      color: "var(--brand)"
                     }}
                   >
-                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M21 12a9 9 0 1 1-6.219-8.56" />
                     </svg>
-                    <span className="text-[13px] font-bold tracking-wide">
+                    <span className="text-[12px] font-medium tracking-wide whitespace-nowrap">
                       We're getting your balance, please hold on...
                     </span>
                   </div>
