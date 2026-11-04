@@ -6,7 +6,7 @@ import {
   ChevronLeft, ArrowUp, Loader2, CheckCircle2,
   Plus, Wallet, PieChart, Copy, Check,
   AlertCircle, RefreshCw, XCircle, Menu, X, Mic, Trash2,
-  Sparkles, TrendingUp, Zap
+  TrendingUp, Zap
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useWorkspace } from "@/lib/workspace";
@@ -55,6 +55,151 @@ const truncateTitle = (t: string) => {
   const s = t.trim().replace(/\s+/g, " ");
   return s.length > 40 ? s.slice(0, 40).trimEnd() + "…" : s;
 };
+
+/**
+ * Living Acuity AI Companion
+ * Expressive white pill eyes with organic blinking, gaze tracking,
+ * and warm Acuity Ember radiant aura - inspired by companion AI aesthetics.
+ */
+function AcuityCompanion({
+  isThinking = false,
+  size = "large",
+}: {
+  isThinking?: boolean;
+  size?: "large" | "compact";
+}) {
+  const [blinkState, setBlinkState] = useState(false);
+  const [gaze, setGaze] = useState({ x: 0, y: 0, rotate: 7 });
+  const [isWinking, setIsWinking] = useState(false);
+
+  // Natural organic blinking (randomized delay with occasional double-blink)
+  useEffect(() => {
+    let timeout: NodeJS.Timeout;
+
+    const scheduleBlink = () => {
+      const delay = Math.random() * 2400 + 2600; // 2.6s - 5s
+      timeout = setTimeout(() => {
+        setBlinkState(true);
+        setTimeout(() => {
+          setBlinkState(false);
+          // 25% chance of an expressive double-blink
+          if (Math.random() < 0.25) {
+            setTimeout(() => {
+              setBlinkState(true);
+              setTimeout(() => {
+                setBlinkState(false);
+                scheduleBlink();
+              }, 110);
+            }, 90);
+          } else {
+            scheduleBlink();
+          }
+        }, 130);
+      }, delay);
+    };
+
+    scheduleBlink();
+    return () => clearTimeout(timeout);
+  }, []);
+
+  // Subtle gaze shift (looking around naturally)
+  useEffect(() => {
+    let gazeTimeout: NodeJS.Timeout;
+
+    const scheduleGaze = () => {
+      const delay = Math.random() * 3200 + 3000;
+      gazeTimeout = setTimeout(() => {
+        const randomX = (Math.random() - 0.5) * 8; // -4 to +4 px
+        const randomY = (Math.random() - 0.5) * 6; // -3 to +3 px
+        const randomRot = 7 + (Math.random() - 0.5) * 6; // 4 to 10 deg
+        setGaze({ x: randomX, y: randomY, rotate: randomRot });
+        scheduleGaze();
+      }, delay);
+    };
+
+    scheduleGaze();
+    return () => clearTimeout(gazeTimeout);
+  }, []);
+
+  const handleTap = () => {
+    setIsWinking(true);
+    setTimeout(() => setIsWinking(false), 300);
+  };
+
+  const isCompact = size === "compact";
+
+  return (
+    <div
+      onClick={handleTap}
+      className={cn(
+        "relative flex items-center justify-center cursor-pointer select-none transition-transform active:scale-95",
+        isCompact ? "h-9 w-14" : "h-32 sm:h-36 w-full my-1"
+      )}
+      title="Acuity Personal AI • Tap to say hi!"
+    >
+      {/* Radiant Brand Ember Aura (Breathing Glow) */}
+      <motion.div
+        animate={{
+          scale: isThinking ? [1, 1.25, 1] : [1, 1.08, 1],
+          opacity: isThinking ? [0.65, 0.95, 0.65] : [0.38, 0.58, 0.38],
+        }}
+        transition={{
+          duration: isThinking ? 1.4 : 4.2,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+        className={cn(
+          "absolute rounded-full pointer-events-none",
+          isCompact ? "w-16 h-16 blur-md" : "w-48 h-48 sm:w-56 sm:h-56 blur-2xl"
+        )}
+        style={{
+          background:
+            "radial-gradient(circle, color-mix(in srgb, var(--brand) 45%, transparent) 0%, color-mix(in srgb, var(--brand) 16%, transparent) 46%, transparent 72%)",
+        }}
+      />
+
+      {/* Eyes Container */}
+      <motion.div
+        animate={{
+          x: gaze.x,
+          y: gaze.y,
+          rotate: gaze.rotate,
+        }}
+        transition={{ type: "spring", stiffness: 140, damping: 14 }}
+        className={cn(
+          "relative flex items-center z-10",
+          isCompact ? "gap-2" : "gap-4 sm:gap-5"
+        )}
+      >
+        {/* Left Eye */}
+        <motion.div
+          animate={{
+            scaleY: isWinking || blinkState ? 0.08 : isThinking ? 0.55 : 1,
+            scaleX: isThinking ? 1.1 : 1,
+          }}
+          transition={{ duration: 0.11 }}
+          className={cn(
+            "rounded-[10px] sm:rounded-[13px] bg-white shadow-[0_0_24px_rgba(255,255,255,0.7),0_0_10px_rgba(222,49,33,0.35)] origin-center",
+            isCompact ? "w-2.5 h-6" : "w-6 h-13 sm:w-7 sm:h-14"
+          )}
+        />
+
+        {/* Right Eye */}
+        <motion.div
+          animate={{
+            scaleY: blinkState ? 0.08 : isThinking ? 0.55 : 1,
+            scaleX: isThinking ? 1.1 : 1,
+          }}
+          transition={{ duration: 0.11 }}
+          className={cn(
+            "rounded-[10px] sm:rounded-[13px] bg-white shadow-[0_0_24px_rgba(255,255,255,0.7),0_0_10px_rgba(222,49,33,0.35)] origin-center",
+            isCompact ? "w-2.5 h-6" : "w-6 h-13 sm:w-7 sm:h-14"
+          )}
+        />
+      </motion.div>
+    </div>
+  );
+}
 
 export function AIScreen({
   onBack,
@@ -584,7 +729,7 @@ export function AIScreen({
         touchAction: "pan-y",
       }}
     >
-      {/* Ambient Radial Gradient Glows (Gemini Style) */}
+      {/* Ambient Radial Gradient Glows */}
       <div aria-hidden className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
         <div
           style={{
@@ -608,16 +753,16 @@ export function AIScreen({
         />
       </div>
 
-      {/* Top Header Bar (Gemini Style) */}
+      {/* Top Header Bar */}
       <header
-        className="relative z-20 shrink-0 flex items-center justify-between px-4 pb-2.5 border-b border-[var(--line)]/40 bg-[var(--bg)]/80 backdrop-blur-xl"
+        className="relative z-20 shrink-0 flex items-center justify-between px-4 pb-2.5 border-b border-white/5 bg-[var(--bg)]/80 backdrop-blur-xl"
         style={{ paddingTop: "calc(env(safe-area-inset-top) + 10px)" }}
       >
         <div className="flex items-center gap-2.5">
           <button
             onClick={onBack}
             aria-label="Back to dashboard"
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text-1)] hover:bg-[var(--surface-3)] transition-all active:scale-95"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--surface-2)] border border-white/10 text-[var(--text-1)] hover:bg-[var(--surface-3)] transition-all active:scale-95 shadow-sm"
           >
             <ChevronLeft size={20} />
           </button>
@@ -625,7 +770,7 @@ export function AIScreen({
           <button
             onClick={() => setIsSidebarOpen(true)}
             aria-label="Open chat history"
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text-2)] hover:text-[var(--text-1)] hover:bg-[var(--surface-3)] transition-all active:scale-95"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--surface-2)] border border-white/10 text-[var(--text-2)] hover:text-[var(--text-1)] hover:bg-[var(--surface-3)] transition-all active:scale-95 shadow-sm"
           >
             <Menu size={18} />
           </button>
@@ -635,9 +780,13 @@ export function AIScreen({
               <span className="text-[19px] font-black tracking-tight text-[var(--text-1)]">ACUITY</span>
               <span className="text-[19px] font-black tracking-tight text-[var(--brand)]">.</span>
             </div>
-            <div className="hidden xs:flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[var(--surface-2)] border border-[var(--line)]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[var(--brand)] animate-pulse" />
-              <span className="text-[10px] font-bold text-[var(--text-2)] tracking-wider uppercase">CFO AI</span>
+            
+            {/* Branded Monogram Badge */}
+            <div className="hidden xs:flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[var(--surface-2)] border border-white/10 shadow-sm">
+              <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[var(--brand)] text-[8px] font-black text-black leading-none">
+                A
+              </span>
+              <span className="text-[10px] font-bold text-[var(--text-2)] tracking-wider uppercase">Personal CFO</span>
             </div>
           </div>
         </div>
@@ -645,7 +794,7 @@ export function AIScreen({
         <div className="flex items-center gap-2">
           <button
             onClick={startNewChat}
-            className="flex h-9 items-center gap-1.5 px-3 rounded-full bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text-1)] hover:bg-[var(--surface-3)] transition-all active:scale-95 text-xs font-semibold"
+            className="flex h-9 items-center gap-1.5 px-3 rounded-full bg-[var(--surface-2)] border border-white/10 text-[var(--text-1)] hover:bg-[var(--surface-3)] transition-all active:scale-95 text-xs font-semibold shadow-sm"
           >
             <Plus size={15} className="text-[var(--brand)]" />
             <span className="font-medium">New Chat</span>
@@ -660,73 +809,94 @@ export function AIScreen({
         aria-live="polite"
       >
         {messages.length === 0 && !isThinking ? (
-          <div className="flex flex-col justify-center min-h-[70vh] max-w-xl mx-auto py-6">
-            {/* Gemini Iridescent Heading */}
-            <div className="mb-6 space-y-1">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--brand)]/10 border border-[var(--brand)]/20 mb-3">
-                <Sparkles size={14} className="text-[var(--brand)]" />
-                <span className="text-[12px] font-semibold text-[var(--brand)] tracking-tight">Your Intelligent CFO</span>
+          <div className="flex flex-col justify-start max-w-xl mx-auto py-3">
+            {/* Top Greeting Header */}
+            <div className="mb-4 space-y-1">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--surface-2)] border border-[var(--brand)]/30 mb-2 shadow-sm">
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[var(--brand)] text-[9px] font-black text-black leading-none shadow-sm shadow-[var(--brand)]/30">
+                  A
+                </span>
+                <span className="text-[12px] font-bold text-[var(--text-1)] tracking-tight">
+                  Acuity Personal CFO
+                </span>
               </div>
 
-              <h1 className="text-[34px] sm:text-[40px] font-extrabold tracking-tight leading-tight">
+              <h1 className="text-[32px] sm:text-[38px] font-extrabold tracking-tight leading-tight">
                 <span className="bg-gradient-to-r from-white via-neutral-200 to-[var(--brand)] bg-clip-text text-transparent">
                   {greeting}, {firstName}
                 </span>
               </h1>
-              <p className="text-[17px] sm:text-[19px] text-[var(--text-3)] font-normal leading-relaxed">
-                What would you like to calculate, analyze, or plan today?
+              <p className="text-[15px] sm:text-[17px] text-[var(--text-3)] font-normal leading-relaxed">
+                Your personal AI partner watching your money so you don't have to.
               </p>
             </div>
 
-            {/* Financial Status Quick Chips */}
-            <div className="flex flex-wrap gap-2 mb-8">
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--surface-2)] border border-[var(--line)] text-xs">
-                <span className="text-[var(--text-3)]">Safe today:</span>
-                <span className="font-bold text-[var(--brand)] tabular">
-                  {dailySafeAmount > 0 ? fmt(dailySafeAmount) : "Calculating..."}
+            {/* Living Acuity Companion (Animated Blinking Eyes in Ember Aura) */}
+            <AcuityCompanion isThinking={isThinking} size="large" />
+
+            {/* Financial Status Quick Pulse Cards */}
+            <div className="rounded-[22px] bg-[var(--surface-2)]/90 border border-white/10 p-4 mb-4 shadow-lg backdrop-blur-xl">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-[12px] font-bold uppercase tracking-wider text-[var(--text-3)]">
+                  Live Financial Pulse
+                </span>
+                <span className="flex items-center gap-1.5 text-[11px] font-medium text-[var(--gain)]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--gain)] animate-pulse" />
+                  Realtime Active
                 </span>
               </div>
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--surface-2)] border border-[var(--line)] text-xs">
-                <span className="text-[var(--text-3)]">Payday:</span>
-                <span className="font-bold text-[var(--text-1)]">
-                  {daysUntilIncome > 0 ? `In ${daysUntilIncome}d` : "Upcoming"}
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--surface-2)] border border-[var(--line)] text-xs">
-                <span className="text-[var(--text-3)]">Budget used:</span>
-                <span className={cn(
-                  "font-bold tabular",
-                  budgetUsedPct > 85 ? "text-[var(--danger)]" : "text-[var(--gain)]"
-                )}>
-                  {budgetUsedPct}%
-                </span>
+
+              <div className="grid grid-cols-3 gap-2">
+                <div className="flex flex-col p-2.5 rounded-xl bg-[var(--surface-3)]/60 border border-white/5">
+                  <span className="text-[11px] text-[var(--text-3)] mb-0.5">Safe Today</span>
+                  <span className="text-[13px] font-bold text-[var(--brand)] tabular truncate">
+                    {dailySafeAmount > 0 ? fmt(dailySafeAmount) : "Calculating"}
+                  </span>
+                </div>
+
+                <div className="flex flex-col p-2.5 rounded-xl bg-[var(--surface-3)]/60 border border-white/5">
+                  <span className="text-[11px] text-[var(--text-3)] mb-0.5">Payday</span>
+                  <span className="text-[13px] font-bold text-[var(--text-1)] truncate">
+                    {daysUntilIncome > 0 ? `In ${daysUntilIncome}d` : "Upcoming"}
+                  </span>
+                </div>
+
+                <div className="flex flex-col p-2.5 rounded-xl bg-[var(--surface-3)]/60 border border-white/5">
+                  <span className="text-[11px] text-[var(--text-3)] mb-0.5">Budget</span>
+                  <span className={cn(
+                    "text-[13px] font-bold tabular truncate",
+                    budgetUsedPct > 85 ? "text-[var(--danger)]" : "text-[var(--gain)]"
+                  )}>
+                    {budgetUsedPct}% used
+                  </span>
+                </div>
               </div>
             </div>
 
-            {/* Gemini Prompt Suggestion Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Prompt Suggestion Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               {suggestions.map((s, i) => {
                 const Icon = s.icon;
                 return (
                   <motion.button
                     key={i}
-                    initial={{ opacity: 0, y: 12 }}
+                    initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.06 }}
+                    transition={{ delay: i * 0.05 }}
                     onClick={() => send(s.title)}
-                    className="flex flex-col justify-between p-4 rounded-[20px] bg-[var(--surface-2)] hover:bg-[var(--surface-3)] border border-[var(--line)] text-left transition-all active:scale-[0.98] group"
+                    className="flex flex-col justify-between p-3.5 rounded-[18px] bg-[var(--surface-2)]/80 hover:bg-[var(--surface-3)] border border-white/8 text-left transition-all active:scale-[0.98] group shadow-sm"
                   >
-                    <div className="flex items-start justify-between gap-3 mb-3">
-                      <div className={cn("flex h-9 w-9 items-center justify-center rounded-xl", s.color)}>
-                        <Icon size={18} />
+                    <div className="flex items-start justify-between gap-3 mb-2">
+                      <div className={cn("flex h-8 w-8 items-center justify-center rounded-xl", s.color)}>
+                        <Icon size={16} />
                       </div>
-                      <ArrowUp size={16} className="text-[var(--text-3)] group-hover:text-[var(--brand)] transition-colors rotate-45" />
+                      <ArrowUp size={15} className="text-[var(--text-3)] group-hover:text-[var(--brand)] transition-colors rotate-45" />
                     </div>
                     <div>
-                      <p className="text-[14px] font-semibold text-[var(--text-1)] leading-snug mb-1">
+                      <p className="text-[13.5px] font-semibold text-[var(--text-1)] leading-snug mb-0.5">
                         {s.title}
                       </p>
-                      <p className="text-[12px] text-[var(--text-3)]">
+                      <p className="text-[11.5px] text-[var(--text-3)]">
                         {s.subtitle}
                       </p>
                     </div>
@@ -745,12 +915,12 @@ export function AIScreen({
                 className={cn("flex flex-col", msg.role === "user" ? "items-end" : "items-start")}
               >
                 {msg.role === "user" ? (
-                  /* User Bubble (Gemini Glass Capsule) */
+                  /* User Bubble */
                   <div className="max-w-[85%] rounded-[22px] rounded-br-sm bg-[var(--surface-2)] border border-white/10 px-4 py-3 text-[15px] leading-relaxed text-white shadow-sm">
                     {msg.content}
                   </div>
                 ) : (
-                  /* Assistant Response (Gemini Natural Flow with Monogram) */
+                  /* Assistant Response */
                   <div className="w-full flex items-start gap-3">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] mt-0.5 shadow-md shadow-[var(--brand)]/20">
                       <span className="text-[13px] font-black text-[var(--brand-ink)]">A.</span>
@@ -796,7 +966,7 @@ export function AIScreen({
                                   </button>
                                   <button
                                     onClick={() => handleActionCancel(msg.id)}
-                                    className="flex-1 rounded-xl bg-[var(--surface-3)] border border-[var(--line)] py-2.5 text-[13px] font-bold text-[var(--text-2)] hover:text-[var(--text-1)] active:scale-95 transition-all"
+                                    className="flex-1 rounded-xl bg-[var(--surface-3)] border border-white/10 py-2.5 text-[13px] font-bold text-[var(--text-2)] hover:text-[var(--text-1)] active:scale-95 transition-all"
                                   >
                                     Cancel
                                   </button>
@@ -842,13 +1012,13 @@ export function AIScreen({
               </motion.div>
             ))}
 
-            {/* Thinking & Streaming State */}
+            {/* Thinking & Streaming State with Expressive Mini Companion */}
             {isThinking && (
               <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="w-full flex items-start gap-3">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand)]/20 mt-0.5">
-                  <Loader2 size={16} className="text-[var(--brand)] animate-spin" />
+                <div className="shrink-0 mt-0.5">
+                  <AcuityCompanion isThinking={true} size="compact" />
                 </div>
-                <div className="flex-1 min-w-0 pt-0.5">
+                <div className="flex-1 min-w-0 pt-1">
                   {thinkingLabel && !streamingContent && (
                     <div className="flex items-center gap-2 text-[14px] font-medium text-[var(--brand)] animate-pulse">
                       <span className="w-1.5 h-1.5 rounded-full bg-[var(--brand)]" />
@@ -870,12 +1040,12 @@ export function AIScreen({
         )}
       </main>
 
-      {/* Gemini Bottom Floating Capsule Composer */}
+      {/* Floating Capsule Composer - Polished Borders & Seamless Background */}
       <footer
-        className="relative z-20 shrink-0 px-4 pt-2 pb-[calc(env(safe-area-inset-bottom)+12px)] bg-[var(--bg)]/95 backdrop-blur-xl border-t border-[var(--line)]/40"
+        className="relative z-20 shrink-0 px-4 pt-2 pb-[calc(env(safe-area-inset-bottom)+12px)] bg-gradient-to-t from-[var(--bg)] via-[var(--bg)]/95 to-transparent"
       >
         <div className="max-w-2xl mx-auto">
-          <div className="flex items-end gap-2 rounded-[28px] bg-[var(--surface-2)] p-2 pl-4 border border-[var(--line-strong)] focus-within:border-[var(--brand)] focus-within:ring-2 focus-within:ring-[var(--brand)]/20 transition-all shadow-md">
+          <div className="flex items-center gap-2 rounded-[30px] bg-[var(--surface-2)]/90 backdrop-blur-2xl p-1.5 pl-4 border border-white/10 shadow-[0_10px_35px_rgba(0,0,0,0.4)] focus-within:border-[var(--brand)] focus-within:ring-2 focus-within:ring-[var(--brand)]/25 transition-all">
             <textarea
               ref={textareaRef}
               value={input}
@@ -887,15 +1057,15 @@ export function AIScreen({
                   send(input);
                 }
               }}
-              placeholder="Ask Acuity about your money, budget, safe-to-spend..."
-              className="flex-1 max-h-32 min-h-[42px] bg-transparent py-2.5 text-[16px] text-[var(--text-1)] outline-none placeholder:text-[var(--text-3)] resize-none"
+              placeholder="Ask your CFO anything..."
+              className="flex-1 max-h-32 min-h-[42px] bg-transparent py-2.5 text-[15px] sm:text-[16px] leading-[1.4] text-[var(--text-1)] outline-none placeholder:text-[var(--text-3)] resize-none"
               style={{
                 caretColor: "var(--brand)",
                 fontSize: "16px", // Ensures iOS Safari does not auto-zoom
               }}
               rows={1}
             />
-            <div className="flex items-center gap-1.5 shrink-0 pb-0.5">
+            <div className="flex items-center gap-1.5 shrink-0 pr-1">
               <button
                 type="button"
                 className="flex h-10 w-10 items-center justify-center rounded-full text-[var(--text-3)] hover:text-[var(--text-1)] hover:bg-[var(--surface-3)] transition-colors"
@@ -913,7 +1083,7 @@ export function AIScreen({
                   "flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-all active:scale-95 shadow-sm",
                   input.trim() && !isThinking
                     ? "bg-[var(--brand)] text-[var(--brand-ink)] shadow-[var(--brand)]/25"
-                    : "bg-[var(--surface-3)] text-[var(--text-3)] cursor-not-allowed opacity-60"
+                    : "bg-[var(--surface-3)] text-[var(--text-3)] cursor-not-allowed opacity-50"
                 )}
               >
                 {isThinking ? (
@@ -943,13 +1113,13 @@ export function AIScreen({
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", damping: 26, stiffness: 220 }}
-              className="fixed top-0 left-0 bottom-0 w-[290px] bg-[var(--surface-1)] z-[120] flex flex-col border-r border-[var(--line)] shadow-2xl"
+              className="fixed top-0 left-0 bottom-0 w-[290px] bg-[var(--surface-1)] z-[120] flex flex-col border-r border-white/10 shadow-2xl"
               style={{
                 paddingTop: "calc(env(safe-area-inset-top) + 12px)",
                 paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)",
               }}
             >
-              <div className="px-4 pb-3 border-b border-[var(--line)] flex justify-between items-center">
+              <div className="px-4 pb-3 border-b border-white/10 flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-[16px] text-[var(--text-1)]">Chat History</span>
                 </div>
@@ -978,7 +1148,7 @@ export function AIScreen({
                     className={cn(
                       "group w-full flex items-center justify-between p-3 rounded-xl text-sm transition-colors cursor-pointer",
                       activeConvId === c.id
-                        ? "bg-[var(--surface-2)] text-[var(--text-1)] font-medium border border-[var(--line)]"
+                        ? "bg-[var(--surface-2)] text-[var(--text-1)] font-medium border border-white/10"
                         : "text-[var(--text-2)] hover:bg-[var(--surface-2)] hover:text-[var(--text-1)]"
                     )}
                     onClick={() => {
@@ -1027,7 +1197,7 @@ export function AIScreen({
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.94, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-sm rounded-[24px] bg-[var(--surface-2)] border border-[var(--line)] p-6 shadow-2xl"
+              className="w-full max-w-sm rounded-[24px] bg-[var(--surface-2)] border border-white/10 p-6 shadow-2xl"
             >
               <div className="flex items-center gap-3 mb-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--danger)]/15">
