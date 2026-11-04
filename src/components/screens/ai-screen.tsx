@@ -682,34 +682,18 @@ export function AIScreen({
 
   const suggestions = useMemo(() => {
     return [
-      {
-        title: "How much can I safely spend this week?",
-        subtitle: "Safe-to-Spend & cash runway",
-        icon: Wallet,
-        color: "text-amber-400 bg-amber-400/10",
-      },
-      {
-        title: "Where am I spending the most money?",
-        subtitle: "Breakdown of top expense categories",
-        icon: PieChart,
-        color: "text-rose-400 bg-rose-400/10",
-      },
+      { title: "How much can I safely spend?" },
+      { title: "Where am I spending the most?" },
       {
         title: daysUntilIncome > 0
-          ? `Payday in ${daysUntilIncome} days. How do I stretch what's left?`
-          : "How do I optimize my budget this month?",
-        subtitle: "Cash buffer calculation",
-        icon: TrendingUp,
-        color: "text-emerald-400 bg-emerald-400/10",
+          ? `Payday in ${daysUntilIncome}d. Can I stretch?`
+          : "How do I optimize my monthly budget?",
       },
       {
         title: metrics?.uncategorized_count && metrics.uncategorized_count > 0
-          ? `Help me review ${metrics.uncategorized_count} uncategorized transactions`
-          : "Audit my recent transactions and bank fees",
-        subtitle: "Transaction hygiene & intelligence",
-        icon: Zap,
-        color: "text-sky-400 bg-sky-400/10",
-      }
+          ? `Categorize ${metrics.uncategorized_count} unreviewed items`
+          : "Audit my recent transactions",
+      },
     ];
   }, [daysUntilIncome, metrics]);
 
@@ -753,16 +737,16 @@ export function AIScreen({
         />
       </div>
 
-      {/* Top Header Bar - Seamlessly Blended */}
+      {/* Top Header Bar - Seamless Glass Blended */}
       <header
         className="relative z-20 shrink-0 flex items-center justify-between px-4 pb-1.5 bg-transparent"
         style={{ paddingTop: "calc(env(safe-area-inset-top) + 6px)" }}
       >
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
           <button
             onClick={onBack}
             aria-label="Back to dashboard"
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--surface-2)] border border-white/10 text-[var(--text-1)] hover:bg-[var(--surface-3)] transition-all active:scale-95 shadow-sm"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] text-white/80 hover:text-white transition-all active:scale-95 shadow-sm"
           >
             <ChevronLeft size={20} />
           </button>
@@ -770,31 +754,21 @@ export function AIScreen({
           <button
             onClick={() => setIsSidebarOpen(true)}
             aria-label="Open chat history"
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--surface-2)] border border-white/10 text-[var(--text-2)] hover:text-[var(--text-1)] hover:bg-[var(--surface-3)] transition-all active:scale-95 shadow-sm"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] text-white/70 hover:text-white transition-all active:scale-95 shadow-sm"
           >
             <Menu size={18} />
           </button>
           
-          <div className="flex items-center gap-2 ml-1">
-            <div className="flex items-baseline">
-              <span className="text-[19px] font-black tracking-tight text-[var(--text-1)]">ACUITY</span>
-              <span className="text-[19px] font-black tracking-tight text-[var(--brand)]">.</span>
-            </div>
-            
-            {/* Branded Monogram Badge */}
-            <div className="hidden xs:flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[var(--surface-2)] border border-white/10 shadow-sm">
-              <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[var(--brand)] text-[8px] font-black text-black leading-none">
-                A
-              </span>
-              <span className="text-[10px] font-bold text-[var(--text-2)] tracking-wider uppercase">Personal CFO</span>
-            </div>
+          <div className="flex items-baseline ml-1">
+            <span className="text-[19px] font-black tracking-tight text-white">ACUITY</span>
+            <span className="text-[19px] font-black tracking-tight text-[var(--brand)]">.</span>
           </div>
         </div>
         
         <div className="flex items-center gap-2">
           <button
             onClick={startNewChat}
-            className="flex h-9 items-center gap-1.5 px-3 rounded-full bg-[var(--surface-2)] border border-white/10 text-[var(--text-1)] hover:bg-[var(--surface-3)] transition-all active:scale-95 text-xs font-semibold shadow-sm"
+            className="flex h-9 items-center gap-1.5 px-3.5 rounded-full bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] text-white/80 hover:text-white transition-all active:scale-95 text-xs font-semibold shadow-sm"
           >
             <Plus size={15} className="text-[var(--brand)]" />
             <span className="font-medium">New Chat</span>
@@ -809,100 +783,37 @@ export function AIScreen({
         aria-live="polite"
       >
         {messages.length === 0 && !isThinking ? (
-          <div className="flex flex-col justify-start max-w-xl mx-auto py-3">
-            {/* Top Greeting Header */}
-            <div className="mb-4 space-y-1">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--surface-2)] border border-[var(--brand)]/30 mb-2 shadow-sm">
-                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[var(--brand)] text-[9px] font-black text-black leading-none shadow-sm shadow-[var(--brand)]/30">
-                  A
-                </span>
-                <span className="text-[12px] font-bold text-[var(--text-1)] tracking-tight">
-                  Acuity Personal CFO
-                </span>
-              </div>
-
-              <h1 className="text-[32px] sm:text-[38px] font-extrabold tracking-tight leading-tight">
-                <span className="bg-gradient-to-r from-white via-neutral-200 to-[var(--brand)] bg-clip-text text-transparent">
+          <div className="flex flex-col justify-center min-h-[70vh] max-w-xl mx-auto py-2">
+            {/* Minimalist Gemini Greeting */}
+            <div className="mb-2">
+              <h1 className="text-[34px] sm:text-[42px] font-medium tracking-tight leading-tight">
+                <span className="bg-gradient-to-r from-white via-neutral-100 to-[var(--brand)] bg-clip-text text-transparent">
                   {greeting}, {firstName}
                 </span>
               </h1>
-              <p className="text-[15px] sm:text-[17px] text-[var(--text-3)] font-normal leading-relaxed">
-                Your personal AI partner watching your money so you don't have to.
+              <p className="text-[16px] sm:text-[18px] text-white/45 font-normal mt-1">
+                How can I help you today?
               </p>
             </div>
 
-            {/* Living Acuity Companion (Animated Blinking Eyes in Ember Aura) */}
+            {/* Living Acuity Companion (Animated Blinking Eyes in Radiant Aura) */}
             <AcuityCompanion isThinking={isThinking} size="large" />
 
-            {/* Financial Status Quick Pulse Cards */}
-            <div className="rounded-[22px] bg-[var(--surface-2)]/90 border border-white/10 p-4 mb-4 shadow-lg backdrop-blur-xl">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-[12px] font-bold uppercase tracking-wider text-[var(--text-3)]">
-                  Live Financial Pulse
-                </span>
-                <span className="flex items-center gap-1.5 text-[11px] font-medium text-[var(--gain)]">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--gain)] animate-pulse" />
-                  Realtime Active
-                </span>
-              </div>
-
-              <div className="grid grid-cols-3 gap-2">
-                <div className="flex flex-col p-2.5 rounded-xl bg-[var(--surface-3)]/60 border border-white/5">
-                  <span className="text-[11px] text-[var(--text-3)] mb-0.5">Safe Today</span>
-                  <span className="text-[13px] font-bold text-[var(--brand)] tabular truncate">
-                    {dailySafeAmount > 0 ? fmt(dailySafeAmount) : "Calculating"}
-                  </span>
-                </div>
-
-                <div className="flex flex-col p-2.5 rounded-xl bg-[var(--surface-3)]/60 border border-white/5">
-                  <span className="text-[11px] text-[var(--text-3)] mb-0.5">Payday</span>
-                  <span className="text-[13px] font-bold text-[var(--text-1)] truncate">
-                    {daysUntilIncome > 0 ? `In ${daysUntilIncome}d` : "Upcoming"}
-                  </span>
-                </div>
-
-                <div className="flex flex-col p-2.5 rounded-xl bg-[var(--surface-3)]/60 border border-white/5">
-                  <span className="text-[11px] text-[var(--text-3)] mb-0.5">Budget</span>
-                  <span className={cn(
-                    "text-[13px] font-bold tabular truncate",
-                    budgetUsedPct > 85 ? "text-[var(--danger)]" : "text-[var(--gain)]"
-                  )}>
-                    {budgetUsedPct}% used
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Prompt Suggestion Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {suggestions.map((s, i) => {
-                const Icon = s.icon;
-                return (
-                  <motion.button
-                    key={i}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.05 }}
-                    onClick={() => send(s.title)}
-                    className="flex flex-col justify-between p-3.5 rounded-[18px] bg-[var(--surface-2)]/80 hover:bg-[var(--surface-3)] border border-white/8 text-left transition-all active:scale-[0.98] group shadow-sm"
-                  >
-                    <div className="flex items-start justify-between gap-3 mb-2">
-                      <div className={cn("flex h-8 w-8 items-center justify-center rounded-xl", s.color)}>
-                        <Icon size={16} />
-                      </div>
-                      <ArrowUp size={15} className="text-[var(--text-3)] group-hover:text-[var(--brand)] transition-colors rotate-45" />
-                    </div>
-                    <div>
-                      <p className="text-[13.5px] font-semibold text-[var(--text-1)] leading-snug mb-0.5">
-                        {s.title}
-                      </p>
-                      <p className="text-[11.5px] text-[var(--text-3)]">
-                        {s.subtitle}
-                      </p>
-                    </div>
-                  </motion.button>
-                );
-              })}
+            {/* Minimalist Floating Prompt Pills (Gemini Style) */}
+            <div className="flex flex-wrap gap-2 mt-3">
+              {suggestions.map((s, i) => (
+                <motion.button
+                  key={i}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  onClick={() => send(s.title)}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-white/[0.04] hover:bg-white/[0.08] active:bg-white/[0.12] border border-white/[0.08] text-[13.5px] text-white/80 hover:text-white transition-all active:scale-[0.98] shadow-sm group"
+                >
+                  <span>{s.title}</span>
+                  <ArrowUp size={13} className="text-white/30 group-hover:text-[var(--brand)] transition-colors rotate-45 shrink-0" />
+                </motion.button>
+              ))}
             </div>
           </div>
         ) : (
@@ -915,8 +826,8 @@ export function AIScreen({
                 className={cn("flex flex-col", msg.role === "user" ? "items-end" : "items-start")}
               >
                 {msg.role === "user" ? (
-                  /* User Bubble */
-                  <div className="max-w-[85%] rounded-[22px] rounded-br-sm bg-[var(--surface-2)] border border-white/10 px-4 py-3 text-[15px] leading-relaxed text-white shadow-sm">
+                  /* User Bubble - Transparent Glass */
+                  <div className="max-w-[85%] rounded-[22px] rounded-br-sm bg-white/[0.07] border border-white/[0.08] backdrop-blur-xl px-4 py-3 text-[15px] leading-relaxed text-white shadow-sm">
                     {msg.content}
                   </div>
                 ) : (
@@ -938,21 +849,21 @@ export function AIScreen({
                         if (block.type === "action") {
                           const isResolved = block.resolved || msg.actionStatus === "applied" || msg.actionStatus === "cancelled";
                           return (
-                            <div key={idx} className="mt-3.5 rounded-[20px] border border-[var(--brand)]/35 bg-[var(--surface-2)] p-4 shadow-sm overflow-hidden">
+                            <div key={idx} className="mt-3.5 rounded-[20px] border border-[var(--brand)]/30 bg-white/[0.04] backdrop-blur-xl p-4 shadow-sm overflow-hidden">
                               <div className="flex items-center gap-2 mb-2">
                                 {msg.actionStatus === "applied" ? (
                                   <CheckCircle2 size={16} className="text-[var(--gain)]" />
                                 ) : msg.actionStatus === "cancelled" ? (
-                                  <XCircle size={16} className="text-[var(--text-3)]" />
+                                  <XCircle size={16} className="text-white/40" />
                                 ) : (
                                   <AlertCircle size={16} className="text-[var(--brand)]" />
                                 )}
-                                <span className="text-[13px] font-bold text-[var(--text-1)]">
+                                <span className="text-[13px] font-bold text-white">
                                   {msg.actionStatus === "applied" ? "Action Applied" : msg.actionStatus === "cancelled" ? "Action Cancelled" : "Confirm Financial Action"}
                                 </span>
                               </div>
 
-                              <p className="text-[14px] text-[var(--text-2)] leading-relaxed">
+                              <p className="text-[14px] text-white/80 leading-relaxed">
                                 {block.summary}
                               </p>
                               
@@ -966,7 +877,7 @@ export function AIScreen({
                                   </button>
                                   <button
                                     onClick={() => handleActionCancel(msg.id)}
-                                    className="flex-1 rounded-xl bg-[var(--surface-3)] border border-white/10 py-2.5 text-[13px] font-bold text-[var(--text-2)] hover:text-[var(--text-1)] active:scale-95 transition-all"
+                                    className="flex-1 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] py-2.5 text-[13px] font-bold text-white/80 hover:text-white active:scale-95 transition-all"
                                   >
                                     Cancel
                                   </button>
@@ -1040,15 +951,15 @@ export function AIScreen({
         )}
       </main>
 
-      {/* Floating Capsule Composer - Brought Down to Fill Space */}
+      {/* Floating Transparent Glass Capsule Composer */}
       <footer
-        className="relative z-20 shrink-0 px-3.5 pt-1"
+        className="relative z-20 shrink-0 px-3.5 pt-1 bg-transparent"
         style={{
           paddingBottom: "max(calc(env(safe-area-inset-bottom) - 18px), 8px)",
         }}
       >
         <div className="max-w-2xl mx-auto">
-          <div className="flex items-center gap-2 rounded-[28px] bg-[var(--surface-2)]/95 backdrop-blur-2xl p-1 pl-3.5 border border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.5)] focus-within:border-[var(--brand)] focus-within:ring-2 focus-within:ring-[var(--brand)]/25 transition-all">
+          <div className="flex items-center gap-2 rounded-full bg-white/[0.05] hover:bg-white/[0.07] focus-within:bg-white/[0.08] backdrop-blur-2xl p-1.5 pl-4 border border-white/[0.12] focus-within:border-[var(--brand)]/70 focus-within:ring-2 focus-within:ring-[var(--brand)]/20 shadow-[0_8px_32px_rgba(0,0,0,0.3)] transition-all">
             <textarea
               ref={textareaRef}
               value={input}
@@ -1060,18 +971,18 @@ export function AIScreen({
                   send(input);
                 }
               }}
-              placeholder="Ask your CFO anything..."
-              className="flex-1 max-h-32 min-h-[38px] bg-transparent py-2 text-[15px] sm:text-[16px] leading-[1.35] text-[var(--text-1)] outline-none placeholder:text-[var(--text-3)] resize-none"
+              placeholder="Ask Acuity anything..."
+              className="flex-1 max-h-32 min-h-[38px] bg-transparent py-2 text-[15px] sm:text-[16px] leading-[1.35] text-white outline-none placeholder:text-white/40 resize-none"
               style={{
                 caretColor: "var(--brand)",
                 fontSize: "16px", // Ensures iOS Safari does not auto-zoom
               }}
               rows={1}
             />
-            <div className="flex items-center gap-1 shrink-0 pr-0.5">
+            <div className="flex items-center gap-1 shrink-0 pr-1">
               <button
                 type="button"
-                className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--text-3)] hover:text-[var(--text-1)] hover:bg-[var(--surface-3)] transition-colors"
+                className="flex h-9 w-9 items-center justify-center rounded-full text-white/50 hover:text-white hover:bg-white/[0.08] transition-colors"
                 title="Voice input"
               >
                 <Mic size={18} />
@@ -1086,7 +997,7 @@ export function AIScreen({
                   "flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-all active:scale-95 shadow-sm",
                   input.trim() && !isThinking
                     ? "bg-[var(--brand)] text-[var(--brand-ink)] shadow-[var(--brand)]/25"
-                    : "bg-[var(--surface-3)] text-[var(--text-3)] cursor-not-allowed opacity-50"
+                    : "bg-white/[0.05] text-white/30 cursor-not-allowed"
                 )}
               >
                 {isThinking ? (
