@@ -604,7 +604,8 @@ export default function SandboxPage() {
 
   return (
     <main className="relative flex min-h-[100dvh] flex-col overflow-x-hidden" style={{ background: "var(--bg)" }}>
-      <PullToRefresh 
+      <PullToRefresh
+        variant={activeScreen === "home" ? "branded" : "spinner"} 
         onRefresh={async () => {
           // Only trigger the banner animation on the Home screen
           if (activeScreen === "home") {
