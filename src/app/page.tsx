@@ -918,8 +918,8 @@ export default function SandboxPage() {
           }}
           onNavigateAI={handleOpenAiFromOrb}
           className={cn(
-            navHidden ? "translate-y-28 opacity-0 pointer-events-none" : "translate-y-0 opacity-100",
-            "transition-all duration-300"
+            navHidden ? "opacity-0 pointer-events-none" : "opacity-100",
+            "transition-opacity duration-300"
           )}
         />
       )}

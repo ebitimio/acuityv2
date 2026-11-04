@@ -33,7 +33,7 @@ export interface ScreenObserverData {
     category: string;
     total_minor: number;
   }>;
-  formatCurrency?: (minor: number) => string;
+  formatCurrency?: (major: number) => string;
 }
 
 export interface QuickAction {
@@ -53,7 +53,15 @@ export function getScreenObservation(
   screen: string,
   data: ScreenObserverData = {}
 ): ScreenObservation {
-  const fmt = data.formatCurrency || ((minor: number) => `₦${(minor / 100).toLocaleString("en-NG", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`);
+  // Format minor currency units (kobo/cents) into major units (Naira/Dollars)
+  const fmt = (minor: number) => {
+    const major = (minor || 0) / 100;
+    if (data.formatCurrency) {
+      return data.formatCurrency(major);
+    }
+    return `₦${major.toLocaleString("en-NG", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+  };
+
   const accounts = data.accounts || [];
   const transactions = data.transactions || [];
   const categoryRows = data.categoryRows || [];
@@ -140,7 +148,7 @@ export function getScreenObservation(
         badge: "Observing Analytics",
         chipInMessage: chipIn,
         observations: [
-          `Net cash flow: ${netCashFlow >= 0 ? "+" : ""}${fmt(netCashFlow)} for this tracking period`,
+          `Net cash flow: ${netCashFlow > 0 ? "+" : ""}${fmt(netCashFlow)} for this tracking period`,
           topCat ? `Largest category outflow: ${topCat.category} (${fmt(topAmount)})` : "Tracking income vs expenditure distribution",
           income > 0 ? `Savings retention rate: ${Math.max(0, Math.round(((income - expenses) / income) * 100))}% of inbound cash` : "Tracking inflow velocity",
         ],

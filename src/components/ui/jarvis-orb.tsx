@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useMotionValue } from "framer-motion";
 import { X, Sparkles, ArrowRight, Eye, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AcuityCompanion } from "./acuity-companion";
@@ -10,6 +10,8 @@ import {
   type ScreenObserverData,
   type ScreenObservation,
 } from "@/lib/ai/screen-observer";
+
+const STORAGE_KEY = "acuity:jarvis_orb_pos";
 
 interface JarvisOrbProps {
   currentScreen: string;
@@ -26,10 +28,72 @@ export function JarvisOrb({
 }: JarvisOrbProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [showSpeechBubble, setShowSpeechBubble] = useState(false);
-  const [hasInteracted, setHasInteracted] = useState(false);
+  const isDraggingRef = useRef(false);
+
+  // Position motion values for free drag & drop
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+
+  const [isNearTop, setIsNearTop] = useState(false);
+  const [isNearLeft, setIsNearLeft] = useState(false);
+
+  const [constraints, setConstraints] = useState({
+    left: -320,
+    right: 0,
+    top: -650,
+    bottom: 20,
+  });
+
   const [observation, setObservation] = useState<ScreenObservation>(() =>
     getScreenObservation(currentScreen, observerData)
   );
+
+  // Dynamically calculate drag constraints according to screen size
+  useEffect(() => {
+    const updateConstraints = () => {
+      if (typeof window !== "undefined") {
+        const orbSize = 54;
+        const rightPadding = 16;
+        const leftMargin = 16;
+        const topSafety = 80; // Safe area below notch/header
+        const bottomBase = 90; // Default bottom position
+        const bottomMargin = 20;
+
+        const maxLeft = -(window.innerWidth - orbSize - rightPadding - leftMargin);
+        const maxTop = -(window.innerHeight - bottomBase - orbSize - topSafety);
+        const maxBottom = bottomMargin;
+
+        setConstraints({
+          left: Math.min(0, maxLeft),
+          right: 0,
+          top: Math.min(0, maxTop),
+          bottom: maxBottom,
+        });
+
+        const currentX = x.get();
+        const currentY = y.get();
+        setIsNearLeft(currentX < maxLeft * 0.55);
+        setIsNearTop(currentY < maxTop * 0.6);
+      }
+    };
+
+    updateConstraints();
+    window.addEventListener("resize", updateConstraints);
+
+    // Restore saved drag position from localStorage
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (typeof parsed.x === "number" && typeof parsed.y === "number") {
+          x.set(parsed.x);
+          y.set(parsed.y);
+        }
+      }
+    } catch {}
+
+    return () => window.removeEventListener("resize", updateConstraints);
+  }, [x, y]);
 
   // Update observation whenever screen changes
   useEffect(() => {
@@ -42,7 +106,7 @@ export function JarvisOrb({
       setShowSpeechBubble(true);
     }, 1200);
 
-    // Auto-dismiss the chip-in bubble after 6.5s
+    // Auto-dismiss the chip-in bubble after 7.5s
     const dismissTimer = setTimeout(() => {
       setShowSpeechBubble(false);
     }, 7700);
@@ -53,8 +117,32 @@ export function JarvisOrb({
     };
   }, [currentScreen, observerData]);
 
+  const handleDragStart = () => {
+    isDraggingRef.current = true;
+    setShowSpeechBubble(false);
+  };
+
+  const handleDrag = () => {
+    const currentX = x.get();
+    const currentY = y.get();
+    setIsNearLeft(currentX < constraints.left * 0.55);
+    setIsNearTop(currentY < constraints.top * 0.6);
+  };
+
+  const handleDragEnd = () => {
+    setTimeout(() => {
+      isDraggingRef.current = false;
+    }, 140);
+
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ x: x.get(), y: y.get() })
+      );
+    } catch {}
+  };
+
   const handleOrbClick = () => {
-    setHasInteracted(true);
     setShowSpeechBubble(false);
     setIsOpen(!isOpen);
   };
@@ -71,10 +159,20 @@ export function JarvisOrb({
 
   return (
     <>
-      {/* Floating Mascot Orb & Chip-In Container */}
-      <div
+      {/* Draggable Mascot Orb & Attached Speech Bubble Container */}
+      <motion.div
+        drag
+        dragMomentum={false}
+        dragElastic={0.15}
+        dragConstraints={constraints}
+        style={{ x, y }}
+        onDragStart={handleDragStart}
+        onDrag={handleDrag}
+        onDragEnd={handleDragEnd}
         className={cn(
-          "fixed bottom-[90px] right-4 z-40 flex flex-col items-end pointer-events-none select-none",
+          "fixed bottom-[90px] right-4 z-40 flex pointer-events-none select-none touch-none",
+          isNearTop ? "flex-col-reverse" : "flex-col",
+          isNearLeft ? "items-start" : "items-end",
           className
         )}
       >
@@ -82,12 +180,19 @@ export function JarvisOrb({
         <AnimatePresence>
           {showSpeechBubble && !isOpen && (
             <motion.div
-              initial={{ opacity: 0, y: 10, scale: 0.9, filter: "blur(4px)" }}
+              initial={{ opacity: 0, y: isNearTop ? -10 : 10, scale: 0.9, filter: "blur(4px)" }}
               animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
-              exit={{ opacity: 0, y: 6, scale: 0.92, filter: "blur(2px)" }}
+              exit={{ opacity: 0, y: isNearTop ? -6 : 6, scale: 0.92, filter: "blur(2px)" }}
               transition={{ type: "spring", stiffness: 350, damping: 25 }}
-              onClick={handleOrbClick}
-              className="pointer-events-auto mb-2 max-w-[270px] sm:max-w-[310px] cursor-pointer rounded-2xl border border-white/10 bg-[#141416]/90 p-3 shadow-[0_12px_36px_rgba(0,0,0,0.65),0_0_20px_rgba(222,49,33,0.15)] backdrop-blur-2xl transition-transform hover:scale-[1.02] active:scale-[0.98]"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleOrbClick();
+              }}
+              onPointerDownCapture={(e) => e.stopPropagation()}
+              className={cn(
+                "pointer-events-auto max-w-[270px] sm:max-w-[310px] cursor-pointer rounded-2xl border border-white/10 bg-[#141416]/90 p-3 shadow-[0_12px_36px_rgba(0,0,0,0.65),0_0_20px_rgba(222,49,33,0.15)] backdrop-blur-2xl transition-transform hover:scale-[1.02] active:scale-[0.98]",
+                isNearTop ? "mt-2" : "mb-2"
+              )}
             >
               <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-white/5">
                 <div className="flex items-center gap-1.5">
@@ -123,17 +228,23 @@ export function JarvisOrb({
           )}
         </AnimatePresence>
 
-        {/* The Glass Orb Mascot */}
+        {/* The Draggable Glass Orb Mascot */}
         <motion.button
-          onClick={handleOrbClick}
-          whileHover={{ scale: 1.06 }}
+          onClick={() => {
+            if (isDraggingRef.current) return;
+            handleOrbClick();
+          }}
+          whileHover={{ scale: 1.08 }}
           whileTap={{ scale: 0.92 }}
-          aria-label="Acuity Jarvis AI Assistant"
+          whileDrag={{ scale: 1.12, cursor: "grabbing" }}
+          aria-label="Acuity Jarvis AI Assistant - Drag to move or tap to open"
+          title="Drag to move anywhere • Tap for screen observations"
           className={cn(
             "pointer-events-auto relative flex h-13 w-13 items-center justify-center rounded-full",
             "border border-white/15 bg-[#121214]/85 backdrop-blur-2xl",
             "shadow-[0_8px_32px_rgba(0,0,0,0.7),0_0_24px_rgba(222,49,33,0.35)]",
-            "transition-all duration-300 focus:outline-none"
+            "cursor-grab active:cursor-grabbing focus:outline-none touch-none",
+            "transition-shadow duration-300"
           )}
         >
           {/* Subtle outer breathing ring */}
@@ -146,17 +257,17 @@ export function JarvisOrb({
           />
 
           {/* Living Acuity Eyes */}
-          <div className="relative z-10 w-9 h-9 flex items-center justify-center">
+          <div className="relative z-10 w-9 h-9 flex items-center justify-center pointer-events-none">
             <AcuityCompanion size="orb" />
           </div>
 
           {/* Activity Dot */}
-          <span className="absolute top-0.5 right-0.5 flex h-2.5 w-2.5">
+          <span className="absolute top-0.5 right-0.5 flex h-2.5 w-2.5 pointer-events-none">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--brand)] opacity-75" />
             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[var(--brand)] border-2 border-[#121214]" />
           </span>
         </motion.button>
-      </div>
+      </motion.div>
 
       {/* Expandable Jarvis Glass Drawer / Popover */}
       <AnimatePresence>
@@ -270,4 +381,3 @@ export function JarvisOrb({
     </>
   );
 }
-
