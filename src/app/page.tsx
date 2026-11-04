@@ -72,7 +72,7 @@ export default function SandboxPage() {
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [profileName, setProfileName] = useState<string>("there");
   const [liquidAssets, setLiquidAssets] = useState(0);
-  const [isRefreshingHome, setIsRefreshingHome] = useState(false);
+  const [refreshState, setRefreshState] = useState<"idle" | "loading" | "success">("idle");
   const supabase = createClient();
   const toast = useToast();
   const { fmt, rate } = useCurrency();
@@ -607,9 +607,15 @@ export default function SandboxPage() {
   return (
     <main className="relative flex min-h-[100dvh] flex-col overflow-x-hidden" style={{ background: "var(--bg)" }}>
       <PullToRefresh 
-         onRefresh={refreshData}
-         onRefreshStateChange={setIsRefreshingHome}
-         >
+         onRefresh={async () => {
+          await refreshData();
+          setRefreshState("success");
+          setTimeout(() => setRefreshState("idle"), 1200);
+         }}
+          onRefreshStateChange={(isRefreshing) => {
+            if (isRefreshing) setRefreshState("loading");  
+         }}   
+       >
         <ScreenTransition id={activeScreen}>
           {activeScreen === "analytics" ? (
             <AnalyticsScreen key={activeWs?.id} onBack={handleBackToHome} onNavigateTransactions={() => setActiveScreen("transactions")} />
@@ -680,21 +686,35 @@ export default function SandboxPage() {
               />
 
               <div className="flex flex-col gap-6 px-5 pt-2">
-                                {isRefreshingHome && (
+                              {/* INLINE REFRESH BANNER WITH SUCCESS TICK */}            
+                {refreshState !== "idle" && (
                   <div 
-                    className="flex items-center justify-center gap-2 rounded-xl border px-4 py-2 w-full"
+                    className="flex items-center justify-center gap-2 rounded-xl border px-4 py-2 w-full animate-in fade-in slide-in-from-top-2 duration-300"
                     style={{ 
                       backgroundColor: "#000000", 
                       borderColor: "var(--brand)",
                       color: "var(--brand)"
                     }}
                   >
-                    <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-                    </svg>
-                    <span className="text-[12px] font-medium tracking-wide whitespace-nowrap">
-                      We're getting your balance, please hold on...
-                    </span>
+                    {refreshState === "loading" ? (
+                      <>
+                        <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                        </svg>
+                        <span className="text-[12px] font-medium tracking-wide whitespace-nowrap">
+                          We're getting your balance, please hold on...
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <svg className="h-4 w-4 animate-in zoom-in spin-in-12 duration-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        <span className="text-[12px] font-medium tracking-wide whitespace-nowrap">
+                          Balance updated successfully
+                        </span>
+                      </>
+                    )}
                   </div>
                 )}
                 {/* CHANGED: Pass heroSpent instead of spentThisMonth to match the Budget screen math */}

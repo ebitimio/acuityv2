@@ -56,7 +56,9 @@ export function PullToRefresh({
         try {
           await onRefresh();
         } finally {
-          setIsRefreshing(false);
+          // We add a tiny delay here so the parent can catch the "loading" state
+          // before it switches to "success".
+          setTimeout(() => setIsRefreshing(false), 100);
         }
       } else {
         setPullY(0);
