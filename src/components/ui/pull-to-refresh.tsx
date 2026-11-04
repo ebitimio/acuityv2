@@ -55,10 +55,11 @@ export function PullToRefresh({
         setPullY(0);
         try {
           await onRefresh();
+          // DELIBERATE DELAY: Wait 600ms so the parent can show the "success" state
+          // before we turn off the refresh flag.
+          await new Promise(resolve => setTimeout(resolve, 600));
         } finally {
-          // We add a tiny delay here so the parent can catch the "loading" state
-          // before it switches to "success".
-          setTimeout(() => setIsRefreshing(false), 100);
+          setIsRefreshing(false);
         }
       } else {
         setPullY(0);
