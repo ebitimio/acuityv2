@@ -33,6 +33,8 @@ interface Message {
   status?: "ok" | "error";
   actionId?: string;
   actionStatus?: "pending" | "applied" | "cancelled" | "failed";
+  thoughts?: string[];
+  followUps?: string[];
 }
 
 interface Conversation {
@@ -63,9 +65,11 @@ const truncateTitle = (t: string) => {
  */
 function AcuityCompanion({
   isThinking = false,
+  hasInput = false,
   size = "large",
 }: {
   isThinking?: boolean;
+  hasInput?: boolean;
   size?: "large" | "compact";
 }) {
   const [blinkState, setBlinkState] = useState(false);
@@ -102,10 +106,18 @@ function AcuityCompanion({
     return () => clearTimeout(timeout);
   }, []);
 
-  // Subtle gaze shift (looking around naturally)
+  // Responsive gaze tracking: looks down when typing, looks up when thinking, looks around when idle
   useEffect(() => {
-    let gazeTimeout: NodeJS.Timeout;
+    if (isThinking) {
+      setGaze({ x: 0, y: -4, rotate: 4 });
+      return;
+    }
+    if (hasInput) {
+      setGaze({ x: 0, y: 5, rotate: 6 });
+      return;
+    }
 
+    let gazeTimeout: NodeJS.Timeout;
     const scheduleGaze = () => {
       const delay = Math.random() * 3200 + 3000;
       gazeTimeout = setTimeout(() => {
@@ -119,7 +131,7 @@ function AcuityCompanion({
 
     scheduleGaze();
     return () => clearTimeout(gazeTimeout);
-  }, []);
+  }, [isThinking, hasInput]);
 
   const handleTap = () => {
     setIsWinking(true);
@@ -133,7 +145,7 @@ function AcuityCompanion({
       onClick={handleTap}
       className={cn(
         "relative flex items-center justify-center cursor-pointer select-none transition-transform active:scale-95",
-        isCompact ? "h-9 w-14" : "h-32 sm:h-36 w-full my-1"
+        isCompact ? "h-6 w-10" : "h-32 sm:h-36 w-full my-1"
       )}
       title="Acuity Personal AI • Tap to say hi!"
     >
@@ -150,7 +162,7 @@ function AcuityCompanion({
         }}
         className={cn(
           "absolute rounded-full pointer-events-none",
-          isCompact ? "w-16 h-16 blur-md" : "w-48 h-48 sm:w-56 sm:h-56 blur-2xl"
+          isCompact ? "w-12 h-12 blur-md" : "w-48 h-48 sm:w-56 sm:h-56 blur-2xl"
         )}
         style={{
           background:
@@ -165,10 +177,10 @@ function AcuityCompanion({
           y: gaze.y,
           rotate: gaze.rotate,
         }}
-        transition={{ type: "spring", stiffness: 140, damping: 14 }}
+        transition={{ type: "spring", stiffness: 160, damping: 15 }}
         className={cn(
           "relative flex items-center z-10",
-          isCompact ? "gap-2" : "gap-4 sm:gap-5"
+          isCompact ? "gap-1.5" : "gap-4 sm:gap-5"
         )}
       >
         {/* Left Eye */}
@@ -179,8 +191,8 @@ function AcuityCompanion({
           }}
           transition={{ duration: 0.11 }}
           className={cn(
-            "rounded-[10px] sm:rounded-[13px] bg-white shadow-[0_0_24px_rgba(255,255,255,0.7),0_0_10px_rgba(222,49,33,0.35)] origin-center",
-            isCompact ? "w-2.5 h-6" : "w-6 h-13 sm:w-7 sm:h-14"
+            "rounded-[6px] sm:rounded-[13px] bg-white shadow-[0_0_24px_rgba(255,255,255,0.7),0_0_10px_rgba(222,49,33,0.35)] origin-center",
+            isCompact ? "w-1.5 h-4" : "w-6 h-13 sm:w-7 sm:h-14"
           )}
         />
 
@@ -192,13 +204,74 @@ function AcuityCompanion({
           }}
           transition={{ duration: 0.11 }}
           className={cn(
-            "rounded-[10px] sm:rounded-[13px] bg-white shadow-[0_0_24px_rgba(255,255,255,0.7),0_0_10px_rgba(222,49,33,0.35)] origin-center",
-            isCompact ? "w-2.5 h-6" : "w-6 h-13 sm:w-7 sm:h-14"
+            "rounded-[6px] sm:rounded-[13px] bg-white shadow-[0_0_24px_rgba(255,255,255,0.7),0_0_10px_rgba(222,49,33,0.35)] origin-center",
+            isCompact ? "w-1.5 h-4" : "w-6 h-13 sm:w-7 sm:h-14"
           )}
         />
       </motion.div>
     </div>
   );
+}
+
+/**
+ * Antigravity-Style Expandable Thought Process Drawer
+ */
+function ThoughtProcess({ thoughts }: { thoughts?: string[] }) {
+  const [isOpen, setIsOpen] = useState(false);
+  if (!thoughts || thoughts.length === 0) return null;
+
+  return (
+    <div className="mb-2">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-[11.5px] font-medium text-white/50 hover:text-white/80 transition-all border border-white/5"
+      >
+        <span className="w-1.5 h-1.5 rounded-full bg-[var(--brand)] animate-pulse" />
+        <span>Thought process ({thoughts.length} step{thoughts.length > 1 ? "s" : ""})</span>
+        <ChevronLeft size={11} className={cn("transition-transform duration-200", isOpen ? "rotate-90" : "-rotate-90")} />
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="mt-1.5 p-2.5 rounded-xl bg-white/[0.02] border border-white/5 text-[12px] text-white/60 space-y-1.5 font-mono">
+              {thoughts.map((step, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <Check size={11} className="text-[var(--gain)] shrink-0" />
+                  <span className="leading-snug">{step}</span>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+/**
+ * Generates proactive contextual next-steps like a real assistant
+ */
+function getFollowUpsForContent(text: string, thoughts: string[]): string[] {
+  const lower = text.toLowerCase();
+  const followUps: string[] = [];
+
+  if (lower.includes("account") || lower.includes("balance") || thoughts.some(t => t.toLowerCase().includes("account"))) {
+    followUps.push("How much can I safely spend?", "Where am I spending the most?");
+  } else if (lower.includes("safe") || lower.includes("spend") || lower.includes("budget") || thoughts.some(t => t.toLowerCase().includes("safe"))) {
+    followUps.push("Can I afford ₦50k this weekend?", "How many days until payday?");
+  } else if (lower.includes("transaction") || lower.includes("categor") || thoughts.some(t => t.toLowerCase().includes("transaction"))) {
+    followUps.push("Audit my bank charges", "Find recurring subscriptions");
+  } else {
+    followUps.push("Explain my safe-to-spend", "Audit my monthly expenses");
+  }
+
+  return followUps.slice(0, 2);
 }
 
 export function AIScreen({
@@ -493,6 +566,7 @@ export function AIScreen({
       const decoder = new TextDecoder();
       let currentText = "";
       let newBlocks: Block[] = [];
+      const collectedThoughts: string[] = [];
 
       while (true) {
         const { done, value } = await reader.read();
@@ -514,6 +588,9 @@ export function AIScreen({
             const data = JSON.parse(dataStr);
             if (data.type === "thinking") {
               setThinkingLabel(data.label);
+              if (data.label && !collectedThoughts.includes(data.label)) {
+                collectedThoughts.push(data.label);
+              }
             } else if (data.type === "text") {
               currentText += data.content;
               setStreamingContent(currentText);
@@ -532,12 +609,15 @@ export function AIScreen({
         throw new Error("empty_response");
       }
 
+      const followUps = getFollowUpsForContent(currentText, collectedThoughts);
       const finalMsg: Message = {
         id: Date.now().toString(),
         role: "assistant",
         content: currentText,
         blocks: newBlocks,
-        status: "ok"
+        status: "ok",
+        thoughts: collectedThoughts.length > 0 ? collectedThoughts : undefined,
+        followUps: followUps.length > 0 ? followUps : undefined,
       };
       setMessages((prev) => [...prev, finalMsg]);
       
@@ -763,6 +843,18 @@ export function AIScreen({
             <span className="text-[19px] font-black tracking-tight text-white">ACUITY</span>
             <span className="text-[19px] font-black tracking-tight text-[var(--brand)]">.</span>
           </div>
+
+          {/* Living Companion Indicator in Header - Alive & Watching */}
+          <div
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] shadow-sm backdrop-blur-md cursor-pointer hover:bg-white/[0.08] transition-all ml-1.5"
+            onClick={() => {
+              toast("Acuity is active & watching your cash flow");
+            }}
+            title="Acuity Personal AI • Active & Watching"
+          >
+            <AcuityCompanion size="compact" isThinking={isThinking} hasInput={!!input.trim()} />
+            <span className="text-[10px] font-bold text-white/60 tracking-wider uppercase">Active</span>
+          </div>
         </div>
         
         <div className="flex items-center gap-2">
@@ -797,7 +889,7 @@ export function AIScreen({
             </div>
 
             {/* Living Acuity Companion (Animated Blinking Eyes in Radiant Aura) */}
-            <AcuityCompanion isThinking={isThinking} size="large" />
+            <AcuityCompanion isThinking={isThinking} hasInput={!!input.trim()} size="large" />
 
             {/* Minimalist Floating Prompt Pills (Gemini Style) */}
             <div className="flex flex-wrap gap-2 mt-3">
@@ -838,6 +930,11 @@ export function AIScreen({
                     </div>
 
                     <div className="flex-1 min-w-0 pt-0.5">
+                      {/* Thought Process Drawer (Antigravity Style) */}
+                      {msg.thoughts && msg.thoughts.length > 0 && (
+                        <ThoughtProcess thoughts={msg.thoughts} />
+                      )}
+
                       {msg.content && (
                         <div className="text-[15px] leading-relaxed text-[var(--text-1)]">
                           {formatMessage(msg.content)}
@@ -889,6 +986,22 @@ export function AIScreen({
                         return null;
                       })}
 
+                      {/* Proactive Contextual Follow-Up Suggestions */}
+                      {msg.followUps && msg.followUps.length > 0 && !isThinking && (
+                        <div className="flex flex-wrap gap-1.5 mt-3 pt-2.5 border-t border-white/5">
+                          {msg.followUps.map((f, i) => (
+                            <button
+                              key={i}
+                              onClick={() => send(f)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.04] hover:bg-white/[0.08] text-[12px] text-white/75 hover:text-white border border-white/5 transition-all active:scale-95"
+                            >
+                              <span>{f}</span>
+                              <ArrowUp size={11} className="text-white/30 rotate-45" />
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
                       {/* Assistant Message Actions (Copy & Retry) */}
                       <div className="flex items-center gap-3 mt-3">
                         {msg.status === "error" ? (
@@ -929,17 +1042,17 @@ export function AIScreen({
                 <div className="shrink-0 mt-0.5">
                   <AcuityCompanion isThinking={true} size="compact" />
                 </div>
-                <div className="flex-1 min-w-0 pt-1">
+                <div className="flex-1 min-w-0 pt-0.5">
                   {thinkingLabel && !streamingContent && (
-                    <div className="flex items-center gap-2 text-[14px] font-medium text-[var(--brand)] animate-pulse">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--brand)]" />
-                      {thinkingLabel}
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/10 text-[13px] font-medium text-white/80 animate-pulse">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--brand)] animate-ping" />
+                      <span>{thinkingLabel}</span>
                     </div>
                   )}
                   {streamingContent && (
                     <div className="text-[15px] leading-relaxed text-[var(--text-1)]">
                       {formatMessage(streamingContent)}
-                      <span className="inline-block w-2 h-4 ml-1 bg-[var(--brand)] animate-pulse align-middle" />
+                      <span className="inline-block w-1.5 h-4 ml-1 bg-[var(--brand)] rounded-xs animate-pulse align-middle shadow-[0_0_8px_var(--brand)]" />
                     </div>
                   )}
                 </div>

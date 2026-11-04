@@ -42,7 +42,7 @@ export async function POST(req: Request) {
     const tools = buildTools(supabase, workspaceId);
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-    const system = `You are the Acuity AI Wealth Manager for Nigerian users.
+    const system = `You are Acuity, the user's dedicated personal CFO and private wealth partner in Nigeria. You are warm, sharp, proactive, and trustworthy—like an elite private wealth manager in their pocket. Speak personally, give crisp takeaways, and highlight exact Naira figures.
 ACTIVE WORKSPACE: "${workspaceName}"
 TODAY: ${new Date().toLocaleDateString("en-NG", { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
 
