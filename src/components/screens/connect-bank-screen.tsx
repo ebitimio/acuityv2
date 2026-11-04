@@ -7,17 +7,14 @@ import {
   ShieldCheck,
   Lock,
   Landmark,
-  RefreshCw,
   ArrowRight,
   Crown,
-  Sparkles,
-  CheckCircle2,
   EyeOff,
   Zap,
   Loader2,
   Building2,
+  Check,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 interface ConnectBankScreenProps {
   onBack: () => void;
@@ -30,238 +27,180 @@ export function ConnectBankScreen({
   onProceed,
   isConnecting = false,
 }: ConnectBankScreenProps) {
-  const steps = [
+  const features = [
     {
-      step: "1",
-      title: "Choose Your Bank",
-      description:
-        "Select your institution from 20+ supported Nigerian commercial banks, digital banks, and fintechs (GTBank, Access Bank, Zenith, Kuda, OPay, and more).",
+      title: "All Major Institutions",
+      subtitle: "Supports GTBank, Access, Zenith, Kuda, OPay, and 20+ more.",
       icon: Landmark,
       color: "#e8a23b",
     },
     {
-      step: "2",
-      title: "Log in Securely via Mono",
-      description:
-        "Authenticate directly through Mono's encrypted portal with your bank credentials. Acuity never sees, collects, or stores your banking passwords, PINs, or BVN.",
+      title: "End-to-End Encrypted",
+      subtitle: "Direct login via Mono. Acuity never sees your passwords or PIN.",
       icon: ShieldCheck,
       color: "var(--brand)",
     },
     {
-      step: "3",
-      title: "Instant Automated Sync",
-      description:
-        "Your account balance and latest transactions sync automatically. Acuity AI categorizes expenses and updates your daily Safe-to-Spend limit in real time.",
-      icon: RefreshCw,
+      title: "Real-Time Balance & Pacing",
+      subtitle: "Transactions sync automatically to keep Safe-to-Spend accurate.",
+      icon: Zap,
       color: "#52c28a",
     },
   ];
 
-  const securityPillars = [
-    {
-      icon: EyeOff,
-      title: "100% Read-Only",
-      desc: "Acuity can never move money, initiate debits, or authorize transfers.",
-    },
-    {
-      icon: Lock,
-      title: "256-Bit Bank Encryption",
-      desc: "Your data is transmitted over end-to-end encrypted financial pipelines.",
-    },
-    {
-      icon: CheckCircle2,
-      title: "Revoke Access Anytime",
-      desc: "You remain in complete control and can disconnect your account with one tap.",
-    },
-  ];
-
   return (
-    <div className="min-h-[100dvh] pb-36 bg-[var(--bg)] relative overflow-x-hidden">
-      <ScreenHeader title="Connect Bank Account" onBack={onBack} />
+    <div className="min-h-[100dvh] pb-36 bg-[#000000] text-white relative overflow-x-hidden selection:bg-[var(--brand)] selection:text-white">
+      <ScreenHeader title="Connect Bank" onBack={onBack} />
 
-      <div className="max-w-md mx-auto px-5 pt-4 space-y-6">
-        {/* Top Hero Card */}
+      <div className="max-w-md mx-auto px-5 pt-4 space-y-5">
+        {/* Apple-style Hero Graphic Card */}
         <motion.div
-          initial={{ opacity: 0, y: 15 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative overflow-hidden rounded-[24px] bg-gradient-to-b from-[var(--surface-2)] to-[var(--surface-1)] border border-[var(--line-strong)] p-5 text-center shadow-xl"
+          transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+          className="relative overflow-hidden rounded-[26px] bg-[#121214] border border-white/[0.08] p-6 text-center shadow-2xl"
         >
-          {/* Subtle Ambient Glow */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-32 bg-[var(--brand)]/15 blur-[50px] rounded-full pointer-events-none" />
+          {/* Subtle Ambient Radial Highlight */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-56 h-36 bg-[var(--brand)]/12 blur-[60px] rounded-full pointer-events-none" />
 
-          {/* Premium Badge */}
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--brand)]/10 border border-[var(--brand)]/30 text-[11px] font-semibold text-[var(--brand)] mb-3">
-            <Crown size={13} className="text-[var(--brand)]" />
-            <span>Acuity Premium Feature</span>
+          {/* Premium Tag Pill */}
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.06] border border-white/10 text-[11px] font-medium tracking-wide text-white/80 mb-4 shadow-sm">
+            <Crown size={12} className="text-[var(--brand)]" />
+            <span className="uppercase text-[9.5px] tracking-wider font-semibold">Acuity Premium</span>
           </div>
 
-          {/* Connection Visual */}
-          <div className="flex items-center justify-center gap-3 my-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#000000] border border-[var(--line-strong)] shadow-md">
-              <span className="text-[20px] font-black text-white">A</span>
-              <span className="text-[20px] font-black text-[var(--brand)]">.</span>
-            </div>
-
-            <div className="flex items-center gap-1 text-[var(--text-3)]">
-              <span className="h-0.5 w-4 bg-[var(--line-strong)]" />
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--brand)]/15 text-[var(--brand)] border border-[var(--brand)]/30">
-                <Lock size={12} />
+          {/* Symmetrical Emblem Bridge */}
+          <div className="flex items-center justify-center gap-3.5 my-3">
+            {/* Acuity Monogram Squircle */}
+            <div className="flex h-13 w-13 items-center justify-center rounded-[18px] bg-[#1a1a1c] border border-white/10 shadow-lg">
+              <div className="flex items-baseline">
+                <span className="text-[20px] font-black tracking-tight text-white">A</span>
+                <span className="text-[20px] font-black tracking-tight text-[var(--brand)]">.</span>
               </div>
-              <span className="h-0.5 w-4 bg-[var(--line-strong)]" />
             </div>
 
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#000000] border border-[var(--line-strong)] shadow-md text-[var(--brand)]">
-              <Building2 size={22} />
+            {/* Encrypted Connector */}
+            <div className="flex items-center gap-1.5 text-white/20">
+              <span className="h-[1.5px] w-4 bg-white/15 rounded-full" />
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white/[0.05] border border-white/15 text-[var(--brand)] shadow-sm">
+                <Lock size={12} strokeWidth={2.5} />
+              </div>
+              <span className="h-[1.5px] w-4 bg-white/15 rounded-full" />
+            </div>
+
+            {/* Bank Squircle */}
+            <div className="flex h-13 w-13 items-center justify-center rounded-[18px] bg-[#1a1a1c] border border-white/10 shadow-lg text-white/90">
+              <Building2 size={22} strokeWidth={1.8} />
             </div>
           </div>
 
-          <h2 className="text-[20px] font-bold text-[var(--text-1)] tracking-tight">
-            Connect Your Bank Account
+          <h2 className="text-[22px] font-bold text-white tracking-tight mt-3">
+            Connect Your Bank
           </h2>
-          <p className="text-[13px] text-[var(--text-2)] mt-1 leading-relaxed max-w-[320px] mx-auto">
-            Link your Nigerian financial institution to automatically sync balances and track daily spending without manual entry.
+          <p className="text-[13.5px] text-white/60 mt-1.5 leading-relaxed max-w-[290px] mx-auto">
+            Link your account to automatically sync balances and track daily spending with bank-grade security.
           </p>
         </motion.div>
 
-        {/* What You Are About to Do */}
+        {/* Apple Inset Grouped List */}
         <motion.div
-          initial={{ opacity: 0, y: 15 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.05 }}
-          className="rounded-[20px] bg-[var(--surface-2)] border border-[var(--line)] p-4.5 space-y-2"
+          transition={{ duration: 0.35, delay: 0.06, ease: [0.16, 1, 0.3, 1] }}
+          className="rounded-[22px] bg-[#121214] border border-white/[0.08] divide-y divide-white/[0.06] overflow-hidden shadow-xl"
         >
-          <div className="flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--brand)]/10 text-[var(--brand)]">
-              <Zap size={13} />
-            </div>
-            <h3 className="text-[14px] font-semibold text-[var(--text-1)]">
-              What You Are About to Do
-            </h3>
-          </div>
-          <p className="text-[12.5px] text-[var(--text-2)] leading-relaxed pl-8">
-            You will connect your Nigerian bank account to Acuity via <strong className="text-white">Mono</strong>, a CBN-regulated open banking platform. This allows Acuity to securely read your account balances and transactions so your <strong className="text-white">Safe to Spend</strong> and budgets stay accurate in real time.
-          </p>
-        </motion.div>
-
-        {/* How It Works (Steps) */}
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="space-y-3"
-        >
-          <h3 className="text-[14px] font-semibold text-[var(--text-1)] px-1">
-            How It Works
-          </h3>
-
-          <div className="space-y-2.5">
-            {steps.map((s, index) => {
-              const Icon = s.icon;
-              return (
+          {features.map((item) => {
+            const Icon = item.icon;
+            return (
+              <div key={item.title} className="flex items-center gap-3.5 p-4">
                 <div
-                  key={s.step}
-                  className="flex items-start gap-3.5 rounded-[18px] bg-[var(--surface-2)] border border-[var(--line)] p-3.5"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] shadow-sm"
+                  style={{
+                    backgroundColor: `color-mix(in srgb, ${item.color} 14%, transparent)`,
+                    color: item.color,
+                    border: `1px solid color-mix(in srgb, ${item.color} 25%, transparent)`,
+                  }}
                 >
-                  <div
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white font-bold text-[13px]"
-                    style={{
-                      background: `color-mix(in srgb, ${s.color} 18%, transparent)`,
-                      color: s.color,
-                      border: `1px solid color-mix(in srgb, ${s.color} 35%, transparent)`,
-                    }}
-                  >
-                    <Icon size={18} />
-                  </div>
-                  <div className="space-y-0.5">
-                    <p className="text-[13.5px] font-semibold text-[var(--text-1)]">
-                      {s.step}. {s.title}
-                    </p>
-                    <p className="text-[12px] text-[var(--text-2)] leading-relaxed">
-                      {s.description}
-                    </p>
-                  </div>
+                  <Icon size={19} strokeWidth={2} />
                 </div>
-              );
-            })}
-          </div>
+                <div className="space-y-0.5 min-w-0">
+                  <p className="text-[14px] font-semibold text-white tracking-tight">
+                    {item.title}
+                  </p>
+                  <p className="text-[12px] text-white/50 leading-snug">
+                    {item.subtitle}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
         </motion.div>
 
-        {/* Security & Privacy First */}
+        {/* Privacy & Trust Inset Callout (Apple Style) */}
         <motion.div
-          initial={{ opacity: 0, y: 15 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="rounded-[20px] bg-[#000000] border border-[var(--line)] p-4 space-y-3"
+          transition={{ duration: 0.35, delay: 0.12, ease: [0.16, 1, 0.3, 1] }}
+          className="rounded-[20px] bg-[#121214]/60 border border-white/[0.06] p-4 flex items-start gap-3.5"
         >
-          <div className="flex items-center gap-2">
-            <ShieldCheck size={16} className="text-[var(--gain)]" />
-            <h4 className="text-[13px] font-bold text-white uppercase tracking-wider">
-              Bank-Grade Security & Privacy
-            </h4>
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 mt-0.5">
+            <EyeOff size={15} strokeWidth={2} />
           </div>
-
-          <div className="grid grid-cols-1 gap-2.5">
-            {securityPillars.map((p) => {
-              const PIcon = p.icon;
-              return (
-                <div key={p.title} className="flex items-start gap-2.5">
-                  <PIcon size={15} className="text-[var(--gain)] shrink-0 mt-0.5" />
-                  <div>
-                    <span className="text-[12.5px] font-semibold text-white">{p.title}: </span>
-                    <span className="text-[12px] text-[var(--text-2)] leading-relaxed">{p.desc}</span>
-                  </div>
-                </div>
-              );
-            })}
+          <div className="space-y-0.5">
+            <p className="text-[13px] font-semibold text-white tracking-tight">
+              Strictly Read-Only Access
+            </p>
+            <p className="text-[12px] text-white/50 leading-relaxed">
+              Acuity cannot move funds or execute transactions. You retain full control and can disconnect anytime.
+            </p>
           </div>
         </motion.div>
 
-        {/* Regulatory note */}
-        <p className="text-center text-[11px] text-[var(--text-3)] leading-relaxed px-4">
-          Powered by Mono Technologies Nigeria Limited. Protected by 256-bit encryption. Acuity never stores your online banking login credentials or PINs.
+        {/* Discreet Regulatory Caption */}
+        <p className="text-center text-[11px] text-white/35 leading-relaxed px-4 pt-1">
+          Licensed open banking infrastructure powered by Mono. Protected by 256-bit bank encryption.
         </p>
       </div>
 
-      {/* Fixed Bottom Action Bar */}
+      {/* Apple-style Frosted Floating Action Bar */}
       <div
-        className="fixed bottom-0 left-0 right-0 z-40 px-5 pt-3 border-t border-[var(--line)]"
+        className="fixed bottom-0 left-0 right-0 z-40 px-5 pt-3.5 border-t border-white/[0.08]"
         style={{
           paddingBottom: "calc(env(safe-area-inset-bottom) + 16px)",
-          background: "color-mix(in srgb, var(--bg) 88%, transparent)",
-          backdropFilter: "blur(20px)",
-          WebkitBackdropFilter: "blur(20px)",
+          background: "rgba(10, 10, 12, 0.82)",
+          backdropFilter: "blur(24px)",
+          WebkitBackdropFilter: "blur(24px)",
         }}
       >
         <div className="max-w-md mx-auto space-y-2">
           <Button
             onClick={onProceed}
             loading={isConnecting}
-            className="w-full h-12 text-[15px] font-bold flex items-center justify-center gap-2 shadow-lg"
+            className="w-full h-12 rounded-full text-[15px] font-semibold tracking-tight flex items-center justify-center gap-2 shadow-lg shadow-[var(--brand)]/15 active:scale-[0.98] transition-transform"
           >
             {isConnecting ? (
               <>
                 <Loader2 size={16} className="animate-spin" />
-                <span>Launching Mono Connect...</span>
+                <span>Opening Mono...</span>
               </>
             ) : (
               <>
-                <span>Proceed to Mono Connect</span>
-                <ArrowRight size={16} />
+                <span>Continue to Mono</span>
+                <ArrowRight size={16} strokeWidth={2.2} />
               </>
             )}
           </Button>
 
-          <Button
-            variant="ghost"
+          <button
+            type="button"
             onClick={onBack}
             disabled={isConnecting}
-            className="w-full h-10 text-[13px] text-[var(--text-3)] hover:text-white"
+            className="w-full h-9 flex items-center justify-center text-[13px] font-medium text-white/45 hover:text-white transition-colors"
           >
             Cancel
-          </Button>
+          </button>
         </div>
       </div>
     </div>
   );
 }
-

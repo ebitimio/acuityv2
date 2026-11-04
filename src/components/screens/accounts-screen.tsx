@@ -407,14 +407,17 @@ export function AccountsScreen({
 
       <Modal open={modal === "account"} onClose={() => setModal(null)} title="Add Account">
         <div className="space-y-3">
-          <div className="rounded-2xl border border-[var(--brand)]/30 bg-[var(--brand)]/10 p-3.5 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--brand)]/20 text-[var(--brand)]">
-                <Sparkles size={16} />
+          <div className="rounded-[20px] border border-white/10 bg-[#151517] p-3.5 flex items-center justify-between gap-3 shadow-md">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-black border border-white/10 shadow-inner">
+                <div className="flex items-baseline">
+                  <span className="text-[15px] font-black tracking-tight text-white">A</span>
+                  <span className="text-[15px] font-black tracking-tight text-[var(--brand)]">.</span>
+                </div>
               </div>
               <div className="min-w-0">
-                <p className="text-[13px] font-bold text-white truncate">Connect Bank Automatically</p>
-                <p className="text-[11px] text-[var(--text-3)] truncate">Sync live balances via Mono (Premium)</p>
+                <p className="text-[13.5px] font-semibold text-white tracking-tight truncate">Connect Bank Automatically</p>
+                <p className="text-[11.5px] text-white/50 truncate">Live balance sync via Mono (Premium)</p>
               </div>
             </div>
             <button
@@ -423,7 +426,7 @@ export function AccountsScreen({
                 setModal(null);
                 handleConnectBank();
               }}
-              className="press px-3 py-1.5 shrink-0 rounded-xl bg-[var(--brand)] text-[var(--brand-ink)] text-[11px] font-bold"
+              className="press px-3.5 py-1.5 shrink-0 rounded-full bg-[var(--brand)] text-[var(--brand-ink)] text-[12px] font-semibold tracking-tight shadow-sm hover:opacity-95 transition-opacity"
             >
               Connect
             </button>
