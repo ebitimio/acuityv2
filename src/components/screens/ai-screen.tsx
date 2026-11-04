@@ -753,10 +753,10 @@ export function AIScreen({
         />
       </div>
 
-      {/* Top Header Bar */}
+      {/* Top Header Bar - Seamlessly Blended */}
       <header
-        className="relative z-20 shrink-0 flex items-center justify-between px-4 pb-2.5 border-b border-white/5 bg-[var(--bg)]/80 backdrop-blur-xl"
-        style={{ paddingTop: "calc(env(safe-area-inset-top) + 10px)" }}
+        className="relative z-20 shrink-0 flex items-center justify-between px-4 pb-1.5 bg-transparent"
+        style={{ paddingTop: "calc(env(safe-area-inset-top) + 6px)" }}
       >
         <div className="flex items-center gap-2.5">
           <button
@@ -804,7 +804,7 @@ export function AIScreen({
 
       {/* Main Conversation Stream */}
       <main
-        className="relative z-10 flex-1 overflow-y-auto overscroll-contain px-4 py-4"
+        className="relative z-10 flex-1 overflow-y-auto overscroll-contain px-4 pt-1 pb-2"
         role="log"
         aria-live="polite"
       >
@@ -1040,12 +1040,15 @@ export function AIScreen({
         )}
       </main>
 
-      {/* Floating Capsule Composer - Polished Borders & Seamless Background */}
+      {/* Floating Capsule Composer - Brought Down to Fill Space */}
       <footer
-        className="relative z-20 shrink-0 px-4 pt-2 pb-[calc(env(safe-area-inset-bottom)+12px)] bg-gradient-to-t from-[var(--bg)] via-[var(--bg)]/95 to-transparent"
+        className="relative z-20 shrink-0 px-3.5 pt-1"
+        style={{
+          paddingBottom: "max(calc(env(safe-area-inset-bottom) - 18px), 8px)",
+        }}
       >
         <div className="max-w-2xl mx-auto">
-          <div className="flex items-center gap-2 rounded-[30px] bg-[var(--surface-2)]/90 backdrop-blur-2xl p-1.5 pl-4 border border-white/10 shadow-[0_10px_35px_rgba(0,0,0,0.4)] focus-within:border-[var(--brand)] focus-within:ring-2 focus-within:ring-[var(--brand)]/25 transition-all">
+          <div className="flex items-center gap-2 rounded-[28px] bg-[var(--surface-2)]/95 backdrop-blur-2xl p-1 pl-3.5 border border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.5)] focus-within:border-[var(--brand)] focus-within:ring-2 focus-within:ring-[var(--brand)]/25 transition-all">
             <textarea
               ref={textareaRef}
               value={input}
@@ -1058,20 +1061,20 @@ export function AIScreen({
                 }
               }}
               placeholder="Ask your CFO anything..."
-              className="flex-1 max-h-32 min-h-[42px] bg-transparent py-2.5 text-[15px] sm:text-[16px] leading-[1.4] text-[var(--text-1)] outline-none placeholder:text-[var(--text-3)] resize-none"
+              className="flex-1 max-h-32 min-h-[38px] bg-transparent py-2 text-[15px] sm:text-[16px] leading-[1.35] text-[var(--text-1)] outline-none placeholder:text-[var(--text-3)] resize-none"
               style={{
                 caretColor: "var(--brand)",
                 fontSize: "16px", // Ensures iOS Safari does not auto-zoom
               }}
               rows={1}
             />
-            <div className="flex items-center gap-1.5 shrink-0 pr-1">
+            <div className="flex items-center gap-1 shrink-0 pr-0.5">
               <button
                 type="button"
-                className="flex h-10 w-10 items-center justify-center rounded-full text-[var(--text-3)] hover:text-[var(--text-1)] hover:bg-[var(--surface-3)] transition-colors"
+                className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--text-3)] hover:text-[var(--text-1)] hover:bg-[var(--surface-3)] transition-colors"
                 title="Voice input"
               >
-                <Mic size={19} />
+                <Mic size={18} />
               </button>
               
               <button
@@ -1080,16 +1083,16 @@ export function AIScreen({
                 disabled={!input.trim() || isThinking}
                 aria-label="Send message"
                 className={cn(
-                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-all active:scale-95 shadow-sm",
+                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-all active:scale-95 shadow-sm",
                   input.trim() && !isThinking
                     ? "bg-[var(--brand)] text-[var(--brand-ink)] shadow-[var(--brand)]/25"
                     : "bg-[var(--surface-3)] text-[var(--text-3)] cursor-not-allowed opacity-50"
                 )}
               >
                 {isThinking ? (
-                  <Loader2 size={18} className="animate-spin text-[var(--brand)]" />
+                  <Loader2 size={16} className="animate-spin text-[var(--brand)]" />
                 ) : (
-                  <ArrowUp size={19} strokeWidth={2.8} />
+                  <ArrowUp size={18} strokeWidth={2.8} />
                 )}
               </button>
             </div>
