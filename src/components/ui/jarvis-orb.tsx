@@ -20,6 +20,79 @@ interface JarvisOrbProps {
   className?: string;
 }
 
+/**
+ * Conversational Typewriter Component
+ * Renders text in an organic, living type-in stream with natural cadence
+ * and an Acuity Ember glowing pulse cursor while actively speaking.
+ */
+function TypewriterText({
+  text,
+  speed = 18,
+  delay = 100,
+  onStart,
+  onComplete,
+  className,
+}: {
+  text: string;
+  speed?: number;
+  delay?: number;
+  onStart?: () => void;
+  onComplete?: () => void;
+  className?: string;
+}) {
+  const [displayed, setDisplayed] = useState("");
+  const [isDone, setIsDone] = useState(false);
+
+  useEffect(() => {
+    setDisplayed("");
+    setIsDone(false);
+
+    let currentIndex = 0;
+    let timeoutId: NodeJS.Timeout;
+
+    const startTimer = setTimeout(() => {
+      onStart?.();
+
+      const typeNextChar = () => {
+        if (currentIndex < text.length) {
+          currentIndex++;
+          setDisplayed(text.slice(0, currentIndex));
+
+          const char = text[currentIndex - 1];
+          // Organic pauses on punctuation for natural conversational cadence
+          const pause =
+            char === "." || char === "!" || char === "?"
+              ? 80
+              : char === "," || char === ";" || char === ":"
+              ? 45
+              : speed;
+
+          timeoutId = setTimeout(typeNextChar, pause);
+        } else {
+          setIsDone(true);
+          onComplete?.();
+        }
+      };
+
+      typeNextChar();
+    }, delay);
+
+    return () => {
+      clearTimeout(startTimer);
+      clearTimeout(timeoutId);
+    };
+  }, [text, speed, delay]);
+
+  return (
+    <span className={className}>
+      {displayed}
+      {!isDone && (
+        <span className="inline-block w-1.5 h-3.5 ml-0.5 align-middle bg-[var(--brand)] rounded-xs animate-pulse shadow-[0_0_8px_var(--brand)]" />
+      )}
+    </span>
+  );
+}
+
 export function JarvisOrb({
   currentScreen,
   observerData,
@@ -28,7 +101,10 @@ export function JarvisOrb({
 }: JarvisOrbProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [showSpeechBubble, setShowSpeechBubble] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isDrawerSpeaking, setIsDrawerSpeaking] = useState(false);
   const isDraggingRef = useRef(false);
+  const dismissTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Position motion values for free drag & drop
   const x = useMotionValue(0);
@@ -100,26 +176,41 @@ export function JarvisOrb({
     const obs = getScreenObservation(currentScreen, observerData);
     setObservation(obs);
 
+    // Clear any pending dismiss timers
+    if (dismissTimerRef.current) {
+      clearTimeout(dismissTimerRef.current);
+    }
+
     // Subtle proactive chip-in when entering a screen
     setShowSpeechBubble(false);
+    setIsSpeaking(false);
     const enterTimer = setTimeout(() => {
       setShowSpeechBubble(true);
-    }, 1200);
-
-    // Auto-dismiss the chip-in bubble after 7.5s
-    const dismissTimer = setTimeout(() => {
-      setShowSpeechBubble(false);
-    }, 7700);
+    }, 1100);
 
     return () => {
       clearTimeout(enterTimer);
-      clearTimeout(dismissTimer);
+      if (dismissTimerRef.current) {
+        clearTimeout(dismissTimerRef.current);
+      }
     };
   }, [currentScreen, observerData]);
+
+  const handleSpeechComplete = () => {
+    setIsSpeaking(false);
+    // Allow user 6.5s to read the completed message before fading away
+    if (dismissTimerRef.current) {
+      clearTimeout(dismissTimerRef.current);
+    }
+    dismissTimerRef.current = setTimeout(() => {
+      setShowSpeechBubble(false);
+    }, 6500);
+  };
 
   const handleDragStart = () => {
     isDraggingRef.current = true;
     setShowSpeechBubble(false);
+    setIsSpeaking(false);
   };
 
   const handleDrag = () => {
@@ -144,6 +235,7 @@ export function JarvisOrb({
 
   const handleOrbClick = () => {
     setShowSpeechBubble(false);
+    setIsSpeaking(false);
     setIsOpen(!isOpen);
   };
 
@@ -176,7 +268,7 @@ export function JarvisOrb({
           className
         )}
       >
-        {/* Proactive Speech Bubble ("Chip In") */}
+        {/* Proactive Speech Bubble ("Chip In" with Type-in Motion) */}
         <AnimatePresence>
           {showSpeechBubble && !isOpen && (
             <motion.div
@@ -208,6 +300,7 @@ export function JarvisOrb({
                   onClick={(e) => {
                     e.stopPropagation();
                     setShowSpeechBubble(false);
+                    setIsSpeaking(false);
                   }}
                   className="text-white/40 hover:text-white/80 p-0.5 rounded-full hover:bg-white/5 transition-colors"
                   aria-label="Dismiss"
@@ -216,8 +309,15 @@ export function JarvisOrb({
                 </button>
               </div>
 
-              <p className="mt-1.5 text-[12.5px] leading-snug text-white/90">
-                {observation.chipInMessage}
+              {/* Active Conversational Type-in Observation */}
+              <p className="mt-1.5 text-[12.5px] leading-snug text-white/90 min-h-[36px]">
+                <TypewriterText
+                  text={observation.chipInMessage}
+                  speed={17}
+                  delay={120}
+                  onStart={() => setIsSpeaking(true)}
+                  onComplete={handleSpeechComplete}
+                />
               </p>
 
               <div className="mt-2 flex items-center justify-between text-[11px] font-medium text-[var(--brand)] pt-1 border-t border-white/5">
@@ -256,9 +356,9 @@ export function JarvisOrb({
             }}
           />
 
-          {/* Living Acuity Eyes */}
+          {/* Living Acuity Eyes (Attentive and nods conversationally while speaking) */}
           <div className="relative z-10 w-9 h-9 flex items-center justify-center pointer-events-none">
-            <AcuityCompanion size="orb" />
+            <AcuityCompanion size="orb" isSpeaking={isSpeaking} />
           </div>
 
           {/* Activity Dot */}
@@ -298,7 +398,7 @@ export function JarvisOrb({
               <div className="flex items-center justify-between pb-3.5 border-b border-white/10">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-full bg-[#1c1c1f] border border-white/10 flex items-center justify-center shadow-inner">
-                    <AcuityCompanion size="orb" />
+                    <AcuityCompanion size="orb" isSpeaking={isDrawerSpeaking} />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
@@ -324,7 +424,7 @@ export function JarvisOrb({
                 </button>
               </div>
 
-              {/* Proactive Screen Insights */}
+              {/* Proactive Screen Insights with Living Type-in Motion */}
               <div className="mt-4 rounded-2xl bg-white/[0.03] border border-white/5 p-3.5">
                 <div className="flex items-center gap-1.5 text-[12px] font-semibold text-[var(--brand)] uppercase tracking-wider font-mono">
                   <span className="font-black text-[13px] tracking-tight leading-none">A.</span>
@@ -334,7 +434,17 @@ export function JarvisOrb({
                   {observation.observations.map((item, idx) => (
                     <div key={idx} className="flex items-start gap-2.5 text-[13px] text-white/80 leading-relaxed">
                       <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[var(--brand)]" />
-                      <span>{item}</span>
+                      <TypewriterText
+                        text={item}
+                        speed={14}
+                        delay={140 + idx * 260}
+                        onStart={() => setIsDrawerSpeaking(true)}
+                        onComplete={() => {
+                          if (idx === observation.observations.length - 1) {
+                            setIsDrawerSpeaking(false);
+                          }
+                        }}
+                      />
                     </div>
                   ))}
                 </div>

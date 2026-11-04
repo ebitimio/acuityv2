@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 export interface AcuityCompanionProps {
   isThinking?: boolean;
   hasInput?: boolean;
+  isSpeaking?: boolean;
   size?: "large" | "compact" | "orb" | "mini";
   onTap?: () => void;
   className?: string;
@@ -15,11 +16,12 @@ export interface AcuityCompanionProps {
 /**
  * Living Acuity AI Companion & Mascot
  * Expressive white pill eyes with organic blinking, reading scan tracking,
- * lively micro-saccades, and warm Acuity Ember radiant aura.
+ * speaking animated gestures, lively micro-saccades, and warm Acuity Ember radiant aura.
  */
 export function AcuityCompanion({
   isThinking = false,
   hasInput = false,
+  isSpeaking = false,
   size = "large",
   onTap,
   className,
@@ -78,6 +80,23 @@ export function AcuityCompanion({
       return () => clearInterval(thinkInterval);
     }
 
+    if (isSpeaking) {
+      // Speaking: Active conversational eye contact with subtle rhythmic nods and speech pulses
+      let speakStep = 0;
+      const speakInterval = setInterval(() => {
+        speakStep = (speakStep + 1) % 4;
+        const speakPositions = [
+          { x: 0, y: -1, rotate: 3, scaleY: 1.05, scaleX: 0.98 },
+          { x: 1, y: 0.5, rotate: 6, scaleY: 0.95, scaleX: 1.02 },
+          { x: -1, y: -0.5, rotate: 1, scaleY: 1.02, scaleX: 0.99 },
+          { x: 0.5, y: 1, rotate: 5, scaleY: 0.97, scaleX: 1.01 },
+        ];
+        setGaze(speakPositions[speakStep]);
+      }, 200);
+
+      return () => clearInterval(speakInterval);
+    }
+
     if (hasInput) {
       // Typing: Eyes glance down and smoothly scan left-to-right as if reading your prompt!
       let readStep = 0;
@@ -118,7 +137,7 @@ export function AcuityCompanion({
 
     scheduleSaccade();
     return () => clearTimeout(saccadeTimeout);
-  }, [isThinking, hasInput]);
+  }, [isThinking, hasInput, isSpeaking]);
 
   const handleTap = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -150,11 +169,11 @@ export function AcuityCompanion({
       {/* Radiant Brand Ember Aura (Breathing Glow) */}
       <motion.div
         animate={{
-          scale: isThinking ? [1, 1.25, 1] : [1, 1.08, 1],
-          opacity: isThinking ? [0.65, 0.95, 0.65] : isOrb || isMini ? [0.45, 0.75, 0.45] : isCompact ? [0.4, 0.65, 0.4] : [0.38, 0.58, 0.38],
+          scale: isThinking ? [1, 1.25, 1] : isSpeaking ? [1, 1.2, 1] : [1, 1.08, 1],
+          opacity: isThinking ? [0.65, 0.95, 0.65] : isSpeaking ? [0.55, 0.9, 0.55] : isOrb || isMini ? [0.45, 0.75, 0.45] : isCompact ? [0.4, 0.65, 0.4] : [0.38, 0.58, 0.38],
         }}
         transition={{
-          duration: isThinking ? 1.4 : 4.2,
+          duration: isSpeaking ? 0.8 : isThinking ? 1.4 : 4.2,
           repeat: Infinity,
           ease: "easeInOut",
         }}
