@@ -275,11 +275,11 @@ export function AccountsScreen({
             <button 
               onClick={handleConnectBank}
               disabled={isConnecting}
-              className="press flex h-9 px-3 items-center justify-center rounded-full text-[12px] font-bold gap-1 disabled:opacity-50"
-              style={{ background: "var(--brand)", color: "var(--brand-ink)" }}
+              className="press flex h-9 px-3 items-center justify-center rounded-full text-[12px] font-bold gap-1 disabled:opacity-50 text-black"
+              style={{ background: "#DE3121", color: "#000000" }}
             >
-              {isConnecting ? <Loader2 size={14} className="animate-spin" /> : <LinkIcon size={14} />}
-              {isConnecting ? "Connecting..." : "Connect"}
+              {isConnecting ? <Loader2 size={14} className="animate-spin text-black" /> : <LinkIcon size={14} className="text-black" />}
+              <span className="text-black">{isConnecting ? "Connecting..." : "Connect"}</span>
             </button>
             <button 
               data-setup-btn="add-account" 
@@ -426,7 +426,8 @@ export function AccountsScreen({
                 setModal(null);
                 handleConnectBank();
               }}
-              className="press px-3.5 py-1.5 shrink-0 rounded-full bg-[var(--brand)] text-[var(--brand-ink)] text-[12px] font-semibold tracking-tight shadow-sm hover:opacity-95 transition-opacity"
+              className="press px-3.5 py-1.5 shrink-0 rounded-full text-[12px] font-bold tracking-tight shadow-sm hover:opacity-95 transition-opacity text-black"
+              style={{ backgroundColor: "#DE3121", color: "#000000" }}
             >
               Connect
             </button>

@@ -173,23 +173,29 @@ export function ConnectBankScreen({
         }}
       >
         <div className="max-w-md mx-auto space-y-2">
-          <Button
+          <button
+            type="button"
             onClick={onProceed}
-            loading={isConnecting}
-            className="w-full h-12 rounded-full text-[15px] font-semibold tracking-tight flex items-center justify-center gap-2 shadow-lg shadow-[var(--brand)]/15 active:scale-[0.98] transition-transform"
+            disabled={isConnecting}
+            className="w-full h-12 rounded-full text-[15px] font-bold tracking-tight flex items-center justify-center gap-2 shadow-lg shadow-[rgba(222,49,33,0.35)] active:scale-[0.98] transition-all disabled:opacity-50 text-black hover:opacity-95"
+            style={{
+              background: "#DE3121",
+              backgroundColor: "#DE3121",
+              color: "#000000",
+            }}
           >
             {isConnecting ? (
               <>
-                <Loader2 size={16} className="animate-spin" />
-                <span>Opening Mono...</span>
+                <Loader2 size={16} className="animate-spin text-black" strokeWidth={2.5} />
+                <span className="text-black font-bold">Connecting with Mono...</span>
               </>
             ) : (
               <>
-                <span>Continue to Mono</span>
-                <ArrowRight size={16} strokeWidth={2.2} />
+                <span className="text-black font-bold">Connect with Mono</span>
+                <ArrowRight size={16} strokeWidth={2.5} className="text-black" />
               </>
             )}
-          </Button>
+          </button>
 
           <button
             type="button"

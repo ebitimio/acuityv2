@@ -66,12 +66,15 @@ export function FloatingTabBar({ activeTab, onTabChange, onAddClick, isHidden }:
         {onAddClick && (
           <button
             onClick={onAddClick}
-            className="ml-3 flex h-14 w-14 shrink-0 items-center justify-center rounded-full glass glass-regular glass-press [&::after]:hidden shadow-xl shadow-black/40"
-            style={{ backgroundColor: "var(--brand)", color: "var(--brand-ink)" }}
+            className="ml-3 flex h-14 w-14 shrink-0 items-center justify-center rounded-full shadow-2xl shadow-black/50 transition-transform active:scale-95 text-black"
+            style={{ 
+              background: "var(--brand)", 
+              backgroundColor: "var(--brand)",
+              color: "#000000" 
+            }}
             aria-label="Quick add"
           >
-            <span className="absolute inset-0 pointer-events-none glass-specular opacity-50 rounded-full" />
-            <Plus size={24} strokeWidth={3} className="relative z-10" />
+            <Plus size={24} strokeWidth={3} className="text-black relative z-10" />
           </button>
         )}
       </div>
