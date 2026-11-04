@@ -3,9 +3,10 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ChevronLeft, ArrowUp, Loader2, CheckCircle2, Search, FileText,
-  Plus, Wallet, PieChart, Receipt, Lightbulb, Copy,
-  AlertCircle, RefreshCw, XCircle, Menu, X, Mic, Trash2
+  ChevronLeft, ArrowUp, Loader2, CheckCircle2,
+  Plus, Wallet, PieChart, Copy, Check,
+  AlertCircle, RefreshCw, XCircle, Menu, X, Mic, Trash2,
+  Sparkles, TrendingUp, Zap
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useWorkspace } from "@/lib/workspace";
@@ -72,23 +73,70 @@ export function AIScreen({
   const [isThinking, setIsThinking] = useState(false);
   const [thinkingLabel, setThinkingLabel] = useState("Checking your data...");
   const [streamingContent, setStreamingContent] = useState("");
-  const [hasSentFirstMessage, setHasSentFirstMessage] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   
-  const [greeting, setGreeting] = useState("Welcome back");
-  
+  const [greeting, setGreeting] = useState("Good day");
   const [convToDelete, setConvToDelete] = useState<string | null>(null);
 
+  // Viewport tracking to prevent mobile keyboard jumps
+  const [vvHeight, setVvHeight] = useState<number | null>(null);
+  const [vvTop, setVvTop] = useState<number>(0);
+
+  // Ref to flag that a conversation was created locally to prevent loadHistory race condition
+  const isNewConvRef = useRef<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const bufferRef = useRef("");
+
   const { active: activeWs } = useWorkspace();
   const { fmt } = useCurrency();
   const toast = useToast();
   const supabase = useMemo(() => createClient(), []);
 
+  // Time-based greeting
   useEffect(() => {
     const hour = new Date().getHours();
-    const timeOfDay = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+    const timeOfDay = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
     setGreeting(timeOfDay);
+  }, []);
+
+  // Keyboard jump prevention & visual viewport synchronization
+  useEffect(() => {
+    const origOverflow = document.body.style.overflow;
+    const origPosition = document.body.style.position;
+    const origWidth = document.body.style.width;
+    const origHeight = document.body.style.height;
+
+    document.body.style.overflow = "hidden";
+    document.body.style.position = "fixed";
+    document.body.style.width = "100%";
+    document.body.style.height = "100%";
+
+    const vv = window.visualViewport;
+    const updateViewport = () => {
+      if (vv) {
+        setVvHeight(vv.height);
+        setVvTop(vv.offsetTop);
+      }
+    };
+
+    if (vv) {
+      updateViewport();
+      vv.addEventListener("resize", updateViewport);
+      vv.addEventListener("scroll", updateViewport);
+    }
+
+    return () => {
+      document.body.style.overflow = origOverflow;
+      document.body.style.position = origPosition;
+      document.body.style.width = origWidth;
+      document.body.style.height = origHeight;
+
+      if (vv) {
+        vv.removeEventListener("resize", updateViewport);
+        vv.removeEventListener("scroll", updateViewport);
+      }
+    };
   }, []);
 
   // Load conversations list
@@ -121,8 +169,17 @@ export function AIScreen({
   }, [activeWs?.id, supabase]);
 
   // Load messages for the active conversation
+  // FIX: Guard against wiping out local messages when a brand new conversation was just created
   useEffect(() => {
     if (!activeWs?.id || !activeConvId) return;
+
+    if (isNewConvRef.current === activeConvId) {
+      // Conversation was just created in send() - skip loading from DB
+      isNewConvRef.current = null;
+      return;
+    }
+
+    let isMounted = true;
 
     const loadHistory = async () => {
       const { data, error } = await supabase
@@ -131,6 +188,8 @@ export function AIScreen({
         .eq("workspace_id", activeWs.id)
         .eq("conversation_id", activeConvId)
         .order("created_at", { ascending: true });
+
+      if (!isMounted) return;
 
       if (error) {
         console.error("Error loading history:", error);
@@ -147,15 +206,19 @@ export function AIScreen({
           actionId: d.action_id || undefined,
           actionStatus: d.action_status || undefined
         })));
-        setHasSentFirstMessage(true);
       } else {
-        setMessages([]);
-        setHasSentFirstMessage(false);
+        // Only clear if no messages exist locally to avoid wiping active chats
+        setMessages(prev => (prev.length > 0 ? prev : []));
       }
     };
     loadHistory();
+
+    return () => {
+      isMounted = false;
+    };
   }, [activeWs?.id, activeConvId, supabase]);
 
+  // Scroll to bottom when new messages arrive or when streaming
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: streamingContent ? "auto" : "smooth" });
   }, [messages, isThinking, streamingContent]);
@@ -192,19 +255,50 @@ export function AIScreen({
       if (activeConvId === convToDelete) {
         setMessages([]);
         setActiveConvId(null);
-        setHasSentFirstMessage(false);
       }
       setConvToDelete(null);
+      toast("Conversation deleted");
     } catch (err: any) {
       toast("Failed to delete conversation", "err");
     }
   };
 
   const startNewChat = () => {
+    isNewConvRef.current = null;
     setMessages([]);
     setActiveConvId(null);
-    setHasSentFirstMessage(false);
+    setInput("");
     setIsSidebarOpen(false);
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
+  };
+
+  const handleInputFocus = () => {
+    if (typeof window !== "undefined") {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    }
+    setTimeout(() => {
+      endRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 120);
+  };
+
+  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value);
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 128)}px`;
+    }
+  };
+
+  const handleCopy = (id: string, text: string) => {
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+    }
   };
 
   const send = async (text: string) => {
@@ -213,17 +307,24 @@ export function AIScreen({
     let convId = activeConvId;
     if (!convId) {
       convId = crypto.randomUUID();
+      // Record that this is a new local conversation to prevent loadHistory race condition
+      isNewConvRef.current = convId;
       setActiveConvId(convId);
-      setConversations(prev => [{ id: convId!, title: truncateTitle(text), created_at: new Date().toISOString() }, ...prev]);
+      setConversations(prev => [
+        { id: convId!, title: truncateTitle(text), created_at: new Date().toISOString() },
+        ...prev
+      ]);
     }
 
-    setHasSentFirstMessage(true);
     const userMsg: Message = { id: Date.now().toString(), role: "user", content: text };
     const history = [...messages, userMsg];
     setMessages(history);
     setInput("");
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
     setIsThinking(true);
-    setThinkingLabel("Thinking...");
+    setThinkingLabel("Consulting financial model...");
     setStreamingContent("");
     bufferRef.current = "";
 
@@ -302,7 +403,7 @@ export function AIScreen({
       const errorMsg: Message = {
         id: Date.now().toString(),
         role: "assistant",
-        content: "I couldn't complete that. Please check your connection and try again.",
+        content: "I couldn't complete that calculation. Please check your connection and try again.",
         status: "error"
       };
       setMessages((prev) => [...prev, errorMsg]);
@@ -317,16 +418,12 @@ export function AIScreen({
       const { action, payload } = block;
 
       if (action === "add_transaction" || action === "add_bill" || action === "add_income") {
-        // SAFETY NET: Check if the AI passed a valid UUID. If not, try to match the name.
         let finalAccountId = payload.account_id;
         
-        // Very basic UUID regex check
         const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(finalAccountId);
         
         if (!finalAccountId || !isUUID) {
           const accounts = await getAccounts();
-          
-          // Try to find an account that matches the text the AI sent (e.g. "main account")
           const matched = accounts.find(a => 
             a.name.toLowerCase().includes(String(finalAccountId).toLowerCase()) || 
             String(finalAccountId).toLowerCase().includes(a.name.toLowerCase()) ||
@@ -373,7 +470,7 @@ export function AIScreen({
           ? { ...m, actionStatus: "applied", blocks: m.blocks?.map(b => b.type === "action" ? { ...b, resolved: true } : b) }
           : m
       ));
-      toast("Action completed successfully");
+      toast("Action applied to your books");
       onDataChanged?.();
     } catch (e: any) {
       toast(e.message || "Action failed", "err");
@@ -405,137 +502,260 @@ export function AIScreen({
     if (!content) return null;
     const lines = content.split("\n");
     return lines.map((line, i) => {
-      if (line.trim().startsWith("- ") || line.trim().startsWith("• ")) {
+      const trimmed = line.trim();
+      if (trimmed.startsWith("- ") || trimmed.startsWith("• ")) {
         return (
-          <div key={i} className="flex items-start gap-2 mt-1.5">
-            <div className="w-1.5 h-1.5 rounded-full bg-[var(--brand)] mt-1.5 shrink-0" />
-            <p className="text-[15px] leading-relaxed flex-1">{renderInline(line.trim().slice(2))}</p>
+          <div key={i} className="flex items-start gap-2.5 mt-1.5 first:mt-0">
+            <div className="w-1.5 h-1.5 rounded-full bg-[var(--brand)] mt-2 shrink-0 shadow-sm shadow-[var(--brand)]/40" />
+            <p className="text-[15px] leading-relaxed flex-1 text-[var(--text-1)]">{renderInline(trimmed.slice(2))}</p>
+          </div>
+        );
+      }
+      if (/^\d+\.\s/.test(trimmed)) {
+        const numberMatch = trimmed.match(/^(\d+)\.\s(.*)$/);
+        return (
+          <div key={i} className="flex items-start gap-2.5 mt-1.5 first:mt-0">
+            <span className="text-[13px] font-bold text-[var(--brand)] mt-0.5 shrink-0 tabular">{numberMatch?.[1]}.</span>
+            <p className="text-[15px] leading-relaxed flex-1 text-[var(--text-1)]">{renderInline(numberMatch?.[2] || "")}</p>
           </div>
         );
       }
       if (line.startsWith("###")) {
-        return <p key={i} className="mt-3 mb-1 text-[15px] font-bold text-[var(--text-1)] first:mt-0">{line.replace(/^###\s*/, "")}</p>;
+        return <p key={i} className="mt-3.5 mb-1.5 text-[15px] font-bold text-[var(--text-1)] first:mt-0 tracking-tight">{line.replace(/^###\s*/, "")}</p>;
       }
-      if (line.trim() === "") return <div key={i} className="h-2" />;
-      return <p key={i} className="text-[15px] leading-relaxed mb-1">{renderInline(line)}</p>;
+      if (trimmed === "") return <div key={i} className="h-2" />;
+      return <p key={i} className="text-[15px] leading-relaxed mb-1.5 text-[var(--text-1)]">{renderInline(line)}</p>;
     });
   };
 
   const firstName = fullName.split(" ")[0];
   
+  const dailySafeAmount = safeToSpend?.daily_safe_minor ? safeToSpend.daily_safe_minor / 100 : 0;
   const budgetUsedPct = metrics && metrics.budget_limit_minor > 0
     ? Math.round((metrics.total_spent_minor / metrics.budget_limit_minor) * 100)
     : 0;
 
   const suggestions = useMemo(() => {
-    if (!metrics) return [];
     return [
-      { title: "How much can I safely spend this week?", icon: Wallet, show: true },
-      { title: "Where am I wasting the most money?", icon: PieChart, show: true },
-      { title: `You've used ${budgetUsedPct}% of your budget. What should I cut?`, icon: Receipt, show: budgetUsedPct > 80 },
-      { title: `Payday in ${daysUntilIncome} days. How do I stretch what's left?`, icon: Lightbulb, show: daysUntilIncome > 0 && daysUntilIncome <= 5 },
-      { title: `Help me categorize my unreviewed transactions.`, icon: FileText, show: metrics.uncategorized_count > 0 }
-    ].filter(s => s.show).slice(0, 4);
-  }, [budgetUsedPct, daysUntilIncome, metrics]);
+      {
+        title: "How much can I safely spend this week?",
+        subtitle: "Safe-to-Spend & cash runway",
+        icon: Wallet,
+        color: "text-amber-400 bg-amber-400/10",
+      },
+      {
+        title: "Where am I spending the most money?",
+        subtitle: "Breakdown of top expense categories",
+        icon: PieChart,
+        color: "text-rose-400 bg-rose-400/10",
+      },
+      {
+        title: daysUntilIncome > 0
+          ? `Payday in ${daysUntilIncome} days. How do I stretch what's left?`
+          : "How do I optimize my budget this month?",
+        subtitle: "Cash buffer calculation",
+        icon: TrendingUp,
+        color: "text-emerald-400 bg-emerald-400/10",
+      },
+      {
+        title: metrics?.uncategorized_count && metrics.uncategorized_count > 0
+          ? `Help me review ${metrics.uncategorized_count} uncategorized transactions`
+          : "Audit my recent transactions and bank fees",
+        subtitle: "Transaction hygiene & intelligence",
+        icon: Zap,
+        color: "text-sky-400 bg-sky-400/10",
+      }
+    ];
+  }, [daysUntilIncome, metrics]);
 
   return (
     <motion.div 
-      initial={{ opacity: 0, y: 18, scale: 0.985 }}
-      animate={{ opacity: 1, y: 0, scale: 1, transition: { duration: 0.32 } }}
-      exit={{ opacity: 0, y: -8, scale: 0.992, transition: { duration: 0.16 } }}
-      className="fixed inset-0 flex flex-col bg-[var(--bg)] overflow-hidden" 
-      style={{ touchAction: "none" }} 
+      initial={{ opacity: 0, scale: 0.99 }}
+      animate={{ opacity: 1, scale: 1, transition: { duration: 0.24 } }}
+      exit={{ opacity: 0, scale: 0.99, transition: { duration: 0.16 } }}
+      className="fixed inset-x-0 z-50 flex flex-col bg-[var(--bg)] overflow-hidden select-none"
+      style={{
+        position: "fixed",
+        top: vvTop,
+        left: 0,
+        right: 0,
+        height: vvHeight ? `${vvHeight}px` : "100dvh",
+        maxHeight: vvHeight ? `${vvHeight}px` : "100dvh",
+        touchAction: "pan-y",
+      }}
     >
-      {/* Background Glow */}
+      {/* Ambient Radial Gradient Glows (Gemini Style) */}
       <div aria-hidden className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
         <div
           style={{
             position: "absolute",
             top: "-15%",
-            right: "-25%",
-            width: "90vmax",
-            height: "90vmax",
-            background: "radial-gradient(closest-side, color-mix(in srgb, var(--brand) 6%, transparent), transparent 70%)",
+            right: "-20%",
+            width: "80vmax",
+            height: "80vmax",
+            background: "radial-gradient(closest-side, color-mix(in srgb, var(--brand) 12%, transparent), transparent 70%)",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            bottom: "10%",
+            left: "-25%",
+            width: "60vmax",
+            height: "60vmax",
+            background: "radial-gradient(closest-side, rgba(255, 107, 74, 0.05), transparent 75%)",
           }}
         />
       </div>
 
-      {/* Gemini-style Header */}
-      <div
-        className="relative z-10 shrink-0 flex items-center justify-between px-4 pb-2"
-        style={{ paddingTop: "calc(env(safe-area-inset-top) + 12px)" }}
+      {/* Top Header Bar (Gemini Style) */}
+      <header
+        className="relative z-20 shrink-0 flex items-center justify-between px-4 pb-2.5 border-b border-[var(--line)]/40 bg-[var(--bg)]/80 backdrop-blur-xl"
+        style={{ paddingTop: "calc(env(safe-area-inset-top) + 10px)" }}
       >
-        <div className="flex items-center gap-3">
-          <button onClick={onBack} className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text-2)]">
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={onBack}
+            aria-label="Back to dashboard"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text-1)] hover:bg-[var(--surface-3)] transition-all active:scale-95"
+          >
             <ChevronLeft size={20} />
           </button>
-          <button onClick={() => setIsSidebarOpen(true)} className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text-2)]">
+          
+          <button
+            onClick={() => setIsSidebarOpen(true)}
+            aria-label="Open chat history"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text-2)] hover:text-[var(--text-1)] hover:bg-[var(--surface-3)] transition-all active:scale-95"
+          >
             <Menu size={18} />
           </button>
           
-          <div className="flex items-baseline ml-1">
-            <span className="text-[20px] font-black tracking-tighter text-[var(--text-1)]">ACUITY</span>
-            <span className="text-[20px] font-black tracking-tighter text-[var(--brand)]">.</span>
+          <div className="flex items-center gap-2 ml-1">
+            <div className="flex items-baseline">
+              <span className="text-[19px] font-black tracking-tight text-[var(--text-1)]">ACUITY</span>
+              <span className="text-[19px] font-black tracking-tight text-[var(--brand)]">.</span>
+            </div>
+            <div className="hidden xs:flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[var(--surface-2)] border border-[var(--line)]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--brand)] animate-pulse" />
+              <span className="text-[10px] font-bold text-[var(--text-2)] tracking-wider uppercase">CFO AI</span>
+            </div>
           </div>
         </div>
         
         <div className="flex items-center gap-2">
-          <button onClick={startNewChat} className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text-2)]">
-            <Plus size={16} />
+          <button
+            onClick={startNewChat}
+            className="flex h-9 items-center gap-1.5 px-3 rounded-full bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text-1)] hover:bg-[var(--surface-3)] transition-all active:scale-95 text-xs font-semibold"
+          >
+            <Plus size={15} className="text-[var(--brand)]" />
+            <span className="font-medium">New Chat</span>
           </button>
         </div>
-      </div>
+      </header>
 
-      {/* Main Content Area (Scrollable) */}
-      <div className="relative z-10 flex-1 overflow-y-auto px-4" role="log" aria-live="polite">
+      {/* Main Conversation Stream */}
+      <main
+        className="relative z-10 flex-1 overflow-y-auto overscroll-contain px-4 py-4"
+        role="log"
+        aria-live="polite"
+      >
         {messages.length === 0 && !isThinking ? (
-          <div className="flex flex-col h-full justify-center pb-20">
-            <div className="mb-8">
-              <h1 className="text-[28px] font-semibold text-[var(--text-1)] mb-1">
-                {greeting},
+          <div className="flex flex-col justify-center min-h-[70vh] max-w-xl mx-auto py-6">
+            {/* Gemini Iridescent Heading */}
+            <div className="mb-6 space-y-1">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--brand)]/10 border border-[var(--brand)]/20 mb-3">
+                <Sparkles size={14} className="text-[var(--brand)]" />
+                <span className="text-[12px] font-semibold text-[var(--brand)] tracking-tight">Your Intelligent CFO</span>
+              </div>
+
+              <h1 className="text-[34px] sm:text-[40px] font-extrabold tracking-tight leading-tight">
+                <span className="bg-gradient-to-r from-white via-neutral-200 to-[var(--brand)] bg-clip-text text-transparent">
+                  {greeting}, {firstName}
+                </span>
               </h1>
-              <h1 className="text-[28px] font-semibold text-[var(--brand)]">
-                {firstName}
-              </h1>
+              <p className="text-[17px] sm:text-[19px] text-[var(--text-3)] font-normal leading-relaxed">
+                What would you like to calculate, analyze, or plan today?
+              </p>
             </div>
 
-            <div className="flex flex-col gap-3">
+            {/* Financial Status Quick Chips */}
+            <div className="flex flex-wrap gap-2 mb-8">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--surface-2)] border border-[var(--line)] text-xs">
+                <span className="text-[var(--text-3)]">Safe today:</span>
+                <span className="font-bold text-[var(--brand)] tabular">
+                  {dailySafeAmount > 0 ? fmt(dailySafeAmount) : "Calculating..."}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--surface-2)] border border-[var(--line)] text-xs">
+                <span className="text-[var(--text-3)]">Payday:</span>
+                <span className="font-bold text-[var(--text-1)]">
+                  {daysUntilIncome > 0 ? `In ${daysUntilIncome}d` : "Upcoming"}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[var(--surface-2)] border border-[var(--line)] text-xs">
+                <span className="text-[var(--text-3)]">Budget used:</span>
+                <span className={cn(
+                  "font-bold tabular",
+                  budgetUsedPct > 85 ? "text-[var(--danger)]" : "text-[var(--gain)]"
+                )}>
+                  {budgetUsedPct}%
+                </span>
+              </div>
+            </div>
+
+            {/* Gemini Prompt Suggestion Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {suggestions.map((s, i) => {
                 const Icon = s.icon;
                 return (
                   <motion.button
                     key={i}
-                    initial={{ opacity: 0, y: 10 }}
+                    initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.05 }}
+                    transition={{ delay: i * 0.06 }}
                     onClick={() => send(s.title)}
-                    className="flex items-center gap-3 rounded-full bg-[var(--surface-2)] px-4 py-3 text-left border border-transparent hover:bg-[var(--surface-3)] transition-colors w-full"
+                    className="flex flex-col justify-between p-4 rounded-[20px] bg-[var(--surface-2)] hover:bg-[var(--surface-3)] border border-[var(--line)] text-left transition-all active:scale-[0.98] group"
                   >
-                    <Icon size={18} className="text-[var(--text-3)] shrink-0" />
-                    <span className="text-[14px] text-[var(--text-2)] font-medium">{s.title}</span>
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div className={cn("flex h-9 w-9 items-center justify-center rounded-xl", s.color)}>
+                        <Icon size={18} />
+                      </div>
+                      <ArrowUp size={16} className="text-[var(--text-3)] group-hover:text-[var(--brand)] transition-colors rotate-45" />
+                    </div>
+                    <div>
+                      <p className="text-[14px] font-semibold text-[var(--text-1)] leading-snug mb-1">
+                        {s.title}
+                      </p>
+                      <p className="text-[12px] text-[var(--text-3)]">
+                        {s.subtitle}
+                      </p>
+                    </div>
                   </motion.button>
                 );
               })}
             </div>
           </div>
         ) : (
-          <div className="flex flex-col gap-6 pt-4 pb-4">
+          <div className="flex flex-col gap-6 max-w-2xl mx-auto pb-4">
             {messages.map((msg) => (
               <motion.div
                 key={msg.id}
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}
+                className={cn("flex flex-col", msg.role === "user" ? "items-end" : "items-start")}
               >
                 {msg.role === "user" ? (
-                  <div className="max-w-[85%] text-[15px] leading-relaxed text-[var(--text-1)] text-right px-2 py-1">
+                  /* User Bubble (Gemini Glass Capsule) */
+                  <div className="max-w-[85%] rounded-[22px] rounded-br-sm bg-[var(--surface-2)] border border-white/10 px-4 py-3 text-[15px] leading-relaxed text-white shadow-sm">
                     {msg.content}
                   </div>
                 ) : (
-                  <div className="w-full flex gap-3">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] mt-1">
-                      <span className="text-[14px] font-black text-[var(--brand-ink)]">A.</span>
+                  /* Assistant Response (Gemini Natural Flow with Monogram) */
+                  <div className="w-full flex items-start gap-3">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] mt-0.5 shadow-md shadow-[var(--brand)]/20">
+                      <span className="text-[13px] font-black text-[var(--brand-ink)]">A.</span>
                     </div>
+
                     <div className="flex-1 min-w-0 pt-0.5">
                       {msg.content && (
                         <div className="text-[15px] leading-relaxed text-[var(--text-1)]">
@@ -543,183 +763,248 @@ export function AIScreen({
                         </div>
                       )}
 
+                      {/* Interactive Action Proposal Cards */}
                       {msg.blocks?.map((block, idx) => {
                         if (block.type === "action") {
                           const isResolved = block.resolved || msg.actionStatus === "applied" || msg.actionStatus === "cancelled";
                           return (
-                            <div key={idx} className="mt-3 rounded-[20px] border border-[var(--brand)]/30 bg-[var(--brand)]/5 overflow-hidden">
-                              <div className="p-4">
-                                <div className="flex items-center gap-2 mb-2">
-                                  {msg.actionStatus === "applied" ? (
-                                    <CheckCircle2 size={16} className="text-[var(--gain)]" />
-                                  ) : msg.actionStatus === "cancelled" ? (
-                                    <XCircle size={16} className="text-[var(--text-3)]" />
-                                  ) : (
-                                    <AlertCircle size={16} className="text-[var(--brand)]" />
-                                  )}
-                                  <span className="text-[13px] font-bold text-[var(--brand)]">
-                                    {msg.actionStatus === "applied" ? "Action Applied" : msg.actionStatus === "cancelled" ? "Action Cancelled" : "Confirm Action"}
-                                  </span>
-                                </div>
-                                <p className="text-[14px] text-[var(--text-1)] leading-relaxed">{block.summary}</p>
-                                
-                                {!isResolved && (
-                                  <div className="flex gap-2 mt-4">
-                                    <button onClick={() => handleActionConfirm(msg.id, block)} className="flex-1 rounded-xl bg-[var(--brand)] py-2.5 text-[13px] font-bold text-[var(--brand-ink)]">
-                                      Confirm
-                                    </button>
-                                    <button onClick={() => handleActionCancel(msg.id)} className="flex-1 rounded-xl bg-[var(--surface-2)] border border-[var(--line)] py-2.5 text-[13px] font-bold text-[var(--text-1)]">
-                                      Cancel
-                                    </button>
-                                  </div>
+                            <div key={idx} className="mt-3.5 rounded-[20px] border border-[var(--brand)]/35 bg-[var(--surface-2)] p-4 shadow-sm overflow-hidden">
+                              <div className="flex items-center gap-2 mb-2">
+                                {msg.actionStatus === "applied" ? (
+                                  <CheckCircle2 size={16} className="text-[var(--gain)]" />
+                                ) : msg.actionStatus === "cancelled" ? (
+                                  <XCircle size={16} className="text-[var(--text-3)]" />
+                                ) : (
+                                  <AlertCircle size={16} className="text-[var(--brand)]" />
                                 )}
+                                <span className="text-[13px] font-bold text-[var(--text-1)]">
+                                  {msg.actionStatus === "applied" ? "Action Applied" : msg.actionStatus === "cancelled" ? "Action Cancelled" : "Confirm Financial Action"}
+                                </span>
                               </div>
+
+                              <p className="text-[14px] text-[var(--text-2)] leading-relaxed">
+                                {block.summary}
+                              </p>
+                              
+                              {!isResolved && (
+                                <div className="flex items-center gap-2 mt-4">
+                                  <button
+                                    onClick={() => handleActionConfirm(msg.id, block)}
+                                    className="flex-1 rounded-xl bg-[var(--brand)] py-2.5 text-[13px] font-bold text-[var(--brand-ink)] hover:brightness-110 active:scale-95 transition-all shadow-sm shadow-[var(--brand)]/25"
+                                  >
+                                    Confirm Action
+                                  </button>
+                                  <button
+                                    onClick={() => handleActionCancel(msg.id)}
+                                    className="flex-1 rounded-xl bg-[var(--surface-3)] border border-[var(--line)] py-2.5 text-[13px] font-bold text-[var(--text-2)] hover:text-[var(--text-1)] active:scale-95 transition-all"
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              )}
                             </div>
                           );
                         }
                         return null;
                       })}
 
-                      {msg.status === "error" && (
-                        <div className="flex items-center gap-2 mt-2">
-                          <button onClick={() => send(messages[messages.length - 2]?.content || "Retry")} className="text-[12px] font-medium text-[var(--brand)] flex items-center gap-1">
-                            <RefreshCw size={12} /> Retry
+                      {/* Assistant Message Actions (Copy & Retry) */}
+                      <div className="flex items-center gap-3 mt-3">
+                        {msg.status === "error" ? (
+                          <button
+                            onClick={() => send(messages[messages.length - 2]?.content || "Retry")}
+                            className="text-[12px] font-medium text-[var(--brand)] hover:underline flex items-center gap-1.5"
+                          >
+                            <RefreshCw size={13} /> Retry calculation
                           </button>
-                        </div>
-                      )}
-
-                      {msg.status !== "error" && (
-                        <div className="flex items-center gap-3 mt-3">
-                          <button onClick={() => navigator.clipboard.writeText(msg.content)} className="text-[11px] font-medium text-[var(--text-3)] hover:text-[var(--text-1)] flex items-center gap-1 transition-colors">
-                            <Copy size={12} /> Copy
+                        ) : (
+                          <button
+                            onClick={() => handleCopy(msg.id, msg.content)}
+                            className="text-[12px] font-medium text-[var(--text-3)] hover:text-[var(--text-1)] flex items-center gap-1.5 transition-colors"
+                          >
+                            {copiedId === msg.id ? (
+                              <>
+                                <Check size={13} className="text-[var(--gain)]" />
+                                <span className="text-[var(--gain)]">Copied</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy size={13} />
+                                <span>Copy</span>
+                              </>
+                            )}
                           </button>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
               </motion.div>
             ))}
 
+            {/* Thinking & Streaming State */}
             {isThinking && (
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="w-full flex gap-3">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand)]/10 mt-1">
-                  <Loader2 size={14} className="text-[var(--brand)] animate-spin" />
+              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="w-full flex items-start gap-3">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand)]/20 mt-0.5">
+                  <Loader2 size={16} className="text-[var(--brand)] animate-spin" />
                 </div>
-                <div className="flex-1 min-w-0 pt-1">
+                <div className="flex-1 min-w-0 pt-0.5">
                   {thinkingLabel && !streamingContent && (
-                    <div className="flex items-center gap-3 text-[14px] font-medium text-[var(--brand)] animate-pulse">
-                      <span className="text-[14px] font-black text-[var(--brand)] tracking-tighter">A.</span>
+                    <div className="flex items-center gap-2 text-[14px] font-medium text-[var(--brand)] animate-pulse">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--brand)]" />
                       {thinkingLabel}
                     </div>
                   )}
                   {streamingContent && (
                     <div className="text-[15px] leading-relaxed text-[var(--text-1)]">
                       {formatMessage(streamingContent)}
-                      <span className="inline-block w-1.5 h-4 ml-1 bg-[var(--brand)] animate-pulse align-middle" />
+                      <span className="inline-block w-2 h-4 ml-1 bg-[var(--brand)] animate-pulse align-middle" />
                     </div>
                   )}
                 </div>
               </motion.div>
             )}
+            
             <div ref={endRef} className="h-4" />
           </div>
         )}
-      </div>
+      </main>
 
-      {/* Composer (Pinned to bottom, not scrollable) */}
-      <div
-        className={cn(
-          "relative z-10 shrink-0 px-4 pb-[calc(env(safe-area-inset-bottom)+16px)] bg-[var(--bg)] transition-all duration-300",
-          messages.length === 0 && !isThinking ? "mb-auto mt-0" : ""
-        )}
+      {/* Gemini Bottom Floating Capsule Composer */}
+      <footer
+        className="relative z-20 shrink-0 px-4 pt-2 pb-[calc(env(safe-area-inset-bottom)+12px)] bg-[var(--bg)]/95 backdrop-blur-xl border-t border-[var(--line)]/40"
       >
-        <div className="flex items-end gap-2 rounded-[32px] bg-[var(--surface-2)] p-2 pl-4 border border-[var(--line-strong)] shadow-sm focus-within:border-[var(--brand)] transition-colors">
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                send(input);
-              }
-            }}
-            placeholder="Ask about your money..."
-            className="flex-1 max-h-32 min-h-[40px] bg-transparent py-2.5 text-[16px] text-[var(--text-1)] outline-none placeholder:text-[var(--text-3)] resize-none"
-            style={{ caretColor: "var(--brand)" }}
-            rows={1}
-          />
-          <div className="flex items-center gap-1 shrink-0">
-            <button className="flex h-10 w-10 items-center justify-center rounded-full text-[var(--text-2)] hover:bg-[var(--surface-3)]">
-              <Mic size={20} />
-            </button>
-            <button
-              onClick={() => send(input)}
-              disabled={!input.trim() || isThinking}
-              className={cn(
-                "flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-all active:scale-95",
-                input.trim() && !isThinking ? "bg-[var(--brand)] text-[var(--brand-ink)]" : "bg-[var(--surface-3)] text-[var(--text-3)]"
-              )}
-            >
-              {isThinking ? <Loader2 size={18} className="animate-spin" /> : <ArrowUp size={20} strokeWidth={3} />}
-            </button>
+        <div className="max-w-2xl mx-auto">
+          <div className="flex items-end gap-2 rounded-[28px] bg-[var(--surface-2)] p-2 pl-4 border border-[var(--line-strong)] focus-within:border-[var(--brand)] focus-within:ring-2 focus-within:ring-[var(--brand)]/20 transition-all shadow-md">
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={handleTextareaChange}
+              onFocus={handleInputFocus}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  send(input);
+                }
+              }}
+              placeholder="Ask Acuity about your money, budget, safe-to-spend..."
+              className="flex-1 max-h-32 min-h-[42px] bg-transparent py-2.5 text-[16px] text-[var(--text-1)] outline-none placeholder:text-[var(--text-3)] resize-none"
+              style={{
+                caretColor: "var(--brand)",
+                fontSize: "16px", // Ensures iOS Safari does not auto-zoom
+              }}
+              rows={1}
+            />
+            <div className="flex items-center gap-1.5 shrink-0 pb-0.5">
+              <button
+                type="button"
+                className="flex h-10 w-10 items-center justify-center rounded-full text-[var(--text-3)] hover:text-[var(--text-1)] hover:bg-[var(--surface-3)] transition-colors"
+                title="Voice input"
+              >
+                <Mic size={19} />
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => send(input)}
+                disabled={!input.trim() || isThinking}
+                aria-label="Send message"
+                className={cn(
+                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-all active:scale-95 shadow-sm",
+                  input.trim() && !isThinking
+                    ? "bg-[var(--brand)] text-[var(--brand-ink)] shadow-[var(--brand)]/25"
+                    : "bg-[var(--surface-3)] text-[var(--text-3)] cursor-not-allowed opacity-60"
+                )}
+              >
+                {isThinking ? (
+                  <Loader2 size={18} className="animate-spin text-[var(--brand)]" />
+                ) : (
+                  <ArrowUp size={19} strokeWidth={2.8} />
+                )}
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      </footer>
 
       {/* History Sidebar */}
       <AnimatePresence>
         {isSidebarOpen && (
           <>
             <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/60 z-[110]"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110]"
               onClick={() => setIsSidebarOpen(false)}
             />
             <motion.div
-              initial={{ x: "-100%" }} animate={{ x: 0 }} exit={{ x: "-100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="absolute top-0 left-0 bottom-0 w-[280px] bg-[var(--surface-1)] z-[120] flex flex-col border-r border-[var(--line)]"
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", damping: 26, stiffness: 220 }}
+              className="fixed top-0 left-0 bottom-0 w-[290px] bg-[var(--surface-1)] z-[120] flex flex-col border-r border-[var(--line)] shadow-2xl"
               style={{
                 paddingTop: "calc(env(safe-area-inset-top) + 12px)",
                 paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)",
               }}
             >
               <div className="px-4 pb-3 border-b border-[var(--line)] flex justify-between items-center">
-                <span className="font-bold text-[var(--text-1)]">History</span>
-                <button onClick={() => setIsSidebarOpen(false)} className="text-[var(--text-3)] hover:text-[var(--text-1)]" aria-label="Close history">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-[16px] text-[var(--text-1)]">Chat History</span>
+                </div>
+                <button
+                  onClick={() => setIsSidebarOpen(false)}
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--text-3)] hover:text-[var(--text-1)] hover:bg-[var(--surface-2)] transition-colors"
+                  aria-label="Close history"
+                >
                   <X size={18} />
                 </button>
               </div>
-              <div className="flex-1 overflow-y-auto p-2 space-y-1">
+
+              <div className="p-3">
                 <button
                   onClick={startNewChat}
-                  className="w-full flex items-center gap-2 p-3 rounded-lg bg-[var(--brand)]/10 text-[var(--brand)] font-semibold text-sm mb-4"
+                  className="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-[var(--brand)]/10 hover:bg-[var(--brand)]/15 border border-[var(--brand)]/20 text-[var(--brand)] font-semibold text-sm transition-colors active:scale-98"
                 >
                   <Plus size={16} /> New Chat
                 </button>
-                {conversations.map(c => (
+              </div>
+
+              <div className="flex-1 overflow-y-auto px-3 py-1 space-y-1">
+                {conversations.map((c) => (
                   <div
                     key={c.id}
                     className={cn(
-                      "group w-full flex items-center justify-between p-3 rounded-lg text-sm transition-colors cursor-pointer",
-                      activeConvId === c.id ? "bg-[var(--fill-2)] text-[var(--text-1)]" : "text-[var(--text-2)] hover:bg-[var(--fill-1)]"
+                      "group w-full flex items-center justify-between p-3 rounded-xl text-sm transition-colors cursor-pointer",
+                      activeConvId === c.id
+                        ? "bg-[var(--surface-2)] text-[var(--text-1)] font-medium border border-[var(--line)]"
+                        : "text-[var(--text-2)] hover:bg-[var(--surface-2)] hover:text-[var(--text-1)]"
                     )}
-                    onClick={() => { setActiveConvId(c.id); setIsSidebarOpen(false); }}
+                    onClick={() => {
+                      setActiveConvId(c.id);
+                      setIsSidebarOpen(false);
+                    }}
                   >
                     <span className="truncate pr-2">{c.title}</span>
                     
                     <button
-                      onClick={(e) => { e.stopPropagation(); setConvToDelete(c.id); }}
-                      className="text-[var(--text-3)] hover:text-[var(--danger)] p-1 rounded-full transition-colors shrink-0"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setConvToDelete(c.id);
+                      }}
+                      className="text-[var(--text-3)] hover:text-[var(--danger)] p-1 rounded-lg transition-colors shrink-0 opacity-70 group-hover:opacity-100"
                       title="Delete conversation"
                     >
-                      <Trash2 size={16} />
+                      <Trash2 size={15} />
                     </button>
                   </div>
                 ))}
+                
                 {conversations.length === 0 && (
-                  <p className="text-center text-[var(--text-3)] text-sm mt-10">No past conversations</p>
+                  <div className="text-center py-12 px-4">
+                    <p className="text-[13px] text-[var(--text-3)]">No past conversations yet.</p>
+                  </div>
                 )}
               </div>
             </motion.div>
@@ -727,7 +1012,7 @@ export function AIScreen({
         )}
       </AnimatePresence>
 
-      {/* Custom Delete Modal */}
+      {/* Delete Confirmation Modal */}
       <AnimatePresence>
         {convToDelete && (
           <motion.div
@@ -738,32 +1023,32 @@ export function AIScreen({
             onClick={() => setConvToDelete(null)}
           >
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
+              initial={{ scale: 0.94, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
+              exit={{ scale: 0.94, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
               className="w-full max-w-sm rounded-[24px] bg-[var(--surface-2)] border border-[var(--line)] p-6 shadow-2xl"
             >
               <div className="flex items-center gap-3 mb-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--danger)]/10">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--danger)]/15">
                   <AlertCircle size={20} className="text-[var(--danger)]" />
                 </div>
                 <div>
-                  <h3 className="text-[17px] font-bold text-[var(--text-1)]">Delete chat?</h3>
-                  <p className="text-[12px] text-[var(--text-3)]">This action cannot be undone.</p>
+                  <h3 className="text-[17px] font-bold text-[var(--text-1)]">Delete conversation?</h3>
+                  <p className="text-[13px] text-[var(--text-3)]">This cannot be undone.</p>
                 </div>
               </div>
               
-              <div className="flex gap-2 mt-6">
+              <div className="flex gap-2.5 mt-6">
                 <button
                   onClick={() => setConvToDelete(null)}
-                  className="flex-1 rounded-xl bg-[var(--surface-3)] py-3 text-[14px] font-semibold text-[var(--text-1)] active:scale-95 transition-transform"
+                  className="flex-1 rounded-xl bg-[var(--surface-3)] py-2.5 text-[14px] font-semibold text-[var(--text-1)] active:scale-95 transition-transform"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={confirmDelete}
-                  className="flex-1 rounded-xl bg-[var(--danger)] py-3 text-[14px] font-semibold text-white active:scale-95 transition-transform"
+                  className="flex-1 rounded-xl bg-[var(--danger)] py-2.5 text-[14px] font-semibold text-white active:scale-95 transition-transform"
                 >
                   Delete
                 </button>
