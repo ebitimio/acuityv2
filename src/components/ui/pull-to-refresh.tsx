@@ -1,17 +1,15 @@
 "use client";
 
 import { useState, useRef, ReactNode, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Loader2 } from "lucide-react";
 
 export function PullToRefresh({
   children,
   onRefresh,
-  notificationText = "We're getting your balance, please hold on...",
+  onRefreshStateChange,
 }: {
   children: ReactNode;
   onRefresh: () => Promise<void> | void;
-  notificationText?: string;
+  onRefreshStateChange?: (isRefreshing: boolean) => void;
 }) {
   const [pullY, setPullY] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -21,6 +19,10 @@ export function PullToRefresh({
   const isAtTop = () => {
     return (window.scrollY || document.documentElement.scrollTop) <= 0;
   };
+
+  useEffect(() => {
+    onRefreshStateChange?.(isRefreshing);
+  }, [isRefreshing, onRefreshStateChange]);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -74,31 +76,6 @@ export function PullToRefresh({
 
   return (
     <div ref={containerRef} className="relative">
-      
-      {/* FLOATING NOTIFICATION BAR */}
-      <AnimatePresence>
-        {isRefreshing && (
-          <motion.div
-            initial={{ y: -100, opacity: 0, x: "-50%" }}
-            animate={{ y: 16, opacity: 1, x: "-50%" }}
-            exit={{ y: -100, opacity: 0, x: "-50%" }}
-            transition={{ type: "spring", stiffness: 400, damping: 30 }}
-            className="fixed top-0 left-1/2 z-[100] w-[90%] max-w-sm flex items-center justify-center gap-2 rounded-full border-2 px-4 py-2.5 shadow-2xl backdrop-blur-md"
-            style={{ 
-              backgroundColor: "#000000", 
-              borderColor: "#DE3121",
-              color: "#DE3121"
-            }}
-          >
-            <Loader2 size={16} className="animate-spin" />
-            <span className="text-[13px] font-bold tracking-wide">
-              {notificationText}
-            </span>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Content wrapper */}
       <div
         style={{
           transform: `translateY(${pullY}px)`,

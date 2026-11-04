@@ -72,6 +72,7 @@ export default function SandboxPage() {
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [profileName, setProfileName] = useState<string>("there");
   const [liquidAssets, setLiquidAssets] = useState(0);
+  const [isRefreshingHome, setIsRefreshingHome] = useState(false);
   const supabase = createClient();
   const toast = useToast();
   const { fmt, rate } = useCurrency();
@@ -607,7 +608,7 @@ export default function SandboxPage() {
     <main className="relative flex min-h-[100dvh] flex-col overflow-x-hidden" style={{ background: "var(--bg)" }}>
       <PullToRefresh 
          onRefresh={refreshData}
-         notificationText="We're getting your balance, please hold on..."
+         onRefreshStateChange={setIsRefreshingHome}
          >
         <ScreenTransition id={activeScreen}>
           {activeScreen === "analytics" ? (
@@ -679,6 +680,23 @@ export default function SandboxPage() {
               />
 
               <div className="flex flex-col gap-6 px-5 pt-2">
+                                {isRefreshingHome && (
+                  <div 
+                    className="flex items-center justify-center gap-2 rounded-xl border px-4 py-2.5 w-full animate-in fade-in slide-in-from-top-2"
+                    style={{ 
+                      backgroundColor: "var(--brand)", 
+                      borderColor: "color-mix(in srgb, var(--brand) 80%, black)",
+                      color: "var(--brand-ink)"
+                    }}
+                  >
+                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                    </svg>
+                    <span className="text-[13px] font-bold tracking-wide">
+                      We're getting your balance, please hold on...
+                    </span>
+                  </div>
+                )}
                 {/* CHANGED: Pass heroSpent instead of spentThisMonth to match the Budget screen math */}
                 <SafeToSpendHero 
                   data={safeToSpend} 
