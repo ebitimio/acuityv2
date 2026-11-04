@@ -1,15 +1,19 @@
 "use client";
 
 import { useState, useRef, ReactNode, useEffect } from "react";
+import { Loader2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export function PullToRefresh({
   children,
   onRefresh,
   onRefreshStateChange,
+  variant = "spinner",
 }: {
   children: ReactNode;
   onRefresh: () => Promise<void> | void;
   onRefreshStateChange?: (isRefreshing: boolean) => void;
+  variant?: "spinner" | "branded";
 }) {
   const [pullY, setPullY] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -55,9 +59,10 @@ export function PullToRefresh({
         setPullY(0);
         try {
           await onRefresh();
-          // DELIBERATE DELAY: Wait 600ms so the parent can show the "success" state
-          // before we turn off the refresh flag.
-          await new Promise(resolve => setTimeout(resolve, 600));
+          // Delay allows the branded tick to show
+          if (variant === "branded") {
+            await new Promise((resolve) => setTimeout(resolve, 600));
+          }
         } finally {
           setIsRefreshing(false);
         }
@@ -75,10 +80,37 @@ export function PullToRefresh({
       el.removeEventListener("touchmove", handleTouchMove);
       el.removeEventListener("touchend", handleTouchEnd);
     };
-  }, [pullY, isRefreshing, onRefresh]);
+  }, [pullY, isRefreshing, onRefresh, variant]);
 
   return (
     <div ref={containerRef} className="relative">
+      
+      {/* OLD SPINNER LOGIC (Only for variant="spinner") */}
+      {variant === "spinner" && (
+        <>
+          <div
+            className="absolute inset-x-0 top-0 z-50 flex justify-center transition-opacity duration-200"
+            style={{
+              height: pullY,
+              opacity: pullY > 10 ? 1 : 0,
+              paddingTop: 16,
+            }}
+          >
+            <div className="bg-[var(--surface-3)] p-2 rounded-full shadow-lg">
+              <Loader2
+                size={20}
+                className={isRefreshing ? "animate-spin" : ""}
+                style={{
+                  transform: `rotate(${pullY * 4}deg)`,
+                  transition: isRefreshing ? undefined : "transform 0.05s",
+                }}
+              />
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Content wrapper */}
       <div
         style={{
           transform: `translateY(${pullY}px)`,
