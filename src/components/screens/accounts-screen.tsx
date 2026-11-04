@@ -41,7 +41,7 @@ export function AccountsScreen({
   
   const [linkedCode, setLinkedCode] = useState<string | null>(null);
   const [linkedAccountName, setLinkedAccountName] = useState("");
-  const [linkedAccountType, setLinkedAccountType] = useState("checking"); // NEW: State for type
+  const [linkedAccountType, setLinkedAccountType] = useState("checking");
 
   const [checkinAccount, setCheckinAccount] = useState<Account | null>(null);
   const [isTransferOpen, setIsTransferOpen] = useState(false);
@@ -122,11 +122,15 @@ export function AccountsScreen({
           }
         },
         onSuccess: (data: any) => {
-          setIsConnecting(false);
           setLinkedCode(data.code);
           setLinkedAccountName(""); 
-          setLinkedAccountType("checking"); // Reset type
-          setModal("name_linked_account");
+          setLinkedAccountType("checking");
+          
+          // FIX: Delay the modal opening so the Mono widget fully closes first
+          setTimeout(() => {
+            setIsConnecting(false);
+            setModal("name_linked_account");
+          }, 500);
         },
         onClose: () => {
           setIsConnecting(false);
@@ -161,7 +165,7 @@ export function AccountsScreen({
           code: linkedCode, 
           customName: linkedAccountName,
           workspaceId: activeWs.id,
-          accountType: linkedAccountType // CHANGED: Send the type
+          accountType: linkedAccountType 
         }),
       });
       const resData = await res.json();
