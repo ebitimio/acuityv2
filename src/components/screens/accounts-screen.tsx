@@ -14,6 +14,7 @@ import { BalanceCheckinSheet } from "@/components/ui/balance-checkin-sheet";
 import { TransferSheet } from "@/components/ui/transfer-sheet";
 import { CryptoSheet } from "@/components/ui/crypto-sheet";
 import { StackedAccountCard } from "@/components/ui/stacked-account-card";
+import { ConnectBankScreen } from "@/components/screens/connect-bank-screen";
 import { useCurrency } from "@/lib/currency";
 import { useToast } from "@/components/ui/toast";
 import { useWorkspace } from "@/lib/workspace";
@@ -38,6 +39,7 @@ export function AccountsScreen({
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [modal, setModal] = useState<"account" | "asset" | "premium_locked" | "name_linked_account" | null>(null);
+  const [showConnectIntro, setShowConnectIntro] = useState(false);
   
   const [linkedCode, setLinkedCode] = useState<string | null>(null);
   const [linkedAccountName, setLinkedAccountName] = useState("");
@@ -104,6 +106,14 @@ export function AccountsScreen({
       return;
     }
 
+    // Only premium users proceed to the connection intro screen
+    setShowConnectIntro(true);
+  };
+
+  const handleLaunchMono = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
     if (!publicKey) {
       toast("Mono API key missing", "err");
       return;
@@ -125,6 +135,7 @@ export function AccountsScreen({
           setLinkedCode(data.code);
           setLinkedAccountName(""); 
           setLinkedAccountType("checking");
+          setShowConnectIntro(false);
           
           // FIX: Delay the modal opening so the Mono widget fully closes first
           setTimeout(() => {
@@ -240,6 +251,16 @@ export function AccountsScreen({
   const netWorth = totalLiquid + totalAssets + totalLiab;
 
   const isAnyExpanded = expandedCard !== null;
+
+  if (showConnectIntro) {
+    return (
+      <ConnectBankScreen
+        onBack={() => setShowConnectIntro(false)}
+        onProceed={handleLaunchMono}
+        isConnecting={isConnecting}
+      />
+    );
+  }
 
   return (
     <div className="min-h-[100dvh] pb-32">
@@ -386,6 +407,34 @@ export function AccountsScreen({
 
       <Modal open={modal === "account"} onClose={() => setModal(null)} title="Add Account">
         <div className="space-y-3">
+          <div className="rounded-2xl border border-[var(--brand)]/30 bg-[var(--brand)]/10 p-3.5 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--brand)]/20 text-[var(--brand)]">
+                <Sparkles size={16} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[13px] font-bold text-white truncate">Connect Bank Automatically</p>
+                <p className="text-[11px] text-[var(--text-3)] truncate">Sync live balances via Mono (Premium)</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setModal(null);
+                handleConnectBank();
+              }}
+              className="press px-3 py-1.5 shrink-0 rounded-xl bg-[var(--brand)] text-[var(--brand-ink)] text-[11px] font-bold"
+            >
+              Connect
+            </button>
+          </div>
+
+          <div className="relative flex py-1 items-center">
+            <div className="flex-grow border-t border-[var(--line)]"></div>
+            <span className="flex-shrink mx-3 text-[11px] uppercase tracking-wider text-[var(--text-3)] font-medium">Or add manually</span>
+            <div className="flex-grow border-t border-[var(--line)]"></div>
+          </div>
+
           <Field label="Account name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Main Checking" />
           <Field label="Bank / institution" value={institution} onChange={(e) => setInstitution(e.target.value)} placeholder="e.g. GTBank" />
           <SelectField label="Type" value={type} onChange={(e) => setType(e.target.value)}>

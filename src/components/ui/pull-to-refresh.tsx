@@ -2,7 +2,6 @@
 
 import { useState, useRef, ReactNode, useEffect } from "react";
 import { Loader2 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 
 export function PullToRefresh({
   children,
@@ -56,10 +55,9 @@ export function PullToRefresh({
 
       if (shouldRefresh) {
         setIsRefreshing(true);
-        setPullY(0);
+        setPullY(0); // Snap content back up immediately
         try {
           await onRefresh();
-          // Delay allows the branded tick to show
           if (variant === "branded") {
             await new Promise((resolve) => setTimeout(resolve, 600));
           }
@@ -85,29 +83,23 @@ export function PullToRefresh({
   return (
     <div ref={containerRef} className="relative">
       
-      {/* OLD SPINNER LOGIC (Only for variant="spinner") */}
+      {/* FLOATING SPINNER (Only for variant="spinner") */}
       {variant === "spinner" && (
-        <>
-          <div
-            className="absolute inset-x-0 top-0 z-50 flex justify-center transition-opacity duration-200"
-            style={{
-              height: pullY,
-              opacity: pullY > 10 ? 1 : 0,
-              paddingTop: 16,
-            }}
-          >
-            <div className="bg-[var(--surface-3)] p-2 rounded-full shadow-lg">
-              <Loader2
-                size={20}
-                className={isRefreshing ? "animate-spin" : ""}
-                style={{
-                  transform: `rotate(${pullY * 4}deg)`,
-                  transition: isRefreshing ? undefined : "transform 0.05s",
-                }}
-              />
-            </div>
+        <div
+          className="fixed inset-x-0 flex justify-center z-[100] pointer-events-none"
+          style={{
+            top: "calc(env(safe-area-inset-top) + 24px)", // Fixed slightly below the status bar
+            opacity: pullY > 10 || isRefreshing ? 1 : 0, // Fade in based on pull distance
+            transition: "opacity 0.2s ease-out", // Smooth fade
+          }}
+        >
+          <div className="bg-[var(--surface-3)] p-2.5 rounded-full shadow-lg border border-white/5">
+            <Loader2
+              size={20}
+              className={isRefreshing ? "animate-spin text-[var(--brand)]" : "text-[var(--text-2)]"}
+            />
           </div>
-        </>
+        </div>
       )}
 
       {/* Content wrapper */}
