@@ -8,7 +8,7 @@ import { useCurrency } from "@/lib/currency";
 import { useToast } from "@/components/ui/toast";
 import { useWorkspace } from "@/lib/workspace";
 import type { Txn, Account, Asset, Budget } from "@/lib/types";
-import { TrendingDown, Wallet, Landmark, Scale, ChevronRight, Sparkles, Lightbulb, DollarSign, Info } from "lucide-react";
+import { TrendingDown, Wallet, Landmark, Scale, ChevronRight, Lightbulb, DollarSign, Info } from "lucide-react";
 import { PullToRefresh } from "@/components/ui/pull-to-refresh";
 import { GaugeArc } from "@/components/ui/gauge-arc";
 import { cn } from "@/lib/utils";
@@ -415,7 +415,7 @@ export function AnalyticsScreen({ onBack, onNavigateTransactions }: { onBack: ()
 
               <div className="relative overflow-hidden rounded-2xl border border-[var(--brand)]/20 bg-[var(--brand)]/5 p-5">
                 <div className="absolute -right-4 -top-4 text-[var(--brand)]/10">
-                  <Sparkles size={100} />
+                  <span className="font-black text-[80px] tracking-tighter leading-none select-none pointer-events-none">A.</span>
                 </div>
                 <div className="relative z-10 flex items-start gap-3">
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] text-[var(--brand-ink)]">

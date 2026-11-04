@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence, useMotionValue } from "framer-motion";
-import { X, Sparkles, ArrowRight, Eye, ChevronRight } from "lucide-react";
+import { X, ArrowRight, Eye, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AcuityCompanion } from "./acuity-companion";
 import {
@@ -327,7 +327,7 @@ export function JarvisOrb({
               {/* Proactive Screen Insights */}
               <div className="mt-4 rounded-2xl bg-white/[0.03] border border-white/5 p-3.5">
                 <div className="flex items-center gap-1.5 text-[12px] font-semibold text-[var(--brand)] uppercase tracking-wider font-mono">
-                  <Sparkles size={13} />
+                  <span className="font-black text-[13px] tracking-tight leading-none">A.</span>
                   <span>Screen Observations</span>
                 </div>
                 <div className="mt-2.5 space-y-2">
@@ -370,7 +370,7 @@ export function JarvisOrb({
                   onClick={handleOpenAiScreen}
                   className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--brand)] py-3 px-4 text-[14px] font-bold text-black shadow-[0_4px_24px_rgba(222,49,33,0.35)] transition-all hover:brightness-110 active:scale-[0.98]"
                 >
-                  <Sparkles size={16} />
+                  <span className="font-black text-[15px] tracking-tight leading-none text-black">A.</span>
                   <span>Open Full Acuity CFO</span>
                 </button>
               </div>

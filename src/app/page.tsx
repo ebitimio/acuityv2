@@ -47,7 +47,7 @@ import { Field, Button } from "@/components/ui/form";
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
 import {
   ChevronRight, Receipt, ChevronDown, Plus, Trash2,
-  PiggyBank, PieChart, ArrowLeftRight, Bell, Crown, Sparkles, Award, Lightbulb, Loader2
+  PiggyBank, PieChart, ArrowLeftRight, Bell, Crown, Award, Lightbulb, Loader2
 } from "lucide-react";
 import { TransactionsScreen } from "@/components/screens/transactions-screen";
 import { OnboardingCarousel } from "@/components/screens/onboarding-carousel";

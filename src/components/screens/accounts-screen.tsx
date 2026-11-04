@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ScreenHeader, IconButton } from "@/components/ui/screen-header";
-import { Plus, Trash2, ArrowRightLeft, TrendingUp, Scale, Coins, Pencil, Link as LinkIcon, Loader2, Crown, Sparkles } from "lucide-react";
+import { Plus, Trash2, ArrowRightLeft, TrendingUp, Scale, Coins, Pencil, Link as LinkIcon, Loader2, Crown } from "lucide-react";
 import {
   getAccounts, createAccount, deleteAccount, getAssets, addAsset, updateAsset, deleteAsset, clearDataCache,
 } from "@/lib/supabase/database";
@@ -481,7 +481,7 @@ export function AccountsScreen({
         <div className="flex flex-col items-center py-6 space-y-4 text-center">
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--brand)]/10 relative">
             <Crown size={32} className="text-[var(--brand)]" />
-            <Sparkles size={14} className="text-[var(--brand)] absolute -top-1 -right-1" />
+            <span className="absolute -top-1 -right-1 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-[var(--brand)] text-[9px] font-black text-black">A.</span>
           </div>
           <div>
             <h3 className="text-[18px] font-bold text-[var(--text-1)]">Upgrade to Acuity Premium</h3>

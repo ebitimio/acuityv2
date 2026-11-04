@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Crown, Sparkles, ArrowLeft } from "lucide-react";
+import { Loader2, Crown, ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { ConnectBankScreen } from "@/components/screens/connect-bank-screen";
 import { Button } from "@/components/ui/form";
@@ -82,7 +82,7 @@ export default function MonoConnectPage() {
         <div className="w-full max-w-sm rounded-[24px] bg-[var(--surface-2)] border border-[var(--line-strong)] p-6 text-center space-y-5 shadow-2xl">
           <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-full bg-[var(--brand)]/10 relative">
             <Crown size={32} className="text-[var(--brand)]" />
-            <Sparkles size={14} className="text-[var(--brand)] absolute -top-1 -right-1" />
+            <span className="absolute -top-1 -right-1 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-[var(--brand)] text-[9px] font-black text-black">A.</span>
           </div>
 
           <div>
