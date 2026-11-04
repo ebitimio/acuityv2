@@ -607,15 +607,22 @@ export default function SandboxPage() {
   return (
     <main className="relative flex min-h-[100dvh] flex-col overflow-x-hidden" style={{ background: "var(--bg)" }}>
       <PullToRefresh 
-         onRefresh={async () => {
+        onRefresh={async () => {
+          // 1. Show the loading banner
+          setRefreshState("loading");
+          
+          // 2. Fetch the data
           await refreshData();
+          
+          // 3. Show the success tick
           setRefreshState("success");
-          setTimeout(() => setRefreshState("idle"), 1200);
-         }}
-          onRefreshStateChange={(isRefreshing) => {
-            if (isRefreshing) setRefreshState("loading");  
-         }}   
-       >
+          
+          // 4. Keep the tick on screen for 1.5 seconds, then hide it
+          setTimeout(() => {
+            setRefreshState("idle");
+          }, 1500);
+        }}
+      >
         <ScreenTransition id={activeScreen}>
           {activeScreen === "analytics" ? (
             <AnalyticsScreen key={activeWs?.id} onBack={handleBackToHome} onNavigateTransactions={() => setActiveScreen("transactions")} />
@@ -686,15 +693,11 @@ export default function SandboxPage() {
               />
 
               <div className="flex flex-col gap-6 px-5 pt-2">
-                              {/* INLINE REFRESH BANNER WITH SUCCESS TICK */}            
+                {/* INLINE REFRESH BANNER WITH SUCCESS TICK */}            
                 {refreshState !== "idle" && (
                   <div 
                     className="flex items-center justify-center gap-2 rounded-xl border px-4 py-2 w-full animate-in fade-in slide-in-from-top-2 duration-300"
-                    style={{ 
-                      backgroundColor: "#000000", 
-                      borderColor: "var(--brand)",
-                      color: "var(--brand)"
-                    }}
+                    style={{ backgroundColor: "#000000", borderColor: "var(--brand)",color: "var(--brand)"}}
                   >
                     {refreshState === "loading" ? (
                       <>
