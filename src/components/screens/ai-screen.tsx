@@ -59,85 +59,125 @@ const truncateTitle = (t: string) => {
 };
 
 /**
- * Living Acuity AI Companion
- * Expressive white pill eyes with organic blinking, gaze tracking,
- * and warm Acuity Ember radiant aura - inspired by companion AI aesthetics.
+ * Living Acuity AI Companion & Orb Mascot
+ * Expressive white pill eyes with organic blinking, reading scan tracking,
+ * lively micro-saccades, and warm Acuity Ember radiant aura.
  */
 function AcuityCompanion({
   isThinking = false,
   hasInput = false,
   size = "large",
+  onTap,
 }: {
   isThinking?: boolean;
   hasInput?: boolean;
-  size?: "large" | "compact";
+  size?: "large" | "compact" | "orb";
+  onTap?: () => void;
 }) {
   const [blinkState, setBlinkState] = useState(false);
-  const [gaze, setGaze] = useState({ x: 0, y: 0, rotate: 7 });
+  const [gaze, setGaze] = useState({ x: 0, y: 0, rotate: 7, scaleY: 1, scaleX: 1 });
   const [isWinking, setIsWinking] = useState(false);
 
-  // Natural organic blinking (randomized delay with occasional double-blink)
+  // Natural organic blinking with single and double flutter blinks
   useEffect(() => {
     let timeout: NodeJS.Timeout;
 
-    const scheduleBlink = () => {
-      const delay = Math.random() * 2400 + 2600; // 2.6s - 5s
+    const triggerBlink = () => {
+      // Lively natural blinking cadence: 1.8s - 3.8s
+      const delay = Math.random() * 2000 + 1800;
       timeout = setTimeout(() => {
         setBlinkState(true);
         setTimeout(() => {
           setBlinkState(false);
-          // 25% chance of an expressive double-blink
-          if (Math.random() < 0.25) {
+          // 35% chance of a spontaneous double flutter-blink
+          if (Math.random() < 0.35) {
             setTimeout(() => {
               setBlinkState(true);
               setTimeout(() => {
                 setBlinkState(false);
-                scheduleBlink();
-              }, 110);
-            }, 90);
+                triggerBlink();
+              }, 95);
+            }, 75);
           } else {
-            scheduleBlink();
+            triggerBlink();
           }
-        }, 130);
+        }, 115);
       }, delay);
     };
 
-    scheduleBlink();
+    triggerBlink();
     return () => clearTimeout(timeout);
   }, []);
 
-  // Responsive gaze tracking: looks down when typing, looks up when thinking, looks around when idle
+  // Highly expressive eye movements: reading scan, thoughtful glances, lively micro-saccades
   useEffect(() => {
     if (isThinking) {
-      setGaze({ x: 0, y: -4, rotate: 4 });
-      return;
-    }
-    if (hasInput) {
-      setGaze({ x: 0, y: 5, rotate: 6 });
-      return;
+      // Thinking: Eyes glance up-left and up-right thoughtfully with soft squints
+      let thinkStep = 0;
+      const thinkInterval = setInterval(() => {
+        thinkStep = (thinkStep + 1) % 4;
+        const positions = [
+          { x: -3, y: -4, rotate: -5, scaleY: 0.52, scaleX: 1.15 },
+          { x: 3, y: -4, rotate: 6, scaleY: 0.48, scaleX: 1.18 },
+          { x: 0, y: -5, rotate: 2, scaleY: 0.55, scaleX: 1.12 },
+          { x: 2, y: -3, rotate: 8, scaleY: 0.5, scaleX: 1.15 },
+        ];
+        setGaze(positions[thinkStep]);
+      }, 650);
+
+      return () => clearInterval(thinkInterval);
     }
 
-    let gazeTimeout: NodeJS.Timeout;
-    const scheduleGaze = () => {
-      const delay = Math.random() * 3200 + 3000;
-      gazeTimeout = setTimeout(() => {
-        const randomX = (Math.random() - 0.5) * 8; // -4 to +4 px
-        const randomY = (Math.random() - 0.5) * 6; // -3 to +3 px
-        const randomRot = 7 + (Math.random() - 0.5) * 6; // 4 to 10 deg
-        setGaze({ x: randomX, y: randomY, rotate: randomRot });
-        scheduleGaze();
+    if (hasInput) {
+      // Typing: Eyes glance down and smoothly scan left-to-right as if reading your prompt!
+      let readStep = 0;
+      const scanInterval = setInterval(() => {
+        readStep = (readStep + 1) % 3;
+        const readPositions = [
+          { x: -3, y: 4.5, rotate: 4, scaleY: 0.95, scaleX: 1.02 },
+          { x: 0, y: 5.5, rotate: 6, scaleY: 0.92, scaleX: 1.04 },
+          { x: 3, y: 4.5, rotate: 8, scaleY: 0.95, scaleX: 1.02 },
+        ];
+        setGaze(readPositions[readStep]);
+      }, 750);
+
+      return () => clearInterval(scanInterval);
+    }
+
+    // Idle: Lively sentient micro-saccades, curious head tilts, and organic glance shifts
+    let saccadeTimeout: NodeJS.Timeout;
+    const scheduleSaccade = () => {
+      // Moves every 1.2s to 2.6s so the mascot feels genuinely alive
+      const delay = Math.random() * 1400 + 1200;
+      saccadeTimeout = setTimeout(() => {
+        const gazePatterns = [
+          { x: 0, y: 0, rotate: 7, scaleY: 1, scaleX: 1 }, // relaxed center
+          { x: -5, y: -1, rotate: -3, scaleY: 1.04, scaleX: 0.96 }, // curious left
+          { x: 5, y: -1, rotate: 10, scaleY: 1.04, scaleX: 0.96 }, // curious right
+          { x: 0, y: -4, rotate: 4, scaleY: 1.12, scaleX: 0.94 }, // wide inquisitive up
+          { x: -3, y: 3, rotate: 3, scaleY: 0.96, scaleX: 1.02 }, // glance down-left
+          { x: 3, y: 2, rotate: 9, scaleY: 0.96, scaleX: 1.02 }, // glance down-right
+          { x: 0, y: 0, rotate: 13, scaleY: 1.03, scaleX: 0.97 }, // cute head tilt
+          { x: -4, y: 2, rotate: -2, scaleY: 1, scaleX: 1 }, // attentive look
+        ];
+        const nextGaze = gazePatterns[Math.floor(Math.random() * gazePatterns.length)];
+        setGaze(nextGaze);
+        scheduleSaccade();
       }, delay);
     };
 
-    scheduleGaze();
-    return () => clearTimeout(gazeTimeout);
+    scheduleSaccade();
+    return () => clearTimeout(saccadeTimeout);
   }, [isThinking, hasInput]);
 
-  const handleTap = () => {
+  const handleTap = (e: React.MouseEvent) => {
+    e.stopPropagation();
     setIsWinking(true);
-    setTimeout(() => setIsWinking(false), 300);
+    setTimeout(() => setIsWinking(false), 320);
+    onTap?.();
   };
 
+  const isOrb = size === "orb";
   const isCompact = size === "compact";
 
   return (
@@ -145,7 +185,7 @@ function AcuityCompanion({
       onClick={handleTap}
       className={cn(
         "relative flex items-center justify-center cursor-pointer select-none transition-transform active:scale-95",
-        isCompact ? "h-6 w-10" : "h-32 sm:h-36 w-full my-1"
+        isOrb ? "h-full w-full" : isCompact ? "h-6 w-10" : "h-32 sm:h-36 w-full my-1"
       )}
       title="Acuity Personal AI • Tap to say hi!"
     >
@@ -153,7 +193,7 @@ function AcuityCompanion({
       <motion.div
         animate={{
           scale: isThinking ? [1, 1.25, 1] : [1, 1.08, 1],
-          opacity: isThinking ? [0.65, 0.95, 0.65] : [0.38, 0.58, 0.38],
+          opacity: isThinking ? [0.65, 0.95, 0.65] : isOrb ? [0.45, 0.75, 0.45] : [0.38, 0.58, 0.38],
         }}
         transition={{
           duration: isThinking ? 1.4 : 4.2,
@@ -162,7 +202,7 @@ function AcuityCompanion({
         }}
         className={cn(
           "absolute rounded-full pointer-events-none",
-          isCompact ? "w-12 h-12 blur-md" : "w-48 h-48 sm:w-56 sm:h-56 blur-2xl"
+          isOrb ? "w-10 h-10 blur-xs" : isCompact ? "w-12 h-12 blur-md" : "w-48 h-48 sm:w-56 sm:h-56 blur-2xl"
         )}
         style={{
           background:
@@ -170,42 +210,50 @@ function AcuityCompanion({
         }}
       />
 
-      {/* Eyes Container */}
+      {/* Eyes Container with Lively Spring Motion */}
       <motion.div
         animate={{
           x: gaze.x,
           y: gaze.y,
           rotate: gaze.rotate,
         }}
-        transition={{ type: "spring", stiffness: 160, damping: 15 }}
+        transition={{ type: "spring", stiffness: 220, damping: 15 }}
         className={cn(
           "relative flex items-center z-10",
-          isCompact ? "gap-1.5" : "gap-4 sm:gap-5"
+          isOrb ? "gap-1" : isCompact ? "gap-1.5" : "gap-4 sm:gap-5"
         )}
       >
         {/* Left Eye */}
         <motion.div
           animate={{
-            scaleY: isWinking || blinkState ? 0.08 : isThinking ? 0.55 : 1,
-            scaleX: isThinking ? 1.1 : 1,
+            scaleY: isWinking || blinkState ? 0.08 : gaze.scaleY,
+            scaleX: gaze.scaleX,
           }}
-          transition={{ duration: 0.11 }}
+          transition={{ duration: 0.09 }}
           className={cn(
-            "rounded-[6px] sm:rounded-[13px] bg-white shadow-[0_0_24px_rgba(255,255,255,0.7),0_0_10px_rgba(222,49,33,0.35)] origin-center",
-            isCompact ? "w-1.5 h-4" : "w-6 h-13 sm:w-7 sm:h-14"
+            "bg-white shadow-[0_0_24px_rgba(255,255,255,0.7),0_0_10px_rgba(222,49,33,0.35)] origin-center",
+            isOrb
+              ? "w-2 h-4.5 rounded-[5px]"
+              : isCompact
+              ? "w-1.5 h-4 rounded-[5px]"
+              : "w-6 h-13 sm:w-7 sm:h-14 rounded-[12px] sm:rounded-[13px]"
           )}
         />
 
         {/* Right Eye */}
         <motion.div
           animate={{
-            scaleY: blinkState ? 0.08 : isThinking ? 0.55 : 1,
-            scaleX: isThinking ? 1.1 : 1,
+            scaleY: blinkState ? 0.08 : gaze.scaleY,
+            scaleX: gaze.scaleX,
           }}
-          transition={{ duration: 0.11 }}
+          transition={{ duration: 0.09 }}
           className={cn(
-            "rounded-[6px] sm:rounded-[13px] bg-white shadow-[0_0_24px_rgba(255,255,255,0.7),0_0_10px_rgba(222,49,33,0.35)] origin-center",
-            isCompact ? "w-1.5 h-4" : "w-6 h-13 sm:w-7 sm:h-14"
+            "bg-white shadow-[0_0_24px_rgba(255,255,255,0.7),0_0_10px_rgba(222,49,33,0.35)] origin-center",
+            isOrb
+              ? "w-2 h-4.5 rounded-[5px]"
+              : isCompact
+              ? "w-1.5 h-4 rounded-[5px]"
+              : "w-6 h-13 sm:w-7 sm:h-14 rounded-[12px] sm:rounded-[13px]"
           )}
         />
       </motion.div>
@@ -844,16 +892,21 @@ export function AIScreen({
             <span className="text-[19px] font-black tracking-tight text-[var(--brand)]">.</span>
           </div>
 
-          {/* Living Companion Indicator in Header - Alive & Watching */}
+          {/* Living Orb Mascot in Header */}
           <div
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] shadow-sm backdrop-blur-md cursor-pointer hover:bg-white/[0.08] transition-all ml-1.5"
+            className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.1] shadow-sm backdrop-blur-xl cursor-pointer transition-all active:scale-90 ml-1.5 overflow-hidden group"
             onClick={() => {
-              toast("Acuity is active & watching your cash flow");
+              const quotes = [
+                "Watching your cash flow in real-time",
+                "Safe-to-spend is monitored & active",
+                "Ready to calculate anything you need",
+                "All accounts synced & balanced",
+              ];
+              toast(quotes[Math.floor(Math.random() * quotes.length)]);
             }}
-            title="Acuity Personal AI • Active & Watching"
+            title="Acuity Orb Mascot • Tap to interact!"
           >
-            <AcuityCompanion size="compact" isThinking={isThinking} hasInput={!!input.trim()} />
-            <span className="text-[10px] font-bold text-white/60 tracking-wider uppercase">Active</span>
+            <AcuityCompanion size="orb" isThinking={isThinking} hasInput={!!input.trim()} />
           </div>
         </div>
         
