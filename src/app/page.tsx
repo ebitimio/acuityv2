@@ -46,7 +46,7 @@ import { Field, Button } from "@/components/ui/form";
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
 import {
   ChevronRight, Receipt, ChevronDown, Plus, Trash2,
-  PiggyBank, PieChart, ArrowLeftRight, Bell, Crown, Sparkles, Award, Lightbulb
+  PiggyBank, PieChart, ArrowLeftRight, Bell, Crown, Sparkles, Award, Lightbulb, Loader2
 } from "lucide-react";
 import { TransactionsScreen } from "@/components/screens/transactions-screen";
 import { OnboardingCarousel } from "@/components/screens/onboarding-carousel";
@@ -102,7 +102,6 @@ export default function SandboxPage() {
   const [categoryRows, setCategoryRows] = useState<CategorySpendRow[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   
-  // CHANGED: Store the calculated spent amount for the main account
   const [heroSpent, setHeroSpent] = useState(0);
 
   const [activeCardIndex, setActiveCardIndex] = useState(0);
@@ -283,7 +282,6 @@ export default function SandboxPage() {
       const total = (accs ?? []).reduce((s, a) => s + (a.current_minor ?? a.balance_minor), 0) / 100;
       setLiquidAssets(total);
 
-      // CHANGED: Calculate the exact "Spent" for the FIRST account (Main) ignoring transfers
       const firstAccountId = accs?.[0]?.id;
       if (firstAccountId) {
         const monthTxns = await getTransactionsSince(startOfMonthISO());
@@ -608,19 +606,16 @@ export default function SandboxPage() {
     <main className="relative flex min-h-[100dvh] flex-col overflow-x-hidden" style={{ background: "var(--bg)" }}>
       <PullToRefresh 
         onRefresh={async () => {
-          // 1. Show the loading banner
-          setRefreshState("loading");
-          
-          // 2. Fetch the data
-          await refreshData();
-          
-          // 3. Show the success tick
-          setRefreshState("success");
-          
-          // 4. Keep the tick on screen for 1.5 seconds, then hide it
-          setTimeout(() => {
-            setRefreshState("idle");
-          }, 1500);
+          // Only trigger the banner animation on the Home screen
+          if (activeScreen === "home") {
+            setRefreshState("loading");
+            await refreshData();
+            setRefreshState("success");
+            setTimeout(() => setRefreshState("idle"), 1500);
+          } else {
+            // For other screens, just fetch the data silently
+            await refreshData();
+          }
         }}
       >
         <ScreenTransition id={activeScreen}>
@@ -693,11 +688,16 @@ export default function SandboxPage() {
               />
 
               <div className="flex flex-col gap-6 px-5 pt-2">
-                {/* INLINE REFRESH BANNER WITH SUCCESS TICK */}            
-                {refreshState !== "idle" && (
+                              
+                {/* DASHBOARD REFRESH BANNER WITH SUCCESS TICK */}
+                {activeScreen === "home" && refreshState !== "idle" && (
                   <div 
                     className="flex items-center justify-center gap-2 rounded-xl border px-4 py-2 w-full animate-in fade-in slide-in-from-top-2 duration-300"
-                    style={{ backgroundColor: "#000000", borderColor: "var(--brand)",color: "var(--brand)"}}
+                    style={{ 
+                      backgroundColor: "#000000", 
+                      borderColor: "var(--brand)",
+                      color: "var(--brand)"
+                    }}
                   >
                     {refreshState === "loading" ? (
                       <>
@@ -720,6 +720,7 @@ export default function SandboxPage() {
                     )}
                   </div>
                 )}
+
                 {/* CHANGED: Pass heroSpent instead of spentThisMonth to match the Budget screen math */}
                 <SafeToSpendHero 
                   data={safeToSpend} 
