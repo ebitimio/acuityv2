@@ -38,6 +38,7 @@ import { WorkspaceSwitcher } from "@/components/ui/workspace-switcher";
 import { ImportSheet } from "@/components/ui/import-sheet";
 import { TransactionDetailSheet } from "@/components/ui/transaction-detail-sheet";
 import { AIScreen } from "@/components/screens/ai-screen";
+import { JarvisOrb } from "@/components/ui/jarvis-orb";
 import { AddTransactionSheet } from "@/components/ui/add-transaction-sheet";
 import { QuickAddSheet } from "@/components/ui/quick-add-sheet";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -81,6 +82,7 @@ export default function SandboxPage() {
   const [showSplash, setShowSplash] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [activeScreen, setActiveScreen] = useState<ScreenId>("home");
+  const [aiInitialPrompt, setAiInitialPrompt] = useState<string | undefined>(undefined);
 
   const [onboardingSequence, setOnboardingSequence] = useState<"checking" | "carousel" | "pin" | "complete">("checking");
   const [isLocked, setIsLocked] = useState(false);
@@ -490,8 +492,14 @@ export default function SandboxPage() {
   };
 
   const handleBackToHome = () => {
+    setAiInitialPrompt(undefined);
     setActiveScreen("home");
     refreshData();
+  };
+
+  const handleOpenAiFromOrb = (prompt?: string) => {
+    setAiInitialPrompt(prompt);
+    setActiveScreen("ai");
   };
 
   const handleStartSetupStep = (step: "account" | "income" | "bills") => {
@@ -597,6 +605,7 @@ export default function SandboxPage() {
         metrics={m}
         topCategory={topCategory}
         daysUntilIncome={daysUntilIncome}
+        initialPrompt={aiInitialPrompt}
         onDataChanged={refreshData}
       />
     );
@@ -731,7 +740,7 @@ export default function SandboxPage() {
                   incomeThisMonth={incomeThisMonth} 
                   budgetLimit={budgetLimit} 
                   periodLabel={periodLabel} 
-                  daysUntilIncome={daysUntilIncome} 
+                  daysUntilIncome={daysUntilIncome}
                   nextIncomeDate={nextIncomeDate} 
                 />
 
@@ -896,6 +905,25 @@ export default function SandboxPage() {
         isHidden={navHidden}
       />
 
+      {activeScreen !== "home" && (
+        <JarvisOrb
+          currentScreen={activeScreen}
+          observerData={{
+            metrics: m,
+            safeToSpend,
+            accounts,
+            transactions,
+            categoryRows,
+            formatCurrency: fmt,
+          }}
+          onNavigateAI={handleOpenAiFromOrb}
+          className={cn(
+            navHidden ? "translate-y-28 opacity-0 pointer-events-none" : "translate-y-0 opacity-100",
+            "transition-all duration-300"
+          )}
+        />
+      )}
+
       <ImportSheet isOpen={isImportOpen} onClose={() => setIsImportOpen(false)} onImportSuccess={() => { refreshData(); toast("Statement imported"); }} />
 
       <SettingsSheet isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} user={{ ...session.user, created_at: session.user.created_at }} onSignOut={handleSignOut} profileName={profileName} onNameUpdated={(name) => setProfileName(name)} />
@@ -984,3 +1012,5 @@ export default function SandboxPage() {
     </main>
   );
 }
+
+
