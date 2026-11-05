@@ -102,18 +102,8 @@ export function AccountsScreen({
     load(); 
   }, [activeWs?.id]);
 
-  const handleConnectBank = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { data: profile } = await supabase.from("profiles").select("tier").eq("id", user.id).single();
-
-    if (!profile || profile.tier !== "premium") {
-      setModal("premium_locked");
-      return;
-    }
-
-    // Only premium users proceed to the connection intro screen
+  const handleConnectBank = () => {
+    // Enabled for both premium and basic users
     setConnectIntro(true);
   };
 

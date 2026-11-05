@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft,
@@ -11,8 +11,14 @@ import {
   Landmark,
   CheckCircle2,
   X,
+  Crown,
+  Zap,
+  Sparkles,
 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { useToast } from "@/components/ui/toast";
 import { MetallicGyroscope } from "@/components/ui/metallic-gyroscope";
+import { AcuityCompanion } from "@/components/ui/acuity-companion";
 
 interface ConnectBankScreenProps {
   onBack: () => void;
@@ -26,6 +32,102 @@ export function ConnectBankScreen({
   isConnecting = false,
 }: ConnectBankScreenProps) {
   const [showTermsModal, setShowTermsModal] = useState(false);
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const [userTier, setUserTier] = useState<"premium" | "basic" | null>(null);
+  const [isUpgrading, setIsUpgrading] = useState(false);
+
+  const supabase = createClient();
+  const toast = useToast();
+
+  // Load current user tier on mount
+  useEffect(() => {
+    async function fetchTier() {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("tier")
+          .eq("id", user.id)
+          .single();
+
+        if (profile?.tier) {
+          setUserTier(profile.tier as "premium" | "basic");
+        } else {
+          setUserTier("basic");
+        }
+      } catch {
+        setUserTier("basic");
+      }
+    }
+
+    fetchTier();
+  }, [supabase]);
+
+  // Primary action button handler:
+  // - If premium: proceed to Mono
+  // - If basic: display the Acuity Premium subscription pop-up
+  const handleConnectClick = async () => {
+    let currentTier = userTier;
+
+    if (!currentTier) {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("tier")
+            .eq("id", user.id)
+            .single();
+          currentTier = (profile?.tier as "premium" | "basic") || "basic";
+          setUserTier(currentTier);
+        }
+      } catch {
+        currentTier = "basic";
+      }
+    }
+
+    if (currentTier === "premium") {
+      onProceed();
+    } else {
+      setShowSubscriptionModal(true);
+    }
+  };
+
+  // Upgrades user to premium directly in Supabase and seamlessly triggers Mono
+  const handleUpgradeToPremium = async () => {
+    setIsUpgrading(true);
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Please log in first");
+
+      const { error } = await supabase
+        .from("profiles")
+        .update({ tier: "premium" })
+        .eq("id", user.id);
+
+      if (error) throw error;
+
+      setUserTier("premium");
+      setShowSubscriptionModal(false);
+      toast("Welcome to Acuity Premium! 🎉 Direct bank sync unlocked.", "ok");
+
+      // Automatically proceed with Mono connection now that user is premium
+      onProceed();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to activate premium";
+      toast(msg, "err");
+    } finally {
+      setIsUpgrading(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-[100] h-[100dvh] max-h-[100dvh] bg-[#050507] text-white overflow-hidden flex flex-col justify-between selection:bg-[var(--brand)] selection:text-white">
@@ -181,7 +283,7 @@ export function ConnectBankScreen({
         {/* High-Contrast Pristine White Action Button */}
         <button
           type="button"
-          onClick={onProceed}
+          onClick={handleConnectClick}
           disabled={isConnecting}
           className="w-full h-12 rounded-full text-[14.5px] font-bold tracking-tight flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-2xl bg-white hover:bg-white/95 text-black disabled:opacity-60 cursor-pointer"
         >
@@ -210,6 +312,125 @@ export function ConnectBankScreen({
           </button>
         </p>
       </div>
+
+      {/* ============================================================== */}
+      {/* ACUITY PREMIUM SUBSCRIPTION POP-UP (With Living Mascot)        */}
+      {/* ============================================================== */}
+      <AnimatePresence>
+        {showSubscriptionModal && (
+          <div className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center bg-black/85 backdrop-blur-md p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92, y: 30 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.94, y: 25 }}
+              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+              className="w-full max-w-sm rounded-[32px] bg-[#111114] border border-white/15 p-6 shadow-2xl relative overflow-hidden text-center space-y-4"
+            >
+              {/* Radiant Ambient Ember Glow */}
+              <div
+                className="absolute -top-12 left-1/2 -translate-x-1/2 w-48 h-48 rounded-full pointer-events-none blur-[65px] opacity-40"
+                style={{
+                  background: "radial-gradient(circle, rgba(222,49,33,0.45) 0%, transparent 70%)",
+                }}
+              />
+
+              {/* Close Button */}
+              <button
+                type="button"
+                onClick={() => setShowSubscriptionModal(false)}
+                className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-full bg-white/[0.06] hover:bg-white/[0.12] text-white/70 hover:text-white transition-all cursor-pointer"
+                aria-label="Close subscription modal"
+              >
+                <X size={16} />
+              </button>
+
+              {/* Living Acuity Mascot Centerpiece */}
+              <div className="relative pt-2 flex flex-col items-center">
+                <div className="relative">
+                  <AcuityCompanion size="compact" hasCap={true} isSpeaking={true} />
+                </div>
+
+                {/* Symmetrical Luxury Crown Pill */}
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.08] border border-white/15 text-white shadow-sm mt-3">
+                  <Crown size={12} className="text-[#f59e0b]" />
+                  <span className="text-[10px] font-black tracking-wider uppercase">
+                    ACUITY. PREMIER
+                  </span>
+                </div>
+              </div>
+
+              {/* Headline & Value Proposition */}
+              <div>
+                <h2 className="text-[21px] font-bold text-white tracking-tight leading-snug">
+                  Unlock Automated Bank Sync
+                </h2>
+                <p className="text-[12.5px] text-white/60 mt-1 leading-relaxed px-2">
+                  Live multi-bank integration is an institutional feature exclusive to{" "}
+                  <strong className="text-white">Acuity Premium</strong>.
+                </p>
+              </div>
+
+              {/* Benefits Group */}
+              <div className="rounded-[18px] bg-white/[0.04] border border-white/[0.08] p-3 text-left space-y-2">
+                <div className="flex items-center gap-2.5 text-[12px] text-white/85">
+                  <Zap size={14} className="text-[var(--brand)] shrink-0" />
+                  <span>Real-time balance feeds for 20+ Nigerian banks</span>
+                </div>
+                <div className="flex items-center gap-2.5 text-[12px] text-white/85">
+                  <ShieldCheck size={14} className="text-[#52c28a] shrink-0" />
+                  <span>Strictly read-only 256-bit bank encryption</span>
+                </div>
+                <div className="flex items-center gap-2.5 text-[12px] text-white/85">
+                  <Sparkles size={14} className="text-[#e8a23b] shrink-0" />
+                  <span>Autonomous daily Safe-to-Spend & AI CFO advice</span>
+                </div>
+              </div>
+
+              {/* Pricing Box */}
+              <div className="rounded-[18px] bg-white/[0.06] border border-[var(--brand)]/40 p-3.5 flex items-center justify-between text-left">
+                <div>
+                  <span className="text-[13.5px] font-bold text-white block">Monthly Access</span>
+                  <span className="text-[11px] text-white/50">Cancel anytime with 1 tap</span>
+                </div>
+                <div className="text-right">
+                  <span className="text-[18px] font-black text-white">₦2,500</span>
+                  <span className="text-[11px] text-white/50"> / mo</span>
+                </div>
+              </div>
+
+              {/* Upgrade Action Buttons */}
+              <div className="space-y-2 pt-1">
+                <button
+                  type="button"
+                  onClick={handleUpgradeToPremium}
+                  disabled={isUpgrading}
+                  className="w-full h-12 rounded-full bg-white hover:bg-white/95 text-black font-bold text-[14.5px] flex items-center justify-center gap-2 shadow-2xl active:scale-95 transition-all cursor-pointer disabled:opacity-60"
+                >
+                  {isUpgrading ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin text-black" strokeWidth={2.5} />
+                      <span>Activating Premium...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Upgrade to Premium • ₦2,500/mo</span>
+                      <ArrowRight size={16} strokeWidth={2.5} className="text-black" />
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowSubscriptionModal(false)}
+                  className="w-full py-1 text-center text-[12px] font-medium text-white/45 hover:text-white transition-colors cursor-pointer"
+                >
+                  Maybe Later
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Interactive Terms & Security Sheet / Modal */}
       <AnimatePresence>

@@ -105,6 +105,7 @@ export function JarvisOrb({
   const [isDrawerSpeaking, setIsDrawerSpeaking] = useState(false);
   const isDraggingRef = useRef(false);
   const dismissTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastScreenRef = useRef<string | null>(null);
 
   // Position motion values for free drag & drop
   const x = useMotionValue(0);
@@ -171,22 +172,29 @@ export function JarvisOrb({
     return () => window.removeEventListener("resize", updateConstraints);
   }, [x, y]);
 
-  // Update observation whenever screen changes
+  // 1. Silently keep observation data fresh without popping bubbles
   useEffect(() => {
     const obs = getScreenObservation(currentScreen, observerData);
     setObservation(obs);
+  }, [currentScreen, observerData]);
+
+  // 2. Drop observation bubble ONLY ONCE when entering a new screen
+  useEffect(() => {
+    // Prevent repeated popups on the same screen as user scrolls or page updates
+    if (lastScreenRef.current === currentScreen) return;
+    lastScreenRef.current = currentScreen;
 
     // Clear any pending dismiss timers
     if (dismissTimerRef.current) {
       clearTimeout(dismissTimerRef.current);
     }
 
-    // Subtle proactive chip-in when entering a screen
+    // Subtle proactive chip-in once when opening a new screen
     setShowSpeechBubble(false);
     setIsSpeaking(false);
     const enterTimer = setTimeout(() => {
       setShowSpeechBubble(true);
-    }, 1100);
+    }, 900);
 
     return () => {
       clearTimeout(enterTimer);
@@ -194,7 +202,7 @@ export function JarvisOrb({
         clearTimeout(dismissTimerRef.current);
       }
     };
-  }, [currentScreen, observerData]);
+  }, [currentScreen]);
 
   const handleSpeechComplete = () => {
     setIsSpeaking(false);
@@ -234,9 +242,16 @@ export function JarvisOrb({
   };
 
   const handleOrbClick = () => {
-    setShowSpeechBubble(false);
-    setIsSpeaking(false);
-    setIsOpen(!isOpen);
+    if (isDraggingRef.current) return;
+    
+    // If speech bubble is currently hidden and drawer is closed, tapping the orb re-shows the observation!
+    if (!showSpeechBubble && !isOpen) {
+      setShowSpeechBubble(true);
+    } else {
+      setShowSpeechBubble(false);
+      setIsSpeaking(false);
+      setIsOpen(!isOpen);
+    }
   };
 
   const handleActionClick = (prompt: string) => {
