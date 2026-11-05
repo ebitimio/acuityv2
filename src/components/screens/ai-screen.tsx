@@ -709,32 +709,16 @@ export function AIScreen({
             <span className="text-[19px] font-black tracking-tight text-white">ACUITY</span>
             <span className="text-[19px] font-black tracking-tight text-[var(--brand)]">.</span>
           </div>
-
-          {/* Living Orb Mascot in Header */}
-          <div
-            className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.1] shadow-sm backdrop-blur-xl cursor-pointer transition-all active:scale-90 ml-1.5 overflow-visible group"
-            onClick={() => {
-              const quotes = [
-                "Watching your cash flow in real-time",
-                "Safe-to-spend is monitored & active",
-                "Ready to calculate anything you need",
-                "All accounts synced & balanced",
-              ];
-              toast(quotes[Math.floor(Math.random() * quotes.length)]);
-            }}
-            title="Acuity Orb Mascot • Tap to interact!"
-          >
-            <AcuityCompanion size="orb" isThinking={isThinking} isSpeaking={!!streamingContent} hasInput={!!input.trim()} />
-          </div>
         </div>
         
         <div className="flex items-center gap-2">
           <button
             onClick={startNewChat}
-            className="flex h-9 items-center gap-1.5 px-3.5 rounded-full bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] text-white/80 hover:text-white transition-all active:scale-95 text-xs font-semibold shadow-sm"
+            aria-label="New chat"
+            title="New Chat"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] text-white/80 hover:text-white transition-all active:scale-95 shadow-sm"
           >
-            <Plus size={15} className="text-[var(--brand)]" />
-            <span className="font-medium">New Chat</span>
+            <Plus size={18} className="text-[var(--brand)]" />
           </button>
         </div>
       </header>
