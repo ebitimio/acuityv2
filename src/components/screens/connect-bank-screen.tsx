@@ -29,43 +29,37 @@ export function ConnectBankScreen({
 
   return (
     <div className="fixed inset-0 z-[100] h-[100dvh] max-h-[100dvh] bg-[#050507] text-white overflow-hidden flex flex-col justify-between selection:bg-[var(--brand)] selection:text-white">
-      {/* Top Ambient Glow Halo */}
-      <div
-        className="absolute top-0 left-1/2 -translate-x-1/2 w-[320px] h-[320px] rounded-full pointer-events-none blur-[90px] opacity-40"
+      {/* Top Header Bar (Safe Area Positioned - Crystal Clear, Never Faded) */}
+      <header
+        className="relative z-30 flex items-center justify-between px-6 pb-2 shrink-0"
         style={{
-          background: "radial-gradient(circle, rgba(222,49,33,0.25) 0%, rgba(152,197,185,0.1) 50%, transparent 80%)",
+          paddingTop: "calc(env(safe-area-inset-top, 44px) + 12px)",
         }}
-      />
-
-      {/* Top Header Bar with Acuity Branding */}
-      <div className="relative z-30 flex items-center justify-between px-6 pt-5 pb-1 shrink-0">
-        {/* Frosted Circular Back Button */}
+      >
+        {/* High-Contrast Frosted Circular Back Button */}
         <button
           type="button"
           onClick={onBack}
           disabled={isConnecting}
           aria-label="Go back"
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.1] text-white/90 hover:text-white active:scale-95 transition-all shadow-sm disabled:opacity-40 cursor-pointer"
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-white/[0.08] hover:bg-white/[0.16] border border-white/20 text-white active:scale-95 transition-all shadow-md disabled:opacity-40 cursor-pointer"
         >
-          <ChevronLeft size={19} strokeWidth={2.4} />
+          <ChevronLeft size={22} strokeWidth={2.4} />
         </button>
 
-        {/* Center Acuity Wordmark */}
-        <div className="flex items-baseline select-none">
-          <span className="text-[18px] font-black tracking-tight text-white">ACUITY</span>
-          <span className="text-[18px] font-black tracking-tight text-[var(--brand)]">.</span>
-        </div>
+        {/* Center: Clean & Unobstructed (Matching the Grey Reference - No Dynamic Island Collisions) */}
+        <div className="flex-1" />
 
         {/* Step Flow Indicators (Left pill active white, Right pill muted) */}
         <div className="flex items-center gap-1.5" aria-hidden="true">
-          <span className="h-1 w-5 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.7)]" />
-          <span className="h-1 w-5 rounded-full bg-white/20" />
+          <span className="h-1.5 w-6 rounded-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.9)]" />
+          <span className="h-1.5 w-6 rounded-full bg-white/25" />
         </div>
-      </div>
+      </header>
 
       {/* Main Content Area (Fitted Proportionally - Zero Scroll) */}
       <div className="flex-1 flex flex-col items-center justify-center max-w-md mx-auto w-full px-5 py-0 min-h-0">
-        {/* 3D Volumetric Metallic Gyroscope Hero with Embossed Acuity "A." Medallion */}
+        {/* 1:1 Reference 3D Gyroscope with Embossed Acuity "A." Bullion Medallion */}
         <motion.div
           initial={{ opacity: 0, scale: 0.94 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -75,12 +69,12 @@ export function ConnectBankScreen({
           <MetallicGyroscope />
         </motion.div>
 
-        {/* Branded Pill Tag */}
+        {/* Branded Category Pill Tag */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
-          className="mt-0.5 shrink-0"
+          className="mt-1 shrink-0"
         >
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.06] border border-white/10 text-white shadow-sm backdrop-blur-md">
             <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[var(--brand)] text-[8px] font-black text-black">
@@ -92,14 +86,14 @@ export function ConnectBankScreen({
           </div>
         </motion.div>
 
-        {/* Headline Typography with Acuity Wordmark & Soft Mint Accent */}
+        {/* Headline Typography (Matching the Grey Reference with Mint Gradient) */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, delay: 0.12, ease: [0.16, 1, 0.3, 1] }}
-          className="text-center mt-2 mb-3 shrink-0"
+          className="text-center mt-2.5 mb-3 shrink-0"
         >
-          <h1 className="text-[22px] sm:text-[25px] font-bold text-white tracking-tight leading-[1.16]">
+          <h1 className="text-[23px] sm:text-[26px] font-bold text-white tracking-tight leading-[1.16]">
             Connect your bank to <span className="font-black text-white">ACUITY<span className="text-[var(--brand)]">.</span></span>
             <br />
             <span className="text-[#98c5b9] bg-gradient-to-r from-[#98c5b9] via-[#cbf2e7] to-[#7ebba9] bg-clip-text text-transparent font-medium text-[15px] sm:text-[17px]">
@@ -108,7 +102,7 @@ export function ConnectBankScreen({
           </h1>
         </motion.div>
 
-        {/* Explainer Feature Card (Compact Fitted Glass Container) */}
+        {/* Explainer Feature Card (Compact Inset Container - 100% Fits Screen) */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -182,7 +176,7 @@ export function ConnectBankScreen({
         </motion.div>
       </div>
 
-      {/* Bottom Action Area (Always Visible - No Scroll) */}
+      {/* Bottom Sticky Action Area (Always Visible - No Scroll) */}
       <div className="relative z-30 max-w-md mx-auto w-full px-5 pt-2 pb-[calc(env(safe-area-inset-bottom)+14px)] pb-4 space-y-2 shrink-0">
         {/* High-Contrast Pristine White Action Button */}
         <button
