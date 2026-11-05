@@ -751,102 +751,44 @@ export default function SandboxPage() {
 
                 {accounts.length > 0 && (
                   <motion.button
-                    whileHover={{ scale: 1.012, y: -2 }}
-                    whileTap={{ scale: 0.975 }}
-                    transition={{ type: "spring", stiffness: 350, damping: 22 }}
+                    whileTap={{ scale: 0.985 }}
                     onClick={() => setActiveScreen("ai")}
-                    className="group relative overflow-hidden w-full rounded-[24px] bg-[#121215]/95 border border-white/[0.09] hover:border-[var(--brand)]/35 p-3.5 sm:p-4 text-left shadow-xl shadow-black/40 hover:shadow-[0_10px_35px_rgba(222,49,33,0.14)] transition-colors duration-300 cursor-pointer select-none"
-                    style={{
-                      background:
-                        "radial-gradient(130% 120% at 0% 0%, rgba(222, 49, 33, 0.12) 0%, rgba(22, 22, 26, 0.95) 45%, rgba(14, 14, 16, 0.98) 100%)",
-                    }}
+                    className="group relative overflow-hidden w-full flex items-center justify-between rounded-[20px] bg-gradient-to-r from-[var(--surface-2)] to-[var(--surface-3)] border border-[var(--line)] py-2.5 px-3.5 sm:py-3 sm:px-4 text-left shadow-lg cursor-pointer select-none"
                   >
-                    {/* Ambient Radiant Glow Effects */}
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--brand)]/12 blur-[40px] rounded-full -mr-10 -mt-10 pointer-events-none" />
-                    <div className="absolute bottom-0 left-0 w-28 h-28 bg-[var(--brand)]/8 blur-[35px] rounded-full -ml-8 -mb-8 pointer-events-none" />
-                    <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-[var(--brand)]/10 blur-[30px] rounded-full -mr-8 -mt-8 pointer-events-none" />
 
-                    <div className="flex items-center gap-3.5 relative z-10">
-                      {/* Bubbly Animated Mascot Pod */}
-                      <div className="relative shrink-0 flex items-center justify-center">
-                        {/* Soft Brand Aura behind Pod */}
-                        <motion.div
-                          animate={{
-                            scale: [1, 1.15, 1],
-                            opacity: [0.3, 0.6, 0.3],
-                          }}
-                          transition={{
-                            duration: 3.2,
-                            repeat: Infinity,
-                            ease: "easeInOut",
-                          }}
-                          className="absolute w-14 h-14 rounded-2xl bg-[var(--brand)]/25 blur-md pointer-events-none"
+                    <div className="flex items-center gap-3 relative z-10 min-w-0 flex-1">
+                      {/* Living Mascot - Purely cap, eyes & mouth with gentle bobbing motion */}
+                      <motion.div
+                        animate={{
+                          y: [0, -2, 0],
+                        }}
+                        transition={{
+                          duration: 2.8,
+                          repeat: Infinity,
+                          ease: "easeInOut",
+                        }}
+                        className="relative shrink-0 flex items-center justify-center w-11 h-9"
+                      >
+                        <AcuityCompanion
+                          size="compact"
+                          hasCap={true}
+                          onTap={() => setActiveScreen("ai")}
                         />
+                      </motion.div>
 
-                        {/* Floating Bubbly Mascot Stage */}
-                        <motion.div
-                          animate={{
-                            y: [0, -3.5, 0],
-                            rotate: [0, 1.5, -1, 0],
-                          }}
-                          transition={{
-                            duration: 3,
-                            repeat: Infinity,
-                            ease: "easeInOut",
-                          }}
-                          className="relative flex h-12 w-12 sm:h-13 sm:w-13 items-center justify-center rounded-[18px] bg-gradient-to-b from-[#242429] via-[#1a1a1e] to-[#121215] border border-white/15 shadow-lg group-hover:border-[var(--brand)]/50 group-hover:scale-105 transition-all duration-300"
-                        >
-                          <AcuityCompanion
-                            size="compact"
-                            hasCap={true}
-                            onTap={() => setActiveScreen("ai")}
-                            className="pointer-events-auto"
-                          />
-
-                          {/* Living Active AI Status Beacon */}
-                          <div className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#111114] border border-white/20 shadow-md">
-                            <span className="relative flex h-2 w-2">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--brand)] opacity-75" />
-                              <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--brand)]" />
-                            </span>
-                          </div>
-                        </motion.div>
-                      </div>
-
-                      {/* Content Area */}
-                      <div className="flex-1 min-w-0 pr-1">
-                        {/* Header Badges Row */}
-                        <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--brand)]/15 border border-[var(--brand)]/30 text-[9.5px] font-extrabold tracking-wider text-[var(--brand)] uppercase shadow-xs">
-                            <Sparkles size={10} className="text-[var(--brand)]" />
-                            Daily Insight
-                          </span>
-                          <span className="text-[10px] font-semibold text-white/40 tracking-wide uppercase">
-                            Acuity CFO AI
-                          </span>
-                        </div>
-
-                        {/* Dynamic Financial Observation Message */}
-                        <p className="text-[13px] sm:text-[13.5px] font-semibold text-white tracking-tight leading-snug line-clamp-2 group-hover:text-white/90 transition-colors">
-                          {topCategory
-                            ? `You've spent ${fmt(topCategoryAmount)} on ${topCategory} this month.`
-                            : "Ask me anything about your finances & runway."}
+                      {/* Text Details */}
+                      <div className="min-w-0 flex-1 pr-1">
+                        <p className="text-[11px] font-semibold text-[var(--brand)] uppercase tracking-wider mb-0.5">
+                          Daily Insight
                         </p>
-
-                        {/* Interactive Conversational Micro-Prompt */}
-                        <div className="flex items-center gap-1 mt-1 text-[11px] text-[var(--brand)] font-semibold tracking-tight">
-                          <span>Ask Acuity</span>
-                          <ChevronRight size={11} strokeWidth={2.5} className="transition-transform group-hover:translate-x-1" />
-                        </div>
-                      </div>
-
-                      {/* Right Circular Action Pill */}
-                      <div className="relative shrink-0 flex items-center justify-center">
-                        <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full bg-white/[0.06] border border-white/10 text-white/70 group-hover:bg-[var(--brand)] group-hover:text-black group-hover:border-[var(--brand)] group-hover:scale-105 transition-all shadow-md">
-                          <ChevronRight size={17} strokeWidth={2.4} className="transition-transform group-hover:translate-x-0.5" />
-                        </div>
+                        <p className="text-[13px] font-medium text-[var(--text-1)] leading-snug line-clamp-1">
+                          {topCategory ? `You've spent ${fmt(topCategoryAmount)} on ${topCategory} this month.` : "Ask me anything about your finances."}
+                        </p>
                       </div>
                     </div>
+
+                    <ChevronRight size={19} className="text-[var(--text-3)] group-hover:text-white group-hover:translate-x-0.5 transition-all shrink-0 relative z-10" />
                   </motion.button>
                 )}
 
