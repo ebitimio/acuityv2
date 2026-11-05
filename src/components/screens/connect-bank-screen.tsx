@@ -37,7 +37,6 @@ export function ConnectBankScreen({
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [currentTier, setCurrentTier] = useState<"premium" | "basic">(userTier || "basic");
-  const [isUpgrading, setIsUpgrading] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   const supabase = createClient();
@@ -109,34 +108,10 @@ export function ConnectBankScreen({
     setShowSubscriptionModal(true);
   };
 
-  // Upgrades user to premium directly in Supabase and seamlessly triggers Mono
-  const handleUpgradeToPremium = async () => {
-    setIsUpgrading(true);
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Please log in first");
-
-      const { error } = await supabase
-        .from("profiles")
-        .update({ tier: "premium" })
-        .eq("id", user.id);
-
-      if (error) throw error;
-
-      setCurrentTier("premium");
-      setShowSubscriptionModal(false);
-      toast("Welcome to Acuity Premium! 🎉 Direct bank sync unlocked.", "ok");
-
-      // Automatically proceed with Mono connection now that user is premium
-      onProceed();
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to activate premium";
-      toast(msg, "err");
-    } finally {
-      setIsUpgrading(false);
-    }
+  // Handler when user taps Upgrade: notifies user that payment gateway is coming soon
+  const handleUpgradeToPremium = () => {
+    setShowSubscriptionModal(false);
+    toast("Payment gateway coming soon! Subscriptions are launching shortly.", "ok");
   };
 
   return (
@@ -421,20 +396,10 @@ export function ConnectBankScreen({
                   <button
                     type="button"
                     onClick={handleUpgradeToPremium}
-                    disabled={isUpgrading}
-                    className="w-full h-11 rounded-full bg-white hover:bg-white/95 text-black font-bold text-[14px] flex items-center justify-center gap-2 shadow-2xl active:scale-95 transition-all cursor-pointer disabled:opacity-60"
+                    className="w-full h-11 rounded-full bg-white hover:bg-white/95 text-black font-bold text-[14px] flex items-center justify-center gap-2 shadow-2xl active:scale-95 transition-all cursor-pointer"
                   >
-                    {isUpgrading ? (
-                      <>
-                        <Loader2 size={16} className="animate-spin text-black" strokeWidth={2.5} />
-                        <span>Activating Premium...</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>Upgrade to Premium • ₦2,500/mo</span>
-                        <ArrowRight size={15} strokeWidth={2.5} className="text-black" />
-                      </>
-                    )}
+                    <span>Upgrade to Premium • ₦2,500/mo</span>
+                    <ArrowRight size={15} strokeWidth={2.5} className="text-black" />
                   </button>
 
                   <button

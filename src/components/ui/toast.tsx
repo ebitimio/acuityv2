@@ -23,7 +23,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     <Ctx.Provider value={toast}>
       {children}
       <div
-        className="pointer-events-none fixed left-0 right-0 z-[400] flex flex-col items-center gap-2 px-4"
+        className="pointer-events-none fixed left-0 right-0 z-[100000] flex flex-col items-center gap-2 px-4"
         style={{ top: "calc(max(env(safe-area-inset-top), 0px) + 12px)" }}
         aria-live="polite"
       >
