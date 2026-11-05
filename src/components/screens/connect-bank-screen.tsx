@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft,
@@ -24,22 +25,36 @@ interface ConnectBankScreenProps {
   onBack: () => void;
   onProceed: () => void;
   isConnecting?: boolean;
+  userTier?: "premium" | "basic" | null;
 }
 
 export function ConnectBankScreen({
   onBack,
   onProceed,
   isConnecting = false,
+  userTier = null,
 }: ConnectBankScreenProps) {
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
-  const [userTier, setUserTier] = useState<"premium" | "basic" | null>(null);
+  const [currentTier, setCurrentTier] = useState<"premium" | "basic">(userTier || "basic");
   const [isUpgrading, setIsUpgrading] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   const supabase = createClient();
   const toast = useToast();
 
-  // Load current user tier on mount
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Sync prop changes
+  useEffect(() => {
+    if (userTier) {
+      setCurrentTier(userTier);
+    }
+  }, [userTier]);
+
+  // Load current user tier from database
   useEffect(() => {
     async function fetchTier() {
       try {
@@ -55,48 +70,43 @@ export function ConnectBankScreen({
           .single();
 
         if (profile?.tier) {
-          setUserTier(profile.tier as "premium" | "basic");
-        } else {
-          setUserTier("basic");
+          setCurrentTier(profile.tier as "premium" | "basic");
         }
       } catch {
-        setUserTier("basic");
+        // Fallback to basic
       }
     }
 
     fetchTier();
-  }, [supabase]);
+  }, []);
+
+  // Lock background scroll when any modal is open
+  useEffect(() => {
+    if (showSubscriptionModal || showTermsModal) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [showSubscriptionModal, showTermsModal]);
 
   // Primary action button handler:
   // - If premium: proceed to Mono
-  // - If basic: display the Acuity Premium subscription pop-up
-  const handleConnectClick = async () => {
-    let currentTier = userTier;
+  // - If basic: display the Acuity Premium subscription pop-up immediately
+  const handleConnectClick = () => {
+    // If connecting is already active, ignore extra taps
+    if (isConnecting) return;
 
-    if (!currentTier) {
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (user) {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("tier")
-            .eq("id", user.id)
-            .single();
-          currentTier = (profile?.tier as "premium" | "basic") || "basic";
-          setUserTier(currentTier);
-        }
-      } catch {
-        currentTier = "basic";
-      }
-    }
-
+    // Check currently known tier
     if (currentTier === "premium") {
       onProceed();
-    } else {
-      setShowSubscriptionModal(true);
+      return;
     }
+
+    // Basic user: open the Acuity Premium subscription modal instantly!
+    setShowSubscriptionModal(true);
   };
 
   // Upgrades user to premium directly in Supabase and seamlessly triggers Mono
@@ -115,7 +125,7 @@ export function ConnectBankScreen({
 
       if (error) throw error;
 
-      setUserTier("premium");
+      setCurrentTier("premium");
       setShowSubscriptionModal(false);
       toast("Welcome to Acuity Premium! 🎉 Direct bank sync unlocked.", "ok");
 
@@ -314,193 +324,213 @@ export function ConnectBankScreen({
       </div>
 
       {/* ============================================================== */}
-      {/* ACUITY PREMIUM SUBSCRIPTION POP-UP (With Living Mascot)        */}
+      {/* ACUITY PREMIUM SUBSCRIPTION POP-UP (Teleported to Document.body)*/}
       {/* ============================================================== */}
-      <AnimatePresence>
-        {showSubscriptionModal && (
-          <div className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center bg-black/85 backdrop-blur-md p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.92, y: 30 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.94, y: 25 }}
-              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full max-w-sm rounded-[32px] bg-[#111114] border border-white/15 p-6 shadow-2xl relative overflow-hidden text-center space-y-4"
+      {mounted && typeof document !== "undefined" && createPortal(
+        <AnimatePresence>
+          {showSubscriptionModal && (
+            <div
+              key="sub-modal-backdrop"
+              className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md"
+              style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999 }}
+              onClick={() => setShowSubscriptionModal(false)}
             >
-              {/* Radiant Ambient Ember Glow */}
-              <div
-                className="absolute -top-12 left-1/2 -translate-x-1/2 w-48 h-48 rounded-full pointer-events-none blur-[65px] opacity-40"
-                style={{
-                  background: "radial-gradient(circle, rgba(222,49,33,0.45) 0%, transparent 70%)",
-                }}
-              />
-
-              {/* Close Button */}
-              <button
-                type="button"
-                onClick={() => setShowSubscriptionModal(false)}
-                className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-full bg-white/[0.06] hover:bg-white/[0.12] text-white/70 hover:text-white transition-all cursor-pointer"
-                aria-label="Close subscription modal"
+              <motion.div
+                key="sub-modal-card"
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.92, y: 15 }}
+                transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-sm rounded-[32px] bg-[#111114] border border-white/15 p-6 shadow-2xl relative overflow-hidden text-center space-y-4"
               >
-                <X size={16} />
-              </button>
+                {/* Radiant Ambient Ember Glow */}
+                <div
+                  className="absolute -top-12 left-1/2 -translate-x-1/2 w-48 h-48 rounded-full pointer-events-none blur-[65px] opacity-40"
+                  style={{
+                    background: "radial-gradient(circle, rgba(222,49,33,0.45) 0%, transparent 70%)",
+                  }}
+                />
 
-              {/* Living Acuity Mascot Centerpiece */}
-              <div className="relative pt-2 flex flex-col items-center">
-                <div className="relative">
-                  <AcuityCompanion size="compact" hasCap={true} isSpeaking={true} />
-                </div>
-
-                {/* Symmetrical Luxury Crown Pill */}
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.08] border border-white/15 text-white shadow-sm mt-3">
-                  <Crown size={12} className="text-[#f59e0b]" />
-                  <span className="text-[10px] font-black tracking-wider uppercase">
-                    ACUITY. PREMIER
-                  </span>
-                </div>
-              </div>
-
-              {/* Headline & Value Proposition */}
-              <div>
-                <h2 className="text-[21px] font-bold text-white tracking-tight leading-snug">
-                  Unlock Automated Bank Sync
-                </h2>
-                <p className="text-[12.5px] text-white/60 mt-1 leading-relaxed px-2">
-                  Live multi-bank integration is an institutional feature exclusive to{" "}
-                  <strong className="text-white">Acuity Premium</strong>.
-                </p>
-              </div>
-
-              {/* Benefits Group */}
-              <div className="rounded-[18px] bg-white/[0.04] border border-white/[0.08] p-3 text-left space-y-2">
-                <div className="flex items-center gap-2.5 text-[12px] text-white/85">
-                  <Zap size={14} className="text-[var(--brand)] shrink-0" />
-                  <span>Real-time balance feeds for 20+ Nigerian banks</span>
-                </div>
-                <div className="flex items-center gap-2.5 text-[12px] text-white/85">
-                  <ShieldCheck size={14} className="text-[#52c28a] shrink-0" />
-                  <span>Strictly read-only 256-bit bank encryption</span>
-                </div>
-                <div className="flex items-center gap-2.5 text-[12px] text-white/85">
-                  <Sparkles size={14} className="text-[#e8a23b] shrink-0" />
-                  <span>Autonomous daily Safe-to-Spend & AI CFO advice</span>
-                </div>
-              </div>
-
-              {/* Pricing Box */}
-              <div className="rounded-[18px] bg-white/[0.06] border border-[var(--brand)]/40 p-3.5 flex items-center justify-between text-left">
-                <div>
-                  <span className="text-[13.5px] font-bold text-white block">Monthly Access</span>
-                  <span className="text-[11px] text-white/50">Cancel anytime with 1 tap</span>
-                </div>
-                <div className="text-right">
-                  <span className="text-[18px] font-black text-white">₦2,500</span>
-                  <span className="text-[11px] text-white/50"> / mo</span>
-                </div>
-              </div>
-
-              {/* Upgrade Action Buttons */}
-              <div className="space-y-2 pt-1">
-                <button
-                  type="button"
-                  onClick={handleUpgradeToPremium}
-                  disabled={isUpgrading}
-                  className="w-full h-12 rounded-full bg-white hover:bg-white/95 text-black font-bold text-[14.5px] flex items-center justify-center gap-2 shadow-2xl active:scale-95 transition-all cursor-pointer disabled:opacity-60"
-                >
-                  {isUpgrading ? (
-                    <>
-                      <Loader2 size={16} className="animate-spin text-black" strokeWidth={2.5} />
-                      <span>Activating Premium...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Upgrade to Premium • ₦2,500/mo</span>
-                      <ArrowRight size={16} strokeWidth={2.5} className="text-black" />
-                    </>
-                  )}
-                </button>
-
+                {/* Close Button */}
                 <button
                   type="button"
                   onClick={() => setShowSubscriptionModal(false)}
-                  className="w-full py-1 text-center text-[12px] font-medium text-white/45 hover:text-white transition-colors cursor-pointer"
-                >
-                  Maybe Later
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Interactive Terms & Security Sheet / Modal */}
-      <AnimatePresence>
-        {showTermsModal && (
-          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 30 }}
-              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full max-w-md rounded-[26px] bg-[#121215] border border-white/10 p-6 shadow-2xl space-y-4"
-            >
-              <div className="flex items-center justify-between pb-2 border-b border-white/[0.08]">
-                <div className="flex items-center gap-2">
-                  <Lock size={16} className="text-[var(--brand)]" />
-                  <h3 className="text-[16px] font-bold text-white">Bank Sync Terms & Security</h3>
-                </div>
-                <button
-                  onClick={() => setShowTermsModal(false)}
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-white/[0.06] hover:bg-white/[0.12] text-white/70 hover:text-white transition-all cursor-pointer"
+                  className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-full bg-white/[0.06] hover:bg-white/[0.12] text-white/70 hover:text-white transition-all cursor-pointer"
+                  aria-label="Close subscription modal"
                 >
                   <X size={16} />
                 </button>
-              </div>
 
-              <div className="space-y-3 text-[12.5px] text-white/70 leading-relaxed max-h-[60vh] overflow-y-auto pr-1">
-                <div className="flex items-start gap-2.5">
-                  <CheckCircle2 size={16} className="text-emerald-400 shrink-0 mt-0.5" />
-                  <div>
-                    <strong className="text-white block">Licensed Open Banking Partner</strong>
-                    All bank integrations are facilitated securely via Mono Technologies, an open banking provider operating under CBN-compliant financial data protocols.
+                {/* Living Acuity Mascot Centerpiece */}
+                <div className="relative pt-2 flex flex-col items-center">
+                  <div className="relative">
+                    <AcuityCompanion size="compact" hasCap={true} isSpeaking={true} />
+                  </div>
+
+                  {/* Symmetrical Luxury Crown Pill */}
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.08] border border-white/15 text-white shadow-sm mt-3">
+                    <Crown size={12} className="text-[#f59e0b]" />
+                    <span className="text-[10px] font-black tracking-wider uppercase">
+                      ACUITY. PREMIER
+                    </span>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-2.5">
-                  <CheckCircle2 size={16} className="text-emerald-400 shrink-0 mt-0.5" />
-                  <div>
-                    <strong className="text-white block">Strictly Read-Only Access</strong>
-                    Acuity only reads financial account balances and transaction histories. Acuity has zero ability to initiate transfers, withdrawals, or modify your banking funds.
+                {/* Headline & Value Proposition */}
+                <div>
+                  <h2 className="text-[20px] font-bold text-white tracking-tight leading-snug">
+                    Unlock Automated Bank Sync
+                  </h2>
+                  <p className="text-[12px] text-white/60 mt-1 leading-relaxed px-2">
+                    Live multi-bank integration is an institutional feature exclusive to{" "}
+                    <strong className="text-white">Acuity Premium</strong>.
+                  </p>
+                </div>
+
+                {/* Benefits Group */}
+                <div className="rounded-[18px] bg-white/[0.04] border border-white/[0.08] p-3 text-left space-y-2">
+                  <div className="flex items-center gap-2.5 text-[11.5px] text-white/85">
+                    <Zap size={13} className="text-[var(--brand)] shrink-0" />
+                    <span>Real-time balance feeds for 20+ Nigerian banks</span>
+                  </div>
+                  <div className="flex items-center gap-2.5 text-[11.5px] text-white/85">
+                    <ShieldCheck size={13} className="text-[#52c28a] shrink-0" />
+                    <span>Strictly read-only 256-bit bank encryption</span>
+                  </div>
+                  <div className="flex items-center gap-2.5 text-[11.5px] text-white/85">
+                    <Sparkles size={13} className="text-[#e8a23b] shrink-0" />
+                    <span>Autonomous daily Safe-to-Spend & AI CFO advice</span>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-2.5">
-                  <CheckCircle2 size={16} className="text-emerald-400 shrink-0 mt-0.5" />
+                {/* Pricing Box */}
+                <div className="rounded-[18px] bg-white/[0.06] border border-[var(--brand)]/40 p-3 flex items-center justify-between text-left">
                   <div>
-                    <strong className="text-white block">Zero Credential Storage</strong>
-                    Your banking usernames, passwords, hardware tokens, and PINs are handled exclusively by your bank and are never accessible, transmitted to, or stored on Acuity servers.
+                    <span className="text-[13px] font-bold text-white block">Monthly Access</span>
+                    <span className="text-[10.5px] text-white/50">Cancel anytime with 1 tap</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[17px] font-black text-white">₦2,500</span>
+                    <span className="text-[10.5px] text-white/50"> / mo</span>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-2.5">
-                  <CheckCircle2 size={16} className="text-emerald-400 shrink-0 mt-0.5" />
-                  <div>
-                    <strong className="text-white block">Instant Revocation Anytime</strong>
-                    You retain 100% control over your data. You may unlink any connected bank account at any time with a single tap from the Accounts dashboard.
-                  </div>
-                </div>
-              </div>
+                {/* Upgrade Action Buttons */}
+                <div className="space-y-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={handleUpgradeToPremium}
+                    disabled={isUpgrading}
+                    className="w-full h-11 rounded-full bg-white hover:bg-white/95 text-black font-bold text-[14px] flex items-center justify-center gap-2 shadow-2xl active:scale-95 transition-all cursor-pointer disabled:opacity-60"
+                  >
+                    {isUpgrading ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin text-black" strokeWidth={2.5} />
+                        <span>Activating Premium...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Upgrade to Premium • ₦2,500/mo</span>
+                        <ArrowRight size={15} strokeWidth={2.5} className="text-black" />
+                      </>
+                    )}
+                  </button>
 
-              <button
-                type="button"
-                onClick={() => setShowTermsModal(false)}
-                className="w-full h-11 rounded-full bg-white text-black font-bold text-[14px] hover:bg-white/90 active:scale-95 transition-all cursor-pointer"
+                  <button
+                    type="button"
+                    onClick={() => setShowSubscriptionModal(false)}
+                    className="w-full py-1 text-center text-[12px] font-medium text-white/45 hover:text-white transition-colors cursor-pointer"
+                  >
+                    Maybe Later
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
+
+      {/* Interactive Terms & Security Sheet / Modal (Teleported to Document.body) */}
+      {mounted && typeof document !== "undefined" && createPortal(
+        <AnimatePresence>
+          {showTermsModal && (
+            <div
+              key="terms-modal-backdrop"
+              className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm"
+              style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999 }}
+              onClick={() => setShowTermsModal(false)}
+            >
+              <motion.div
+                key="terms-modal-card"
+                initial={{ opacity: 0, scale: 0.92, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.92, y: 15 }}
+                transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-md rounded-[26px] bg-[#121215] border border-white/10 p-6 shadow-2xl space-y-4"
               >
-                Got It
-              </button>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+                <div className="flex items-center justify-between pb-2 border-b border-white/[0.08]">
+                  <div className="flex items-center gap-2">
+                    <Lock size={16} className="text-[var(--brand)]" />
+                    <h3 className="text-[16px] font-bold text-white">Bank Sync Terms & Security</h3>
+                  </div>
+                  <button
+                    onClick={() => setShowTermsModal(false)}
+                    className="flex h-8 w-8 items-center justify-center rounded-full bg-white/[0.06] hover:bg-white/[0.12] text-white/70 hover:text-white transition-all cursor-pointer"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+
+                <div className="space-y-3 text-[12.5px] text-white/70 leading-relaxed max-h-[60vh] overflow-y-auto pr-1">
+                  <div className="flex items-start gap-2.5">
+                    <CheckCircle2 size={16} className="text-emerald-400 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="text-white block">Licensed Open Banking Partner</strong>
+                      All bank integrations are facilitated securely via Mono Technologies, an open banking provider operating under CBN-compliant financial data protocols.
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2.5">
+                    <CheckCircle2 size={16} className="text-emerald-400 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="text-white block">Strictly Read-Only Access</strong>
+                      Acuity only reads financial account balances and transaction histories. Acuity has zero ability to initiate transfers, withdrawals, or modify your banking funds.
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2.5">
+                    <CheckCircle2 size={16} className="text-emerald-400 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="text-white block">Zero Credential Storage</strong>
+                      Your banking usernames, passwords, hardware tokens, and PINs are handled exclusively by your bank and are never accessible, transmitted to, or stored on Acuity servers.
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2.5">
+                    <CheckCircle2 size={16} className="text-emerald-400 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="text-white block">Instant Revocation Anytime</strong>
+                      You retain 100% control over your data. You may unlink any connected bank account at any time with a single tap from the Accounts dashboard.
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowTermsModal(false)}
+                  className="w-full h-11 rounded-full bg-white text-black font-bold text-[14px] hover:bg-white/90 active:scale-95 transition-all cursor-pointer"
+                >
+                  Got It
+                </button>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 }

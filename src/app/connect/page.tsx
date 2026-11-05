@@ -10,6 +10,7 @@ import { useToast } from "@/components/ui/toast";
 
 export default function MonoConnectPage() {
   const [status, setStatus] = useState<"loading" | "ready">("loading");
+  const [userTier, setUserTier] = useState<"premium" | "basic">("basic");
   const [isConnecting, setIsConnecting] = useState(false);
   const router = useRouter();
   const supabase = createClient();
@@ -25,6 +26,16 @@ export default function MonoConnectPage() {
         if (!user) {
           router.replace("/");
           return;
+        }
+
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("tier")
+          .eq("id", user.id)
+          .single();
+
+        if (profile?.tier) {
+          setUserTier(profile.tier as "premium" | "basic");
         }
 
         setStatus("ready");
@@ -70,6 +81,7 @@ export default function MonoConnectPage() {
       onBack={() => router.push("/")}
       onProceed={handleProceed}
       isConnecting={isConnecting}
+      userTier={userTier}
     />
   );
 }

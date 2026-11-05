@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { ScreenHeader, IconButton } from "@/components/ui/screen-header";
 import { Plus, Trash2, ArrowRightLeft, TrendingUp, Scale, Coins, Pencil, Link as LinkIcon, Loader2, Crown } from "lucide-react";
 import {
@@ -42,11 +43,25 @@ export function AccountsScreen({
   const [assets, setAssets] = useState<Asset[]>([]);
   const [modal, setModal] = useState<"account" | "asset" | "premium_locked" | "name_linked_account" | null>(null);
   const [showConnectIntro, setShowConnectIntro] = useState(false);
+  const [userTier, setUserTier] = useState<"premium" | "basic">("basic");
   
   const setConnectIntro = (open: boolean) => {
     setShowConnectIntro(open);
     onConnectIntroChange?.(open);
   };
+
+  useEffect(() => {
+    async function loadUserTier() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profile } = await supabase.from("profiles").select("tier").eq("id", user.id).single();
+          if (profile?.tier) setUserTier(profile.tier as "premium" | "basic");
+        }
+      } catch {}
+    }
+    loadUserTier();
+  }, []);
   
   const [linkedCode, setLinkedCode] = useState<string | null>(null);
   const [linkedAccountName, setLinkedAccountName] = useState("");
@@ -250,13 +265,15 @@ export function AccountsScreen({
   const isAnyExpanded = expandedCard !== null;
 
   if (showConnectIntro) {
-    return (
+    const screen = (
       <ConnectBankScreen
         onBack={() => setConnectIntro(false)}
         onProceed={handleLaunchMono}
         isConnecting={isConnecting}
+        userTier={userTier}
       />
     );
+    return typeof document !== "undefined" ? createPortal(screen, document.body) : screen;
   }
 
   return (
