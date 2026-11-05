@@ -1,20 +1,20 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { ScreenHeader } from "@/components/ui/screen-header";
-import { Button } from "@/components/ui/form";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
+  ChevronLeft,
+  ArrowRight,
+  ArrowDown,
+  Loader2,
   ShieldCheck,
   Lock,
   Landmark,
-  ArrowRight,
-  Crown,
-  EyeOff,
   Zap,
-  Loader2,
-  Building2,
-  Check,
+  CheckCircle2,
+  X,
 } from "lucide-react";
+import { MetallicGyroscope } from "@/components/ui/metallic-gyroscope";
 
 interface ConnectBankScreenProps {
   onBack: () => void;
@@ -27,186 +27,261 @@ export function ConnectBankScreen({
   onProceed,
   isConnecting = false,
 }: ConnectBankScreenProps) {
-  const features = [
-    {
-      title: "All Major Institutions",
-      subtitle: "Supports GTBank, Access, Zenith, Kuda, OPay, and 20+ more.",
-      icon: Landmark,
-      color: "#e8a23b",
-    },
-    {
-      title: "End-to-End Encrypted",
-      subtitle: "Direct login via Mono. Acuity never sees your passwords or PIN.",
-      icon: ShieldCheck,
-      color: "var(--brand)",
-    },
-    {
-      title: "Real-Time Balance & Pacing",
-      subtitle: "Transactions sync automatically to keep Safe-to-Spend accurate.",
-      icon: Zap,
-      color: "#52c28a",
-    },
-  ];
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   return (
-    <div className="min-h-[100dvh] pb-36 bg-[#000000] text-white relative overflow-x-hidden selection:bg-[var(--brand)] selection:text-white">
-      <ScreenHeader title="Connect Bank" onBack={onBack} />
+    <div className="min-h-[100dvh] bg-[#050507] text-white relative overflow-x-hidden selection:bg-[var(--brand)] selection:text-white flex flex-col justify-between">
+      {/* Top Ambient Glow Halo */}
+      <div
+        className="absolute top-0 left-1/2 -translate-x-1/2 w-[340px] h-[340px] rounded-full pointer-events-none blur-[90px] opacity-40"
+        style={{
+          background: "radial-gradient(circle, rgba(222,49,33,0.25) 0%, rgba(152,197,185,0.12) 50%, transparent 80%)",
+        }}
+      />
 
-      <div className="max-w-md mx-auto px-5 pt-4 space-y-5">
-        {/* Apple-style Hero Graphic Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-          className="relative overflow-hidden rounded-[26px] bg-[#121214] border border-white/[0.08] p-6 text-center shadow-2xl"
+      {/* Top Header Bar */}
+      <div className="relative z-30 flex items-center justify-between px-6 pt-6 pb-2">
+        {/* Frosted Circular Back Button */}
+        <button
+          type="button"
+          onClick={onBack}
+          disabled={isConnecting}
+          aria-label="Go back"
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.1] text-white/90 hover:text-white active:scale-95 transition-all shadow-sm disabled:opacity-40 cursor-pointer"
         >
-          {/* Subtle Ambient Radial Highlight */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-56 h-36 bg-[var(--brand)]/12 blur-[60px] rounded-full pointer-events-none" />
+          <ChevronLeft size={20} strokeWidth={2.4} />
+        </button>
 
-          {/* Premium Tag Pill */}
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.06] border border-white/10 text-[11px] font-medium tracking-wide text-white/80 mb-4 shadow-sm">
-            <Crown size={12} className="text-[var(--brand)]" />
-            <span className="uppercase text-[9.5px] tracking-wider font-semibold">Acuity Premium</span>
-          </div>
+        {/* Step Flow Indicators (Left pill lit, Right pill muted) */}
+        <div className="flex items-center gap-1.5" aria-hidden="true">
+          <span className="h-1 w-6 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.7)]" />
+          <span className="h-1 w-6 rounded-full bg-white/20" />
+        </div>
+      </div>
 
-          {/* Symmetrical Emblem Bridge */}
-          <div className="flex items-center justify-center gap-3.5 my-3">
-            {/* Acuity Monogram Squircle */}
-            <div className="flex h-13 w-13 items-center justify-center rounded-[18px] bg-[#1a1a1c] border border-white/10 shadow-lg">
-              <div className="flex items-baseline">
-                <span className="text-[20px] font-black tracking-tight text-white">A</span>
-                <span className="text-[20px] font-black tracking-tight text-[var(--brand)]">.</span>
-              </div>
-            </div>
-
-            {/* Encrypted Connector */}
-            <div className="flex items-center gap-1.5 text-white/20">
-              <span className="h-[1.5px] w-4 bg-white/15 rounded-full" />
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white/[0.05] border border-white/15 text-[var(--brand)] shadow-sm">
-                <Lock size={12} strokeWidth={2.5} />
-              </div>
-              <span className="h-[1.5px] w-4 bg-white/15 rounded-full" />
-            </div>
-
-            {/* Bank Squircle */}
-            <div className="flex h-13 w-13 items-center justify-center rounded-[18px] bg-[#1a1a1c] border border-white/10 shadow-lg text-white/90">
-              <Building2 size={22} strokeWidth={1.8} />
-            </div>
-          </div>
-
-          <h2 className="text-[22px] font-bold text-white tracking-tight mt-3">
-            Connect Your Bank
-          </h2>
-          <p className="text-[13.5px] text-white/60 mt-1.5 leading-relaxed max-w-[290px] mx-auto">
-            Link your account to automatically sync balances and track daily spending with bank-grade security.
-          </p>
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col items-center justify-center max-w-md mx-auto w-full px-5 py-2">
+        {/* 3D Metallic Gyroscope Hero with Embossed "A." Bullion Medallion */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.94 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          className="w-full flex justify-center"
+        >
+          <MetallicGyroscope />
         </motion.div>
 
-        {/* Apple Inset Grouped List */}
+        {/* Category Pill Tag */}
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35, delay: 0.06, ease: [0.16, 1, 0.3, 1] }}
-          className="rounded-[22px] bg-[#121214] border border-white/[0.08] divide-y divide-white/[0.06] overflow-hidden shadow-xl"
+          transition={{ duration: 0.4, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+          className="mt-1"
         >
-          {features.map((item) => {
-            const Icon = item.icon;
-            return (
-              <div key={item.title} className="flex items-center gap-3.5 p-4">
-                <div
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] shadow-sm"
-                  style={{
-                    backgroundColor: `color-mix(in srgb, ${item.color} 14%, transparent)`,
-                    color: item.color,
-                    border: `1px solid color-mix(in srgb, ${item.color} 25%, transparent)`,
-                  }}
-                >
-                  <Icon size={19} strokeWidth={2} />
-                </div>
-                <div className="space-y-0.5 min-w-0">
-                  <p className="text-[14px] font-semibold text-white tracking-tight">
-                    {item.title}
-                  </p>
-                  <p className="text-[12px] text-white/50 leading-snug">
-                    {item.subtitle}
-                  </p>
-                </div>
-              </div>
-            );
-          })}
-        </motion.div>
-
-        {/* Privacy & Trust Inset Callout (Apple Style) */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35, delay: 0.12, ease: [0.16, 1, 0.3, 1] }}
-          className="rounded-[20px] bg-[#121214]/60 border border-white/[0.06] p-4 flex items-start gap-3.5"
-        >
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 mt-0.5">
-            <EyeOff size={15} strokeWidth={2} />
-          </div>
-          <div className="space-y-0.5">
-            <p className="text-[13px] font-semibold text-white tracking-tight">
-              Strictly Read-Only Access
-            </p>
-            <p className="text-[12px] text-white/50 leading-relaxed">
-              Acuity cannot move funds or execute transactions. You retain full control and can disconnect anytime.
-            </p>
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/[0.06] border border-white/10 text-[11px] font-semibold tracking-wide text-white/90 shadow-sm backdrop-blur-md">
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand)] shadow-[0_0_6px_rgba(222,49,33,0.8)] animate-pulse" />
+            <span className="uppercase text-[9.5px] tracking-wider text-white/80">Mono Open Banking</span>
           </div>
         </motion.div>
 
-        {/* Discreet Regulatory Caption */}
-        <p className="text-center text-[11px] text-white/35 leading-relaxed px-4 pt-1">
-          Licensed open banking infrastructure powered by Mono. Protected by 256-bit bank encryption.
+        {/* Headline Typography */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+          className="text-center mt-3 mb-5"
+        >
+          <h1 className="text-[27px] sm:text-[30px] font-bold text-white tracking-tight leading-[1.16]">
+            Connect your bank
+            <br />
+            <span className="text-[#98c5b9] bg-gradient-to-r from-[#98c5b9] via-[#cbf2e7] to-[#7ebba9] bg-clip-text text-transparent">
+              fuel your intelligence
+            </span>
+          </h1>
+        </motion.div>
+
+        {/* Explainer Feature Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          className="w-full relative"
+        >
+          <div className="rounded-[24px] bg-[#111114]/90 border border-white/[0.08] p-4.5 sm:p-5 space-y-4 shadow-2xl backdrop-blur-xl">
+            {/* Item 1: Direct Bank Authentication */}
+            <div className="flex items-start gap-3.5">
+              <div
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/20 shadow-md mt-0.5"
+                style={{
+                  background: "radial-gradient(circle at 35% 35%, #ffffff 0%, #cbd5e1 45%, #475569 85%, #1e293b 100%)",
+                }}
+              >
+                <Landmark size={18} className="text-black" strokeWidth={2.3} />
+              </div>
+              <div className="space-y-0.5 min-w-0">
+                <p className="text-[14px] font-bold text-white tracking-tight">
+                  Direct Bank Authentication
+                </p>
+                <p className="text-[12px] text-white/55 leading-relaxed">
+                  Log in directly through Mono with GTBank, Zenith, Access, Kuda, OPay & 20+ institutions.
+                </p>
+              </div>
+            </div>
+
+            {/* Item 2: Strictly Read-Only Encryption */}
+            <div className="flex items-start gap-3.5">
+              <div
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/20 shadow-md mt-0.5"
+                style={{
+                  background: "radial-gradient(circle at 35% 35%, #ffffff 0%, #cbd5e1 45%, #475569 85%, #1e293b 100%)",
+                }}
+              >
+                <ShieldCheck size={18} className="text-black" strokeWidth={2.3} />
+              </div>
+              <div className="space-y-0.5 min-w-0">
+                <p className="text-[14px] font-bold text-white tracking-tight">
+                  Strictly Read-Only Encryption
+                </p>
+                <p className="text-[12px] text-white/55 leading-relaxed">
+                  Acuity never sees or stores your banking passwords or PIN. Protected by 256-bit bank TLS.
+                </p>
+              </div>
+            </div>
+
+            {/* Item 3: Real-Time Balance & Pacing */}
+            <div className="flex items-start gap-3.5">
+              <div
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/20 shadow-md mt-0.5"
+                style={{
+                  background: "radial-gradient(circle at 35% 35%, #ffffff 0%, #cbd5e1 45%, #475569 85%, #1e293b 100%)",
+                }}
+              >
+                <Zap size={18} className="text-black" strokeWidth={2.3} />
+              </div>
+              <div className="space-y-0.5 min-w-0">
+                <p className="text-[14px] font-bold text-white tracking-tight">
+                  Live Safe-to-Spend Calibration
+                </p>
+                <p className="text-[12px] text-white/55 leading-relaxed">
+                  Balances stream automatically to keep daily limits, runway alerts, and AI insights live.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Subtly Floating Down Arrow Circle */}
+          <div className="flex justify-center -mt-3.5 relative z-10">
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#18181b] border border-white/[0.12] text-white/60 shadow-lg backdrop-blur-md">
+              <ArrowDown size={13} strokeWidth={2.4} />
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Bottom Sticky Action Area */}
+      <div className="relative z-30 max-w-md mx-auto w-full px-5 pt-2 pb-6 space-y-3">
+        {/* High-Contrast Pristine White Action Button */}
+        <button
+          type="button"
+          onClick={onProceed}
+          disabled={isConnecting}
+          className="w-full h-13 rounded-full text-[15px] font-bold tracking-tight flex items-center justify-center gap-2.5 transition-all active:scale-[0.98] shadow-2xl bg-white hover:bg-white/95 text-black disabled:opacity-60 cursor-pointer"
+        >
+          {isConnecting ? (
+            <>
+              <Loader2 size={18} className="animate-spin text-black" strokeWidth={2.5} />
+              <span>Connecting with Mono...</span>
+            </>
+          ) : (
+            <>
+              <span>Connect with Mono</span>
+              <ArrowRight size={17} strokeWidth={2.5} className="text-black" />
+            </>
+          )}
+        </button>
+
+        {/* Disclaimer with Underlined Terms Link */}
+        <p className="text-center text-[11.5px] text-white/45 leading-relaxed">
+          By proceeding, you agree to our{" "}
+          <button
+            type="button"
+            onClick={() => setShowTermsModal(true)}
+            className="text-white/80 underline underline-offset-2 hover:text-white transition-colors cursor-pointer"
+          >
+            terms and conditions
+          </button>
         </p>
       </div>
 
-      {/* Apple-style Frosted Floating Action Bar */}
-      <div
-        className="fixed bottom-0 left-0 right-0 z-40 px-5 pt-3.5 border-t border-white/[0.08]"
-        style={{
-          paddingBottom: "calc(env(safe-area-inset-bottom) + 16px)",
-          background: "rgba(10, 10, 12, 0.82)",
-          backdropFilter: "blur(24px)",
-          WebkitBackdropFilter: "blur(24px)",
-        }}
-      >
-        <div className="max-w-md mx-auto space-y-2">
-          <button
-            type="button"
-            onClick={onProceed}
-            disabled={isConnecting}
-            className="w-full h-12 rounded-full text-[15px] font-bold tracking-tight flex items-center justify-center gap-2 shadow-lg shadow-[rgba(222,49,33,0.35)] active:scale-[0.98] transition-all disabled:opacity-50 text-black hover:opacity-95"
-            style={{
-              background: "#DE3121",
-              backgroundColor: "#DE3121",
-              color: "#000000",
-            }}
-          >
-            {isConnecting ? (
-              <>
-                <Loader2 size={16} className="animate-spin text-black" strokeWidth={2.5} />
-                <span className="text-black font-bold">Connecting with Mono...</span>
-              </>
-            ) : (
-              <>
-                <span className="text-black font-bold">Connect with Mono</span>
-                <ArrowRight size={16} strokeWidth={2.5} className="text-black" />
-              </>
-            )}
-          </button>
+      {/* Interactive Terms & Security Sheet / Modal */}
+      <AnimatePresence>
+        {showTermsModal && (
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 30 }}
+              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+              className="w-full max-w-md rounded-[26px] bg-[#121215] border border-white/10 p-6 shadow-2xl space-y-4"
+            >
+              <div className="flex items-center justify-between pb-2 border-b border-white/[0.08]">
+                <div className="flex items-center gap-2">
+                  <Lock size={16} className="text-[var(--brand)]" />
+                  <h3 className="text-[16px] font-bold text-white">Bank Sync Terms & Security</h3>
+                </div>
+                <button
+                  onClick={() => setShowTermsModal(false)}
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-white/[0.06] hover:bg-white/[0.12] text-white/70 hover:text-white transition-all cursor-pointer"
+                >
+                  <X size={16} />
+                </button>
+              </div>
 
-          <button
-            type="button"
-            onClick={onBack}
-            disabled={isConnecting}
-            className="w-full h-9 flex items-center justify-center text-[13px] font-medium text-white/45 hover:text-white transition-colors"
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
+              <div className="space-y-3 text-[12.5px] text-white/70 leading-relaxed max-h-[60vh] overflow-y-auto pr-1">
+                <div className="flex items-start gap-2.5">
+                  <CheckCircle2 size={16} className="text-emerald-400 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="text-white block">Licensed Open Banking Partner</strong>
+                    All bank integrations are facilitated securely via Mono Technologies, an open banking provider operating under CBN-compliant financial data protocols.
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2.5">
+                  <CheckCircle2 size={16} className="text-emerald-400 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="text-white block">Strictly Read-Only Access</strong>
+                    Acuity only reads financial account balances and transaction histories. Acuity has zero ability to initiate transfers, withdrawals, or modify your banking funds.
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2.5">
+                  <CheckCircle2 size={16} className="text-emerald-400 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="text-white block">Zero Credential Storage</strong>
+                    Your banking usernames, passwords, hardware tokens, and PINs are handled exclusively by your bank and are never accessible, transmitted to, or stored on Acuity servers.
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2.5">
+                  <CheckCircle2 size={16} className="text-emerald-400 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="text-white block">Instant Revocation Anytime</strong>
+                    You retain 100% control over your data. You may unlink any connected bank account at any time with a single tap from the Accounts dashboard.
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowTermsModal(false)}
+                className="w-full h-11 rounded-full bg-white text-black font-bold text-[14px] hover:bg-white/90 active:scale-95 transition-all cursor-pointer"
+              >
+                Got It
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
