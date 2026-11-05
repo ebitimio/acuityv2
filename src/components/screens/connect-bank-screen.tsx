@@ -10,7 +10,6 @@ import {
   ShieldCheck,
   Lock,
   Landmark,
-  Zap,
   CheckCircle2,
   X,
 } from "lucide-react";
@@ -30,16 +29,16 @@ export function ConnectBankScreen({
   const [showTermsModal, setShowTermsModal] = useState(false);
 
   return (
-    <div className="min-h-[100dvh] bg-[#050507] text-white relative overflow-x-hidden selection:bg-[var(--brand)] selection:text-white flex flex-col justify-between">
+    <div className="fixed inset-0 z-[100] min-h-[100dvh] bg-[#050507] text-white overflow-y-auto overflow-x-hidden selection:bg-[var(--brand)] selection:text-white flex flex-col justify-between">
       {/* Top Ambient Glow Halo */}
       <div
-        className="absolute top-0 left-1/2 -translate-x-1/2 w-[340px] h-[340px] rounded-full pointer-events-none blur-[90px] opacity-40"
+        className="absolute top-0 left-1/2 -translate-x-1/2 w-[360px] h-[360px] rounded-full pointer-events-none blur-[95px] opacity-45"
         style={{
-          background: "radial-gradient(circle, rgba(222,49,33,0.25) 0%, rgba(152,197,185,0.12) 50%, transparent 80%)",
+          background: "radial-gradient(circle, rgba(222,49,33,0.28) 0%, rgba(152,197,185,0.1) 50%, transparent 80%)",
         }}
       />
 
-      {/* Top Header Bar */}
+      {/* Top Header Bar with Acuity Branding */}
       <div className="relative z-30 flex items-center justify-between px-6 pt-6 pb-2">
         {/* Frosted Circular Back Button */}
         <button
@@ -52,7 +51,13 @@ export function ConnectBankScreen({
           <ChevronLeft size={20} strokeWidth={2.4} />
         </button>
 
-        {/* Step Flow Indicators (Left pill lit, Right pill muted) */}
+        {/* Center Acuity Wordmark */}
+        <div className="flex items-baseline select-none">
+          <span className="text-[19px] font-black tracking-tight text-white">ACUITY</span>
+          <span className="text-[19px] font-black tracking-tight text-[var(--brand)]">.</span>
+        </div>
+
+        {/* Step Flow Indicators (Left pill active white, Right pill muted) */}
         <div className="flex items-center gap-1.5" aria-hidden="true">
           <span className="h-1 w-6 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.7)]" />
           <span className="h-1 w-6 rounded-full bg-white/20" />
@@ -61,7 +66,7 @@ export function ConnectBankScreen({
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col items-center justify-center max-w-md mx-auto w-full px-5 py-2">
-        {/* 3D Metallic Gyroscope Hero with Embossed "A." Bullion Medallion */}
+        {/* 3D Volumetric Metallic Gyroscope Hero with Embossed Acuity "A." Medallion */}
         <motion.div
           initial={{ opacity: 0, scale: 0.94 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -71,31 +76,35 @@ export function ConnectBankScreen({
           <MetallicGyroscope />
         </motion.div>
 
-        {/* Category Pill Tag */}
+        {/* Branded Pill Tag */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
           className="mt-1"
         >
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/[0.06] border border-white/10 text-[11px] font-semibold tracking-wide text-white/90 shadow-sm backdrop-blur-md">
-            <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand)] shadow-[0_0_6px_rgba(222,49,33,0.8)] animate-pulse" />
-            <span className="uppercase text-[9.5px] tracking-wider text-white/80">Mono Open Banking</span>
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/[0.06] border border-white/10 text-white shadow-sm backdrop-blur-md">
+            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[var(--brand)] text-[8.5px] font-black text-black">
+              A.
+            </span>
+            <span className="text-[10px] font-bold tracking-wider text-white uppercase">
+              ACUITY. DIRECT BANK SYNC
+            </span>
           </div>
         </motion.div>
 
-        {/* Headline Typography */}
+        {/* Headline Typography with Acuity Wordmark & Soft Mint Accent */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
           className="text-center mt-3 mb-5"
         >
-          <h1 className="text-[27px] sm:text-[30px] font-bold text-white tracking-tight leading-[1.16]">
-            Connect your bank
+          <h1 className="text-[26px] sm:text-[30px] font-bold text-white tracking-tight leading-[1.18]">
+            Connect your bank to <span className="font-black text-white">ACUITY<span className="text-[var(--brand)]">.</span></span>
             <br />
-            <span className="text-[#98c5b9] bg-gradient-to-r from-[#98c5b9] via-[#cbf2e7] to-[#7ebba9] bg-clip-text text-transparent">
-              fuel your intelligence
+            <span className="text-[#98c5b9] bg-gradient-to-r from-[#98c5b9] via-[#cbf2e7] to-[#7ebba9] bg-clip-text text-transparent font-medium">
+              fuel your financial intelligence
             </span>
           </h1>
         </motion.div>
@@ -108,22 +117,22 @@ export function ConnectBankScreen({
           className="w-full relative"
         >
           <div className="rounded-[24px] bg-[#111114]/90 border border-white/[0.08] p-4.5 sm:p-5 space-y-4 shadow-2xl backdrop-blur-xl">
-            {/* Item 1: Direct Bank Authentication */}
+            {/* Item 1: Direct Bank Integration */}
             <div className="flex items-start gap-3.5">
               <div
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/20 shadow-md mt-0.5"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/25 shadow-md mt-0.5"
                 style={{
-                  background: "radial-gradient(circle at 35% 35%, #ffffff 0%, #cbd5e1 45%, #475569 85%, #1e293b 100%)",
+                  background: "radial-gradient(circle at 32% 32%, #ffffff 0%, #cbd5e1 45%, #475569 85%, #0f172a 100%)",
                 }}
               >
                 <Landmark size={18} className="text-black" strokeWidth={2.3} />
               </div>
               <div className="space-y-0.5 min-w-0">
                 <p className="text-[14px] font-bold text-white tracking-tight">
-                  Direct Bank Authentication
+                  Direct Institutional Link
                 </p>
                 <p className="text-[12px] text-white/55 leading-relaxed">
-                  Log in directly through Mono with GTBank, Zenith, Access, Kuda, OPay & 20+ institutions.
+                  Authenticate with GTBank, Zenith, Access, Kuda, OPay & 20+ institutions via Mono's official portal.
                 </p>
               </div>
             </div>
@@ -131,39 +140,43 @@ export function ConnectBankScreen({
             {/* Item 2: Strictly Read-Only Encryption */}
             <div className="flex items-start gap-3.5">
               <div
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/20 shadow-md mt-0.5"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/25 shadow-md mt-0.5"
                 style={{
-                  background: "radial-gradient(circle at 35% 35%, #ffffff 0%, #cbd5e1 45%, #475569 85%, #1e293b 100%)",
+                  background: "radial-gradient(circle at 32% 32%, #ffffff 0%, #cbd5e1 45%, #475569 85%, #0f172a 100%)",
                 }}
               >
                 <ShieldCheck size={18} className="text-black" strokeWidth={2.3} />
               </div>
               <div className="space-y-0.5 min-w-0">
                 <p className="text-[14px] font-bold text-white tracking-tight">
-                  Strictly Read-Only Encryption
+                  Strictly Read-Only & 256-Bit TLS
                 </p>
                 <p className="text-[12px] text-white/55 leading-relaxed">
-                  Acuity never sees or stores your banking passwords or PIN. Protected by 256-bit bank TLS.
+                  Acuity never sees or stores your banking passwords or PIN. Protected by 256-bit bank encryption.
                 </p>
               </div>
             </div>
 
-            {/* Item 3: Real-Time Balance & Pacing */}
+            {/* Item 3: Autonomous Acuity CFO Engine */}
             <div className="flex items-start gap-3.5">
               <div
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/20 shadow-md mt-0.5"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/25 shadow-md mt-0.5"
                 style={{
-                  background: "radial-gradient(circle at 35% 35%, #ffffff 0%, #cbd5e1 45%, #475569 85%, #1e293b 100%)",
+                  background: "radial-gradient(circle at 32% 32%, #ffffff 0%, #cbd5e1 45%, #475569 85%, #0f172a 100%)",
                 }}
               >
-                <Zap size={18} className="text-black" strokeWidth={2.3} />
+                {/* Acuity Signature Monogram Inside Badge */}
+                <div className="flex items-baseline tracking-tighter">
+                  <span className="text-[14px] font-black text-black leading-none">A</span>
+                  <span className="inline-block w-1 h-1 rounded-full bg-[var(--brand)] ml-0.5" />
+                </div>
               </div>
               <div className="space-y-0.5 min-w-0">
                 <p className="text-[14px] font-bold text-white tracking-tight">
-                  Live Safe-to-Spend Calibration
+                  Autonomous Acuity CFO Engine
                 </p>
                 <p className="text-[12px] text-white/55 leading-relaxed">
-                  Balances stream automatically to keep daily limits, runway alerts, and AI insights live.
+                  Balances stream automatically to keep daily Safe-to-Spend limits, runway alerts, and AI CFO advice live.
                 </p>
               </div>
             </div>
@@ -178,8 +191,8 @@ export function ConnectBankScreen({
         </motion.div>
       </div>
 
-      {/* Bottom Sticky Action Area */}
-      <div className="relative z-30 max-w-md mx-auto w-full px-5 pt-2 pb-6 space-y-3">
+      {/* Bottom Action Area */}
+      <div className="relative z-30 max-w-md mx-auto w-full px-5 pt-3 pb-8 space-y-3">
         {/* High-Contrast Pristine White Action Button */}
         <button
           type="button"

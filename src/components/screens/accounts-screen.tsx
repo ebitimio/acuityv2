@@ -29,17 +29,24 @@ export function AccountsScreen({
   onBack, 
   userName = "there",
   autoOpenAddAccount,
-  onAutoOpenHandled
+  onAutoOpenHandled,
+  onConnectIntroChange
 }: { 
   onBack: () => void, 
   userName?: string,
   autoOpenAddAccount?: boolean,
-  onAutoOpenHandled?: () => void
+  onAutoOpenHandled?: () => void,
+  onConnectIntroChange?: (isOpen: boolean) => void
 }) {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [modal, setModal] = useState<"account" | "asset" | "premium_locked" | "name_linked_account" | null>(null);
   const [showConnectIntro, setShowConnectIntro] = useState(false);
+  
+  const setConnectIntro = (open: boolean) => {
+    setShowConnectIntro(open);
+    onConnectIntroChange?.(open);
+  };
   
   const [linkedCode, setLinkedCode] = useState<string | null>(null);
   const [linkedAccountName, setLinkedAccountName] = useState("");
@@ -107,7 +114,7 @@ export function AccountsScreen({
     }
 
     // Only premium users proceed to the connection intro screen
-    setShowConnectIntro(true);
+    setConnectIntro(true);
   };
 
   const handleLaunchMono = async () => {
@@ -135,7 +142,7 @@ export function AccountsScreen({
           setLinkedCode(data.code);
           setLinkedAccountName(""); 
           setLinkedAccountType("checking");
-          setShowConnectIntro(false);
+          setConnectIntro(false);
           
           // FIX: Delay the modal opening so the Mono widget fully closes first
           setTimeout(() => {
@@ -255,7 +262,7 @@ export function AccountsScreen({
   if (showConnectIntro) {
     return (
       <ConnectBankScreen
-        onBack={() => setShowConnectIntro(false)}
+        onBack={() => setConnectIntro(false)}
         onProceed={handleLaunchMono}
         isConnecting={isConnecting}
       />

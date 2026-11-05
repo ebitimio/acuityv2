@@ -83,6 +83,7 @@ export default function SandboxPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeScreen, setActiveScreen] = useState<ScreenId>("home");
   const [aiInitialPrompt, setAiInitialPrompt] = useState<string | undefined>(undefined);
+  const [isConnectIntroOpen, setIsConnectIntroOpen] = useState(false);
 
   const [onboardingSequence, setOnboardingSequence] = useState<"checking" | "carousel" | "pin" | "complete">("checking");
   const [isLocked, setIsLocked] = useState(false);
@@ -406,6 +407,7 @@ export default function SandboxPage() {
   }, [activeScreen]);
 
   const handleTabChange = (tabId: TabId) => {
+    setIsConnectIntroOpen(false);
     setActiveScreen(tabId);
   };
 
@@ -492,6 +494,7 @@ export default function SandboxPage() {
   };
 
   const handleBackToHome = () => {
+    setIsConnectIntroOpen(false);
     setAiInitialPrompt(undefined);
     setActiveScreen("home");
     refreshData();
@@ -642,6 +645,7 @@ export default function SandboxPage() {
               userName={profileName}
               autoOpenAddAccount={openAddAccount}
               onAutoOpenHandled={() => setOpenAddAccount(false)}
+              onConnectIntroChange={setIsConnectIntroOpen}
             />
           ) : activeScreen === "commitments" ? (
             <CommitmentsScreen
@@ -898,14 +902,16 @@ export default function SandboxPage() {
         </ScreenTransition>
       </PullToRefresh>
 
-      <FloatingTabBar
-        activeTab={activeScreen === "budget" ? "home" : (activeScreen as TabId)}
-        onTabChange={handleTabChange}
-        onAddClick={handleAddClick}
-        isHidden={navHidden}
-      />
+      {!isConnectIntroOpen && (
+        <FloatingTabBar
+          activeTab={activeScreen === "budget" ? "home" : (activeScreen as TabId)}
+          onTabChange={handleTabChange}
+          onAddClick={handleAddClick}
+          isHidden={navHidden}
+        />
+      )}
 
-      {activeScreen !== "home" && (
+      {!isConnectIntroOpen && activeScreen !== "home" && (
         <JarvisOrb
           currentScreen={activeScreen}
           observerData={{
