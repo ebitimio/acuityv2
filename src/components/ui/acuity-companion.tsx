@@ -8,6 +8,7 @@ export interface AcuityCompanionProps {
   isThinking?: boolean;
   hasInput?: boolean;
   isSpeaking?: boolean;
+  hasCap?: boolean;
   size?: "large" | "compact" | "orb" | "mini";
   onTap?: () => void;
   className?: string;
@@ -15,13 +16,17 @@ export interface AcuityCompanionProps {
 
 /**
  * Living Acuity AI Companion & Mascot
- * Expressive white pill eyes with organic blinking, reading scan tracking,
- * speaking animated gestures, lively micro-saccades, and warm Acuity Ember radiant aura.
+ * Features:
+ * - Expressive white pill eyes with organic blinking & reading gaze scan
+ * - Animated mouth with matching glowing highlight that talks when speaking/typing
+ * - Stylish cap with signature "A." Acuity embroidery
+ * - Warm radiant breathing Acuity Ember aura
  */
 export function AcuityCompanion({
   isThinking = false,
   hasInput = false,
   isSpeaking = false,
+  hasCap = true,
   size = "large",
   onTap,
   className,
@@ -158,10 +163,10 @@ export function AcuityCompanion({
         isOrb
           ? "h-full w-full"
           : isMini
-          ? "h-5 w-8"
+          ? "h-6 w-9"
           : isCompact
-          ? "h-6 w-10"
-          : "h-32 sm:h-36 w-full my-1",
+          ? "h-8 w-12"
+          : "h-36 sm:h-40 w-full my-1",
         className
       )}
       title="Acuity Personal AI • Tap to say hi!"
@@ -180,10 +185,10 @@ export function AcuityCompanion({
         className={cn(
           "absolute rounded-full pointer-events-none",
           isOrb || isMini
-            ? "w-10 h-10 blur-xs"
+            ? "w-11 h-11 blur-xs"
             : isCompact
-            ? "w-12 h-12 blur-md"
-            : "w-48 h-48 sm:w-56 sm:h-56 blur-2xl"
+            ? "w-14 h-14 blur-md"
+            : "w-52 h-52 sm:w-60 sm:h-60 blur-2xl"
         )}
         style={{
           background:
@@ -191,7 +196,7 @@ export function AcuityCompanion({
         }}
       />
 
-      {/* Eyes Container with Lively Spring Motion */}
+      {/* Whole Head / Face Container with Spring Motion (Moves cap, eyes & mouth together) */}
       <motion.div
         animate={{
           x: gaze.x,
@@ -199,50 +204,170 @@ export function AcuityCompanion({
           rotate: gaze.rotate,
         }}
         transition={{ type: "spring", stiffness: 220, damping: 15 }}
-        className={cn(
-          "relative flex items-center z-10",
-          isOrb || isMini ? "gap-1" : isCompact ? "gap-1.5" : "gap-4 sm:gap-5"
-        )}
+        className="relative flex flex-col items-center z-10"
       >
-        {/* Left Eye */}
-        <motion.div
-          animate={{
-            scaleY: isWinking || blinkState ? 0.08 : gaze.scaleY,
-            scaleX: gaze.scaleX,
-          }}
-          transition={{ duration: 0.09 }}
-          className={cn(
-            "bg-white shadow-[0_0_24px_rgba(255,255,255,0.7),0_0_10px_rgba(222,49,33,0.35)] origin-center",
-            isOrb
-              ? "w-2 h-4.5 rounded-[5px]"
-              : isMini
-              ? "w-1.5 h-3.5 rounded-[4px]"
-              : isCompact
-              ? "w-1.5 h-4 rounded-[5px]"
-              : "w-6 h-13 sm:w-7 sm:h-14 rounded-[12px] sm:rounded-[13px]"
-          )}
-        />
+        {/* Stylish Cap with "A." Branding */}
+        {hasCap && (
+          <div className="relative flex flex-col items-center">
+            {/* Top Button / Squatchee */}
+            <div
+              className={cn(
+                "rounded-full bg-[var(--brand)] shadow-[0_0_6px_var(--brand)]",
+                isOrb || isMini
+                  ? "w-1 h-0.5"
+                  : isCompact
+                  ? "w-1.5 h-0.75"
+                  : "w-3 h-1.5"
+              )}
+            />
 
-        {/* Right Eye */}
-        <motion.div
-          animate={{
-            scaleY: blinkState ? 0.08 : gaze.scaleY,
-            scaleX: gaze.scaleX,
-          }}
-          transition={{ duration: 0.09 }}
+            {/* Cap Crown (Dome) with "A." embroidery */}
+            <div
+              className={cn(
+                "relative flex items-center justify-center bg-gradient-to-b from-[#2a2a2e] via-[#1c1c20] to-[#141416] border-t border-x border-white/20 shadow-md",
+                isOrb
+                  ? "w-6 h-2.5 rounded-t-[5px]"
+                  : isMini
+                  ? "w-5 h-2 rounded-t-[4px]"
+                  : isCompact
+                  ? "w-7.5 h-3 rounded-t-[6px]"
+                  : "w-24 sm:w-28 h-9 sm:h-10 rounded-t-[18px]"
+              )}
+            >
+              {/* "A." Embroidered Logo Badge */}
+              <div className="flex items-baseline font-black tracking-tighter leading-none select-none">
+                <span
+                  className={cn(
+                    "text-white",
+                    isOrb
+                      ? "text-[6px]"
+                      : isMini
+                      ? "text-[5px]"
+                      : isCompact
+                      ? "text-[7.5px]"
+                      : "text-[14px] sm:text-[15px]"
+                  )}
+                >
+                  A
+                </span>
+                <span
+                  className={cn(
+                    "text-[var(--brand)]",
+                    isOrb
+                      ? "text-[6px]"
+                      : isMini
+                      ? "text-[5px]"
+                      : isCompact
+                      ? "text-[7.5px]"
+                      : "text-[14px] sm:text-[15px]"
+                  )}
+                >
+                  .
+                </span>
+              </div>
+            </div>
+
+            {/* Visor / Brim (Tilted with attitude) */}
+            <div
+              className={cn(
+                "rounded-full bg-gradient-to-r from-[#1c1c20] via-[#242428] to-[#1c1c20] border-t border-white/25 shadow-md -rotate-[3deg]",
+                isOrb
+                  ? "w-7.5 h-1 -mt-0.5"
+                  : isMini
+                  ? "w-6 h-0.75 -mt-0.5"
+                  : isCompact
+                  ? "w-9 h-1.2 -mt-0.5"
+                  : "w-28 sm:w-32 h-3.5 sm:h-4 -mt-1"
+              )}
+            />
+          </div>
+        )}
+
+        {/* Eyes Container */}
+        <div
           className={cn(
-            "bg-white shadow-[0_0_24px_rgba(255,255,255,0.7),0_0_10px_rgba(222,49,33,0.35)] origin-center",
-            isOrb
-              ? "w-2 h-4.5 rounded-[5px]"
-              : isMini
-              ? "w-1.5 h-3.5 rounded-[4px]"
+            "flex items-center",
+            isOrb || isMini
+              ? "gap-1 mt-0.5"
               : isCompact
-              ? "w-1.5 h-4 rounded-[5px]"
-              : "w-6 h-13 sm:w-7 sm:h-14 rounded-[12px] sm:rounded-[13px]"
+              ? "gap-1.5 mt-0.5"
+              : "gap-4 sm:gap-5 mt-2 sm:mt-2.5"
+          )}
+        >
+          {/* Left Eye */}
+          <motion.div
+            animate={{
+              scaleY: isWinking || blinkState ? 0.08 : gaze.scaleY,
+              scaleX: gaze.scaleX,
+            }}
+            transition={{ duration: 0.09 }}
+            className={cn(
+              "bg-white shadow-[0_0_24px_rgba(255,255,255,0.7),0_0_10px_rgba(222,49,33,0.35)] origin-center",
+              isOrb
+                ? "w-2 h-4.5 rounded-[5px]"
+                : isMini
+                ? "w-1.5 h-3.5 rounded-[4px]"
+                : isCompact
+                ? "w-1.5 h-4 rounded-[5px]"
+                : "w-6 h-13 sm:w-7 sm:h-14 rounded-[12px] sm:rounded-[13px]"
+            )}
+          />
+
+          {/* Right Eye */}
+          <motion.div
+            animate={{
+              scaleY: blinkState ? 0.08 : gaze.scaleY,
+              scaleX: gaze.scaleX,
+            }}
+            transition={{ duration: 0.09 }}
+            className={cn(
+              "bg-white shadow-[0_0_24px_rgba(255,255,255,0.7),0_0_10px_rgba(222,49,33,0.35)] origin-center",
+              isOrb
+                ? "w-2 h-4.5 rounded-[5px]"
+                : isMini
+                ? "w-1.5 h-3.5 rounded-[4px]"
+                : isCompact
+                ? "w-1.5 h-4 rounded-[5px]"
+                : "w-6 h-13 sm:w-7 sm:h-14 rounded-[12px] sm:rounded-[13px]"
+            )}
+          />
+        </div>
+
+        {/* Animated Mouth (Same white highlight as the eyes, motion when talking/typing) */}
+        <motion.div
+          animate={
+            isSpeaking
+              ? {
+                  scaleY: [0.6, 2.4, 0.8, 2.8, 1.0, 2.0],
+                  scaleX: [1.0, 1.25, 0.85, 1.2, 0.95, 1.15],
+                }
+              : isWinking
+              ? { scaleY: 1.8, scaleX: 1.4 }
+              : isThinking
+              ? { scaleY: 0.6, scaleX: 0.7 }
+              : { scaleY: 1, scaleX: 1 }
+          }
+          transition={
+            isSpeaking
+              ? {
+                  duration: 0.52,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }
+              : { duration: 0.15 }
+          }
+          className={cn(
+            "bg-white shadow-[0_0_24px_rgba(255,255,255,0.7),0_0_10px_rgba(222,49,33,0.35)] origin-center rounded-full",
+            isOrb
+              ? "w-2 h-0.75 mt-0.75"
+              : isMini
+              ? "w-1.5 h-0.5 mt-0.5"
+              : isCompact
+              ? "w-2.5 h-1 mt-1"
+              : "w-6 sm:w-7 h-2 sm:h-2.5 mt-2.5 sm:mt-3"
           )}
         />
       </motion.div>
     </div>
   );
 }
-
