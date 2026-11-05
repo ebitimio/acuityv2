@@ -126,6 +126,7 @@ export function AIScreen({
   fullName = "there",
   safeToSpend,
   metrics,
+  topCategory,
   daysUntilIncome,
   onDataChanged,
   initialPrompt,
@@ -619,20 +620,28 @@ export function AIScreen({
 
   const suggestions = useMemo(() => {
     return [
-      { title: "How much can I safely spend?" },
-      { title: "Where am I spending the most?" },
+      {
+        title: "How much can I safely spend?",
+        desc: "Safe-to-Spend runway & daily burn rate",
+      },
+      {
+        title: "Where am I spending the most?",
+        desc: topCategory ? `${topCategory} & top category outflow` : "Breakdown of top expense categories",
+      },
       {
         title: daysUntilIncome > 0
           ? `Payday in ${daysUntilIncome}d. Can I stretch?`
           : "How do I optimize my monthly budget?",
+        desc: "Cash flow forecast & pacing check",
       },
       {
         title: metrics?.uncategorized_count && metrics.uncategorized_count > 0
           ? `Categorize ${metrics.uncategorized_count} unreviewed items`
-          : "Audit my recent transactions",
+          : "Audit my recent transactions & fees",
+        desc: "Scan ledger for hidden bank charges",
       },
     ];
-  }, [daysUntilIncome, metrics]);
+  }, [daysUntilIncome, metrics, topCategory]);
 
   return (
     <motion.div 
@@ -703,7 +712,7 @@ export function AIScreen({
 
           {/* Living Orb Mascot in Header */}
           <div
-            className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.1] shadow-sm backdrop-blur-xl cursor-pointer transition-all active:scale-90 ml-1.5 overflow-hidden group"
+            className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.1] shadow-sm backdrop-blur-xl cursor-pointer transition-all active:scale-90 ml-1.5 overflow-visible group"
             onClick={() => {
               const quotes = [
                 "Watching your cash flow in real-time",
@@ -737,35 +746,61 @@ export function AIScreen({
         aria-live="polite"
       >
         {messages.length === 0 && !isThinking ? (
-          <div className="flex flex-col justify-center min-h-[70vh] max-w-xl mx-auto py-2">
-            {/* Minimalist Gemini Greeting */}
-            <div className="mb-2">
-              <h1 className="text-[34px] sm:text-[42px] font-medium tracking-tight leading-tight">
-                <span className="bg-gradient-to-r from-white via-neutral-100 to-[var(--brand)] bg-clip-text text-transparent">
-                  {greeting}, {firstName}
+          <div className="flex flex-col justify-between min-h-[75vh] max-w-xl mx-auto py-4 px-1">
+            {/* Minimalist Greeting & Brand Model Badge (inspired by reference) */}
+            <div className="space-y-1.5">
+              <h1 className="text-[32px] sm:text-[40px] font-semibold tracking-tight leading-[1.14]">
+                <span className="text-white">{greeting}, </span>
+                <span className="bg-gradient-to-r from-[var(--brand)] via-[#ff735c] to-white bg-clip-text text-transparent">
+                  {firstName}
+                </span>
+                <br />
+                <span className="text-white/50 text-[24px] sm:text-[30px] font-normal">
+                  May I help you?
                 </span>
               </h1>
-              <p className="text-[16px] sm:text-[18px] text-white/45 font-normal mt-1">
-                How can I help you today?
-              </p>
+
+              <div className="inline-flex items-center gap-2 pt-1 text-[12px] text-white/50 font-mono">
+                <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand)] animate-pulse shadow-[0_0_8px_var(--brand)]" />
+                <span className="font-bold text-white tracking-wide">Acuity Intelligence</span>
+                <span className="text-white/25">•</span>
+                <span>Personal CFO</span>
+              </div>
             </div>
 
-            {/* Living Acuity Companion (Animated Blinking Eyes in Radiant Aura) */}
-            <AcuityCompanion isThinking={isThinking} isSpeaking={!!streamingContent} hasInput={!!input.trim()} size="large" />
+            {/* Living Centerpiece Mascot Orb */}
+            <div className="my-auto py-4 sm:py-6 flex items-center justify-center">
+              <AcuityCompanion
+                isThinking={isThinking}
+                isSpeaking={!!streamingContent}
+                hasInput={!!input.trim()}
+                size="large"
+              />
+            </div>
 
-            {/* Minimalist Floating Prompt Pills (Gemini Style) */}
-            <div className="flex flex-wrap gap-2 mt-3">
+            {/* Minimalist Bento Cards (inspired by reference image) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2">
               {suggestions.map((s, i) => (
                 <motion.button
                   key={i}
-                  initial={{ opacity: 0, y: 8 }}
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
                   onClick={() => send(s.title)}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-white/[0.04] hover:bg-white/[0.08] active:bg-white/[0.12] border border-white/[0.08] text-[13.5px] text-white/80 hover:text-white transition-all active:scale-[0.98] shadow-sm group"
+                  className="group relative flex flex-col justify-between p-3.5 rounded-2xl bg-white/[0.03] hover:bg-white/[0.07] active:bg-white/[0.1] border border-white/[0.06] hover:border-white/15 text-left transition-all active:scale-[0.98] shadow-sm overflow-hidden"
                 >
-                  <span>{s.title}</span>
-                  <ArrowUp size={13} className="text-white/30 group-hover:text-[var(--brand)] transition-colors rotate-45 shrink-0" />
+                  <div className="flex items-start justify-between gap-2">
+                    <span className="text-[13.5px] font-medium text-white/90 group-hover:text-white leading-snug">
+                      {s.title}
+                    </span>
+                    <ArrowUp
+                      size={13}
+                      className="text-white/30 group-hover:text-[var(--brand)] transition-all rotate-45 shrink-0 mt-0.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                    />
+                  </div>
+                  <span className="text-[11.5px] text-white/40 mt-1.5 line-clamp-1">
+                    {s.desc}
+                  </span>
                 </motion.button>
               ))}
             </div>
@@ -787,8 +822,9 @@ export function AIScreen({
                 ) : (
                   /* Assistant Response */
                   <div className="w-full flex items-start gap-3">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] mt-0.5 shadow-md shadow-[var(--brand)]/20">
-                      <span className="text-[13px] font-black text-[var(--brand-ink)]">A.</span>
+                    {/* Orb Mascot PFP for AI Response */}
+                    <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#141416]/90 border border-white/10 shadow-[0_2px_12px_rgba(0,0,0,0.6),0_0_12px_rgba(222,49,33,0.3)] mt-0.5 overflow-visible">
+                      <AcuityCompanion size="orb" />
                     </div>
 
                     <div className="flex-1 min-w-0 pt-0.5">
@@ -901,8 +937,8 @@ export function AIScreen({
             {/* Thinking & Streaming State with Expressive Mini Companion */}
             {isThinking && (
               <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="w-full flex items-start gap-3">
-                <div className="shrink-0 mt-0.5">
-                  <AcuityCompanion isThinking={!streamingContent} isSpeaking={!!streamingContent} size="compact" />
+                <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#141416]/90 border border-white/10 shadow-[0_2px_12px_rgba(0,0,0,0.6),0_0_12px_rgba(222,49,33,0.3)] mt-0.5 overflow-visible">
+                  <AcuityCompanion isThinking={!streamingContent} isSpeaking={!!streamingContent} size="orb" />
                 </div>
                 <div className="flex-1 min-w-0 pt-0.5">
                   {thinkingLabel && !streamingContent && (
