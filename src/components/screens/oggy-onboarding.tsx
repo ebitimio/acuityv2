@@ -38,6 +38,7 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
   const [isSpeaking, setIsSpeaking] = useState(true);
   const [isSmiling, setIsSmiling] = useState(false);
   const [isSilly, setIsSilly] = useState(false);
+  const [isEnthusiastic, setIsEnthusiastic] = useState(false);
 
   // Viewport tracking to prevent mobile keyboard jumps & keep screen rock-solid (same logic as ai-screen)
   const [vvHeight, setVvHeight] = useState<number | null>(null);
@@ -94,29 +95,36 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
     }
   };
 
-  // Choreography: mouth speaks briefly, stops, smiles, does a silly dance across screen, returns to center
+  // Choreography: on each input/stage transition, Oggy perks up enthusiastically, speaks, smiles, and dances
   useEffect(() => {
     setIsSpeaking(true);
     setIsSmiling(false);
     setIsSilly(false);
+    setIsEnthusiastic(true);
 
-    // 1. Mouth moves briefly while asking, then stops speaking & smiles
+    // 1. Enthusiastic bounce & celebratory cheer
+    const enthusiasmTimer = setTimeout(() => {
+      setIsEnthusiastic(false);
+    }, 1400);
+
+    // 2. Mouth moves actively while speaking dialogue, then stops and smiles
     const stopSpeakingTimer = setTimeout(() => {
       setIsSpeaking(false);
       setIsSmiling(true);
-    }, 1800);
+    }, 1900);
 
-    // 2. Do something silly moving playfully across the screen
+    // 3. Playful dance if left waiting
     const sillyTimer = setTimeout(() => {
       setIsSilly(true);
-    }, 2400);
+    }, 2800);
 
-    // 3. Smoothly settle back into original center position
+    // 4. Smoothly settle back into original center position
     const settleTimer = setTimeout(() => {
       setIsSilly(false);
-    }, 4600);
+    }, 5000);
 
     return () => {
+      clearTimeout(enthusiasmTimer);
       clearTimeout(stopSpeakingTimer);
       clearTimeout(sillyTimer);
       clearTimeout(settleTimer);
@@ -236,6 +244,96 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
     setStage("ready");
   };
 
+  const getOrdinal = (n: number) => {
+    if (isNaN(n)) return "th";
+    const s = ["th", "st", "nd", "rd"];
+    const v = n % 100;
+    return s[(v - 20) % 10] || s[v] || s[0];
+  };
+
+  const getOggySpeechText = () => {
+    switch (stage) {
+      case "intro":
+        return (
+          <>
+            Hello <span className="font-bold text-white">{firstName}</span>! I am <span className="text-[var(--brand)] font-bold">Oggy</span>, your personal wealth manager. I will help you safeguard your cash, track your runway, and grow your wealth. Ready to begin?
+          </>
+        );
+      case "bank_name":
+        return "What bank or financial institution would you like to add first?";
+      case "account_name":
+        return bankName.trim() ? (
+          <>
+            Awesome, <span className="text-[var(--brand)] font-bold">{bankName.trim()}</span>! What nickname should we give this account?
+          </>
+        ) : (
+          "What nickname should we give this account?"
+        );
+      case "account_balance":
+        return accountName.trim() ? (
+          <>
+            Love &ldquo;<span className="text-white font-bold">{accountName.trim()}</span>&rdquo;! What is your current balance in this account right now?
+          </>
+        ) : bankName.trim() ? (
+          <>
+            Great! What is your current balance in your <span className="text-[var(--brand)] font-bold">{bankName.trim()}</span> account?
+          </>
+        ) : (
+          "What is your current balance in this account right now?"
+        );
+      case "income_amount":
+        return accountBalance.trim() ? (
+          <>
+            <span className="text-[var(--gain)] font-bold">₦{accountBalance}</span> locked and secured! How much estimated monthly income do you receive?
+          </>
+        ) : (
+          "How much estimated income do you receive each month?"
+        );
+      case "income_payday":
+        return incomeAmount.trim() ? (
+          <>
+            <span className="text-[var(--gain)] font-bold">₦{incomeAmount}</span> noted! What day of the month do you typically receive this income?
+          </>
+        ) : (
+          "What day of the month do you typically receive your income?"
+        );
+      case "bill_ask":
+        return incomePayday.trim() ? (
+          <>
+            Payday on the <span className="text-white font-bold">{incomePayday}{getOrdinal(Number(incomePayday))}</span> locked! Do you have any recurring bills or subscriptions to safeguard your cash from?
+          </>
+        ) : (
+          "Do you have any recurring bills or subscriptions (like rent, electricity, wifi) to safeguard your cash from?"
+        );
+      case "bill_name":
+        return "Great! What is the name of this recurring bill or subscription?";
+      case "bill_amount":
+        return billName.trim() ? (
+          <>
+            Got <span className="text-[var(--brand)] font-bold">{billName.trim()}</span>! How much is your monthly payment for it?
+          </>
+        ) : (
+          "How much is your monthly payment for this bill?"
+        );
+      case "bill_due_day":
+        return billAmount.trim() && billName.trim() ? (
+          <>
+            <span className="text-[var(--brand)] font-bold">₦{billAmount}</span> for <span className="text-white font-bold">{billName.trim()}</span>! What day of the month is this bill due?
+          </>
+        ) : (
+          "What day of the month is this bill due?"
+        );
+      case "ready":
+        return (
+          <>
+            Your foundation is set, <span className="font-bold text-white">{firstName}</span>! Your primary account, income runway, and obligations are active. Let me show you around your dashboard!
+          </>
+        );
+      default:
+        return "";
+    }
+  };
+
   return (
     <div
       className="fixed inset-x-0 z-[250] flex flex-col justify-between items-center bg-[#070709] text-white overflow-hidden select-none px-6"
@@ -253,15 +351,21 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
       {/* Ambient Brand Glow */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] h-[340px] rounded-full bg-[var(--brand)]/15 blur-[90px] pointer-events-none" />
 
-      {/* Mascot Section — Living Oggy (Subject stays visible and centered) */}
+      {/* Mascot Section — Living Oggy (Subject) + Conversational Chat Bubble from Mascot */}
       <div className="relative z-10 flex-1 min-h-0 flex flex-col items-center justify-center w-full py-2">
         <motion.div
           animate={
-            isSilly
+            isEnthusiastic
               ? {
-                  x: [0, -65, 75, -20, 0],
-                  y: [0, -18, 12, -6, 0],
-                  rotate: [0, -14, 16, -6, 0],
+                  y: [0, -14, 0, -6, 0],
+                  rotate: [0, 5, -5, 2, 0],
+                  scale: isKeyboardOpen ? [0.82, 0.9, 0.82, 0.86, 0.82] : [1, 1.1, 0.98, 1.05, 1],
+                }
+              : isSilly
+              ? {
+                  x: [0, -55, 65, -18, 0],
+                  y: [0, -15, 12, -5, 0],
+                  rotate: [0, -12, 14, -5, 0],
                   scale: isKeyboardOpen ? [0.82, 0.88, 0.78, 0.85, 0.82] : [1, 1.08, 0.94, 1.04, 1],
                 }
               : {
@@ -272,7 +376,9 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
                 }
           }
           transition={
-            isSilly
+            isEnthusiastic
+              ? { duration: 1.2, ease: "easeInOut" }
+              : isSilly
               ? { duration: 2.2, ease: "easeInOut" }
               : { duration: 3.2, repeat: Infinity, ease: "easeInOut" }
           }
@@ -286,9 +392,31 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
             forceDark={true}
           />
         </motion.div>
+
+        {/* Chat Bubble coming directly from Oggy */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={stage}
+            initial={{ opacity: 0, scale: 0.92, y: 8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.92, y: -8 }}
+            transition={{ duration: 0.22, ease: "easeOut" }}
+            className="flex flex-col items-center mt-3 max-w-[340px] sm:max-w-sm w-full relative z-10"
+          >
+            {/* Beak / Pointer tail pointing directly up to Oggy's mouth */}
+            <div className="w-0 h-0 border-x-[8px] border-x-transparent border-b-[8px] border-b-[#18181b] z-20" />
+
+            {/* Bubble Surface */}
+            <div className="w-full rounded-[22px] bg-[#18181b] border border-white/10 px-5 py-3.5 shadow-2xl text-center">
+              <p className="text-[14.5px] sm:text-[15.5px] font-medium text-white/95 leading-relaxed">
+                {getOggySpeechText()}
+              </p>
+            </div>
+          </motion.div>
+        </AnimatePresence>
       </div>
 
-      {/* Conversational Stream: Positioned at bottom, elevating smoothly with visual viewport */}
+      {/* Input Section: Docked at bottom, elevating smoothly with visual viewport */}
       <div
         className="relative z-10 max-w-sm mx-auto w-full shrink-0 space-y-4"
         style={{
@@ -303,18 +431,8 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -14 }}
-              transition={{ duration: 0.28 }}
-              className="space-y-4"
+              transition={{ duration: 0.24 }}
             >
-              <div className="p-4 rounded-[22px] bg-[#141417] border border-white/10 shadow-xl space-y-2 text-left">
-                <p className="text-[16px] font-semibold text-white leading-relaxed">
-                  Hello {firstName}. I am <span className="text-[var(--brand)] font-bold">Oggy</span>, your personal wealth manager.
-                </p>
-                <p className="text-[13.5px] text-white/70 leading-relaxed">
-                  I will help you take control of your financial runway, safeguard your cash, and grow your wealth. Let us get to know your finances.
-                </p>
-              </div>
-
               <button
                 type="button"
                 onClick={() => setStage("bank_name")}
@@ -333,39 +451,32 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -14 }}
-              transition={{ duration: 0.28 }}
+              transition={{ duration: 0.24 }}
               className="space-y-3"
             >
-              <div className="p-4 rounded-[22px] bg-[#141417] border border-white/10 shadow-lg text-left">
-                <p className="text-[15px] text-white leading-snug">
-                  What bank or financial institution would you like to add first?
-                </p>
-              </div>
+              <input
+                type="text"
+                value={bankName}
+                onChange={(e) => setBankName(e.target.value)}
+                onFocus={handleInputFocus}
+                placeholder="Enter bank name (e.g. GTBank, Kuda, Cash)"
+                className="w-full rounded-2xl bg-[#141417] border border-white/15 px-4 py-3.5 text-[16px] text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30 shadow-lg"
+                style={{ fontSize: "16px" }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && bankName.trim()) setStage("account_name");
+                }}
+                autoFocus
+              />
 
-              <div className="space-y-3">
-                <input
-                  type="text"
-                  value={bankName}
-                  onChange={(e) => setBankName(e.target.value)}
-                  onFocus={handleInputFocus}
-                  placeholder="Enter bank name (e.g. GTBank, Kuda, Cash)"
-                  className="w-full rounded-2xl bg-white/5 border border-white/15 px-4 py-3 text-[16px] text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30"
-                  style={{ fontSize: "16px" }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && bankName.trim()) setStage("account_name");
-                  }}
-                />
-
-                <button
-                  type="button"
-                  disabled={!bankName.trim()}
-                  onClick={() => setStage("account_name")}
-                  className="w-full h-12 rounded-full bg-[var(--brand)] text-[var(--brand-ink)] font-bold text-[14.5px] flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform disabled:opacity-40"
-                >
-                  <span>Continue</span>
-                  <ArrowRight size={16} strokeWidth={2.5} />
-                </button>
-              </div>
+              <button
+                type="button"
+                disabled={!bankName.trim()}
+                onClick={() => setStage("account_name")}
+                className="w-full h-12 rounded-full bg-[var(--brand)] text-[var(--brand-ink)] font-bold text-[14.5px] flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform disabled:opacity-40"
+              >
+                <span>Continue</span>
+                <ArrowRight size={16} strokeWidth={2.5} />
+              </button>
             </motion.div>
           )}
 
@@ -376,38 +487,31 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -14 }}
-              transition={{ duration: 0.28 }}
+              transition={{ duration: 0.24 }}
               className="space-y-3"
             >
-              <div className="p-4 rounded-[22px] bg-[#141417] border border-white/10 shadow-lg text-left">
-                <p className="text-[15px] text-white leading-snug">
-                  What should we name this account?
-                </p>
-              </div>
+              <input
+                type="text"
+                value={accountName}
+                onChange={(e) => setAccountName(e.target.value)}
+                onFocus={handleInputFocus}
+                placeholder="e.g. Main Checking or Daily Spending"
+                className="w-full rounded-2xl bg-[#141417] border border-white/15 px-4 py-3.5 text-[16px] text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30 shadow-lg"
+                style={{ fontSize: "16px" }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") setStage("account_balance");
+                }}
+                autoFocus
+              />
 
-              <div className="space-y-3">
-                <input
-                  type="text"
-                  value={accountName}
-                  onChange={(e) => setAccountName(e.target.value)}
-                  onFocus={handleInputFocus}
-                  placeholder="e.g. Main Checking or Daily Spending"
-                  className="w-full rounded-2xl bg-white/5 border border-white/15 px-4 py-3 text-[16px] text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30"
-                  style={{ fontSize: "16px" }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") setStage("account_balance");
-                  }}
-                />
-
-                <button
-                  type="button"
-                  onClick={() => setStage("account_balance")}
-                  className="w-full h-12 rounded-full bg-[var(--brand)] text-[var(--brand-ink)] font-bold text-[14.5px] flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform"
-                >
-                  <span>Continue</span>
-                  <ArrowRight size={16} strokeWidth={2.5} />
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => setStage("account_balance")}
+                className="w-full h-12 rounded-full bg-[var(--brand)] text-[var(--brand-ink)] font-bold text-[14.5px] flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform"
+              >
+                <span>Continue</span>
+                <ArrowRight size={16} strokeWidth={2.5} />
+              </button>
             </motion.div>
           )}
 
@@ -418,43 +522,36 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -14 }}
-              transition={{ duration: 0.28 }}
+              transition={{ duration: 0.24 }}
               className="space-y-3"
             >
-              <div className="p-4 rounded-[22px] bg-[#141417] border border-white/10 shadow-lg text-left">
-                <p className="text-[15px] text-white leading-snug">
-                  What is your current balance in this account?
-                </p>
+              <div className="relative flex items-center">
+                <span className="absolute left-4 text-[17px] font-bold text-white/60">₦</span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={accountBalance}
+                  onChange={(e) => setAccountBalance(formatAmountWithCommas(e.target.value))}
+                  onFocus={handleInputFocus}
+                  placeholder="0"
+                  className="w-full rounded-2xl bg-[#141417] border border-white/15 pl-9 pr-4 py-3.5 text-[16px] font-bold text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30 shadow-lg"
+                  style={{ fontSize: "16px" }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleSaveAccount();
+                  }}
+                  autoFocus
+                />
               </div>
 
-              <div className="space-y-3">
-                <div className="relative flex items-center">
-                  <span className="absolute left-4 text-[17px] font-bold text-white/60">₦</span>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={accountBalance}
-                    onChange={(e) => setAccountBalance(formatAmountWithCommas(e.target.value))}
-                    onFocus={handleInputFocus}
-                    placeholder="0"
-                    className="w-full rounded-2xl bg-white/5 border border-white/15 pl-9 pr-4 py-3 text-[16px] font-bold text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30"
-                    style={{ fontSize: "16px" }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") handleSaveAccount();
-                    }}
-                  />
-                </div>
-
-                <button
-                  type="button"
-                  disabled={isSaving}
-                  onClick={handleSaveAccount}
-                  className="w-full h-12 rounded-full bg-[var(--brand)] text-[var(--brand-ink)] font-bold text-[14.5px] flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform disabled:opacity-50"
-                >
-                  <span>Save Account</span>
-                  <ArrowRight size={16} strokeWidth={2.5} />
-                </button>
-              </div>
+              <button
+                type="button"
+                disabled={isSaving}
+                onClick={handleSaveAccount}
+                className="w-full h-12 rounded-full bg-[var(--brand)] text-[var(--brand-ink)] font-bold text-[14.5px] flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform disabled:opacity-50"
+              >
+                <span>Save Account</span>
+                <ArrowRight size={16} strokeWidth={2.5} />
+              </button>
             </motion.div>
           )}
 
@@ -465,57 +562,47 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -14 }}
-              transition={{ duration: 0.28 }}
+              transition={{ duration: 0.24 }}
               className="space-y-3"
             >
-              <div className="p-4 rounded-[22px] bg-[#141417] border border-white/10 shadow-lg text-left">
-                <p className="text-[15px] text-white leading-snug">
-                  How much estimated income do you receive each month?
-                </p>
-                <p className="text-[12.5px] text-white/50 mt-1">
-                  This sets up your daily Safe to Spend runway.
-                </p>
+              <div className="relative flex items-center">
+                <span className="absolute left-4 text-[17px] font-bold text-white/60">₦</span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={incomeAmount}
+                  onChange={(e) => setIncomeAmount(formatAmountWithCommas(e.target.value))}
+                  onFocus={handleInputFocus}
+                  placeholder="e.g. 250,000"
+                  className="w-full rounded-2xl bg-[#141417] border border-white/15 pl-9 pr-4 py-3.5 text-[16px] font-bold text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30 shadow-lg"
+                  style={{ fontSize: "16px" }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      if (parseNumberInput(incomeAmount) > 0) setStage("income_payday");
+                      else setStage("bill_ask");
+                    }
+                  }}
+                  autoFocus
+                />
               </div>
 
-              <div className="space-y-3">
-                <div className="relative flex items-center">
-                  <span className="absolute left-4 text-[17px] font-bold text-white/60">₦</span>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={incomeAmount}
-                    onChange={(e) => setIncomeAmount(formatAmountWithCommas(e.target.value))}
-                    onFocus={handleInputFocus}
-                    placeholder="e.g. 250,000"
-                    className="w-full rounded-2xl bg-white/5 border border-white/15 pl-9 pr-4 py-3 text-[16px] font-bold text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30"
-                    style={{ fontSize: "16px" }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        if (parseNumberInput(incomeAmount) > 0) setStage("income_payday");
-                        else setStage("bill_ask");
-                      }
-                    }}
-                  />
-                </div>
-
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setStage("bill_ask")}
-                    className="flex-1 h-12 rounded-full bg-white/10 text-white/80 font-medium text-[13.5px] hover:bg-white/15 transition-colors"
-                  >
-                    Skip for now
-                  </button>
-                  <button
-                    type="button"
-                    disabled={parseNumberInput(incomeAmount) <= 0}
-                    onClick={() => setStage("income_payday")}
-                    className="flex-[2] h-12 rounded-full bg-[var(--brand)] text-[var(--brand-ink)] font-bold text-[14.5px] flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform disabled:opacity-40"
-                  >
-                    <span>Continue</span>
-                    <ArrowRight size={16} strokeWidth={2.5} />
-                  </button>
-                </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setStage("bill_ask")}
+                  className="flex-1 h-12 rounded-full bg-white/10 text-white/80 font-medium text-[13.5px] hover:bg-white/15 transition-colors"
+                >
+                  Skip for now
+                </button>
+                <button
+                  type="button"
+                  disabled={parseNumberInput(incomeAmount) <= 0}
+                  onClick={() => setStage("income_payday")}
+                  className="flex-[2] h-12 rounded-full bg-[var(--brand)] text-[var(--brand-ink)] font-bold text-[14.5px] flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform disabled:opacity-40"
+                >
+                  <span>Continue</span>
+                  <ArrowRight size={16} strokeWidth={2.5} />
+                </button>
               </div>
             </motion.div>
           )}
@@ -527,45 +614,35 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -14 }}
-              transition={{ duration: 0.28 }}
+              transition={{ duration: 0.24 }}
               className="space-y-3"
             >
-              <div className="p-4 rounded-[22px] bg-[#141417] border border-white/10 shadow-lg text-left">
-                <p className="text-[15px] text-white leading-snug">
-                  What day of the month do you typically receive your income?
-                </p>
-                <p className="text-[12.5px] text-white/50 mt-1">
-                  Enter any day between 1 and 31.
-                </p>
-              </div>
+              <input
+                type="number"
+                inputMode="numeric"
+                min="1"
+                max="31"
+                value={incomePayday}
+                onChange={(e) => setIncomePayday(e.target.value)}
+                onFocus={handleInputFocus}
+                placeholder="Enter day of month (e.g. 25)"
+                className="w-full rounded-2xl bg-[#141417] border border-white/15 px-4 py-3.5 text-[16px] text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30 shadow-lg"
+                style={{ fontSize: "16px" }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSaveIncome();
+                }}
+                autoFocus
+              />
 
-              <div className="space-y-3">
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  min="1"
-                  max="31"
-                  value={incomePayday}
-                  onChange={(e) => setIncomePayday(e.target.value)}
-                  onFocus={handleInputFocus}
-                  placeholder="Enter day of month (e.g. 25)"
-                  className="w-full rounded-2xl bg-white/5 border border-white/15 px-4 py-3 text-[16px] text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30"
-                  style={{ fontSize: "16px" }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleSaveIncome();
-                  }}
-                />
-
-                <button
-                  type="button"
-                  disabled={isSaving}
-                  onClick={handleSaveIncome}
-                  className="w-full h-12 rounded-full bg-[var(--brand)] text-[var(--brand-ink)] font-bold text-[14.5px] flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform disabled:opacity-50"
-                >
-                  <span>Save Income</span>
-                  <ArrowRight size={16} strokeWidth={2.5} />
-                </button>
-              </div>
+              <button
+                type="button"
+                disabled={isSaving}
+                onClick={handleSaveIncome}
+                className="w-full h-12 rounded-full bg-[var(--brand)] text-[var(--brand-ink)] font-bold text-[14.5px] flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform disabled:opacity-50"
+              >
+                <span>Save Income</span>
+                <ArrowRight size={16} strokeWidth={2.5} />
+              </button>
             </motion.div>
           )}
 
@@ -576,36 +653,25 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -14 }}
-              transition={{ duration: 0.28 }}
-              className="space-y-3"
+              transition={{ duration: 0.24 }}
+              className="space-y-2 pt-1"
             >
-              <div className="p-4 rounded-[22px] bg-[#141417] border border-white/10 shadow-lg text-left">
-                <p className="text-[15px] text-white leading-snug">
-                  Do you have any recurring bills or subscriptions you would like me to safeguard your balance for?
-                </p>
-                <p className="text-[12.5px] text-white/50 mt-1">
-                  Such as rent, electricity, wifi, or streaming.
-                </p>
-              </div>
+              <button
+                type="button"
+                onClick={() => setStage("bill_name")}
+                className="w-full h-12 rounded-full bg-[var(--brand)] text-[var(--brand-ink)] font-bold text-[14.5px] flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform"
+              >
+                <span>Yes, add a recurring bill</span>
+                <ArrowRight size={16} strokeWidth={2.5} />
+              </button>
 
-              <div className="space-y-2 pt-1">
-                <button
-                  type="button"
-                  onClick={() => setStage("bill_name")}
-                  className="w-full h-12 rounded-full bg-[var(--brand)] text-[var(--brand-ink)] font-bold text-[14.5px] flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform"
-                >
-                  <span>Yes, add a recurring bill</span>
-                  <ArrowRight size={16} strokeWidth={2.5} />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={finishOnboarding}
-                  className="w-full h-12 rounded-full bg-white/10 text-white/80 font-medium text-[13.5px] hover:bg-white/15 transition-colors"
-                >
-                  No recurring bills right now
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={finishOnboarding}
+                className="w-full h-12 rounded-full bg-white/10 text-white/80 font-medium text-[13.5px] hover:bg-white/15 transition-colors"
+              >
+                No recurring bills right now
+              </button>
             </motion.div>
           )}
 
@@ -616,39 +682,32 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -14 }}
-              transition={{ duration: 0.28 }}
+              transition={{ duration: 0.24 }}
               className="space-y-3"
             >
-              <div className="p-4 rounded-[22px] bg-[#141417] border border-white/10 shadow-lg text-left">
-                <p className="text-[15px] text-white leading-snug">
-                  What is the name of this bill?
-                </p>
-              </div>
+              <input
+                type="text"
+                value={billName}
+                onChange={(e) => setBillName(e.target.value)}
+                onFocus={handleInputFocus}
+                placeholder="e.g. Internet, Rent, Electricity"
+                className="w-full rounded-2xl bg-[#141417] border border-white/15 px-4 py-3.5 text-[16px] text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30 shadow-lg"
+                style={{ fontSize: "16px" }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && billName.trim()) setStage("bill_amount");
+                }}
+                autoFocus
+              />
 
-              <div className="space-y-3">
-                <input
-                  type="text"
-                  value={billName}
-                  onChange={(e) => setBillName(e.target.value)}
-                  onFocus={handleInputFocus}
-                  placeholder="e.g. Internet, Rent, Electricity"
-                  className="w-full rounded-2xl bg-white/5 border border-white/15 px-4 py-3 text-[16px] text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30"
-                  style={{ fontSize: "16px" }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && billName.trim()) setStage("bill_amount");
-                  }}
-                />
-
-                <button
-                  type="button"
-                  disabled={!billName.trim()}
-                  onClick={() => setStage("bill_amount")}
-                  className="w-full h-12 rounded-full bg-[var(--brand)] text-[var(--brand-ink)] font-bold text-[14.5px] flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform disabled:opacity-40"
-                >
-                  <span>Continue</span>
-                  <ArrowRight size={16} strokeWidth={2.5} />
-                </button>
-              </div>
+              <button
+                type="button"
+                disabled={!billName.trim()}
+                onClick={() => setStage("bill_amount")}
+                className="w-full h-12 rounded-full bg-[var(--brand)] text-[var(--brand-ink)] font-bold text-[14.5px] flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform disabled:opacity-40"
+              >
+                <span>Continue</span>
+                <ArrowRight size={16} strokeWidth={2.5} />
+              </button>
             </motion.div>
           )}
 
@@ -659,43 +718,36 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -14 }}
-              transition={{ duration: 0.28 }}
+              transition={{ duration: 0.24 }}
               className="space-y-3"
             >
-              <div className="p-4 rounded-[22px] bg-[#141417] border border-white/10 shadow-lg text-left">
-                <p className="text-[15px] text-white leading-snug">
-                  How much is your monthly {billName || "bill"}?
-                </p>
+              <div className="relative flex items-center">
+                <span className="absolute left-4 text-[17px] font-bold text-white/60">₦</span>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={billAmount}
+                  onChange={(e) => setBillAmount(formatAmountWithCommas(e.target.value))}
+                  onFocus={handleInputFocus}
+                  placeholder="e.g. 15,000"
+                  className="w-full rounded-2xl bg-[#141417] border border-white/15 pl-9 pr-4 py-3.5 text-[16px] font-bold text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30 shadow-lg"
+                  style={{ fontSize: "16px" }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && parseNumberInput(billAmount) > 0) setStage("bill_due_day");
+                  }}
+                  autoFocus
+                />
               </div>
 
-              <div className="space-y-3">
-                <div className="relative flex items-center">
-                  <span className="absolute left-4 text-[17px] font-bold text-white/60">₦</span>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={billAmount}
-                    onChange={(e) => setBillAmount(formatAmountWithCommas(e.target.value))}
-                    onFocus={handleInputFocus}
-                    placeholder="e.g. 15,000"
-                    className="w-full rounded-2xl bg-white/5 border border-white/15 pl-9 pr-4 py-3 text-[16px] font-bold text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30"
-                    style={{ fontSize: "16px" }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && parseNumberInput(billAmount) > 0) setStage("bill_due_day");
-                    }}
-                  />
-                </div>
-
-                <button
-                  type="button"
-                  disabled={parseNumberInput(billAmount) <= 0}
-                  onClick={() => setStage("bill_due_day")}
-                  className="w-full h-12 rounded-full bg-[var(--brand)] text-[var(--brand-ink)] font-bold text-[14.5px] flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform disabled:opacity-40"
-                >
-                  <span>Continue</span>
-                  <ArrowRight size={16} strokeWidth={2.5} />
-                </button>
-              </div>
+              <button
+                type="button"
+                disabled={parseNumberInput(billAmount) <= 0}
+                onClick={() => setStage("bill_due_day")}
+                className="w-full h-12 rounded-full bg-[var(--brand)] text-[var(--brand-ink)] font-bold text-[14.5px] flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform disabled:opacity-40"
+              >
+                <span>Continue</span>
+                <ArrowRight size={16} strokeWidth={2.5} />
+              </button>
             </motion.div>
           )}
 
@@ -706,45 +758,35 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -14 }}
-              transition={{ duration: 0.28 }}
+              transition={{ duration: 0.24 }}
               className="space-y-3"
             >
-              <div className="p-4 rounded-[22px] bg-[#141417] border border-white/10 shadow-lg text-left">
-                <p className="text-[15px] text-white leading-snug">
-                  What day of the month is this bill due?
-                </p>
-                <p className="text-[12.5px] text-white/50 mt-1">
-                  Enter any day between 1 and 31.
-                </p>
-              </div>
+              <input
+                type="number"
+                inputMode="numeric"
+                min="1"
+                max="31"
+                value={billDueDay}
+                onChange={(e) => setBillDueDay(e.target.value)}
+                onFocus={handleInputFocus}
+                placeholder="Enter day of month (e.g. 5)"
+                className="w-full rounded-2xl bg-[#141417] border border-white/15 px-4 py-3.5 text-[16px] text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30 shadow-lg"
+                style={{ fontSize: "16px" }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSaveBill();
+                }}
+                autoFocus
+              />
 
-              <div className="space-y-3">
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  min="1"
-                  max="31"
-                  value={billDueDay}
-                  onChange={(e) => setBillDueDay(e.target.value)}
-                  onFocus={handleInputFocus}
-                  placeholder="Enter day of month (e.g. 5)"
-                  className="w-full rounded-2xl bg-white/5 border border-white/15 px-4 py-3 text-[16px] text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30"
-                  style={{ fontSize: "16px" }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleSaveBill();
-                  }}
-                />
-
-                <button
-                  type="button"
-                  disabled={isSaving}
-                  onClick={handleSaveBill}
-                  className="w-full h-12 rounded-full bg-[var(--brand)] text-[var(--brand-ink)] font-bold text-[14.5px] flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform disabled:opacity-50"
-                >
-                  <span>Save & Complete Setup</span>
-                  <ArrowRight size={16} strokeWidth={2.5} />
-                </button>
-              </div>
+              <button
+                type="button"
+                disabled={isSaving}
+                onClick={handleSaveBill}
+                className="w-full h-12 rounded-full bg-[var(--brand)] text-[var(--brand-ink)] font-bold text-[14.5px] flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform disabled:opacity-50"
+              >
+                <span>Save & Complete Setup</span>
+                <ArrowRight size={16} strokeWidth={2.5} />
+              </button>
             </motion.div>
           )}
 
@@ -754,21 +796,8 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
               key="ready"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3 }}
-              className="space-y-4"
+              transition={{ duration: 0.28 }}
             >
-              <div className="p-4 rounded-[22px] bg-[#141417] border border-white/10 shadow-2xl text-left space-y-2">
-                <p className="text-[16px] font-bold text-white leading-snug">
-                  Your foundation is set, {firstName}.
-                </p>
-                <p className="text-[13.5px] text-white/70 leading-relaxed">
-                  Your primary account, income, and commitments are locked in. Your Safe to Spend calculations are active.
-                </p>
-                <p className="text-[13px] text-white/50">
-                  Let me walk you through your dashboard so you know exactly where everything lives.
-                </p>
-              </div>
-
               <button
                 type="button"
                 onClick={onComplete}
