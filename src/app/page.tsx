@@ -48,7 +48,7 @@ import { Field, Button } from "@/components/ui/form";
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
 import {
   ChevronRight, Receipt, ChevronDown, Plus, Trash2,
-  PiggyBank, PieChart, ArrowLeftRight, Bell, Crown, Award, Lightbulb, Loader2, Sparkles, ArrowRight
+  PiggyBank, PieChart, ArrowLeftRight, Bell, Crown, Award, Lightbulb, Loader2, ArrowRight
 } from "lucide-react";
 import { TransactionsScreen } from "@/components/screens/transactions-screen";
 import { OnboardingCarousel } from "@/components/screens/onboarding-carousel";
@@ -757,20 +757,23 @@ export default function SandboxPage() {
                 )}
 
                 {/* CHANGED: Pass heroSpent instead of spentThisMonth to match the Budget screen math */}
-                <SafeToSpendHero 
-                  data={safeToSpend} 
-                  netAcross={netAcrossAccounts} 
-                  liquidAssets={liquidAssets} 
-                  spentThisMonth={heroSpent} 
-                  incomeThisMonth={incomeThisMonth} 
-                  budgetLimit={budgetLimit} 
-                  periodLabel={periodLabel} 
-                  daysUntilIncome={daysUntilIncome}
-                  nextIncomeDate={nextIncomeDate} 
-                />
+                <div data-tour="hero" className="w-full">
+                  <SafeToSpendHero 
+                    data={safeToSpend} 
+                    netAcross={netAcrossAccounts} 
+                    liquidAssets={liquidAssets} 
+                    spentThisMonth={heroSpent} 
+                    incomeThisMonth={incomeThisMonth} 
+                    budgetLimit={budgetLimit} 
+                    periodLabel={periodLabel} 
+                    daysUntilIncome={daysUntilIncome}
+                    nextIncomeDate={nextIncomeDate} 
+                  />
+                </div>
 
                 {accounts.length > 0 && (
                   <motion.button
+                    data-tour="daily-insight"
                     whileTap={{ scale: 0.985 }}
                     onClick={() => setActiveScreen("ai")}
                     className="group relative overflow-hidden w-full flex items-center justify-between rounded-[20px] bg-[#141417] border border-white/10 py-2.5 px-3.5 sm:py-3 sm:px-4 text-left shadow-lg cursor-pointer select-none"
@@ -834,7 +837,7 @@ export default function SandboxPage() {
                   </motion.button>
                 )}
 
-                <div className="grid grid-cols-3 gap-3">
+                <div data-tour="tools" className="grid grid-cols-3 gap-3">
                   <button onClick={() => setActiveScreen("budget")} className="press flex h-14 items-center justify-center rounded-[18px] border border-white/5 bg-[#1c1c1e]">
                     <PiggyBank size={20} color="var(--brand)" />
                   </button>
@@ -849,7 +852,7 @@ export default function SandboxPage() {
                 {setupError && <p className="px-1 text-[11px] text-[var(--danger)]">Setup status failed: {setupError}</p>}
                 {showChecklist && <SetupChecklist status={setupStatus!} onStartStep={handleStartSetupStep} onDismiss={handleDismissChecklist} />}
 
-                <div className="w-full">
+                <div data-tour="accounts" className="w-full">
                   <div className="mb-3 flex items-center justify-between px-1">
                     <h3 className="text-[15px] font-semibold text-[var(--text-1)]">My Accounts</h3>
                     <button onClick={() => setActiveScreen("accounts")} className="text-[12px] font-medium text-[var(--brand)]">

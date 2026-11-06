@@ -33,6 +33,15 @@ export function formatNumberInput(value: string | number): string {
   }).format(num);
 }
 
+export function formatAmountWithCommas(raw: string | number): string {
+  if (raw === "" || raw === null || raw === undefined) return "";
+  const str = String(raw).replace(/[^0-9.]/g, "");
+  if (!str) return "";
+  const parts = str.split(".");
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return parts.slice(0, 2).join(".");
+}
+
 export function parseNumberInput(value: string): number {
   if (!value) return 0;
   const cleaned = value.replace(/[^0-9.-]+/g, "");

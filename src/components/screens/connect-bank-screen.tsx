@@ -14,7 +14,7 @@ import {
   X,
   Crown,
   Zap,
-  Sparkles,
+  Award,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/toast";
@@ -374,7 +374,7 @@ export function ConnectBankScreen({
                     <span>Strictly read-only 256-bit bank encryption</span>
                   </div>
                   <div className="flex items-center gap-2.5 text-[11.5px] text-white/85">
-                    <Sparkles size={13} className="text-[#e8a23b] shrink-0" />
+                    <Award size={13} className="text-[#e8a23b] shrink-0" />
                     <span>Autonomous daily Safe-to-Spend & AI CFO advice</span>
                   </div>
                 </div>

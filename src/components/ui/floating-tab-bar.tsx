@@ -36,6 +36,7 @@ export function FloatingTabBar({ activeTab, onTabChange, onAddClick, isHidden }:
             return (
               <button
                 key={id}
+                data-tour={id === "ai" ? "nav-ai" : undefined}
                 onClick={() => onTabChange(id)}
                 aria-label={label}
                 className={cn(
@@ -65,6 +66,7 @@ export function FloatingTabBar({ activeTab, onTabChange, onAddClick, isHidden }:
 
         {onAddClick && (
           <button
+            data-tour="nav-add"
             onClick={onAddClick}
             className="ml-3 flex h-14 w-14 shrink-0 items-center justify-center rounded-full shadow-2xl shadow-black/50 transition-transform active:scale-95 text-black"
             style={{ 

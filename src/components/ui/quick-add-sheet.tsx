@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Modal } from "./modal";
 import { Button } from "./form";
 import { createClient } from "@/lib/supabase/client";
-import { parseNumberInput } from "@/lib/format";
+import { parseNumberInput, formatAmountWithCommas } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Delete, ArrowRightLeft, CreditCard, ChevronDown, Plus } from "lucide-react";
 import { useWorkspace } from "@/lib/workspace";
@@ -161,7 +161,7 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
         {/* Big Amount */}
         <div className="flex flex-col items-center justify-center py-8 shrink-0">
           <p className="text-[52px] font-bold tabular tracking-tight text-white leading-none">
-            ₦{amount || "0"}
+            ₦{formatAmountWithCommas(amount) || "0"}
           </p>
         </div>
 

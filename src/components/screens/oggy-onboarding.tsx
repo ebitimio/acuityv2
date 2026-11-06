@@ -2,66 +2,48 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Wallet, Building2, Banknote, ArrowRight, Check,
-  Sparkles, Calendar, DollarSign, ShieldCheck, ChevronRight
-} from "lucide-react";
+import { ArrowRight, ChevronLeft, Check } from "lucide-react";
 import { AcuityCompanion } from "@/components/ui/acuity-companion";
 import { useWorkspace } from "@/lib/workspace";
 import { createClient } from "@/lib/supabase/client";
-import { createAccount, addRecurringItem, completeOnboarding } from "@/lib/supabase/database";
+import { addRecurringItem, completeOnboarding } from "@/lib/supabase/database";
 import { useToast } from "@/components/ui/toast";
+import { formatAmountWithCommas, parseNumberInput } from "@/lib/format";
 
 interface OggyOnboardingProps {
   userName?: string;
   onComplete: () => void;
 }
 
-type OnboardingStep = "welcome" | "account" | "income" | "bill" | "ready";
-
-const POPULAR_BANKS = [
-  "GTBank",
-  "Kuda Bank",
-  "OPay",
-  "Access Bank",
-  "Zenith Bank",
-  "Moniepoint",
-  "UBA",
-  "Cash Wallet",
-];
-
-const INCOME_SOURCES = [
-  { label: "Salary", icon: "💼" },
-  { label: "Freelancing", icon: "💻" },
-  { label: "Business", icon: "🛍️" },
-  { label: "Allowance", icon: "🎁" },
-];
-
-const COMMON_BILLS = [
-  { label: "Rent", icon: "🏠" },
-  { label: "Internet", icon: "📡" },
-  { label: "Electricity", icon: "⚡" },
-  { label: "Netflix / Subs", icon: "🍿" },
-  { label: "Family Support", icon: "👨‍👩‍👧" },
-];
+type ChatStage =
+  | "intro"
+  | "bank_name"
+  | "account_name"
+  | "account_balance"
+  | "income_amount"
+  | "income_payday"
+  | "bill_ask"
+  | "bill_name"
+  | "bill_amount"
+  | "bill_due_day"
+  | "ready";
 
 export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
-  const [step, setStep] = useState<OnboardingStep>("welcome");
+  const [stage, setStage] = useState<ChatStage>("intro");
   const [isSaving, setIsSaving] = useState(false);
   const [createdAccountId, setCreatedAccountId] = useState<string | null>(null);
 
-  // Form State
-  const [bankName, setBankName] = useState("GTBank");
-  const [accountName, setAccountName] = useState("Main Checking");
+  // User input states
+  const [bankName, setBankName] = useState("");
+  const [accountName, setAccountName] = useState("");
   const [accountBalance, setAccountBalance] = useState("");
 
-  const [incomeSource, setIncomeSource] = useState("Salary");
   const [incomeAmount, setIncomeAmount] = useState("");
-  const [incomePayday, setIncomePayday] = useState("25");
+  const [incomePayday, setIncomePayday] = useState("");
 
-  const [billName, setBillName] = useState("Internet / Wifi");
+  const [billName, setBillName] = useState("");
   const [billAmount, setBillAmount] = useState("");
-  const [billDueDay, setBillDueDay] = useState("5");
+  const [billDueDay, setBillDueDay] = useState("");
 
   const { active: activeWs } = useWorkspace();
   const supabase = createClient();
@@ -69,22 +51,19 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
 
   const firstName = userName?.trim()?.split(" ")[0] || "there";
 
-  // Mascot dynamic reaction states
-  const [oggyPose, setOggyPose] = useState<"float" | "speak" | "think" | "cheer">("speak");
-
-  const handleCreateAccount = async () => {
+  // Account creation
+  const handleSaveAccount = async () => {
     if (!activeWs) return;
-    const balanceNum = parseFloat(accountBalance.replace(/,/g, "") || "0");
+    const balanceNum = parseNumberInput(accountBalance);
     setIsSaving(true);
-    setOggyPose("think");
 
     try {
       const { data, error } = await supabase
         .from("accounts")
         .insert({
           workspace_id: activeWs.id,
-          name: accountName.trim() || `${bankName} Account`,
-          institution: bankName,
+          name: accountName.trim() || `${bankName.trim() || "Main"} Account`,
+          institution: bankName.trim() || "Checking",
           type: "checking",
           balance_minor: Math.round(balanceNum * 100),
           balance_as_of: new Date().toISOString(),
@@ -95,533 +74,589 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
       if (error) throw error;
       if (data) setCreatedAccountId(data.id);
 
-      setOggyPose("speak");
-      setStep("income");
+      setStage("income_amount");
     } catch (e: any) {
       console.error(e);
-      toast(e.message || "Failed to create account", "err");
-      setOggyPose("speak");
+      toast(e.message || "Could not save account", "err");
     } finally {
       setIsSaving(false);
     }
   };
 
+  // Income creation
   const handleSaveIncome = async () => {
-    const amountNum = parseFloat(incomeAmount.replace(/,/g, "") || "0");
-    if (amountNum <= 0) {
-      // Allow proceeding without income
-      setStep("bill");
-      return;
+    const amountNum = parseNumberInput(incomeAmount);
+    const dayNum = parseInt(incomePayday.trim(), 10);
+
+    if (amountNum > 0) {
+      setIsSaving(true);
+      try {
+        await addRecurringItem({
+          account_id: createdAccountId,
+          name: "Monthly Income",
+          kind: "income",
+          amount: amountNum,
+          frequency: "monthly",
+          day: isNaN(dayNum) || dayNum < 1 || dayNum > 31 ? 25 : dayNum,
+          category: "Income",
+          auto_post: false,
+        });
+      } catch (e: any) {
+        console.error(e);
+      } finally {
+        setIsSaving(false);
+      }
     }
 
-    setIsSaving(true);
-    setOggyPose("think");
-
-    try {
-      await addRecurringItem({
-        account_id: createdAccountId,
-        name: incomeSource,
-        kind: "income",
-        amount: amountNum,
-        frequency: "monthly",
-        day: parseInt(incomePayday, 10) || 25,
-        category: "Income",
-        auto_post: false,
-      });
-
-      setOggyPose("speak");
-      setStep("bill");
-    } catch (e: any) {
-      console.error(e);
-      toast(e.message || "Could not save income", "err");
-      setOggyPose("speak");
-    } finally {
-      setIsSaving(false);
-    }
+    setStage("bill_ask");
   };
 
-  const handleSaveBill = async (skip = false) => {
-    if (skip) {
-      await finishAll();
-      return;
+  // Bill creation
+  const handleSaveBill = async () => {
+    const amountNum = parseNumberInput(billAmount);
+    const dayNum = parseInt(billDueDay.trim(), 10);
+
+    if (amountNum > 0 && billName.trim()) {
+      setIsSaving(true);
+      try {
+        await addRecurringItem({
+          account_id: createdAccountId,
+          name: billName.trim(),
+          kind: "bill",
+          amount: amountNum,
+          frequency: "monthly",
+          day: isNaN(dayNum) || dayNum < 1 || dayNum > 31 ? 5 : dayNum,
+          category: "Bills",
+          auto_post: false,
+        });
+      } catch (e: any) {
+        console.error(e);
+      } finally {
+        setIsSaving(false);
+      }
     }
 
-    const amountNum = parseFloat(billAmount.replace(/,/g, "") || "0");
-    if (amountNum <= 0) {
-      await finishAll();
-      return;
-    }
-
-    setIsSaving(true);
-    setOggyPose("think");
-
-    try {
-      await addRecurringItem({
-        account_id: createdAccountId,
-        name: billName,
-        kind: "bill",
-        amount: amountNum,
-        frequency: "monthly",
-        day: parseInt(billDueDay, 10) || 5,
-        category: "Bills",
-        auto_post: false,
-      });
-
-      await finishAll();
-    } catch (e: any) {
-      console.error(e);
-      toast(e.message || "Could not save bill", "err");
-      setOggyPose("speak");
-      setIsSaving(false);
-    }
+    await finishOnboarding();
   };
 
-  const finishAll = async () => {
+  const finishOnboarding = async () => {
     try {
       await completeOnboarding();
     } catch {}
-    setOggyPose("cheer");
-    setStep("ready");
-    setIsSaving(false);
+    setStage("ready");
   };
 
-  const stepProgress = {
-    welcome: 10,
-    account: 35,
-    income: 65,
-    bill: 90,
-    ready: 100,
-  }[step];
-
   return (
-    <div className="fixed inset-0 z-[250] flex flex-col justify-between bg-[#08080a] text-white overflow-hidden select-none">
-      {/* Ambient Radial Glowing Brand Embers */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[380px] h-[380px] rounded-full bg-[var(--brand)]/15 blur-[100px] pointer-events-none" />
+    <div className="fixed inset-0 z-[250] flex flex-col justify-between bg-[#070709] text-white overflow-hidden select-none px-6 py-8">
+      {/* Ambient Brand Glow */}
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] h-[340px] rounded-full bg-[var(--brand)]/15 blur-[90px] pointer-events-none" />
 
-      {/* Top Header Bar */}
-      <header
-        className="relative z-20 flex items-center justify-between px-6 pb-2 shrink-0"
-        style={{ paddingTop: "calc(env(safe-area-inset-top) + 16px)" }}
-      >
-        <div className="flex items-center gap-2">
-          <div className="flex items-baseline">
-            <span className="text-[20px] font-black tracking-tight text-white">ACUITY</span>
-            <span className="text-[20px] font-black tracking-tight text-[var(--brand)]">.</span>
-          </div>
-          <span className="text-[11px] font-mono tracking-widest text-white/40 uppercase pl-1">
-            • Setup with Oggy
-          </span>
-        </div>
+      {/* Top spacer to balance layout */}
+      <div className="h-6" />
 
-        {step !== "ready" && (
-          <button
-            onClick={() => {
-              completeOnboarding().catch(() => {});
-              onComplete();
-            }}
-            className="text-[12.5px] font-medium text-white/50 hover:text-white px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
-          >
-            Skip setup
-          </button>
-        )}
-      </header>
-
-      {/* Progress Line */}
-      <div className="w-full bg-white/5 h-1">
-        <motion.div
-          animate={{ width: `${stepProgress}%` }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
-          className="h-full bg-[var(--brand)] shadow-[0_0_10px_var(--brand)]"
-        />
-      </div>
-
-      {/* Living Mascot Stage */}
-      <div className="relative z-10 flex flex-col items-center pt-4 sm:pt-6">
-        {/* Living Oggy Companion with Sentient Organic Float */}
+      {/* Mascot Section — Living Oggy */}
+      <div className="relative z-10 flex flex-col items-center">
         <motion.div
           animate={{
-            y: oggyPose === "cheer" ? [0, -18, 0, -10, 0] : [0, -8, 0],
-            rotate: oggyPose === "cheer" ? [0, 8, -8, 4, 0] : [-1.5, 1.5, -1.5],
-            scale: oggyPose === "cheer" ? 1.08 : 1,
+            y: [0, -8, 0],
+            rotate: [-2, 2, -2],
           }}
           transition={{
-            duration: oggyPose === "cheer" ? 0.9 : 3.2,
-            repeat: oggyPose === "cheer" ? 0 : Infinity,
+            duration: 3.2,
+            repeat: Infinity,
             ease: "easeInOut",
           }}
           className="relative flex items-center justify-center cursor-pointer"
         >
-          {/* Oggy Tag */}
-          <div className="absolute -top-7 flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/10 border border-white/15 backdrop-blur-md shadow-xs">
+          {/* Oggy Wealth Manager Badge */}
+          <div className="absolute -top-8 flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-white/10 border border-white/15 backdrop-blur-md shadow-xs">
             <span className="w-1.5 h-1.5 rounded-full bg-[var(--brand)] animate-pulse" />
-            <span className="text-[11px] font-bold text-white tracking-wide">Oggy</span>
-            <span className="text-[9.5px] text-white/60 font-medium">Personal CFO</span>
+            <span className="text-[11.5px] font-bold text-white tracking-wide">Oggy</span>
+            <span className="text-[10px] text-white/60 font-medium">Personal Wealth Manager</span>
           </div>
 
           <AcuityCompanion
             size="large"
-            isSpeaking={step === "welcome" || step === "ready"}
+            isSpeaking={true}
             isThinking={isSaving}
             forceDark={true}
           />
         </motion.div>
       </div>
 
-      {/* Conversational Interaction Panel */}
-      <div className="relative z-10 flex-1 flex flex-col justify-end px-5 pb-6 max-w-lg mx-auto w-full overflow-y-auto">
+      {/* Conversational Stream: Oggy asks, user responds */}
+      <div className="relative z-10 max-w-sm mx-auto w-full space-y-4">
         <AnimatePresence mode="wait">
-          {/* STEP 0: WELCOME & INTRO */}
-          {step === "welcome" && (
+          {/* 1. INTRO */}
+          {stage === "intro" && (
             <motion.div
-              key="welcome"
-              initial={{ opacity: 0, y: 16 }}
+              key="intro"
+              initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -16 }}
+              exit={{ opacity: 0, y: -14 }}
+              transition={{ duration: 0.28 }}
               className="space-y-4"
             >
-              <div className="p-4 rounded-[22px] bg-[#141417] border border-white/10 shadow-xl space-y-2">
-                <p className="text-[17px] font-bold text-white leading-snug">
-                  Hey {firstName}! 👋 I&apos;m <span className="text-[var(--brand)]">Oggy</span>.
+              <div className="p-4 rounded-[22px] bg-[#141417] border border-white/10 shadow-xl space-y-2 text-left">
+                <p className="text-[16px] font-semibold text-white leading-relaxed">
+                  Hello {firstName}. I am <span className="text-[var(--brand)] font-bold">Oggy</span>, your personal wealth manager.
                 </p>
-                <p className="text-[14px] text-white/70 leading-relaxed">
-                  I&apos;m your personal co-pilot here at Acuity. I&apos;ll help you protect your daily runway, stay on top of bills, and know exactly what you can safely spend without going broke.
-                </p>
-                <p className="text-[13px] text-white/50 pt-1">
-                  Let&apos;s get your financial base set up together in under a minute!
+                <p className="text-[13.5px] text-white/70 leading-relaxed">
+                  I will help you take control of your financial runway, safeguard your cash, and grow your wealth. Let us get to know your finances.
                 </p>
               </div>
 
               <button
-                onClick={() => setStep("account")}
-                className="w-full h-13 rounded-full bg-[var(--brand)] text-[var(--brand-ink)] font-bold text-[15px] flex items-center justify-center gap-2 shadow-[0_4px_24px_rgba(222,49,33,0.35)] active:scale-98 transition-transform"
+                type="button"
+                onClick={() => setStage("bank_name")}
+                className="w-full h-13 rounded-full bg-[var(--brand)] text-[var(--brand-ink)] font-bold text-[15px] flex items-center justify-center gap-2 shadow-lg active:scale-98 transition-transform"
               >
-                <span>Let&apos;s do this, Oggy</span>
-                <ArrowRight size={18} strokeWidth={2.5} />
-              </button>
-            </motion.div>
-          )}
-
-          {/* STEP 1: ADD ACCOUNT */}
-          {step === "account" && (
-            <motion.div
-              key="account"
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -16 }}
-              className="space-y-3.5"
-            >
-              {/* Oggy Bubble */}
-              <div className="p-3.5 rounded-[20px] bg-[#141417] border border-white/10 shadow-lg">
-                <p className="text-[14px] text-white/90 font-medium">
-                  Where do you keep your everyday spending money, <span className="text-white font-bold">{firstName}</span>?
-                </p>
-              </div>
-
-              {/* Bank Selection Chips */}
-              <div>
-                <label className="text-[11.5px] font-semibold text-white/50 uppercase tracking-wider pl-1 mb-1.5 block">
-                  Select your bank or wallet
-                </label>
-                <div className="grid grid-cols-4 gap-1.5">
-                  {POPULAR_BANKS.map((bank) => (
-                    <button
-                      key={bank}
-                      type="button"
-                      onClick={() => {
-                        setBankName(bank);
-                        if (bank === "Cash Wallet") setAccountName("Cash Wallet");
-                        else setAccountName(`${bank} Main`);
-                      }}
-                      className={`py-2 px-2 rounded-xl text-[12px] font-medium border text-center transition-all ${
-                        bankName === bank
-                          ? "bg-[var(--brand)] text-black border-[var(--brand)] font-bold shadow-sm"
-                          : "bg-white/5 border-white/10 text-white/80 hover:bg-white/10"
-                      }`}
-                    >
-                      {bank.replace(" Bank", "").replace(" Wallet", "")}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Account Nickname */}
-              <div>
-                <label className="text-[11.5px] font-semibold text-white/50 uppercase tracking-wider pl-1 mb-1 block">
-                  Account Name
-                </label>
-                <input
-                  type="text"
-                  value={accountName}
-                  onChange={(e) => setAccountName(e.target.value)}
-                  placeholder="e.g. Everyday Checking"
-                  className="w-full rounded-xl bg-white/5 border border-white/15 px-3.5 py-2.5 text-[14.5px] text-white outline-none focus:border-[var(--brand)]"
-                />
-              </div>
-
-              {/* Starting Balance */}
-              <div>
-                <label className="text-[11.5px] font-semibold text-white/50 uppercase tracking-wider pl-1 mb-1 block">
-                  Current Balance
-                </label>
-                <div className="relative flex items-center">
-                  <span className="absolute left-3.5 text-[16px] font-bold text-white/60">₦</span>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={accountBalance}
-                    onChange={(e) => setAccountBalance(e.target.value)}
-                    placeholder="0"
-                    className="w-full rounded-xl bg-white/5 border border-white/15 pl-8 pr-3.5 py-2.5 text-[15px] font-bold text-white outline-none focus:border-[var(--brand)]"
-                  />
-                </div>
-              </div>
-
-              {/* Action */}
-              <button
-                disabled={isSaving}
-                onClick={handleCreateAccount}
-                className="w-full h-12 rounded-full bg-[var(--brand)] text-[var(--brand-ink)] font-bold text-[15px] flex items-center justify-center gap-2 shadow-lg active:scale-98 transition-transform disabled:opacity-50"
-              >
-                <span>Save Account</span>
+                <span>Get Started</span>
                 <ArrowRight size={17} strokeWidth={2.5} />
               </button>
             </motion.div>
           )}
 
-          {/* STEP 2: MONTHLY INCOME */}
-          {step === "income" && (
+          {/* 2. BANK NAME */}
+          {stage === "bank_name" && (
             <motion.div
-              key="income"
-              initial={{ opacity: 0, y: 16 }}
+              key="bank_name"
+              initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -16 }}
-              className="space-y-3.5"
+              exit={{ opacity: 0, y: -14 }}
+              transition={{ duration: 0.28 }}
+              className="space-y-3"
             >
-              <div className="p-3.5 rounded-[20px] bg-[#141417] border border-white/10 shadow-lg">
-                <p className="text-[14px] text-white/90 font-medium">
-                  Got it! Now what&apos;s your primary monthly inflow or earnings?
-                </p>
-                <p className="text-[12px] text-white/50 mt-1">
-                  This powers your daily Safe-to-Spend calculations.
+              <div className="p-4 rounded-[22px] bg-[#141417] border border-white/10 shadow-lg text-left">
+                <p className="text-[15px] text-white leading-snug">
+                  What bank or financial institution would you like to add first?
                 </p>
               </div>
 
-              {/* Source pills */}
-              <div>
-                <label className="text-[11.5px] font-semibold text-white/50 uppercase tracking-wider pl-1 mb-1.5 block">
-                  Income Source
-                </label>
-                <div className="grid grid-cols-4 gap-1.5">
-                  {INCOME_SOURCES.map((s) => (
-                    <button
-                      key={s.label}
-                      type="button"
-                      onClick={() => setIncomeSource(s.label)}
-                      className={`py-2 px-1.5 rounded-xl text-[12px] font-medium border text-center transition-all ${
-                        incomeSource === s.label
-                          ? "bg-[var(--brand)] text-black border-[var(--brand)] font-bold shadow-sm"
-                          : "bg-white/5 border-white/10 text-white/80 hover:bg-white/10"
-                      }`}
-                    >
-                      <span className="mr-1">{s.icon}</span>
-                      <span>{s.label}</span>
-                    </button>
-                  ))}
-                </div>
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  autoFocus
+                  value={bankName}
+                  onChange={(e) => setBankName(e.target.value)}
+                  placeholder="Enter bank name (e.g. GTBank, Kuda, Cash)"
+                  className="w-full rounded-2xl bg-white/5 border border-white/15 px-4 py-3 text-[15px] text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && bankName.trim()) setStage("account_name");
+                  }}
+                />
+
+                <button
+                  type="button"
+                  disabled={!bankName.trim()}
+                  onClick={() => setStage("account_name")}
+                  className="w-full h-12 rounded-full bg-[var(--brand)] text-[var(--brand-ink)] font-bold text-[14.5px] flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform disabled:opacity-40"
+                >
+                  <span>Continue</span>
+                  <ArrowRight size={16} strokeWidth={2.5} />
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* 3. ACCOUNT NICKNAME */}
+          {stage === "account_name" && (
+            <motion.div
+              key="account_name"
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -14 }}
+              transition={{ duration: 0.28 }}
+              className="space-y-3"
+            >
+              <div className="p-4 rounded-[22px] bg-[#141417] border border-white/10 shadow-lg text-left">
+                <p className="text-[15px] text-white leading-snug">
+                  What should we name this account?
+                </p>
               </div>
 
-              {/* Income Amount */}
-              <div>
-                <label className="text-[11.5px] font-semibold text-white/50 uppercase tracking-wider pl-1 mb-1 block">
-                  Monthly Amount
-                </label>
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  autoFocus
+                  value={accountName}
+                  onChange={(e) => setAccountName(e.target.value)}
+                  placeholder="e.g. Main Checking or Daily Spending"
+                  className="w-full rounded-2xl bg-white/5 border border-white/15 px-4 py-3 text-[15px] text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") setStage("account_balance");
+                  }}
+                />
+
+                <button
+                  type="button"
+                  onClick={() => setStage("account_balance")}
+                  className="w-full h-12 rounded-full bg-[var(--brand)] text-[var(--brand-ink)] font-bold text-[14.5px] flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform"
+                >
+                  <span>Continue</span>
+                  <ArrowRight size={16} strokeWidth={2.5} />
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* 4. ACCOUNT BALANCE */}
+          {stage === "account_balance" && (
+            <motion.div
+              key="account_balance"
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -14 }}
+              transition={{ duration: 0.28 }}
+              className="space-y-3"
+            >
+              <div className="p-4 rounded-[22px] bg-[#141417] border border-white/10 shadow-lg text-left">
+                <p className="text-[15px] text-white leading-snug">
+                  What is your current balance in this account?
+                </p>
+              </div>
+
+              <div className="space-y-3">
                 <div className="relative flex items-center">
-                  <span className="absolute left-3.5 text-[16px] font-bold text-white/60">₦</span>
+                  <span className="absolute left-4 text-[17px] font-bold text-white/60">₦</span>
                   <input
                     type="text"
                     inputMode="numeric"
-                    value={incomeAmount}
-                    onChange={(e) => setIncomeAmount(e.target.value)}
-                    placeholder="e.g. 200,000"
-                    className="w-full rounded-xl bg-white/5 border border-white/15 pl-8 pr-3.5 py-2.5 text-[15px] font-bold text-white outline-none focus:border-[var(--brand)]"
+                    autoFocus
+                    value={accountBalance}
+                    onChange={(e) => setAccountBalance(formatAmountWithCommas(e.target.value))}
+                    placeholder="0"
+                    className="w-full rounded-2xl bg-white/5 border border-white/15 pl-9 pr-4 py-3 text-[16px] font-bold text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleSaveAccount();
+                    }}
                   />
                 </div>
-              </div>
 
-              {/* Typical Payday */}
-              <div>
-                <label className="text-[11.5px] font-semibold text-white/50 uppercase tracking-wider pl-1 mb-1 block">
-                  Typical Payday (Day of month)
-                </label>
-                <div className="flex items-center gap-2">
-                  {[25, 28, 30, 1].map((d) => (
-                    <button
-                      key={d}
-                      type="button"
-                      onClick={() => setIncomePayday(String(d))}
-                      className={`flex-1 py-2 rounded-xl text-[12.5px] font-medium border transition-all ${
-                        incomePayday === String(d)
-                          ? "bg-white text-black border-white font-bold"
-                          : "bg-white/5 border-white/10 text-white/70"
-                      }`}
-                    >
-                      Day {d}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Action buttons */}
-              <div className="flex gap-2 pt-1">
                 <button
                   type="button"
-                  onClick={() => setStep("bill")}
-                  className="flex-1 h-12 rounded-full bg-white/10 text-white font-medium text-[14px]"
+                  disabled={isSaving}
+                  onClick={handleSaveAccount}
+                  className="w-full h-12 rounded-full bg-[var(--brand)] text-[var(--brand-ink)] font-bold text-[14.5px] flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform disabled:opacity-50"
                 >
-                  I&apos;ll add later
+                  <span>Save Account</span>
+                  <ArrowRight size={16} strokeWidth={2.5} />
                 </button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* 5. INCOME AMOUNT */}
+          {stage === "income_amount" && (
+            <motion.div
+              key="income_amount"
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -14 }}
+              transition={{ duration: 0.28 }}
+              className="space-y-3"
+            >
+              <div className="p-4 rounded-[22px] bg-[#141417] border border-white/10 shadow-lg text-left">
+                <p className="text-[15px] text-white leading-snug">
+                  How much estimated income do you receive each month?
+                </p>
+                <p className="text-[12.5px] text-white/50 mt-1">
+                  This sets up your daily Safe to Spend runway.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <div className="relative flex items-center">
+                  <span className="absolute left-4 text-[17px] font-bold text-white/60">₦</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    autoFocus
+                    value={incomeAmount}
+                    onChange={(e) => setIncomeAmount(formatAmountWithCommas(e.target.value))}
+                    placeholder="e.g. 250,000"
+                    className="w-full rounded-2xl bg-white/5 border border-white/15 pl-9 pr-4 py-3 text-[16px] font-bold text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        if (parseNumberInput(incomeAmount) > 0) setStage("income_payday");
+                        else setStage("bill_ask");
+                      }
+                    }}
+                  />
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setStage("bill_ask")}
+                    className="flex-1 h-12 rounded-full bg-white/10 text-white/80 font-medium text-[13.5px] hover:bg-white/15 transition-colors"
+                  >
+                    Skip for now
+                  </button>
+                  <button
+                    type="button"
+                    disabled={parseNumberInput(incomeAmount) <= 0}
+                    onClick={() => setStage("income_payday")}
+                    className="flex-[2] h-12 rounded-full bg-[var(--brand)] text-[var(--brand-ink)] font-bold text-[14.5px] flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform disabled:opacity-40"
+                  >
+                    <span>Continue</span>
+                    <ArrowRight size={16} strokeWidth={2.5} />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* 6. INCOME PAYDAY DATE */}
+          {stage === "income_payday" && (
+            <motion.div
+              key="income_payday"
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -14 }}
+              transition={{ duration: 0.28 }}
+              className="space-y-3"
+            >
+              <div className="p-4 rounded-[22px] bg-[#141417] border border-white/10 shadow-lg text-left">
+                <p className="text-[15px] text-white leading-snug">
+                  What day of the month do you typically receive your income?
+                </p>
+                <p className="text-[12.5px] text-white/50 mt-1">
+                  Enter any day between 1 and 31.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <input
+                  type="number"
+                  min="1"
+                  max="31"
+                  autoFocus
+                  value={incomePayday}
+                  onChange={(e) => setIncomePayday(e.target.value)}
+                  placeholder="Enter day of month (e.g. 25)"
+                  className="w-full rounded-2xl bg-white/5 border border-white/15 px-4 py-3 text-[15px] text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleSaveIncome();
+                  }}
+                />
+
                 <button
+                  type="button"
                   disabled={isSaving}
                   onClick={handleSaveIncome}
-                  className="flex-[2] h-12 rounded-full bg-[var(--brand)] text-[var(--brand-ink)] font-bold text-[14.5px] flex items-center justify-center gap-2 shadow-lg active:scale-98 transition-transform disabled:opacity-50"
+                  className="w-full h-12 rounded-full bg-[var(--brand)] text-[var(--brand-ink)] font-bold text-[14.5px] flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform disabled:opacity-50"
                 >
                   <span>Save Income</span>
-                  <ArrowRight size={17} strokeWidth={2.5} />
+                  <ArrowRight size={16} strokeWidth={2.5} />
                 </button>
               </div>
             </motion.div>
           )}
 
-          {/* STEP 3: RECURRING BILLS */}
-          {step === "bill" && (
+          {/* 7. BILL ASK */}
+          {stage === "bill_ask" && (
             <motion.div
-              key="bill"
-              initial={{ opacity: 0, y: 16 }}
+              key="bill_ask"
+              initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -16 }}
-              className="space-y-3.5"
+              exit={{ opacity: 0, y: -14 }}
+              transition={{ duration: 0.28 }}
+              className="space-y-3"
             >
-              <div className="p-3.5 rounded-[20px] bg-[#141417] border border-white/10 shadow-lg">
-                <p className="text-[14px] text-white/90 font-medium">
-                  Last piece: do you have an essential recurring bill we should protect your balance for?
+              <div className="p-4 rounded-[22px] bg-[#141417] border border-white/10 shadow-lg text-left">
+                <p className="text-[15px] text-white leading-snug">
+                  Do you have any recurring bills or subscriptions you would like me to safeguard your balance for?
                 </p>
-                <p className="text-[12px] text-white/50 mt-1">
-                  Like rent, electricity, wifi or streaming.
+                <p className="text-[12.5px] text-white/50 mt-1">
+                  Such as rent, electricity, wifi, or streaming.
                 </p>
               </div>
 
-              {/* Common bill chips */}
-              <div>
-                <label className="text-[11.5px] font-semibold text-white/50 uppercase tracking-wider pl-1 mb-1.5 block">
-                  Select Bill
-                </label>
-                <div className="flex flex-wrap gap-1.5">
-                  {COMMON_BILLS.map((b) => (
-                    <button
-                      key={b.label}
-                      type="button"
-                      onClick={() => setBillName(b.label)}
-                      className={`py-1.5 px-3 rounded-xl text-[12px] font-medium border text-center transition-all ${
-                        billName === b.label
-                          ? "bg-[var(--brand)] text-black border-[var(--brand)] font-bold shadow-sm"
-                          : "bg-white/5 border-white/10 text-white/80 hover:bg-white/10"
-                      }`}
-                    >
-                      <span className="mr-1">{b.icon}</span>
-                      <span>{b.label}</span>
-                    </button>
-                  ))}
-                </div>
+              <div className="space-y-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setStage("bill_name")}
+                  className="w-full h-12 rounded-full bg-[var(--brand)] text-[var(--brand-ink)] font-bold text-[14.5px] flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform"
+                >
+                  <span>Yes, add a recurring bill</span>
+                  <ArrowRight size={16} strokeWidth={2.5} />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={finishOnboarding}
+                  className="w-full h-12 rounded-full bg-white/10 text-white/80 font-medium text-[13.5px] hover:bg-white/15 transition-colors"
+                >
+                  No recurring bills right now
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* 8a. BILL NAME */}
+          {stage === "bill_name" && (
+            <motion.div
+              key="bill_name"
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -14 }}
+              transition={{ duration: 0.28 }}
+              className="space-y-3"
+            >
+              <div className="p-4 rounded-[22px] bg-[#141417] border border-white/10 shadow-lg text-left">
+                <p className="text-[15px] text-white leading-snug">
+                  What is the name of this bill?
+                </p>
               </div>
 
-              {/* Bill Amount */}
-              <div>
-                <label className="text-[11.5px] font-semibold text-white/50 uppercase tracking-wider pl-1 mb-1 block">
-                  Monthly Amount
-                </label>
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  autoFocus
+                  value={billName}
+                  onChange={(e) => setBillName(e.target.value)}
+                  placeholder="e.g. Internet, Rent, Electricity"
+                  className="w-full rounded-2xl bg-white/5 border border-white/15 px-4 py-3 text-[15px] text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && billName.trim()) setStage("bill_amount");
+                  }}
+                />
+
+                <button
+                  type="button"
+                  disabled={!billName.trim()}
+                  onClick={() => setStage("bill_amount")}
+                  className="w-full h-12 rounded-full bg-[var(--brand)] text-[var(--brand-ink)] font-bold text-[14.5px] flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform disabled:opacity-40"
+                >
+                  <span>Continue</span>
+                  <ArrowRight size={16} strokeWidth={2.5} />
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* 8b. BILL AMOUNT */}
+          {stage === "bill_amount" && (
+            <motion.div
+              key="bill_amount"
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -14 }}
+              transition={{ duration: 0.28 }}
+              className="space-y-3"
+            >
+              <div className="p-4 rounded-[22px] bg-[#141417] border border-white/10 shadow-lg text-left">
+                <p className="text-[15px] text-white leading-snug">
+                  How much is your monthly {billName || "bill"}?
+                </p>
+              </div>
+
+              <div className="space-y-3">
                 <div className="relative flex items-center">
-                  <span className="absolute left-3.5 text-[16px] font-bold text-white/60">₦</span>
+                  <span className="absolute left-4 text-[17px] font-bold text-white/60">₦</span>
                   <input
                     type="text"
                     inputMode="numeric"
+                    autoFocus
                     value={billAmount}
-                    onChange={(e) => setBillAmount(e.target.value)}
+                    onChange={(e) => setBillAmount(formatAmountWithCommas(e.target.value))}
                     placeholder="e.g. 15,000"
-                    className="w-full rounded-xl bg-white/5 border border-white/15 pl-8 pr-3.5 py-2.5 text-[15px] font-bold text-white outline-none focus:border-[var(--brand)]"
+                    className="w-full rounded-2xl bg-white/5 border border-white/15 pl-9 pr-4 py-3 text-[16px] font-bold text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && parseNumberInput(billAmount) > 0) setStage("bill_due_day");
+                    }}
                   />
                 </div>
-              </div>
 
-              {/* Due Day */}
-              <div>
-                <label className="text-[11.5px] font-semibold text-white/50 uppercase tracking-wider pl-1 mb-1 block">
-                  Due Day of Month
-                </label>
-                <div className="flex items-center gap-2">
-                  {[1, 5, 15, 28].map((d) => (
-                    <button
-                      key={d}
-                      type="button"
-                      onClick={() => setBillDueDay(String(d))}
-                      className={`flex-1 py-2 rounded-xl text-[12.5px] font-medium border transition-all ${
-                        billDueDay === String(d)
-                          ? "bg-white text-black border-white font-bold"
-                          : "bg-white/5 border-white/10 text-white/70"
-                      }`}
-                    >
-                      Day {d}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Action buttons */}
-              <div className="flex gap-2 pt-1">
                 <button
                   type="button"
-                  onClick={() => handleSaveBill(true)}
-                  className="flex-1 h-12 rounded-full bg-white/10 text-white font-medium text-[13.5px]"
+                  disabled={parseNumberInput(billAmount) <= 0}
+                  onClick={() => setStage("bill_due_day")}
+                  className="w-full h-12 rounded-full bg-[var(--brand)] text-[var(--brand-ink)] font-bold text-[14.5px] flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform disabled:opacity-40"
                 >
-                  No bills right now
-                </button>
-                <button
-                  disabled={isSaving}
-                  onClick={() => handleSaveBill(false)}
-                  className="flex-[2] h-12 rounded-full bg-[var(--brand)] text-[var(--brand-ink)] font-bold text-[14.5px] flex items-center justify-center gap-2 shadow-lg active:scale-98 transition-transform disabled:opacity-50"
-                >
-                  <span>Save & Finish</span>
-                  <ArrowRight size={17} strokeWidth={2.5} />
+                  <span>Continue</span>
+                  <ArrowRight size={16} strokeWidth={2.5} />
                 </button>
               </div>
             </motion.div>
           )}
 
-          {/* STEP 4: READY TO TOUR */}
-          {step === "ready" && (
+          {/* 8c. BILL DUE DAY */}
+          {stage === "bill_due_day" && (
+            <motion.div
+              key="bill_due_day"
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -14 }}
+              transition={{ duration: 0.28 }}
+              className="space-y-3"
+            >
+              <div className="p-4 rounded-[22px] bg-[#141417] border border-white/10 shadow-lg text-left">
+                <p className="text-[15px] text-white leading-snug">
+                  What day of the month is this bill due?
+                </p>
+                <p className="text-[12.5px] text-white/50 mt-1">
+                  Enter any day between 1 and 31.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <input
+                  type="number"
+                  min="1"
+                  max="31"
+                  autoFocus
+                  value={billDueDay}
+                  onChange={(e) => setBillDueDay(e.target.value)}
+                  placeholder="Enter day of month (e.g. 5)"
+                  className="w-full rounded-2xl bg-white/5 border border-white/15 px-4 py-3 text-[15px] text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleSaveBill();
+                  }}
+                />
+
+                <button
+                  type="button"
+                  disabled={isSaving}
+                  onClick={handleSaveBill}
+                  className="w-full h-12 rounded-full bg-[var(--brand)] text-[var(--brand-ink)] font-bold text-[14.5px] flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform disabled:opacity-50"
+                >
+                  <span>Save & Complete Setup</span>
+                  <ArrowRight size={16} strokeWidth={2.5} />
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* 9. READY */}
+          {stage === "ready" && (
             <motion.div
               key="ready"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3 }}
               className="space-y-4"
             >
-              <div className="p-4 rounded-[22px] bg-[#141417] border border-white/15 shadow-2xl text-center space-y-2">
-                <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-[var(--brand)]/20 text-[var(--brand)] mb-1">
-                  <Sparkles size={20} />
-                </div>
-                <h3 className="text-[20px] font-black text-white">
-                  You&apos;re All Set, {firstName}! 🎉
-                </h3>
-                <p className="text-[14px] text-white/70 leading-relaxed">
-                  Your primary account and runway are primed. Now let me personally show you around where everything lives on your dashboard!
+              <div className="p-4 rounded-[22px] bg-[#141417] border border-white/10 shadow-2xl text-left space-y-2">
+                <p className="text-[16px] font-bold text-white leading-snug">
+                  Your foundation is set, {firstName}.
+                </p>
+                <p className="text-[13.5px] text-white/70 leading-relaxed">
+                  Your primary account, income, and commitments are locked in. Your Safe to Spend calculations are active.
+                </p>
+                <p className="text-[13px] text-white/50">
+                  Let me walk you through your dashboard so you know exactly where everything lives.
                 </p>
               </div>
 
               <button
+                type="button"
                 onClick={onComplete}
-                className="w-full h-14 rounded-full bg-[var(--brand)] text-[var(--brand-ink)] font-extrabold text-[16px] flex items-center justify-center gap-2 shadow-[0_4px_30px_rgba(222,49,33,0.4)] active:scale-98 transition-transform"
+                className="w-full h-13 rounded-full bg-[var(--brand)] text-[var(--brand-ink)] font-extrabold text-[15px] flex items-center justify-center gap-2 shadow-[0_4px_24px_rgba(222,49,33,0.35)] active:scale-98 transition-transform"
               >
-                <span>Take the Dashboard Tour</span>
-                <ArrowRight size={18} strokeWidth={2.5} />
+                <span>Take Dashboard Tour</span>
+                <ArrowRight size={17} strokeWidth={2.5} />
               </button>
             </motion.div>
           )}

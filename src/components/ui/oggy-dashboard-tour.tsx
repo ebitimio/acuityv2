@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, ChevronLeft, Sparkles, X } from "lucide-react";
+import { ArrowRight, ChevronLeft, X } from "lucide-react";
 import { AcuityCompanion } from "@/components/ui/acuity-companion";
 
 interface OggyDashboardTourProps {
@@ -12,64 +12,97 @@ interface OggyDashboardTourProps {
 
 interface TourStep {
   id: string;
+  selector: string;
   title: string;
-  desc: string;
   badge: string;
-  // Mascot target position on the screen
-  oggyPos: { top: string; left: string };
-  // Card placement (above or below mascot)
-  cardPlacement: "bottom" | "top";
+  desc: string;
 }
 
 export function OggyDashboardTour({ userName, onClose }: OggyDashboardTourProps) {
   const [currentIdx, setCurrentIdx] = useState(0);
+  const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const firstName = userName?.trim()?.split(" ")[0] || "there";
 
   const STEPS: TourStep[] = [
     {
       id: "hero",
-      title: "Safe to Spend & Net Worth",
+      selector: "hero",
+      title: "Safe to Spend",
       badge: "Command Center",
-      desc: `Here is your financial cockpit, ${firstName}! It displays your total net liquid assets and calculates the exact amount you can safely spend today without running out before payday.`,
-      oggyPos: { top: "20%", left: "50%" },
-      cardPlacement: "bottom",
+      desc: `This hero card calculates the exact amount you can spend today based on your liquid assets and days until your next payday, so you never go broke.`,
     },
     {
-      id: "ai",
-      title: "Daily Insight & CFO AI",
-      badge: "Oggy's Headquarters",
-      desc: "This is my home! Tap here anytime to chat with me. Ask questions like 'Where did my money go?' or 'Can I afford dinner tonight?', or have me audit your bank charges.",
-      oggyPos: { top: "42%", left: "38%" },
-      cardPlacement: "bottom",
+      id: "daily-insight",
+      selector: "daily-insight",
+      title: "Daily Insight",
+      badge: "Smart Monitoring",
+      desc: "Here you will receive personalized updates and recommendations on your cash flow, top spending categories, and upcoming obligations.",
     },
     {
       id: "accounts",
-      title: "Accounts & Cash Cards",
-      badge: "Your Wallets",
-      desc: "All your linked banks, debit cards, and cash wallets live here. Swipe left and right to inspect balances, or tap 'See all' to add new accounts and transfer funds.",
-      oggyPos: { top: "56%", left: "50%" },
-      cardPlacement: "bottom",
+      selector: "accounts",
+      title: "Accounts and Cards",
+      badge: "All Wallets",
+      desc: "All your linked bank accounts, debit cards, and cash wallets appear here. Swipe through to check individual balances or manage transfers.",
     },
     {
-      id: "budget",
-      title: "Budget & Recurring Bills",
-      badge: "Smart Tracking",
-      desc: "Monitor your monthly budget limits and recurring subscriptions right here so hidden fees and surprise debits never catch you off guard.",
-      oggyPos: { top: "66%", left: "50%" },
-      cardPlacement: "top",
+      id: "tools",
+      selector: "tools",
+      title: "Financial Tools",
+      badge: "Budgets & Tracking",
+      desc: "Use these tools to monitor your budget, analyze spending categories, and audit recurring commitments to avoid unexpected fees.",
     },
     {
-      id: "nav",
-      title: "Quick Add & Bottom Nav",
-      badge: "Instant Actions",
-      desc: "Whenever you make or spend money, tap this red (+) button to log it in under 3 seconds! You're ready to master your money. Let's win!",
-      oggyPos: { top: "82%", left: "50%" },
-      cardPlacement: "top",
+      id: "nav-ai",
+      selector: "nav-ai",
+      title: "The A. Wealth Manager Button",
+      badge: "Direct Consultation",
+      desc: "Tap this A. button from anywhere in the app to open our direct wealth management chat. You can ask for advice, check balances, or audit transactions anytime.",
+    },
+    {
+      id: "nav-add",
+      selector: "nav-add",
+      title: "Quick Add Action",
+      badge: "Instant Logging",
+      desc: "Whenever you spend or receive money, tap this red (+) button to log your transaction in seconds. You are all set to manage your wealth.",
     },
   ];
 
   const current = STEPS[currentIdx];
   const isLast = currentIdx === STEPS.length - 1;
+
+  // Measure and scroll to target
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+
+    const measureTarget = () => {
+      const el = document.querySelector(`[data-tour="${current.selector}"]`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        timeoutId = setTimeout(() => {
+          const rect = el.getBoundingClientRect();
+          setTargetRect(rect);
+        }, 250);
+      } else {
+        setTargetRect(null);
+      }
+    };
+
+    measureTarget();
+
+    const handleResizeOrScroll = () => {
+      const el = document.querySelector(`[data-tour="${current.selector}"]`);
+      if (el) {
+        setTargetRect(el.getBoundingClientRect());
+      }
+    };
+
+    window.addEventListener("resize", handleResizeOrScroll);
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener("resize", handleResizeOrScroll);
+    };
+  }, [currentIdx, current.selector]);
 
   const handleNext = () => {
     if (isLast) {
@@ -85,9 +118,22 @@ export function OggyDashboardTour({ userName, onClose }: OggyDashboardTourProps)
     }
   };
 
+  // Safe layout positioning to prevent cutoff on any mobile device
+  const winHeight = typeof window !== "undefined" ? window.innerHeight : 800;
+  const targetTop = targetRect ? targetRect.top : winHeight * 0.4;
+  const targetHeight = targetRect ? targetRect.height : 100;
+  const isTargetInLowerHalf = targetTop > winHeight * 0.45;
+
+  // Mascot vertical anchor
+  let oggyY = isTargetInLowerHalf ? Math.max(targetTop - 65, 70) : targetTop + targetHeight + 15;
+  // Card vertical placement
+  let cardStyle: React.CSSProperties = isTargetInLowerHalf
+    ? { bottom: `${Math.max(winHeight - oggyY + 15, 80)}px` }
+    : { top: `${Math.min(oggyY + 55, winHeight - 240)}px` };
+
   return (
     <div className="fixed inset-0 z-[150] pointer-events-auto select-none overflow-hidden">
-      {/* Dimmed Scrim with Smooth Vignette */}
+      {/* Dimmed Backdrop Scrim */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -96,37 +142,51 @@ export function OggyDashboardTour({ userName, onClose }: OggyDashboardTourProps)
         onClick={handleNext}
       />
 
-      {/* Skip button top-right */}
+      {/* Target Highlight Ring */}
+      {targetRect && (
+        <motion.div
+          layoutId="tour-highlight"
+          className="fixed pointer-events-none rounded-[20px] border-2 border-[var(--brand)] shadow-[0_0_24px_rgba(222,49,33,0.5),inset_0_0_12px_rgba(222,49,33,0.25)] z-[155]"
+          style={{
+            top: targetRect.top - 4,
+            left: targetRect.left - 4,
+            width: targetRect.width + 8,
+            height: targetRect.height + 8,
+          }}
+          transition={{ type: "spring", stiffness: 220, damping: 24 }}
+        />
+      )}
+
+      {/* Top Header / Skip */}
       <div
-        className="absolute right-5 z-[160]"
-        style={{ top: "calc(env(safe-area-inset-top) + 16px)" }}
+        className="absolute right-4 z-[160]"
+        style={{ top: "calc(env(safe-area-inset-top) + 12px)" }}
       >
         <button
           onClick={onClose}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white/80 hover:text-white text-[12px] font-medium backdrop-blur-md transition-all active:scale-95"
         >
-          <span>Skip Tour</span>
+          <span>Skip</span>
           <X size={14} />
         </button>
       </div>
 
-      {/* Sentient Flying Mascot & Dynamic Tooltip moving from axis to axis */}
+      {/* Floating Oggy Mascot (Moves directly to the active element) */}
       <motion.div
         animate={{
-          top: current.oggyPos.top,
-          left: current.oggyPos.left,
+          top: oggyY,
+          left: targetRect ? targetRect.left + targetRect.width / 2 : "50%",
         }}
         transition={{
           type: "spring",
-          stiffness: 170,
-          damping: 20,
+          stiffness: 180,
+          damping: 22,
         }}
-        className="absolute -translate-x-1/2 -translate-y-1/2 z-[160] flex flex-col items-center pointer-events-auto max-w-[340px] sm:max-w-sm w-[90vw]"
+        className="fixed -translate-x-1/2 -translate-y-1/2 z-[160] flex flex-col items-center pointer-events-none"
       >
-        {/* Living Oggy Companion (Sentient bobbing motion) */}
         <motion.div
           animate={{
-            y: [0, -8, 0],
+            y: [0, -6, 0],
             rotate: [-2, 2, -2],
           }}
           transition={{
@@ -134,29 +194,30 @@ export function OggyDashboardTour({ userName, onClose }: OggyDashboardTourProps)
             repeat: Infinity,
             ease: "easeInOut",
           }}
-          className="relative flex items-center justify-center cursor-pointer mb-2"
+          className="relative flex items-center justify-center pointer-events-auto"
         >
-          {/* Ambient Brand Glow */}
-          <div className="absolute w-28 h-28 rounded-full bg-[var(--brand)]/35 blur-xl pointer-events-none" />
-          
+          <div className="absolute w-20 h-20 rounded-full bg-[var(--brand)]/30 blur-md pointer-events-none" />
           <AcuityCompanion
             size="compact"
             isSpeaking={true}
             forceDark={true}
           />
         </motion.div>
+      </motion.div>
 
-        {/* Floating Tooltip Speech Card */}
+      {/* Screen-Fitted Tooltip Card (Guaranteed never to cut off) */}
+      <div
+        className="fixed inset-x-4 z-[160] flex justify-center pointer-events-auto"
+        style={cardStyle}
+      >
         <AnimatePresence mode="wait">
           <motion.div
             key={current.id}
-            initial={{ opacity: 0, scale: 0.92, y: current.cardPlacement === "top" ? -10 : 10 }}
+            initial={{ opacity: 0, scale: 0.94, y: isTargetInLowerHalf ? 10 : -10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.92, y: current.cardPlacement === "top" ? -10 : 10 }}
-            transition={{ duration: 0.25 }}
-            className={`w-full p-4 rounded-[22px] bg-[#151518] border border-white/15 shadow-[0_12px_40px_rgba(0,0,0,0.7)] text-left ${
-              current.cardPlacement === "top" ? "-order-1 mb-2" : "mt-2"
-            }`}
+            exit={{ opacity: 0, scale: 0.94, y: isTargetInLowerHalf ? 10 : -10 }}
+            transition={{ duration: 0.22 }}
+            className="w-full max-w-[340px] sm:max-w-[360px] p-4 rounded-[22px] bg-[#141417] border border-white/15 shadow-[0_12px_36px_rgba(0,0,0,0.8)] text-left"
           >
             {/* Header info */}
             <div className="flex items-center justify-between gap-2 mb-1.5">
@@ -170,12 +231,12 @@ export function OggyDashboardTour({ userName, onClose }: OggyDashboardTourProps)
             </div>
 
             {/* Title */}
-            <h4 className="text-[16px] font-extrabold text-white leading-snug mb-1">
+            <h4 className="text-[15.5px] font-bold text-white leading-snug mb-1">
               {current.title}
             </h4>
 
             {/* Description */}
-            <p className="text-[13px] text-white/75 leading-relaxed mb-3.5">
+            <p className="text-[12.5px] text-white/75 leading-relaxed mb-3.5">
               {current.desc}
             </p>
 
@@ -199,13 +260,13 @@ export function OggyDashboardTour({ userName, onClose }: OggyDashboardTourProps)
                 onClick={handleNext}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[var(--brand)] text-[var(--brand-ink)] font-bold text-[12.5px] shadow-md active:scale-95 transition-transform"
               >
-                <span>{isLast ? "Let's Win! 🚀" : "Next"}</span>
+                <span>{isLast ? "Done" : "Next"}</span>
                 {!isLast && <ArrowRight size={14} strokeWidth={2.5} />}
               </button>
             </div>
           </motion.div>
         </AnimatePresence>
-      </motion.div>
+      </div>
     </div>
   );
 }

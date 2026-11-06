@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Modal } from "./modal";
 import { Button } from "./form";
 import { createClient } from "@/lib/supabase/client";
-import { parseNumberInput } from "@/lib/format";
+import { parseNumberInput, formatAmountWithCommas } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useWorkspace } from "@/lib/workspace";
 import { buildCategoryList } from "@/lib/category-options";
@@ -118,7 +118,7 @@ export function AddTransactionSheet({ isOpen, onClose, onSaved }: AddTransaction
                 type="text"
                 inputMode="numeric"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ""))}
+                onChange={(e) => setAmount(formatAmountWithCommas(e.target.value))}
                 placeholder="0"
                 className="bg-transparent text-[44px] font-bold tabular tracking-tight text-[var(--text-1)] outline-none w-full max-w-[250px] placeholder:text-[var(--text-3)]"
               />

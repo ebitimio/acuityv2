@@ -7,6 +7,7 @@ import { Button } from "../ui/form";
 import { useWorkspace } from "@/lib/workspace";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "../ui/toast";
+import { formatAmountWithCommas } from "@/lib/format";
 
 type Step = "account" | "income" | "bills";
 
@@ -139,9 +140,10 @@ export function SetupWizard({ isOpen, initialStep = "account", onClose, onRefres
               <div>
                 <label className="text-[13px] font-medium text-[var(--text-3)]">Current balance</label>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
                   value={form.accountBalance}
-                  onChange={(e) => setForm({ ...form, accountBalance: e.target.value })}
+                  onChange={(e) => setForm({ ...form, accountBalance: formatAmountWithCommas(e.target.value) })}
                   placeholder="0"
                   className="mt-1 w-full rounded-xl border border-[var(--line-strong)] bg-[var(--surface-2)] px-4 py-3 text-[15px] text-[var(--text-1)] focus:border-[var(--brand)] outline-none"
                 />
@@ -156,9 +158,10 @@ export function SetupWizard({ isOpen, initialStep = "account", onClose, onRefres
               <div>
                 <label className="text-[13px] font-medium text-[var(--text-3)]">Monthly income</label>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
                   value={form.income}
-                  onChange={(e) => setForm({ ...form, income: e.target.value })}
+                  onChange={(e) => setForm({ ...form, income: formatAmountWithCommas(e.target.value) })}
                   placeholder="0"
                   className="mt-1 w-full rounded-xl border border-[var(--line-strong)] bg-[var(--surface-2)] px-4 py-3 text-[15px] text-[var(--text-1)] focus:border-[var(--brand)] outline-none"
                 />
@@ -173,9 +176,10 @@ export function SetupWizard({ isOpen, initialStep = "account", onClose, onRefres
               <div>
                 <label className="text-[13px] font-medium text-[var(--text-3)]">Estimated bills</label>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
                   value={form.bills}
-                  onChange={(e) => setForm({ ...form, bills: e.target.value })}
+                  onChange={(e) => setForm({ ...form, bills: formatAmountWithCommas(e.target.value) })}
                   placeholder="0"
                   className="mt-1 w-full rounded-xl border border-[var(--line-strong)] bg-[var(--surface-2)] px-4 py-3 text-[15px] text-[var(--text-1)] focus:border-[var(--brand)] outline-none"
                 />
