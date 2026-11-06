@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, ChevronLeft, Check } from "lucide-react";
 import { AcuityCompanion } from "@/components/ui/acuity-companion";
@@ -28,6 +28,122 @@ type ChatStage =
   | "bill_amount"
   | "bill_due_day"
   | "ready";
+
+function escapeRegExp(string: string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function renderHighlightedParts(text: string, firstName?: string) {
+  const patterns: string[] = ["\\bOggy\\b", "₦[0-9,]+", '"[^"]*?"'];
+  if (firstName && firstName.trim() && firstName.toLowerCase() !== "there") {
+    patterns.push(`\\b${escapeRegExp(firstName.trim())}\\b`);
+  }
+
+  const regex = new RegExp(`(${patterns.join("|")})`, "gi");
+  const parts = text.split(regex);
+
+  return parts.map((part, i) => {
+    if (!part) return null;
+    if (part.toLowerCase() === "oggy") {
+      return (
+        <span key={i} className="text-[var(--brand)] font-bold">
+          Oggy
+        </span>
+      );
+    }
+    if (part.startsWith("₦")) {
+      return (
+        <span key={i} className="text-[var(--brand)] font-bold font-hero">
+          {part}
+        </span>
+      );
+    }
+    if (part.startsWith('"') && part.endsWith('"')) {
+      return (
+        <span key={i} className="text-white font-bold">
+          {part}
+        </span>
+      );
+    }
+    if (firstName && part.toLowerCase() === firstName.toLowerCase()) {
+      return (
+        <span key={i} className="text-white font-bold">
+          {part}
+        </span>
+      );
+    }
+    return <span key={i}>{part}</span>;
+  });
+}
+
+function TypewriterSpeech({
+  text,
+  firstName,
+  onComplete,
+  speed = 36,
+}: {
+  text: string;
+  firstName?: string;
+  onComplete?: () => void;
+  speed?: number;
+}) {
+  const [displayedLength, setDisplayedLength] = useState(0);
+  const [isDone, setIsDone] = useState(false);
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
+
+  useEffect(() => {
+    setDisplayedLength(0);
+    setIsDone(false);
+
+    let idx = 0;
+    let timer: NodeJS.Timeout;
+
+    const nextChar = () => {
+      if (idx < text.length) {
+        idx++;
+        setDisplayedLength(idx);
+
+        const char = text[idx - 1];
+        let delay = speed;
+        if (char === "." || char === "!" || char === "?") {
+          delay = speed + 220; // natural punctuation breathing pause
+        } else if (char === "," || char === ";") {
+          delay = speed + 110;
+        }
+
+        timer = setTimeout(nextChar, delay);
+      } else {
+        setIsDone(true);
+        onCompleteRef.current?.();
+      }
+    };
+
+    // Small initial breath before typing begins as bubble pops in
+    timer = setTimeout(nextChar, 140);
+
+    return () => clearTimeout(timer);
+  }, [text, speed]);
+
+  const handleSkip = () => {
+    if (!isDone) {
+      setDisplayedLength(text.length);
+      setIsDone(true);
+      onCompleteRef.current?.();
+    }
+  };
+
+  const currentSlice = text.slice(0, displayedLength);
+
+  return (
+    <span onClick={handleSkip} className="cursor-pointer select-none">
+      {renderHighlightedParts(currentSlice, firstName)}
+      {!isDone && (
+        <span className="inline-block w-[2px] h-[13px] ml-0.5 bg-[var(--brand)] align-middle animate-pulse" />
+      )}
+    </span>
+  );
+}
 
 export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
   const [stage, setStage] = useState<ChatStage>("intro");
@@ -95,7 +211,7 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
     }
   };
 
-  // Choreography: on each input/stage transition, Oggy perks up enthusiastically, speaks, smiles, and dances
+  // Choreography: on each input/stage transition, Oggy perks up enthusiastically, speaks, and dances
   useEffect(() => {
     setIsSpeaking(true);
     setIsSmiling(false);
@@ -107,29 +223,27 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
       setIsEnthusiastic(false);
     }, 1400);
 
-    // 2. Mouth moves actively while speaking dialogue, then stops and smiles
-    const stopSpeakingTimer = setTimeout(() => {
-      setIsSpeaking(false);
-      setIsSmiling(true);
-    }, 1900);
-
-    // 3. Playful dance if left waiting
+    // 2. Playful dance if left waiting after speech
     const sillyTimer = setTimeout(() => {
       setIsSilly(true);
-    }, 2800);
+    }, 4500);
 
-    // 4. Smoothly settle back into original center position
+    // 3. Smoothly settle back into original center position
     const settleTimer = setTimeout(() => {
       setIsSilly(false);
-    }, 5000);
+    }, 6800);
 
     return () => {
       clearTimeout(enthusiasmTimer);
-      clearTimeout(stopSpeakingTimer);
       clearTimeout(sillyTimer);
       clearTimeout(settleTimer);
     };
   }, [stage]);
+
+  const handleTypewriterComplete = () => {
+    setIsSpeaking(false);
+    setIsSmiling(true);
+  };
 
   // User input states
   const [bankName, setBankName] = useState("");
@@ -251,84 +365,46 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
     return s[(v - 20) % 10] || s[v] || s[0];
   };
 
-  const getOggySpeechText = () => {
+  const getOggySpeechString = () => {
     switch (stage) {
       case "intro":
-        return (
-          <>
-            Hello <span className="font-bold text-white">{firstName}</span>! I am <span className="text-[var(--brand)] font-bold">Oggy</span>, your personal wealth manager. I will help you safeguard your cash, track your runway, and grow your wealth. Ready to begin?
-          </>
-        );
+        return `Hello ${firstName}! I am Oggy, your personal wealth manager. I will help you take control of your financial runway, safeguard your cash, and grow your wealth. Let us get to know your finances.`;
       case "bank_name":
         return "What bank or financial institution would you like to add first?";
       case "account_name":
-        return bankName.trim() ? (
-          <>
-            Awesome, <span className="text-[var(--brand)] font-bold">{bankName.trim()}</span>! What nickname should we give this account?
-          </>
-        ) : (
-          "What nickname should we give this account?"
-        );
+        return bankName.trim()
+          ? `Awesome, ${bankName.trim()}! What nickname should we give this account?`
+          : "What nickname should we give this account?";
       case "account_balance":
-        return accountName.trim() ? (
-          <>
-            Love &ldquo;<span className="text-white font-bold">{accountName.trim()}</span>&rdquo;! What is your current balance in this account right now?
-          </>
-        ) : bankName.trim() ? (
-          <>
-            Great! What is your current balance in your <span className="text-[var(--brand)] font-bold">{bankName.trim()}</span> account?
-          </>
-        ) : (
-          "What is your current balance in this account right now?"
-        );
+        return accountName.trim()
+          ? `Love "${accountName.trim()}"! What is your current balance in this account right now?`
+          : bankName.trim()
+          ? `Great! What is your current balance in your ${bankName.trim()} account?`
+          : "What is your current balance in this account right now?";
       case "income_amount":
-        return accountBalance.trim() ? (
-          <>
-            <span className="text-[var(--gain)] font-bold">₦{accountBalance}</span> locked and secured! How much estimated monthly income do you receive?
-          </>
-        ) : (
-          "How much estimated income do you receive each month?"
-        );
+        return accountBalance.trim()
+          ? `₦${accountBalance.trim()} locked and secured! How much estimated monthly income do you receive?`
+          : "How much estimated income do you receive each month?";
       case "income_payday":
-        return incomeAmount.trim() ? (
-          <>
-            <span className="text-[var(--gain)] font-bold">₦{incomeAmount}</span> noted! What day of the month do you typically receive this income?
-          </>
-        ) : (
-          "What day of the month do you typically receive your income?"
-        );
+        return incomeAmount.trim()
+          ? `₦${incomeAmount.trim()} noted! What day of the month do you typically receive your income?`
+          : "What day of the month do you typically receive your income?";
       case "bill_ask":
-        return incomePayday.trim() ? (
-          <>
-            Payday on the <span className="text-white font-bold">{incomePayday}{getOrdinal(Number(incomePayday))}</span> locked! Do you have any recurring bills or subscriptions to safeguard your cash from?
-          </>
-        ) : (
-          "Do you have any recurring bills or subscriptions (like rent, electricity, wifi) to safeguard your cash from?"
-        );
+        return incomePayday.trim()
+          ? `Payday on the ${incomePayday.trim()}${getOrdinal(Number(incomePayday.trim()))} locked! Do you have any recurring bills or subscriptions to safeguard your cash from?`
+          : "Do you have any recurring bills or subscriptions (like rent, electricity, wifi) to safeguard your cash from?";
       case "bill_name":
         return "Great! What is the name of this recurring bill or subscription?";
       case "bill_amount":
-        return billName.trim() ? (
-          <>
-            Got <span className="text-[var(--brand)] font-bold">{billName.trim()}</span>! How much is your monthly payment for it?
-          </>
-        ) : (
-          "How much is your monthly payment for this bill?"
-        );
+        return billName.trim()
+          ? `Got ${billName.trim()}! How much is your monthly payment for it?`
+          : "How much is your monthly payment for this bill?";
       case "bill_due_day":
-        return billAmount.trim() && billName.trim() ? (
-          <>
-            <span className="text-[var(--brand)] font-bold">₦{billAmount}</span> for <span className="text-white font-bold">{billName.trim()}</span>! What day of the month is this bill due?
-          </>
-        ) : (
-          "What day of the month is this bill due?"
-        );
+        return billAmount.trim() && billName.trim()
+          ? `₦${billAmount.trim()} for ${billName.trim()}! What day of the month is this bill due?`
+          : "What day of the month is this bill due?";
       case "ready":
-        return (
-          <>
-            Your foundation is set, <span className="font-bold text-white">{firstName}</span>! Your primary account, income runway, and obligations are active. Let me show you around your dashboard!
-          </>
-        );
+        return `Your foundation is set, ${firstName}! Your primary account, income runway, and obligations are active. Let me walk you through your dashboard!`;
       default:
         return "";
     }
@@ -409,7 +485,12 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
             {/* Bubble Surface */}
             <div className="w-full rounded-[22px] bg-[#18181b] border border-white/10 px-5 py-3.5 shadow-2xl text-center">
               <p className="text-[14.5px] sm:text-[15.5px] font-medium text-white/95 leading-relaxed">
-                {getOggySpeechText()}
+                <TypewriterSpeech
+                  text={getOggySpeechString()}
+                  firstName={firstName}
+                  onComplete={handleTypewriterComplete}
+                  speed={36}
+                />
               </p>
             </div>
           </motion.div>

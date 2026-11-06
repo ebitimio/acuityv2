@@ -44,7 +44,7 @@ export function RingProgress({ percentage, label }: RingProgressProps) {
         />
       </svg>
       {/* Percentage text */}
-      <span className="absolute text-[12px] font-black text-black">
+      <span className="absolute text-[12px] font-black text-black font-hero">
         {label ?? `${Math.round(validPct)}%`}
       </span>
     </div>
