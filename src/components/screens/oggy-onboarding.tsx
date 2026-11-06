@@ -168,13 +168,6 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
           }}
           className="relative flex items-center justify-center cursor-pointer"
         >
-          {/* Oggy Wealth Manager Badge */}
-          <div className="absolute -top-8 flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-white/10 border border-white/15 backdrop-blur-md shadow-xs">
-            <span className="w-1.5 h-1.5 rounded-full bg-[var(--brand)] animate-pulse" />
-            <span className="text-[11.5px] font-bold text-white tracking-wide">Oggy</span>
-            <span className="text-[10px] text-white/60 font-medium">Personal Wealth Manager</span>
-          </div>
-
           <AcuityCompanion
             size="large"
             isSpeaking={true}
