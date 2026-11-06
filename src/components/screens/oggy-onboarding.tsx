@@ -183,7 +183,7 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-[250] flex flex-col items-center bg-[#070709] text-white overflow-y-auto overscroll-none select-none px-6 pt-[max(1.2rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+    <div className="fixed inset-0 z-[250] flex flex-col justify-between items-center bg-[#070709] text-white overflow-hidden select-none px-6 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(2.5rem,env(safe-area-inset-bottom))]">
       {/* Ambient Brand Glow */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] h-[340px] rounded-full bg-[var(--brand)]/15 blur-[90px] pointer-events-none" />
 
@@ -191,7 +191,7 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
       <div
         className={cn(
           "relative z-10 flex flex-col items-center justify-center shrink-0 transition-all duration-300 ease-out",
-          isInputFocused ? "mt-1 scale-[0.82]" : "mt-6 sm:mt-10 scale-100"
+          isInputFocused ? "mt-1 sm:mt-2 scale-[0.85]" : "mt-8 sm:mt-12 scale-100"
         )}
       >
         <motion.div
@@ -227,11 +227,11 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
         </motion.div>
       </div>
 
-      {/* Conversational Stream: Oggy asks, user responds */}
+      {/* Conversational Stream: Brought down into the comfortable lower area */}
       <div
         className={cn(
-          "relative z-10 max-w-sm mx-auto w-full transition-all duration-300 ease-out space-y-4",
-          isInputFocused ? "mt-3" : "mt-8"
+          "relative z-10 max-w-sm mx-auto w-full transition-transform duration-300 ease-out space-y-4 mb-3 sm:mb-6",
+          isInputFocused ? "-translate-y-[160px] sm:-translate-y-[180px]" : "translate-y-0"
         )}
       >
         <AnimatePresence mode="wait">
