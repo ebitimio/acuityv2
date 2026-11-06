@@ -14,6 +14,7 @@ import { useToast } from "./toast";
 import { cn } from "@/lib/utils";
 import { Modal } from "./modal";
 import { clearDataCache, updateProfile, updatePassword } from "@/lib/supabase/database";
+import { createClient } from "@/lib/supabase/client";
 import { Button } from "./form";
 import { PinLockScreen } from "@/components/screens/pin-lock-screen";
 
@@ -159,13 +160,34 @@ export function SettingsSheet({ isOpen, onClose, user, onSignOut, profileName, o
       }
       
       clearDataCache();
-      
-      // Set the flag so page.tsx knows to go to Auth, not Carousel
+
+      // Sign out completely from Supabase auth first
+      try {
+        const supabase = createClient();
+        await supabase.auth.signOut({ scope: "global" });
+      } catch {}
+
+      // Completely purge all stored tokens and state
+      try {
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k) keysToRemove.push(k);
+        }
+        keysToRemove.forEach((k) => {
+          if (k.startsWith("sb-") || k.startsWith("acuity:")) {
+            localStorage.removeItem(k);
+          }
+        });
+        sessionStorage.clear();
+      } catch {}
+
+      // Flag account as deleted so re-opening stays on AuthScreen
       localStorage.setItem("acuity:account_deleted", "true");
       
       toast("Account permanently deleted");
       
-      // Force reload
+      // Force reload to clean auth state
       window.location.href = "/";
     } catch (e: any) {
       toast(e.message || "Could not delete account", "err");

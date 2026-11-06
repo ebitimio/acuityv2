@@ -337,7 +337,6 @@ export default function SandboxPage() {
     const wasDeleted = localStorage.getItem("acuity:account_deleted") === "true";
 
     if (wasDeleted) {
-      localStorage.removeItem("acuity:account_deleted");
       localStorage.removeItem("acuity:new_signup");
       localStorage.removeItem("acuity:last_active");
       localStorage.removeItem("acuity:activeWorkspace");
@@ -345,45 +344,79 @@ export default function SandboxPage() {
       setOnboardingSequence("complete");
       setSession(null);
       setIsAuthLoading(false);
+      supabase.auth.signOut({ scope: "global" }).catch(() => {});
       return;
     }
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!session) {
+        setSession(null);
+        setIsAuthLoading(false);
+        setOnboardingSequence("complete");
+        return;
+      }
+
+      // Verify with Supabase Auth server that this user session is actually valid
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError || !userData?.user) {
+        // Account was deleted on server or token is invalid! Clean up and stay on AuthScreen
+        await supabase.auth.signOut({ scope: "global" }).catch(() => {});
+        localStorage.setItem("acuity:account_deleted", "true");
+        setSession(null);
+        setIsAuthLoading(false);
+        setOnboardingSequence("complete");
+        return;
+      }
+
       setSession(session);
       setIsAuthLoading(false);
 
-      if (session) {
-        const isNewSignup = localStorage.getItem("acuity:new_signup") === "true";
+      const isNewSignup = localStorage.getItem("acuity:new_signup") === "true";
 
-        if (isNewSignup) {
+      if (isNewSignup) {
+        setOnboardingSequence("carousel");
+      } else {
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("pin")
+          .eq("id", session.user.id)
+          .single();
+
+        if (profileError || !profile) {
+          // If profile doesn't exist, this account was deleted or corrupted.
+          // NEVER show carousel! Sign out and stay on AuthScreen.
+          await supabase.auth.signOut({ scope: "global" }).catch(() => {});
+          localStorage.setItem("acuity:account_deleted", "true");
+          setSession(null);
+          setOnboardingSequence("complete");
+          return;
+        }
+
+        if (!profile.pin) {
           setOnboardingSequence("carousel");
         } else {
-          const { data: profile } = await supabase.from("profiles").select("pin").eq("id", session.user.id).single();
+          setDbPin(profile.pin);
 
-          if (!profile?.pin) {
-            setOnboardingSequence("carousel");
+          const lastActive = Number(localStorage.getItem("acuity:last_active") || "0");
+          if (lastActive === 0 || Date.now() - lastActive > IDLE_TIMEOUT_MS) {
+            setIsLocked(true);
           } else {
-            setDbPin(profile.pin);
+            localStorage.setItem("acuity:last_active", String(Date.now()));
+          }
 
-            const lastActive = Number(localStorage.getItem("acuity:last_active") || "0");
-            if (lastActive === 0 || Date.now() - lastActive > IDLE_TIMEOUT_MS) {
-              setIsLocked(true);
-            } else {
-              localStorage.setItem("acuity:last_active", String(Date.now()));
-            }
-
-            setOnboardingSequence("complete");
-            const tourDone = localStorage.getItem(`acuity:oggy_tour_done_${session.user.id}`);
-            if (!tourDone && localStorage.getItem(`acuity:oggy_tour_pending_${session.user.id}`) === "true") {
-              setShowDashboardTour(true);
-            }
+          setOnboardingSequence("complete");
+          const tourDone = localStorage.getItem(`acuity:oggy_tour_done_${session.user.id}`);
+          if (!tourDone && localStorage.getItem(`acuity:oggy_tour_pending_${session.user.id}`) === "true") {
+            setShowDashboardTour(true);
           }
         }
-      } else {
-        setOnboardingSequence("complete");
       }
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN") {
+        localStorage.removeItem("acuity:account_deleted");
+      }
       setSession(session);
     });
     return () => subscription.unsubscribe();
