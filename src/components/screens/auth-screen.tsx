@@ -23,6 +23,8 @@ export function AuthScreen() {
     
     setIsLoading(true);
     try {
+      localStorage.removeItem("acuity:account_deleted");
+
       if (mode === "login") {
         if (!password) throw new Error("Please enter your password");
         const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -38,15 +40,25 @@ export function AuthScreen() {
         });
         if (error) throw error;
 
+        // If signUp doesn't return a session automatically, sign in to establish active session
+        if (!data.session && data.user) {
+          try {
+            await supabase.auth.signInWithPassword({ email, password });
+          } catch {}
+        }
+
         if (data.user) {
-          await supabase.from("profiles").upsert({ 
-            id: data.user.id, 
-            email: email,
-            full_name: fullName 
-          });
+          try {
+            await supabase.from("profiles").upsert({ 
+              id: data.user.id, 
+              email: email,
+              full_name: fullName 
+            });
+          } catch {}
         }
         
         // SET FLAG IMMEDIATELY
+        localStorage.removeItem("acuity:account_deleted");
         localStorage.setItem("acuity:new_signup", "true");
         toast("Account created!");
         
@@ -74,6 +86,7 @@ export function AuthScreen() {
   };
 
   const handleGoogleAuth = async () => {
+    localStorage.removeItem("acuity:account_deleted");
     setIsGoogleLoading(true);
     try {
       const { error } = await supabase.auth.signInWithOAuth({

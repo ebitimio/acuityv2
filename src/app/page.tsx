@@ -334,20 +334,6 @@ export default function SandboxPage() {
   }, [activeWs?.id]);
 
   useEffect(() => {
-    const wasDeleted = localStorage.getItem("acuity:account_deleted") === "true";
-
-    if (wasDeleted) {
-      localStorage.removeItem("acuity:new_signup");
-      localStorage.removeItem("acuity:last_active");
-      localStorage.removeItem("acuity:activeWorkspace");
-      localStorage.removeItem("acuity:pin");
-      setOnboardingSequence("complete");
-      setSession(null);
-      setIsAuthLoading(false);
-      supabase.auth.signOut({ scope: "global" }).catch(() => {});
-      return;
-    }
-
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) {
         setSession(null);
@@ -356,17 +342,21 @@ export default function SandboxPage() {
         return;
       }
 
-      // Verify with Supabase Auth server that this user session is actually valid
+      // Verify with Supabase Auth server that this user session is genuinely valid and NOT deleted
       const { data: userData, error: userError } = await supabase.auth.getUser();
       if (userError || !userData?.user) {
         // Account was deleted on server or token is invalid! Clean up and stay on AuthScreen
         await supabase.auth.signOut({ scope: "global" }).catch(() => {});
-        localStorage.setItem("acuity:account_deleted", "true");
+        localStorage.removeItem("acuity:new_signup");
+        localStorage.removeItem("acuity:pin");
         setSession(null);
         setIsAuthLoading(false);
         setOnboardingSequence("complete");
         return;
       }
+
+      // Valid server-verified user: clear any deleted flag
+      localStorage.removeItem("acuity:account_deleted");
 
       setSession(session);
       setIsAuthLoading(false);
@@ -383,11 +373,11 @@ export default function SandboxPage() {
           .single();
 
         if (profileError || !profile) {
-          // If profile doesn't exist, this account was deleted or corrupted.
+          // If profile doesn't exist for an existing user (and not new signup), this account was deleted or corrupted.
           // NEVER show carousel! Sign out and stay on AuthScreen.
           await supabase.auth.signOut({ scope: "global" }).catch(() => {});
-          localStorage.setItem("acuity:account_deleted", "true");
           setSession(null);
+          setIsAuthLoading(false);
           setOnboardingSequence("complete");
           return;
         }
@@ -416,8 +406,17 @@ export default function SandboxPage() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_IN") {
         localStorage.removeItem("acuity:account_deleted");
+        const isNewSignup = localStorage.getItem("acuity:new_signup") === "true";
+        if (isNewSignup) {
+          setOnboardingSequence("carousel");
+        }
       }
-      setSession(session);
+      if (event === "SIGNED_OUT") {
+        setSession(null);
+        setOnboardingSequence("complete");
+      } else {
+        setSession(session);
+      }
     });
     return () => subscription.unsubscribe();
   }, [supabase.auth]);
