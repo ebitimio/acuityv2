@@ -71,7 +71,7 @@ function ThoughtProcess({ thoughts }: { thoughts?: string[] }) {
     <div className="mb-2">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-[11.5px] font-medium text-white/50 hover:text-white/80 transition-all border border-white/5"
+        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--fill-1)] hover:bg-[var(--fill-2)] text-[11.5px] font-medium text-[var(--text-2)] hover:text-[var(--text-1)] transition-all border border-[var(--line)]"
       >
         <span className="w-1.5 h-1.5 rounded-full bg-[var(--brand)] animate-pulse" />
         <span>Thought process ({thoughts.length} step{thoughts.length > 1 ? "s" : ""})</span>
@@ -86,7 +86,7 @@ function ThoughtProcess({ thoughts }: { thoughts?: string[] }) {
             exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden"
           >
-            <div className="mt-1.5 p-2.5 rounded-xl bg-white/[0.02] border border-white/5 text-[12px] text-white/60 space-y-1.5 font-mono">
+            <div className="mt-1.5 p-2.5 rounded-xl bg-[var(--surface-2)] border border-[var(--line)] text-[12px] text-[var(--text-2)] space-y-1.5 font-mono">
               {thoughts.map((step, idx) => (
                 <div key={idx} className="flex items-center gap-2">
                   <Check size={11} className="text-[var(--gain)] shrink-0" />
@@ -692,7 +692,7 @@ export function AIScreen({
           <button
             onClick={onBack}
             aria-label="Back to dashboard"
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] text-white/80 hover:text-white transition-all active:scale-95 shadow-sm"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--surface-1)] hover:bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text-1)] transition-all active:scale-95 shadow-xs"
           >
             <ChevronLeft size={20} />
           </button>
@@ -700,13 +700,13 @@ export function AIScreen({
           <button
             onClick={() => setIsSidebarOpen(true)}
             aria-label="Open chat history"
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] text-white/70 hover:text-white transition-all active:scale-95 shadow-sm"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--surface-1)] hover:bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text-2)] hover:text-[var(--text-1)] transition-all active:scale-95 shadow-xs"
           >
             <Menu size={18} />
           </button>
           
           <div className="flex items-baseline ml-1">
-            <span className="text-[19px] font-black tracking-tight text-white">ACUITY</span>
+            <span className="text-[19px] font-black tracking-tight text-[var(--text-1)]">ACUITY</span>
             <span className="text-[19px] font-black tracking-tight text-[var(--brand)]">.</span>
           </div>
         </div>
@@ -716,9 +716,9 @@ export function AIScreen({
             onClick={startNewChat}
             aria-label="New chat"
             title="New Chat"
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] text-white/80 hover:text-white transition-all active:scale-95 shadow-sm"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--surface-1)] hover:bg-[var(--surface-2)] border border-[var(--line)] text-[var(--brand)] transition-all active:scale-95 shadow-xs"
           >
-            <Plus size={18} className="text-[var(--brand)]" />
+            <Plus size={18} />
           </button>
         </div>
       </header>
@@ -731,24 +731,24 @@ export function AIScreen({
       >
         {messages.length === 0 && !isThinking ? (
           <div className="flex flex-col justify-between min-h-[75vh] max-w-xl mx-auto py-4 px-1">
-            {/* Minimalist Greeting & Brand Model Badge (inspired by reference) */}
+            {/* Minimalist Greeting & Brand Model Badge */}
             <div className="space-y-1.5">
               <h1 className="text-[32px] sm:text-[40px] font-semibold tracking-tight leading-[1.14]">
-                <span className="text-white">{greeting}, </span>
-                <span className="bg-gradient-to-r from-[var(--brand)] via-[#ff735c] to-white bg-clip-text text-transparent">
+                <span className="text-[var(--text-1)]">{greeting}, </span>
+                <span className="text-[var(--brand)]">
                   {firstName}
                 </span>
                 <br />
-                <span className="text-white/50 text-[24px] sm:text-[30px] font-normal">
+                <span className="text-[var(--text-3)] text-[24px] sm:text-[30px] font-normal">
                   May I help you?
                 </span>
               </h1>
 
-              <div className="inline-flex items-center gap-2 pt-1 text-[12px] text-white/50 font-mono">
+              <div className="inline-flex items-center gap-2 pt-1 text-[12px] text-[var(--text-3)] font-mono">
                 <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand)] animate-pulse shadow-[0_0_8px_var(--brand)]" />
-                <span className="font-bold text-white tracking-wide">Acuity Intelligence</span>
-                <span className="text-white/25">•</span>
-                <span>Personal CFO</span>
+                <span className="font-bold text-[var(--text-1)] tracking-wide">Acuity Intelligence</span>
+                <span className="text-[var(--text-3)]">•</span>
+                <span className="text-[var(--text-2)]">Personal CFO</span>
               </div>
             </div>
 
@@ -762,7 +762,7 @@ export function AIScreen({
               />
             </div>
 
-            {/* Minimalist Bento Cards (inspired by reference image) */}
+            {/* Minimalist Bento Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2">
               {suggestions.map((s, i) => (
                 <motion.button
@@ -771,18 +771,18 @@ export function AIScreen({
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
                   onClick={() => send(s.title)}
-                  className="group relative flex flex-col justify-between p-3.5 rounded-2xl bg-white/[0.03] hover:bg-white/[0.07] active:bg-white/[0.1] border border-white/[0.06] hover:border-white/15 text-left transition-all active:scale-[0.98] shadow-sm overflow-hidden"
+                  className="group relative flex flex-col justify-between p-3.5 rounded-2xl bg-[var(--surface-1)] hover:bg-[var(--surface-2)] active:bg-[var(--surface-3)] border border-[var(--line)] hover:border-[var(--brand)]/40 text-left transition-all active:scale-[0.98] shadow-xs overflow-hidden"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <span className="text-[13.5px] font-medium text-white/90 group-hover:text-white leading-snug">
+                    <span className="text-[13.5px] font-semibold text-[var(--text-1)] group-hover:text-[var(--brand)] transition-colors leading-snug">
                       {s.title}
                     </span>
                     <ArrowUp
                       size={13}
-                      className="text-white/30 group-hover:text-[var(--brand)] transition-all rotate-45 shrink-0 mt-0.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                      className="text-[var(--text-3)] group-hover:text-[var(--brand)] transition-all rotate-45 shrink-0 mt-0.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
                     />
                   </div>
-                  <span className="text-[11.5px] text-white/40 mt-1.5 line-clamp-1">
+                  <span className="text-[11.5px] text-[var(--text-2)] mt-1.5 line-clamp-1">
                     {s.desc}
                   </span>
                 </motion.button>
@@ -799,15 +799,15 @@ export function AIScreen({
                 className={cn("flex flex-col", msg.role === "user" ? "items-end" : "items-start")}
               >
                 {msg.role === "user" ? (
-                  /* User Bubble - Transparent Glass */
-                  <div className="max-w-[85%] rounded-[22px] rounded-br-sm bg-white/[0.07] border border-white/[0.08] backdrop-blur-xl px-4 py-3 text-[15px] leading-relaxed text-white shadow-sm">
+                  /* User Bubble */
+                  <div className="max-w-[85%] rounded-[22px] rounded-br-sm bg-[var(--surface-2)] border border-[var(--line)] px-4 py-3 text-[15px] leading-relaxed text-[var(--text-1)] shadow-xs">
                     {msg.content}
                   </div>
                 ) : (
                   /* Assistant Response */
                   <div className="w-full flex items-start gap-3">
                     {/* Orb Mascot PFP for AI Response */}
-                    <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#141416]/90 border border-white/10 shadow-[0_2px_12px_rgba(0,0,0,0.6),0_0_12px_rgba(222,49,33,0.3)] mt-0.5 overflow-visible">
+                    <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#141416] border border-white/10 shadow-[0_2px_12px_rgba(0,0,0,0.3)] mt-0.5 overflow-visible">
                       <AcuityCompanion size="orb" />
                     </div>
 
@@ -828,21 +828,21 @@ export function AIScreen({
                         if (block.type === "action") {
                           const isResolved = block.resolved || msg.actionStatus === "applied" || msg.actionStatus === "cancelled";
                           return (
-                            <div key={idx} className="mt-3.5 rounded-[20px] border border-[var(--brand)]/30 bg-white/[0.04] backdrop-blur-xl p-4 shadow-sm overflow-hidden">
+                            <div key={idx} className="mt-3.5 rounded-[20px] border border-[var(--brand)]/30 bg-[var(--surface-1)] p-4 shadow-sm overflow-hidden">
                               <div className="flex items-center gap-2 mb-2">
                                 {msg.actionStatus === "applied" ? (
                                   <CheckCircle2 size={16} className="text-[var(--gain)]" />
                                 ) : msg.actionStatus === "cancelled" ? (
-                                  <XCircle size={16} className="text-white/40" />
+                                  <XCircle size={16} className="text-[var(--text-3)]" />
                                 ) : (
                                   <AlertCircle size={16} className="text-[var(--brand)]" />
                                 )}
-                                <span className="text-[13px] font-bold text-white">
+                                <span className="text-[13px] font-bold text-[var(--text-1)]">
                                   {msg.actionStatus === "applied" ? "Action Applied" : msg.actionStatus === "cancelled" ? "Action Cancelled" : "Confirm Financial Action"}
                                 </span>
                               </div>
 
-                              <p className="text-[14px] text-white/80 leading-relaxed">
+                              <p className="text-[14px] text-[var(--text-2)] leading-relaxed">
                                 {block.summary}
                               </p>
                               
@@ -856,7 +856,7 @@ export function AIScreen({
                                   </button>
                                   <button
                                     onClick={() => handleActionCancel(msg.id)}
-                                    className="flex-1 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] py-2.5 text-[13px] font-bold text-white/80 hover:text-white active:scale-95 transition-all"
+                                    className="flex-1 rounded-xl bg-[var(--fill-1)] hover:bg-[var(--fill-2)] border border-[var(--line)] py-2.5 text-[13px] font-bold text-[var(--text-1)] active:scale-95 transition-all"
                                   >
                                     Cancel
                                   </button>
@@ -870,15 +870,15 @@ export function AIScreen({
 
                       {/* Proactive Contextual Follow-Up Suggestions */}
                       {msg.followUps && msg.followUps.length > 0 && !isThinking && (
-                        <div className="flex flex-wrap gap-1.5 mt-3 pt-2.5 border-t border-white/5">
+                        <div className="flex flex-wrap gap-1.5 mt-3 pt-2.5 border-t border-[var(--line)]">
                           {msg.followUps.map((f, i) => (
                             <button
                               key={i}
                               onClick={() => send(f)}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.04] hover:bg-white/[0.08] text-[12px] text-white/75 hover:text-white border border-white/5 transition-all active:scale-95"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--surface-1)] hover:bg-[var(--surface-2)] text-[12px] text-[var(--text-2)] hover:text-[var(--text-1)] border border-[var(--line)] transition-all active:scale-95 shadow-2xs"
                             >
                               <span>{f}</span>
-                              <ArrowUp size={11} className="text-white/30 rotate-45" />
+                              <ArrowUp size={11} className="text-[var(--text-3)] rotate-45" />
                             </button>
                           ))}
                         </div>
@@ -921,12 +921,12 @@ export function AIScreen({
             {/* Thinking & Streaming State with Expressive Mini Companion */}
             {isThinking && (
               <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="w-full flex items-start gap-3">
-                <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#141416]/90 border border-white/10 shadow-[0_2px_12px_rgba(0,0,0,0.6),0_0_12px_rgba(222,49,33,0.3)] mt-0.5 overflow-visible">
+                <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#141416] border border-white/10 shadow-[0_2px_12px_rgba(0,0,0,0.3)] mt-0.5 overflow-visible">
                   <AcuityCompanion isThinking={!streamingContent} isSpeaking={!!streamingContent} size="orb" />
                 </div>
                 <div className="flex-1 min-w-0 pt-0.5">
                   {thinkingLabel && !streamingContent && (
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/10 text-[13px] font-medium text-white/80 animate-pulse">
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--surface-2)] border border-[var(--line)] text-[13px] font-medium text-[var(--text-1)] animate-pulse shadow-xs">
                       <span className="w-1.5 h-1.5 rounded-full bg-[var(--brand)] animate-ping" />
                       <span>{thinkingLabel}</span>
                     </div>
@@ -954,7 +954,7 @@ export function AIScreen({
         }}
       >
         <div className="max-w-2xl mx-auto">
-          <div className="flex items-center gap-2 rounded-full bg-white/[0.05] hover:bg-white/[0.07] focus-within:bg-white/[0.08] backdrop-blur-2xl p-1.5 pl-4 border border-white/[0.12] focus-within:border-[var(--brand)]/70 focus-within:ring-2 focus-within:ring-[var(--brand)]/20 shadow-[0_8px_32px_rgba(0,0,0,0.3)] transition-all">
+          <div className="flex items-center gap-2 rounded-full bg-[var(--surface-1)] hover:bg-[var(--surface-1)] focus-within:bg-[var(--surface-1)] p-1.5 pl-4 border border-[var(--line-strong)] focus-within:border-[var(--brand)]/70 focus-within:ring-2 focus-within:ring-[var(--brand)]/20 shadow-md shadow-black/5 dark:shadow-[0_8px_32px_rgba(0,0,0,0.3)] transition-all">
             <textarea
               ref={textareaRef}
               value={input}
@@ -967,7 +967,7 @@ export function AIScreen({
                 }
               }}
               placeholder="Ask Acuity anything..."
-              className="flex-1 max-h-32 min-h-[38px] bg-transparent py-2 text-[15px] sm:text-[16px] leading-[1.35] text-white outline-none placeholder:text-white/40 resize-none"
+              className="flex-1 max-h-32 min-h-[38px] bg-transparent py-2 text-[15px] sm:text-[16px] leading-[1.35] text-[var(--text-1)] outline-none placeholder:text-[var(--text-3)] resize-none"
               style={{
                 caretColor: "var(--brand)",
                 fontSize: "16px", // Ensures iOS Safari does not auto-zoom
@@ -977,7 +977,7 @@ export function AIScreen({
             <div className="flex items-center gap-1 shrink-0 pr-1">
               <button
                 type="button"
-                className="flex h-9 w-9 items-center justify-center rounded-full text-white/50 hover:text-white hover:bg-white/[0.08] transition-colors"
+                className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--text-3)] hover:text-[var(--text-1)] hover:bg-[var(--fill-1)] transition-colors"
                 title="Voice input"
               >
                 <Mic size={18} />
@@ -989,10 +989,10 @@ export function AIScreen({
                 disabled={!input.trim() || isThinking}
                 aria-label="Send message"
                 className={cn(
-                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-all active:scale-95 shadow-sm",
+                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-all active:scale-95 shadow-xs",
                   input.trim() && !isThinking
                     ? "bg-[var(--brand)] text-[var(--brand-ink)] shadow-[var(--brand)]/25"
-                    : "bg-white/[0.05] text-white/30 cursor-not-allowed"
+                    : "bg-[var(--fill-2)] text-[var(--text-3)] cursor-not-allowed"
                 )}
               >
                 {isThinking ? (
@@ -1022,13 +1022,13 @@ export function AIScreen({
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", damping: 26, stiffness: 220 }}
-              className="fixed top-0 left-0 bottom-0 w-[290px] bg-[var(--surface-1)] z-[120] flex flex-col border-r border-white/10 shadow-2xl"
+              className="fixed top-0 left-0 bottom-0 w-[290px] bg-[var(--surface-1)] z-[120] flex flex-col border-r border-[var(--line)] shadow-2xl"
               style={{
                 paddingTop: "calc(env(safe-area-inset-top) + 12px)",
                 paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)",
               }}
             >
-              <div className="px-4 pb-3 border-b border-white/10 flex justify-between items-center">
+              <div className="px-4 pb-3 border-b border-[var(--line)] flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-[16px] text-[var(--text-1)]">Chat History</span>
                 </div>
@@ -1057,7 +1057,7 @@ export function AIScreen({
                     className={cn(
                       "group w-full flex items-center justify-between p-3 rounded-xl text-sm transition-colors cursor-pointer",
                       activeConvId === c.id
-                        ? "bg-[var(--surface-2)] text-[var(--text-1)] font-medium border border-white/10"
+                        ? "bg-[var(--surface-2)] text-[var(--text-1)] font-medium border border-[var(--line)]"
                         : "text-[var(--text-2)] hover:bg-[var(--surface-2)] hover:text-[var(--text-1)]"
                     )}
                     onClick={() => {
@@ -1106,7 +1106,7 @@ export function AIScreen({
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.94, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-sm rounded-[24px] bg-[var(--surface-2)] border border-white/10 p-6 shadow-2xl"
+              className="w-full max-w-sm rounded-[24px] bg-[var(--surface-1)] border border-[var(--line)] p-6 shadow-2xl"
             >
               <div className="flex items-center gap-3 mb-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--danger)]/15">

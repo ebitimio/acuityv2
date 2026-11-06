@@ -154,6 +154,7 @@ export function AcuityCompanion({
   const isOrb = size === "orb";
   const isCompact = size === "compact";
   const isMini = size === "mini";
+  const isLarge = !isOrb && !isCompact && !isMini;
 
   return (
     <div
@@ -283,90 +284,109 @@ export function AcuityCompanion({
           </div>
         )}
 
-        {/* Eyes Container */}
+        {/* Head / Face Silhouette (Creates a cohesive head and ensures maximum contrast across all themes) */}
         <div
           className={cn(
-            "flex items-center",
-            isOrb || isMini
-              ? "gap-1 mt-0.5"
-              : isCompact
-              ? "gap-1.5 mt-0.5"
-              : "gap-4 sm:gap-5 mt-2 sm:mt-2.5"
+            "relative flex flex-col items-center justify-center transition-all",
+            isLarge
+              ? "w-28 sm:w-32 rounded-b-[28px] bg-gradient-to-b from-[#1c1c20] via-[#151518] to-[#0e0e11] border-x border-b border-white/10 shadow-[0_12px_36px_rgba(0,0,0,0.35)] pt-2.5 pb-4 -mt-1.5"
+              : "flex flex-col items-center"
           )}
         >
-          {/* Left Eye */}
-          <motion.div
-            animate={{
-              scaleY: isWinking || blinkState ? 0.08 : gaze.scaleY,
-              scaleX: gaze.scaleX,
-            }}
-            transition={{ duration: 0.09 }}
+          {/* Eyes Container */}
+          <div
             className={cn(
-              "bg-white shadow-[0_0_24px_rgba(255,255,255,0.7),0_0_10px_rgba(222,49,33,0.35)] origin-center",
-              isOrb
-                ? "w-2 h-4.5 rounded-[5px]"
-                : isMini
-                ? "w-1.5 h-3.5 rounded-[4px]"
+              "flex items-center",
+              isOrb || isMini
+                ? "gap-1 mt-0.5"
                 : isCompact
-                ? "w-1.5 h-4 rounded-[5px]"
-                : "w-6 h-13 sm:w-7 sm:h-14 rounded-[12px] sm:rounded-[13px]"
+                ? "gap-1.5 mt-0.5"
+                : "gap-4 sm:gap-5 mt-1 sm:mt-1.5"
             )}
-          />
+          >
+            {/* Left Eye */}
+            <motion.div
+              animate={{
+                scaleY: isWinking || blinkState ? 0.08 : gaze.scaleY,
+                scaleX: gaze.scaleX,
+              }}
+              transition={{ duration: 0.09 }}
+              className={cn(
+                "bg-white origin-center",
+                isOrb
+                  ? "w-2 h-4.5 rounded-[5px]"
+                  : isMini
+                  ? "w-1.5 h-3.5 rounded-[4px]"
+                  : isCompact
+                  ? "w-1.5 h-4 rounded-[5px]"
+                  : "w-6 h-13 sm:w-7 sm:h-14 rounded-[12px] sm:rounded-[13px]"
+              )}
+              style={{
+                boxShadow: "0 0 20px rgba(255,255,255,0.85), 0 0 10px color-mix(in srgb, var(--brand) 40%, transparent)",
+              }}
+            />
 
-          {/* Right Eye */}
+            {/* Right Eye */}
+            <motion.div
+              animate={{
+                scaleY: blinkState ? 0.08 : gaze.scaleY,
+                scaleX: gaze.scaleX,
+              }}
+              transition={{ duration: 0.09 }}
+              className={cn(
+                "bg-white origin-center",
+                isOrb
+                  ? "w-2 h-4.5 rounded-[5px]"
+                  : isMini
+                  ? "w-1.5 h-3.5 rounded-[4px]"
+                  : isCompact
+                  ? "w-1.5 h-4 rounded-[5px]"
+                  : "w-6 h-13 sm:w-7 sm:h-14 rounded-[12px] sm:rounded-[13px]"
+              )}
+              style={{
+                boxShadow: "0 0 20px rgba(255,255,255,0.85), 0 0 10px color-mix(in srgb, var(--brand) 40%, transparent)",
+              }}
+            />
+          </div>
+
+          {/* Animated Mouth (Same white highlight as the eyes, motion when talking/typing) */}
           <motion.div
-            animate={{
-              scaleY: blinkState ? 0.08 : gaze.scaleY,
-              scaleX: gaze.scaleX,
-            }}
-            transition={{ duration: 0.09 }}
+            animate={
+              isSpeaking
+                ? {
+                    scaleY: [0.6, 2.4, 0.8, 2.8, 1.0, 2.0],
+                    scaleX: [1.0, 1.25, 0.85, 1.2, 0.95, 1.15],
+                  }
+                : isWinking
+                ? { scaleY: 1.8, scaleX: 1.4 }
+                : isThinking
+                ? { scaleY: 0.6, scaleX: 0.7 }
+                : { scaleY: 1, scaleX: 1 }
+            }
+            transition={
+              isSpeaking
+                ? {
+                    duration: 0.52,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }
+                : { duration: 0.15 }
+            }
             className={cn(
-              "bg-white shadow-[0_0_24px_rgba(255,255,255,0.7),0_0_10px_rgba(222,49,33,0.35)] origin-center",
+              "bg-white origin-center rounded-full",
               isOrb
-                ? "w-2 h-4.5 rounded-[5px]"
+                ? "w-2 h-0.75 mt-0.75"
                 : isMini
-                ? "w-1.5 h-3.5 rounded-[4px]"
+                ? "w-1.5 h-0.5 mt-0.5"
                 : isCompact
-                ? "w-1.5 h-4 rounded-[5px]"
-                : "w-6 h-13 sm:w-7 sm:h-14 rounded-[12px] sm:rounded-[13px]"
+                ? "w-2.5 h-1 mt-1"
+                : "w-6 sm:w-7 h-2 sm:h-2.5 mt-2 sm:mt-2.5"
             )}
+            style={{
+              boxShadow: "0 0 20px rgba(255,255,255,0.85), 0 0 10px color-mix(in srgb, var(--brand) 40%, transparent)",
+            }}
           />
         </div>
-
-        {/* Animated Mouth (Same white highlight as the eyes, motion when talking/typing) */}
-        <motion.div
-          animate={
-            isSpeaking
-              ? {
-                  scaleY: [0.6, 2.4, 0.8, 2.8, 1.0, 2.0],
-                  scaleX: [1.0, 1.25, 0.85, 1.2, 0.95, 1.15],
-                }
-              : isWinking
-              ? { scaleY: 1.8, scaleX: 1.4 }
-              : isThinking
-              ? { scaleY: 0.6, scaleX: 0.7 }
-              : { scaleY: 1, scaleX: 1 }
-          }
-          transition={
-            isSpeaking
-              ? {
-                  duration: 0.52,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }
-              : { duration: 0.15 }
-          }
-          className={cn(
-            "bg-white shadow-[0_0_24px_rgba(255,255,255,0.7),0_0_10px_rgba(222,49,33,0.35)] origin-center rounded-full",
-            isOrb
-              ? "w-2 h-0.75 mt-0.75"
-              : isMini
-              ? "w-1.5 h-0.5 mt-0.5"
-              : isCompact
-              ? "w-2.5 h-1 mt-1"
-              : "w-6 sm:w-7 h-2 sm:h-2.5 mt-2.5 sm:mt-3"
-          )}
-        />
       </motion.div>
     </div>
   );
