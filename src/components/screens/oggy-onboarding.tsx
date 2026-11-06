@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, ChevronLeft, Check } from "lucide-react";
 import { AcuityCompanion } from "@/components/ui/acuity-companion";
@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 import { addRecurringItem, completeOnboarding } from "@/lib/supabase/database";
 import { useToast } from "@/components/ui/toast";
 import { formatAmountWithCommas, parseNumberInput } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 interface OggyOnboardingProps {
   userName?: string;
@@ -32,6 +33,41 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
   const [stage, setStage] = useState<ChatStage>("intro");
   const [isSaving, setIsSaving] = useState(false);
   const [createdAccountId, setCreatedAccountId] = useState<string | null>(null);
+
+  // Mascot expressive choreography states
+  const [isSpeaking, setIsSpeaking] = useState(true);
+  const [isSmiling, setIsSmiling] = useState(false);
+  const [isSilly, setIsSilly] = useState(false);
+  const [isInputFocused, setIsInputFocused] = useState(false);
+
+  // Choreography: mouth speaks briefly, stops, smiles, does a silly dance across screen, returns to center
+  useEffect(() => {
+    setIsSpeaking(true);
+    setIsSmiling(false);
+    setIsSilly(false);
+
+    // 1. Mouth moves briefly while asking, then stops speaking & smiles
+    const stopSpeakingTimer = setTimeout(() => {
+      setIsSpeaking(false);
+      setIsSmiling(true);
+    }, 1800);
+
+    // 2. Do something silly moving playfully across the screen
+    const sillyTimer = setTimeout(() => {
+      setIsSilly(true);
+    }, 2400);
+
+    // 3. Smoothly settle back into original center position
+    const settleTimer = setTimeout(() => {
+      setIsSilly(false);
+    }, 4600);
+
+    return () => {
+      clearTimeout(stopSpeakingTimer);
+      clearTimeout(sillyTimer);
+      clearTimeout(settleTimer);
+    };
+  }, [stage]);
 
   // User input states
   const [bankName, setBankName] = useState("");
@@ -147,30 +183,44 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-[250] flex flex-col justify-between bg-[#070709] text-white overflow-hidden select-none px-6 py-8">
+    <div className="fixed inset-0 z-[250] flex flex-col items-center bg-[#070709] text-white overflow-y-auto overscroll-none select-none px-6 pt-[max(1.2rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))]">
       {/* Ambient Brand Glow */}
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] h-[340px] rounded-full bg-[var(--brand)]/15 blur-[90px] pointer-events-none" />
-
-      {/* Top spacer to balance layout */}
-      <div className="h-6" />
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] h-[340px] rounded-full bg-[var(--brand)]/15 blur-[90px] pointer-events-none" />
 
       {/* Mascot Section — Living Oggy */}
-      <div className="relative z-10 flex flex-col items-center">
+      <div
+        className={cn(
+          "relative z-10 flex flex-col items-center justify-center shrink-0 transition-all duration-300 ease-out",
+          isInputFocused ? "mt-1 scale-[0.82]" : "mt-6 sm:mt-10 scale-100"
+        )}
+      >
         <motion.div
-          animate={{
-            y: [0, -8, 0],
-            rotate: [-2, 2, -2],
-          }}
-          transition={{
-            duration: 3.2,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-          className="relative flex items-center justify-center cursor-pointer"
+          animate={
+            isSilly
+              ? {
+                  x: [0, -65, 75, -20, 0],
+                  y: [0, -18, 12, -6, 0],
+                  rotate: [0, -14, 16, -6, 0],
+                  scale: [1, 1.08, 0.94, 1.04, 1],
+                }
+              : {
+                  x: 0,
+                  y: [0, -5, 0],
+                  rotate: [-1.5, 1.5, -1.5],
+                  scale: 1,
+                }
+          }
+          transition={
+            isSilly
+              ? { duration: 2.2, ease: "easeInOut" }
+              : { duration: 3.2, repeat: Infinity, ease: "easeInOut" }
+          }
+          className="relative flex items-center justify-center cursor-pointer pointer-events-auto"
         >
           <AcuityCompanion
             size="large"
-            isSpeaking={true}
+            isSpeaking={isSpeaking}
+            isSmiling={isSmiling}
             isThinking={isSaving}
             forceDark={true}
           />
@@ -178,7 +228,12 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
       </div>
 
       {/* Conversational Stream: Oggy asks, user responds */}
-      <div className="relative z-10 max-w-sm mx-auto w-full space-y-4">
+      <div
+        className={cn(
+          "relative z-10 max-w-sm mx-auto w-full transition-all duration-300 ease-out space-y-4",
+          isInputFocused ? "mt-3" : "mt-8"
+        )}
+      >
         <AnimatePresence mode="wait">
           {/* 1. INTRO */}
           {stage === "intro" && (
@@ -229,9 +284,10 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
               <div className="space-y-3">
                 <input
                   type="text"
-                  autoFocus
                   value={bankName}
                   onChange={(e) => setBankName(e.target.value)}
+                  onFocus={() => setIsInputFocused(true)}
+                  onBlur={() => setIsInputFocused(false)}
                   placeholder="Enter bank name (e.g. GTBank, Kuda, Cash)"
                   className="w-full rounded-2xl bg-white/5 border border-white/15 px-4 py-3 text-[15px] text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30"
                   onKeyDown={(e) => {
@@ -271,9 +327,10 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
               <div className="space-y-3">
                 <input
                   type="text"
-                  autoFocus
                   value={accountName}
                   onChange={(e) => setAccountName(e.target.value)}
+                  onFocus={() => setIsInputFocused(true)}
+                  onBlur={() => setIsInputFocused(false)}
                   placeholder="e.g. Main Checking or Daily Spending"
                   className="w-full rounded-2xl bg-white/5 border border-white/15 px-4 py-3 text-[15px] text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30"
                   onKeyDown={(e) => {
@@ -315,9 +372,10 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
                   <input
                     type="text"
                     inputMode="numeric"
-                    autoFocus
                     value={accountBalance}
                     onChange={(e) => setAccountBalance(formatAmountWithCommas(e.target.value))}
+                    onFocus={() => setIsInputFocused(true)}
+                    onBlur={() => setIsInputFocused(false)}
                     placeholder="0"
                     className="w-full rounded-2xl bg-white/5 border border-white/15 pl-9 pr-4 py-3 text-[16px] font-bold text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30"
                     onKeyDown={(e) => {
@@ -364,9 +422,10 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
                   <input
                     type="text"
                     inputMode="numeric"
-                    autoFocus
                     value={incomeAmount}
                     onChange={(e) => setIncomeAmount(formatAmountWithCommas(e.target.value))}
+                    onFocus={() => setIsInputFocused(true)}
+                    onBlur={() => setIsInputFocused(false)}
                     placeholder="e.g. 250,000"
                     className="w-full rounded-2xl bg-white/5 border border-white/15 pl-9 pr-4 py-3 text-[16px] font-bold text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30"
                     onKeyDown={(e) => {
@@ -424,9 +483,10 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
                   type="number"
                   min="1"
                   max="31"
-                  autoFocus
                   value={incomePayday}
                   onChange={(e) => setIncomePayday(e.target.value)}
+                  onFocus={() => setIsInputFocused(true)}
+                  onBlur={() => setIsInputFocused(false)}
                   placeholder="Enter day of month (e.g. 25)"
                   className="w-full rounded-2xl bg-white/5 border border-white/15 px-4 py-3 text-[15px] text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30"
                   onKeyDown={(e) => {
@@ -506,9 +566,10 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
               <div className="space-y-3">
                 <input
                   type="text"
-                  autoFocus
                   value={billName}
                   onChange={(e) => setBillName(e.target.value)}
+                  onFocus={() => setIsInputFocused(true)}
+                  onBlur={() => setIsInputFocused(false)}
                   placeholder="e.g. Internet, Rent, Electricity"
                   className="w-full rounded-2xl bg-white/5 border border-white/15 px-4 py-3 text-[15px] text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30"
                   onKeyDown={(e) => {
@@ -551,9 +612,10 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
                   <input
                     type="text"
                     inputMode="numeric"
-                    autoFocus
                     value={billAmount}
                     onChange={(e) => setBillAmount(formatAmountWithCommas(e.target.value))}
+                    onFocus={() => setIsInputFocused(true)}
+                    onBlur={() => setIsInputFocused(false)}
                     placeholder="e.g. 15,000"
                     className="w-full rounded-2xl bg-white/5 border border-white/15 pl-9 pr-4 py-3 text-[16px] font-bold text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30"
                     onKeyDown={(e) => {
@@ -599,9 +661,10 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
                   type="number"
                   min="1"
                   max="31"
-                  autoFocus
                   value={billDueDay}
                   onChange={(e) => setBillDueDay(e.target.value)}
+                  onFocus={() => setIsInputFocused(true)}
+                  onBlur={() => setIsInputFocused(false)}
                   placeholder="Enter day of month (e.g. 5)"
                   className="w-full rounded-2xl bg-white/5 border border-white/15 px-4 py-3 text-[15px] text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30"
                   onKeyDown={(e) => {

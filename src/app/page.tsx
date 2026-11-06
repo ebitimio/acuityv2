@@ -950,7 +950,7 @@ export default function SandboxPage() {
           activeTab={activeScreen === "budget" ? "home" : (activeScreen as TabId)}
           onTabChange={handleTabChange}
           onAddClick={handleAddClick}
-          isHidden={navHidden}
+          isHidden={showDashboardTour ? false : navHidden}
         />
       )}
 

@@ -8,6 +8,7 @@ export interface AcuityCompanionProps {
   isThinking?: boolean;
   hasInput?: boolean;
   isSpeaking?: boolean;
+  isSmiling?: boolean;
   hasCap?: boolean;
   size?: "large" | "compact" | "orb" | "mini";
   onTap?: () => void;
@@ -27,6 +28,7 @@ export function AcuityCompanion({
   isThinking = false,
   hasInput = false,
   isSpeaking = false,
+  isSmiling = false,
   hasCap = true,
   size = "large",
   onTap,
@@ -300,10 +302,11 @@ export function AcuityCompanion({
           {/* Left Eye */}
           <motion.div
             animate={{
-              scaleY: isWinking || blinkState ? 0.08 : gaze.scaleY,
-              scaleX: gaze.scaleX,
+              scaleY: isWinking || blinkState ? 0.08 : isSmiling ? 0.75 : gaze.scaleY,
+              scaleX: isSmiling ? 1.08 : gaze.scaleX,
+              y: isSmiling ? 1 : 0,
             }}
-            transition={{ duration: 0.09 }}
+            transition={{ duration: 0.12 }}
             className={cn(
               "bg-white origin-center border",
               forceDark ? "border-transparent" : "border-black/25 dark:border-transparent",
@@ -323,10 +326,11 @@ export function AcuityCompanion({
           {/* Right Eye */}
           <motion.div
             animate={{
-              scaleY: blinkState ? 0.08 : gaze.scaleY,
-              scaleX: gaze.scaleX,
+              scaleY: blinkState ? 0.08 : isSmiling ? 0.75 : gaze.scaleY,
+              scaleX: isSmiling ? 1.08 : gaze.scaleX,
+              y: isSmiling ? 1 : 0,
             }}
-            transition={{ duration: 0.09 }}
+            transition={{ duration: 0.12 }}
             className={cn(
               "bg-white origin-center border",
               forceDark ? "border-transparent" : "border-black/25 dark:border-transparent",
@@ -344,19 +348,26 @@ export function AcuityCompanion({
           />
         </div>
 
-        {/* Animated Mouth (Same white highlight as the eyes, motion when talking/typing) */}
+        {/* Animated Mouth (Same white highlight as the eyes, motion when talking/typing, smile curve) */}
         <motion.div
           animate={
             isSpeaking
               ? {
                   scaleY: [0.6, 2.4, 0.8, 2.8, 1.0, 2.0],
                   scaleX: [1.0, 1.25, 0.85, 1.2, 0.95, 1.15],
+                  y: 0,
+                }
+              : isSmiling
+              ? {
+                  scaleY: 0.6,
+                  scaleX: 1.55,
+                  y: -1,
                 }
               : isWinking
-              ? { scaleY: 1.8, scaleX: 1.4 }
+              ? { scaleY: 1.8, scaleX: 1.4, y: 0 }
               : isThinking
-              ? { scaleY: 0.6, scaleX: 0.7 }
-              : { scaleY: 1, scaleX: 1 }
+              ? { scaleY: 0.6, scaleX: 0.7, y: 0 }
+              : { scaleY: 1, scaleX: 1, y: 0 }
           }
           transition={
             isSpeaking
@@ -365,7 +376,7 @@ export function AcuityCompanion({
                   repeat: Infinity,
                   ease: "easeInOut",
                 }
-              : { duration: 0.15 }
+              : { duration: 0.22, ease: "easeOut" }
           }
           className={cn(
             "bg-white origin-center rounded-full border",

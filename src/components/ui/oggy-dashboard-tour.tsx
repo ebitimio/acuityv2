@@ -14,7 +14,6 @@ interface TourStep {
   id: string;
   selector: string;
   title: string;
-  badge: string;
   desc: string;
 }
 
@@ -22,6 +21,7 @@ export function OggyDashboardTour({ userName, onClose }: OggyDashboardTourProps)
   const [currentIdx, setCurrentIdx] = useState(0);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const [winSize, setWinSize] = useState({ width: 400, height: 800 });
+  const [isSpeaking, setIsSpeaking] = useState(true);
 
   const firstName = userName?.trim()?.split(" ")[0] || "there";
 
@@ -31,48 +31,49 @@ export function OggyDashboardTour({ userName, onClose }: OggyDashboardTourProps)
       id: "hero",
       selector: "hero",
       title: "Safe to Spend",
-      badge: "Command Center",
       desc: `This hero card calculates the exact amount you can spend today based on your liquid assets and days until your next payday, so you never go broke.`,
     },
     {
       id: "daily-insight",
       selector: "daily-insight",
       title: "Daily Insight",
-      badge: "Smart Monitoring",
       desc: "Here you will receive personalized updates and recommendations on your cash flow, top spending categories, and upcoming obligations.",
     },
     {
       id: "tools",
       selector: "tools",
       title: "Financial Tools",
-      badge: "Budgets & Tracking",
       desc: "Use these tools to monitor your budget, analyze spending categories, and audit recurring commitments to avoid unexpected fees.",
     },
     {
       id: "accounts",
       selector: "accounts",
       title: "Accounts and Cards",
-      badge: "All Wallets",
       desc: "All your linked bank accounts, debit cards, and cash wallets appear here. Swipe through to check individual balances or manage transfers.",
     },
     {
       id: "nav-ai",
       selector: "nav-ai",
       title: "The A. Wealth Manager Button",
-      badge: "Direct Consultation",
       desc: "Tap this A. button from anywhere in the app to open our direct wealth management chat. You can ask for advice, check balances, or audit transactions anytime.",
     },
     {
       id: "nav-add",
       selector: "nav-add",
       title: "Quick Add Action",
-      badge: "Instant Logging",
       desc: "Whenever you spend or receive money, tap this red (+) button to log your transaction in seconds. You are all set to manage your wealth.",
     },
   ];
 
   const current = STEPS[currentIdx];
   const isLast = currentIdx === STEPS.length - 1;
+
+  // Mascot talks briefly upon each step, then relaxes
+  useEffect(() => {
+    setIsSpeaking(true);
+    const timer = setTimeout(() => setIsSpeaking(false), 2000);
+    return () => clearTimeout(timer);
+  }, [currentIdx]);
 
   // Track window dimensions
   useEffect(() => {
@@ -156,22 +157,6 @@ export function OggyDashboardTour({ userName, onClose }: OggyDashboardTourProps)
   const cutR = targetRect ? Math.min(winWidth, Math.round(targetRect.right + pad)) : 0;
   const cutB = targetRect ? Math.min(winHeight, Math.round(targetRect.bottom + pad)) : 0;
 
-  // True spotlight cutout: everything is blurred except the target rectangle
-  const polygonCutout = targetRect
-    ? `polygon(
-        0px 0px,
-        0px ${winHeight}px,
-        ${cutL}px ${winHeight}px,
-        ${cutL}px ${cutT}px,
-        ${cutR}px ${cutT}px,
-        ${cutR}px ${cutB}px,
-        ${cutL}px ${cutB}px,
-        ${cutL}px ${winHeight}px,
-        ${winWidth}px ${winHeight}px,
-        ${winWidth}px 0px
-      )`
-    : undefined;
-
   // Target relative positioning
   const targetTop = targetRect ? targetRect.top : winHeight * 0.4;
   const targetBottom = targetRect ? targetRect.bottom : winHeight * 0.55;
@@ -205,20 +190,47 @@ export function OggyDashboardTour({ userName, onClose }: OggyDashboardTourProps)
   return (
     <div className="fixed inset-0 z-[150] pointer-events-auto select-none overflow-hidden">
       {/* 
-        Theatrical Spotlight Scrim with Blur Cutout:
-        Blurs and dims EVERYTHING ELSE on the dashboard, leaving the target 100% sharp and unblurred
+        Spotlight Scrim with 4-Piece Quad Layout:
+        Guarantees 100% of the screen around the target is blurred & dimmed.
+        Eliminates any polygon seams or unblurred gaps at the bottom.
       */}
-      <div
-        className="fixed inset-0 z-[151] pointer-events-auto cursor-pointer transition-[clip-path] duration-250 ease-out"
-        style={{
-          clipPath: polygonCutout,
-          WebkitClipPath: polygonCutout,
-          backgroundColor: "rgba(0, 0, 0, 0.72)",
-          backdropFilter: "blur(8px)",
-          WebkitBackdropFilter: "blur(8px)",
-        }}
-        onClick={handleNext}
-      />
+      {targetRect ? (
+        <div className="fixed inset-0 z-[151] pointer-events-auto" onClick={handleNext}>
+          {/* Top Scrim */}
+          <div
+            className="absolute top-0 inset-x-0 bg-black/75 backdrop-blur-[8px] transition-all duration-200"
+            style={{ height: `${cutT}px` }}
+          />
+          {/* Bottom Scrim (covers 100% all the way to the bottom edge) */}
+          <div
+            className="absolute bottom-0 inset-x-0 bg-black/75 backdrop-blur-[8px] transition-all duration-200"
+            style={{ top: `${cutB}px` }}
+          />
+          {/* Left Scrim */}
+          <div
+            className="absolute left-0 bg-black/75 backdrop-blur-[8px] transition-all duration-200"
+            style={{
+              top: `${cutT}px`,
+              height: `${cutB - cutT}px`,
+              width: `${cutL}px`,
+            }}
+          />
+          {/* Right Scrim */}
+          <div
+            className="absolute right-0 bg-black/75 backdrop-blur-[8px] transition-all duration-200"
+            style={{
+              top: `${cutT}px`,
+              height: `${cutB - cutT}px`,
+              left: `${cutR}px`,
+            }}
+          />
+        </div>
+      ) : (
+        <div
+          className="fixed inset-0 z-[151] bg-black/75 backdrop-blur-[8px] pointer-events-auto transition-opacity duration-200"
+          onClick={handleNext}
+        />
+      )}
 
       {/* Target Highlight Ring (Crisp luminous border around clear window) */}
       {targetRect && (
@@ -277,7 +289,8 @@ export function OggyDashboardTour({ userName, onClose }: OggyDashboardTourProps)
           <div className="absolute w-20 h-20 rounded-full bg-[var(--brand)]/35 blur-md pointer-events-none" />
           <AcuityCompanion
             size="compact"
-            isSpeaking={true}
+            isSpeaking={isSpeaking}
+            isSmiling={!isSpeaking}
             forceDark={true}
           />
         </motion.div>
@@ -297,21 +310,15 @@ export function OggyDashboardTour({ userName, onClose }: OggyDashboardTourProps)
             transition={{ duration: 0.2 }}
             className="w-full max-w-[340px] sm:max-w-[360px] p-4 rounded-[22px] bg-[#141417] border border-white/15 shadow-[0_12px_40px_rgba(0,0,0,0.85)] text-left"
           >
-            {/* Header info */}
+            {/* Clean White Title with subtle Step Indicator (No orange subtitle) */}
             <div className="flex items-center justify-between gap-2 mb-1.5">
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[var(--brand)] uppercase tracking-wider">
-                <span className="w-1.5 h-1.5 rounded-full bg-[var(--brand)] animate-pulse" />
-                {current.badge}
-              </span>
-              <span className="text-[11px] font-mono text-white/40">
+              <h4 className="text-[16px] font-bold text-white leading-snug">
+                {current.title}
+              </h4>
+              <span className="text-[11.5px] font-mono text-white/45 shrink-0">
                 {currentIdx + 1} of {STEPS.length}
               </span>
             </div>
-
-            {/* Title */}
-            <h4 className="text-[15.5px] font-bold text-white leading-snug mb-1">
-              {current.title}
-            </h4>
 
             {/* Description */}
             <p className="text-[12.5px] text-white/75 leading-relaxed mb-3">
