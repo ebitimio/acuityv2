@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Modal } from "./modal";
 import { Button } from "./form";
+import { DatePickerField } from "./date-picker";
 import { createClient } from "@/lib/supabase/client";
 import { parseNumberInput, formatAmountWithCommas } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -158,15 +159,7 @@ export function AddTransactionSheet({ isOpen, onClose, onSaved }: AddTransaction
               )}
             </div>
 
-            <div>
-              <p className="mb-1.5 px-1 text-[13px] font-medium text-[var(--text-3)]">Date</p>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full rounded-xl border border-[var(--line-strong)] bg-[var(--surface-2)] px-4 py-3 text-[15px] text-[var(--text-1)] focus:border-[var(--brand)] outline-none"
-              />
-            </div>
+            <DatePickerField label="Date" value={date} onChange={setDate} />
           </div>
         </div>
 

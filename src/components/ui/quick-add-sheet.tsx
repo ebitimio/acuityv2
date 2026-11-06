@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Modal } from "./modal";
 import { Button } from "./form";
+import { DatePickerModal } from "./date-picker";
 import { createClient } from "@/lib/supabase/client";
 import { parseNumberInput, formatAmountWithCommas } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -26,6 +27,7 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
   const [customCategory, setCustomCategory] = useState("");
   const [isCustom, setIsCustom] = useState(false);
   const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [isDateOpen, setIsDateOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -190,19 +192,24 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
             </select>
           </div>
 
-          {/* Date Picker */}
-          <div className="relative flex items-center gap-2 rounded-full bg-[#1c1c1e] px-4 py-2 border border-white/5">
+          {/* Date Picker Button */}
+          <button
+            type="button"
+            onClick={() => setIsDateOpen(true)}
+            className="flex items-center gap-2 rounded-full bg-[#1c1c1e] px-4 py-2 border border-white/5 active:scale-95 transition-all cursor-pointer"
+          >
             <span className="text-[14px] font-semibold text-white">
               {new Date(date).toLocaleDateString("en-NG", { day: "numeric", month: "short" })}
             </span>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
-            />
-          </div>
+          </button>
         </div>
+
+        <DatePickerModal
+          open={isDateOpen}
+          onClose={() => setIsDateOpen(false)}
+          value={date}
+          onChange={setDate}
+        />
 
         {/* Category Scroller */}
         <div className="mb-4 shrink-0">

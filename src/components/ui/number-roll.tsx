@@ -30,15 +30,15 @@ export function NumberRoll({ value, className, duration = 0.8, showDecimals = tr
   }).format(Math.abs(display)).split(".");
 
   return (
-    <span className={cn("inline-flex items-baseline tabular", className)} aria-label={hidden ? "Balance hidden" : undefined}>
+    <span className={cn("inline-flex items-baseline tabular font-hero font-black", className)} aria-label={hidden ? "Balance hidden" : undefined}>
       {display < 0 && !hidden && <span className="mr-1">-</span>}
       <span className="mr-1 text-[0.6em] opacity-80">{symbol}</span>
       {hidden ? (
         <span>••••••</span>
       ) : (
         <>
-          <span>{main}</span>
-          {decimals && dec && <span className="ml-0.5 text-[0.5em] opacity-70">.{dec}</span>}
+          <span className="font-hero font-black">{main}</span>
+          {decimals && dec && <span className="ml-0.5 text-[0.5em] opacity-70 font-hero font-bold">.{dec}</span>}
         </>
       )}
     </span>

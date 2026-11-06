@@ -9,6 +9,7 @@ import { useToast } from "@/components/ui/toast";
 import type { AjoGroup } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { DatePickerField } from "@/components/ui/date-picker";
 
 export function AjoScreen({ onBack }: { onBack: () => void }) {
   const [groups, setGroups] = useState<AjoGroup[]>([]);
@@ -320,13 +321,7 @@ export function AjoScreen({ onBack }: { onBack: () => void }) {
                       </div>
                     </div>
                     <div>
-                      <label className="text-[13px] font-medium text-[var(--text-3)]">Start Date</label>
-                      <input
-                        type="date"
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                        className="mt-1 w-full h-14 rounded-2xl border border-[var(--line-strong)] bg-[var(--surface-2)] px-4 text-[16px] text-white outline-none focus:border-[var(--brand)]"
-                      />
+                      <DatePickerField label="Start Date" value={startDate} onChange={setStartDate} />
                     </div>
                   </div>
 

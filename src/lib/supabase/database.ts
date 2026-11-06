@@ -315,9 +315,16 @@ export async function getCurrentCycle(): Promise<{ cycle_start: string; cycle_en
   return data as { cycle_start: string; cycle_end: string };
 }
 
+export async function getCycleStartDay(): Promise<number> {
+  const { sb, workspaceId } = await ctx();
+  const { data, error } = await sb.from("workspaces").select("cycle_start_day").eq("id", workspaceId).maybeSingle();
+  if (error) throw error;
+  return data?.cycle_start_day ?? 1;
+}
+
 export async function updateCycleStartDay(day: number): Promise<void> {
   const { sb, workspaceId } = await ctx();
-  const safe = Math.max(1, Math.min(day, 28));
+  const safe = Math.max(1, Math.min(day, 31));
   const { error } = await sb.from("workspaces").update({ cycle_start_day: safe }).eq("id", workspaceId);
   if (error) throw error;
 }
@@ -394,7 +401,7 @@ export async function deleteCategoryRule(id: string): Promise<void> {
 /* ---------- recurring items ---------- */
 
 export const getRecurringItems = () => list<RecurringItem>("recurring_items", "created_at");
-export const addRecurringItem = (i: { 
+export const addRecurringItem = async (i: { 
   account_id: string | null; 
   name: string; 
   kind: "income" | "bill" | "rent"; 
@@ -404,8 +411,8 @@ export const addRecurringItem = (i: {
   month?: number;
   category?: string | null; 
   auto_post?: boolean 
-}) =>
-  insertRow("recurring_items", { 
+}) => {
+  const result = await insertRow("recurring_items", { 
     account_id: i.account_id, 
     name: i.name, 
     kind: i.kind, 
@@ -417,7 +424,30 @@ export const addRecurringItem = (i: {
     auto_post: i.auto_post ?? false, 
     active: true 
   });
-export const updateRecurringItem = (id: string, patch: Partial<Pick<RecurringItem, "name" | "amount_minor" | "day" | "category" | "auto_post" | "active">>) => patchRow("recurring_items", id, patch);
+  if (i.kind === "income" && i.day >= 1 && i.day <= 31) {
+    try {
+      await updateCycleStartDay(i.day);
+    } catch (e) {
+      console.warn("Could not sync cycle_start_day with income item:", e);
+    }
+  }
+  return result;
+};
+export const updateRecurringItem = async (id: string, patch: Partial<Pick<RecurringItem, "name" | "amount_minor" | "day" | "category" | "auto_post" | "active">>) => {
+  const result = await patchRow("recurring_items", id, patch);
+  if (patch.day && patch.day >= 1 && patch.day <= 31) {
+    try {
+      const items = await getRecurringItems();
+      const current = items.find((x) => x.id === id);
+      if (current && current.kind === "income") {
+        await updateCycleStartDay(patch.day);
+      }
+    } catch (e) {
+      console.warn("Could not sync cycle_start_day:", e);
+    }
+  }
+  return result;
+};
 export const deleteRecurringItem = (id: string) => removeRow("recurring_items", id);
 
 /* ---------- sinking funds ---------- */

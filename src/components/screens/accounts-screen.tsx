@@ -11,6 +11,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Modal } from "@/components/ui/modal";
 import { Field, SelectField, Button } from "@/components/ui/form";
 import { CurrencyField } from "@/components/ui/currency-field";
+import { DatePickerField } from "@/components/ui/date-picker";
 import { BalanceCheckinSheet } from "@/components/ui/balance-checkin-sheet";
 import { TransferSheet } from "@/components/ui/transfer-sheet";
 import { CryptoSheet } from "@/components/ui/crypto-sheet";
@@ -462,7 +463,7 @@ export function AccountsScreen({
             <option value="dom">Domiciliary</option>
           </SelectField>
           <CurrencyField label="Current balance" value={balance} onChange={setBalance} />
-          <Field label="As of date" type="date" value={balanceAsOf} onChange={(e) => setBalanceAsOf(e.target.value)} />
+          <DatePickerField label="As of date" value={balanceAsOf} onChange={setBalanceAsOf} />
           <Button onClick={addAcc} disabled={!name || !institution || !balance}>Create account</Button>
         </div>
       </Modal>

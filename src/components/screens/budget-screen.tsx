@@ -5,10 +5,11 @@ import { ScreenHeader, IconButton } from "@/components/ui/screen-header";
 import { Plus, Trash2, CalendarRange, Settings2 } from "lucide-react";
 import {
   getHomeMetrics, getTransactionsSince, getAccounts,
-  getCurrentCycle, updateCycleStartDay,
+  getCurrentCycle, getCycleStartDay, updateCycleStartDay,
   getCustomCategories, addCustomCategory, deleteCustomCategory,
   getBudgets, setBudget, deleteBudget,
 } from "@/lib/supabase/database";
+import { DayPicker } from "@/components/ui/day-picker";
 import { startOfMonthISO } from "@/lib/dates";
 import { useCurrency } from "@/lib/currency";
 import { GaugeArc } from "@/components/ui/gauge-arc";
@@ -81,7 +82,16 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
       }
     } catch {}
     try { setCategories((await getCustomCategories()) ?? []); } catch {}
-    try { setCycle(await getCurrentCycle()); } catch { setCycle(null); }
+    try { 
+      const [c, cycleStartDay] = await Promise.all([
+        getCurrentCycle(),
+        getCycleStartDay(),
+      ]);
+      setCycle(c); 
+      if (cycleStartDay) setCycleDay(String(cycleStartDay));
+    } catch { 
+      setCycle(null); 
+    }
   };
 
   useEffect(() => { 
@@ -276,10 +286,15 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
         </div>
 
         <Modal open={isCycleOpen} onClose={() => setIsCycleOpen(false)} title="Payday cycle">
-          <div className="space-y-3">
+          <div className="space-y-4">
             <p className="text-[13px] text-[var(--text-2)]">Which day do you get paid? This becomes the start of your budget cycle.</p>
-            <Field label="Day of month (1-28)" type="number" value={cycleDay} onChange={(e) => setCycleDay(e.target.value)} />
-            <Button onClick={saveCycle}>Save</Button>
+            <DayPicker
+              value={parseInt(cycleDay, 10) || 1}
+              onChange={(d) => setCycleDay(String(d))}
+              maxDays={31}
+              label="Payday (Start of Cycle)"
+            />
+            <Button onClick={saveCycle} className="w-full h-12 text-[15px] font-bold">Save Cycle</Button>
           </div>
         </Modal>
 

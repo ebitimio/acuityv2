@@ -146,7 +146,11 @@ export function SafeToSpendHero({
           <div className="mt-2.5 flex items-baseline justify-between gap-2">
             <p className="truncate text-[11.5px] font-semibold text-black">Cycle progress</p>
             <p className="tabular shrink-0 text-[11.5px] font-bold text-black font-hero">
-              {daysUntilIncome > 0 ? `${daysUntilIncome}d until ${nextIncomeDate}` : "No income set"}
+              {hasIncome
+                ? daysUntilIncome > 0
+                  ? `${daysUntilIncome}d until ${nextIncomeDate}`
+                  : `Payday today (${nextIncomeDate})`
+                : "No income set"}
             </p>
           </div>
           <div className="mt-1 h-[3.5px] w-full overflow-hidden rounded-full bg-black/25">

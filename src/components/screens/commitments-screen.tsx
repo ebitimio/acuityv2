@@ -11,6 +11,7 @@ import { useCurrency } from "@/lib/currency";
 import { Modal } from "@/components/ui/modal";
 import { Field, Button } from "@/components/ui/form";
 import { CurrencyField } from "@/components/ui/currency-field";
+import { DayPicker } from "@/components/ui/day-picker";
 import { useToast } from "@/components/ui/toast";
 import { 
   Plus, Trash2, ChevronDown, ChevronUp, Delete, Wallet, Users, ShieldCheck, Wifi, Zap, Home, Briefcase, HeartHandshake, TrendingUp
@@ -560,30 +561,16 @@ export function CommitmentsScreen({
 
       {/* DAY PICKER MODAL */}
       <Modal open={!!showDayPicker} onClose={() => setShowDayPicker(null)} title="Select Day of Month">
-        <div className="max-h-[50dvh] overflow-y-auto grid grid-cols-4 gap-2 pb-6">
-          {Array.from({ length: 31 }, (_, i) => i + 1).map(d => {
-            const isBill = showDayPicker === "bill";
-            const isRent = showDayPicker === "rent";
-            const currentVal = isBill ? day : isRent ? day : familyDay;
-            
-            return (
-              <button
-                key={d}
-                onClick={() => { 
-                  if (isBill) setDay(d.toString()); 
-                  else if (isRent) setDay(d.toString());
-                  else setFamilyDay(d.toString()); 
-                  setShowDayPicker(null); 
-                }}
-                className={cn(
-                  "flex h-12 items-center justify-center rounded-xl text-[16px] font-semibold transition-colors",
-                  currentVal === d.toString() ? "bg-[#DE3121] text-white" : "bg-[var(--surface-2)] text-[var(--text-1)] hover:bg-[var(--fill-2)]"
-                )}
-              >
-                {d}
-              </button>
-            );
-          })}
+        <div className="pb-4">
+          <DayPicker
+            value={parseInt(showDayPicker === "bill" || showDayPicker === "rent" ? day : familyDay, 10) || 1}
+            onChange={(d) => {
+              if (showDayPicker === "bill" || showDayPicker === "rent") setDay(d.toString());
+              else setFamilyDay(d.toString());
+              setShowDayPicker(null);
+            }}
+            maxDays={31}
+          />
         </div>
       </Modal>
 
@@ -614,7 +601,7 @@ export function CommitmentsScreen({
           </div>
           <CurrencyField label="Amount" value={parseFloat(amount)} onChange={(v) => setAmount(v.toString())} />
           <Field label="Source (e.g. Salary)" value={name} onChange={(e) => setName(e.target.value)} placeholder="Enter source" />
-          <Field label="Day of month (1-31)" type="number" value={day} onChange={(e) => setDay(e.target.value)} />
+          <DayPicker value={parseInt(day, 10) || 25} onChange={(d) => setDay(String(d))} label="Payday (Day of month)" maxDays={31} />
           <Button onClick={addRec} disabled={!name || !amount} className="w-full h-12 text-[15px] font-bold">Save Income</Button>
         </div>
       </Modal>

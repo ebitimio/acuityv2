@@ -6,9 +6,10 @@ import { ArrowRight, ChevronLeft, Check } from "lucide-react";
 import { AcuityCompanion } from "@/components/ui/acuity-companion";
 import { useWorkspace } from "@/lib/workspace";
 import { createClient } from "@/lib/supabase/client";
-import { addRecurringItem, completeOnboarding } from "@/lib/supabase/database";
+import { addRecurringItem, updateCycleStartDay, completeOnboarding } from "@/lib/supabase/database";
 import { useToast } from "@/components/ui/toast";
 import { formatAmountWithCommas, parseNumberInput } from "@/lib/format";
+import { DayPicker } from "@/components/ui/day-picker";
 import { cn } from "@/lib/utils";
 
 interface OggyOnboardingProps {
@@ -251,11 +252,11 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
   const [accountBalance, setAccountBalance] = useState("");
 
   const [incomeAmount, setIncomeAmount] = useState("");
-  const [incomePayday, setIncomePayday] = useState("");
+  const [incomePayday, setIncomePayday] = useState("25");
 
   const [billName, setBillName] = useState("");
   const [billAmount, setBillAmount] = useState("");
-  const [billDueDay, setBillDueDay] = useState("");
+  const [billDueDay, setBillDueDay] = useState("5");
 
   const { active: activeWs } = useWorkspace();
   const supabase = createClient();
@@ -298,7 +299,8 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
   // Income creation
   const handleSaveIncome = async () => {
     const amountNum = parseNumberInput(incomeAmount);
-    const dayNum = parseInt(incomePayday.trim(), 10);
+    const dayNum = parseInt(incomePayday.trim() || "25", 10);
+    const validDay = isNaN(dayNum) || dayNum < 1 || dayNum > 31 ? 25 : dayNum;
 
     if (amountNum > 0) {
       setIsSaving(true);
@@ -309,10 +311,11 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
           kind: "income",
           amount: amountNum,
           frequency: "monthly",
-          day: isNaN(dayNum) || dayNum < 1 || dayNum > 31 ? 25 : dayNum,
+          day: validDay,
           category: "Income",
           auto_post: false,
         });
+        await updateCycleStartDay(validDay);
       } catch (e: any) {
         console.error(e);
       } finally {
@@ -326,7 +329,8 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
   // Bill creation
   const handleSaveBill = async () => {
     const amountNum = parseNumberInput(billAmount);
-    const dayNum = parseInt(billDueDay.trim(), 10);
+    const dayNum = parseInt(billDueDay.trim() || "5", 10);
+    const validDay = isNaN(dayNum) || dayNum < 1 || dayNum > 31 ? 5 : dayNum;
 
     if (amountNum > 0 && billName.trim()) {
       setIsSaving(true);
@@ -337,7 +341,7 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
           kind: "bill",
           amount: amountNum,
           frequency: "monthly",
-          day: isNaN(dayNum) || dayNum < 1 || dayNum > 31 ? 5 : dayNum,
+          day: validDay,
           category: "Bills",
           auto_post: false,
         });
@@ -698,21 +702,11 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
               transition={{ duration: 0.24 }}
               className="space-y-3"
             >
-              <input
-                type="number"
-                inputMode="numeric"
-                min="1"
-                max="31"
-                value={incomePayday}
-                onChange={(e) => setIncomePayday(e.target.value)}
-                onFocus={handleInputFocus}
-                placeholder="Enter day of month (e.g. 25)"
-                className="w-full rounded-2xl bg-[#141417] border border-white/15 px-4 py-3.5 text-[16px] text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30 shadow-lg"
-                style={{ fontSize: "16px" }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleSaveIncome();
-                }}
-                autoFocus
+              <DayPicker
+                value={parseInt(incomePayday, 10) || 25}
+                onChange={(d) => setIncomePayday(String(d))}
+                label="Pick Your Payday"
+                maxDays={31}
               />
 
               <button
@@ -721,7 +715,7 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
                 onClick={handleSaveIncome}
                 className="w-full h-12 rounded-full bg-[var(--brand)] text-[var(--brand-ink)] font-bold text-[14.5px] flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform disabled:opacity-50"
               >
-                <span>Save Income</span>
+                <span>Confirm Payday ({incomePayday || "25"}th)</span>
                 <ArrowRight size={16} strokeWidth={2.5} />
               </button>
             </motion.div>
@@ -842,21 +836,11 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
               transition={{ duration: 0.24 }}
               className="space-y-3"
             >
-              <input
-                type="number"
-                inputMode="numeric"
-                min="1"
-                max="31"
-                value={billDueDay}
-                onChange={(e) => setBillDueDay(e.target.value)}
-                onFocus={handleInputFocus}
-                placeholder="Enter day of month (e.g. 5)"
-                className="w-full rounded-2xl bg-[#141417] border border-white/15 px-4 py-3.5 text-[16px] text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30 shadow-lg"
-                style={{ fontSize: "16px" }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleSaveBill();
-                }}
-                autoFocus
+              <DayPicker
+                value={parseInt(billDueDay, 10) || 5}
+                onChange={(d) => setBillDueDay(String(d))}
+                label="Pick Bill Due Day"
+                maxDays={31}
               />
 
               <button
@@ -865,7 +849,7 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
                 onClick={handleSaveBill}
                 className="w-full h-12 rounded-full bg-[var(--brand)] text-[var(--brand-ink)] font-bold text-[14.5px] flex items-center justify-center gap-2 shadow-md active:scale-98 transition-transform disabled:opacity-50"
               >
-                <span>Save & Complete Setup</span>
+                <span>Save & Complete Setup ({billDueDay || "5"}th)</span>
                 <ArrowRight size={16} strokeWidth={2.5} />
               </button>
             </motion.div>
