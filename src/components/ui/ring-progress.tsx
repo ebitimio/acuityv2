@@ -26,7 +26,7 @@ export function RingProgress({ percentage, label }: RingProgressProps) {
           cy={size / 2}
           r={radius}
           fill="transparent"
-          stroke="rgba(0, 0, 0, 0.15)" // Subtle black track
+          stroke="rgba(0, 0, 0, 0.22)" // Darker black track
           strokeWidth={strokeWidth}
         />
         {/* Progress fill */}
@@ -44,7 +44,7 @@ export function RingProgress({ percentage, label }: RingProgressProps) {
         />
       </svg>
       {/* Percentage text */}
-      <span className="absolute text-[12px] font-bold text-black">
+      <span className="absolute text-[12px] font-black text-black">
         {label ?? `${Math.round(validPct)}%`}
       </span>
     </div>
