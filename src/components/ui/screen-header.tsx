@@ -6,12 +6,9 @@ import type { ReactNode } from "react";
 export function ScreenHeader({ title, onBack, right }: { title: string; onBack?: () => void; right?: ReactNode }) {
   return (
     <header
-      className="sticky top-0 z-40 border-b border-[var(--line)] px-5 pb-3"
+      className="sticky top-0 z-40 border-b border-[var(--line)] px-5 pb-3 bg-[var(--bg)]"
       style={{
         paddingTop: "calc(env(safe-area-inset-top) + 12px)",
-        background: "color-mix(in srgb, var(--bg) 82%, transparent)",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
       }}
     >
       <div className="flex h-10 items-center justify-between gap-3">

@@ -666,12 +666,9 @@ export default function SandboxPage() {
           ) : (
             <div className="flex-1 overflow-y-auto pb-32">
               <div
-                className="sticky top-0 z-30 flex items-center justify-between px-5 pb-3"
+                className="flex items-center justify-between px-5 pb-3"
                 style={{
                   paddingTop: "calc(env(safe-area-inset-top) + 12px)",
-                  background: "color-mix(in srgb, var(--bg) 82%, transparent)",
-                  backdropFilter: "blur(20px)",
-                  WebkitBackdropFilter: "blur(20px)",
                 }}
               >
                 <button onClick={() => setWsOpen((v) => !v)} className="flex items-center gap-1">
