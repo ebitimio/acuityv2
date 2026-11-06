@@ -53,6 +53,8 @@ import {
 import { TransactionsScreen } from "@/components/screens/transactions-screen";
 import { OnboardingCarousel } from "@/components/screens/onboarding-carousel";
 import { PinLockScreen } from "@/components/screens/pin-lock-screen";
+import { OggyOnboarding } from "@/components/screens/oggy-onboarding";
+import { OggyDashboardTour } from "@/components/ui/oggy-dashboard-tour";
 import { StackedAccountCard } from "@/components/ui/stacked-account-card";
 import { MonthlyReportModal } from "@/components/ui/monthly-report-modal";
 import { cn } from "@/lib/utils";
@@ -86,7 +88,8 @@ export default function SandboxPage() {
   const [aiInitialPrompt, setAiInitialPrompt] = useState<string | undefined>(undefined);
   const [isConnectIntroOpen, setIsConnectIntroOpen] = useState(false);
 
-  const [onboardingSequence, setOnboardingSequence] = useState<"checking" | "carousel" | "pin" | "complete">("checking");
+  const [onboardingSequence, setOnboardingSequence] = useState<"checking" | "carousel" | "pin" | "oggy" | "complete">("checking");
+  const [showDashboardTour, setShowDashboardTour] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
   const [lockError, setLockError] = useState("");
   const [dbPin, setDbPin] = useState<string | null>(null);
@@ -370,6 +373,10 @@ export default function SandboxPage() {
             }
 
             setOnboardingSequence("complete");
+            const tourDone = localStorage.getItem(`acuity:oggy_tour_done_${session.user.id}`);
+            if (!tourDone && localStorage.getItem(`acuity:oggy_tour_pending_${session.user.id}`) === "true") {
+              setShowDashboardTour(true);
+            }
           }
         }
       } else {
@@ -556,8 +563,24 @@ export default function SandboxPage() {
       setDbPin(pin);
       localStorage.removeItem("acuity:new_signup");
       localStorage.setItem("acuity:last_active", String(Date.now()));
-      setOnboardingSequence("complete");
+      setOnboardingSequence("oggy");
     }} />;
+  }
+
+  if (onboardingSequence === "oggy") {
+    return (
+      <OggyOnboarding
+        userName={profileName}
+        onComplete={() => {
+          if (session?.user?.id) {
+            localStorage.setItem(`acuity:oggy_tour_pending_${session.user.id}`, "true");
+          }
+          setOnboardingSequence("complete");
+          setShowDashboardTour(true);
+          refreshData();
+        }}
+      />
+    );
   }
 
   if (isLocked) {
@@ -1032,6 +1055,19 @@ export default function SandboxPage() {
       </Modal>
 
       <TransactionDetailSheet key={selectedTxn?.id || "empty"} isOpen={!!selectedTxn} onClose={() => setSelectedTxn(null)} onSaved={refreshData} transaction={selectedTxn} />
+
+      {showDashboardTour && (
+        <OggyDashboardTour
+          userName={profileName}
+          onClose={() => {
+            setShowDashboardTour(false);
+            if (session?.user?.id) {
+              localStorage.setItem(`acuity:oggy_tour_done_${session.user.id}`, "true");
+              localStorage.removeItem(`acuity:oggy_tour_pending_${session.user.id}`);
+            }
+          }}
+        />
+      )}
     </main>
   );
 }
