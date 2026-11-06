@@ -38,7 +38,61 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
   const [isSpeaking, setIsSpeaking] = useState(true);
   const [isSmiling, setIsSmiling] = useState(false);
   const [isSilly, setIsSilly] = useState(false);
-  const [isInputFocused, setIsInputFocused] = useState(false);
+
+  // Viewport tracking to prevent mobile keyboard jumps & keep screen rock-solid (same logic as ai-screen)
+  const [vvHeight, setVvHeight] = useState<number | null>(null);
+  const [vvTop, setVvTop] = useState<number>(0);
+
+  // Keyboard jump prevention & visual viewport synchronization
+  useEffect(() => {
+    const origOverflow = document.body.style.overflow;
+    const origPosition = document.body.style.position;
+    const origWidth = document.body.style.width;
+    const origHeight = document.body.style.height;
+
+    document.body.style.overflow = "hidden";
+    document.body.style.position = "fixed";
+    document.body.style.width = "100%";
+    document.body.style.height = "100%";
+
+    const vv = window.visualViewport;
+    const updateViewport = () => {
+      if (vv) {
+        setVvHeight(vv.height);
+        setVvTop(vv.offsetTop);
+      }
+      if (typeof window !== "undefined" && window.scrollY !== 0) {
+        window.scrollTo(0, 0);
+      }
+    };
+
+    if (vv) {
+      updateViewport();
+      vv.addEventListener("resize", updateViewport);
+      vv.addEventListener("scroll", updateViewport);
+    }
+
+    return () => {
+      document.body.style.overflow = origOverflow;
+      document.body.style.position = origPosition;
+      document.body.style.width = origWidth;
+      document.body.style.height = origHeight;
+      if (vv) {
+        vv.removeEventListener("resize", updateViewport);
+        vv.removeEventListener("scroll", updateViewport);
+      }
+    };
+  }, []);
+
+  const isKeyboardOpen = vvHeight !== null && typeof window !== "undefined" && vvHeight < window.innerHeight - 80;
+
+  const handleInputFocus = () => {
+    if (typeof window !== "undefined") {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    }
+  };
 
   // Choreography: mouth speaks briefly, stops, smiles, does a silly dance across screen, returns to center
   useEffect(() => {
@@ -183,17 +237,24 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-[250] flex flex-col justify-between items-center bg-[#070709] text-white overflow-hidden select-none px-6 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(2.5rem,env(safe-area-inset-bottom))]">
+    <div
+      className="fixed inset-x-0 z-[250] flex flex-col justify-between items-center bg-[#070709] text-white overflow-hidden select-none px-6"
+      style={{
+        position: "fixed",
+        top: vvTop,
+        left: 0,
+        right: 0,
+        height: vvHeight ? `${vvHeight}px` : "100dvh",
+        maxHeight: vvHeight ? `${vvHeight}px` : "100dvh",
+        touchAction: "none",
+        paddingTop: isKeyboardOpen ? "8px" : "max(1.5rem, env(safe-area-inset-top))",
+      }}
+    >
       {/* Ambient Brand Glow */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] h-[340px] rounded-full bg-[var(--brand)]/15 blur-[90px] pointer-events-none" />
 
-      {/* Mascot Section — Living Oggy */}
-      <div
-        className={cn(
-          "relative z-10 flex flex-col items-center justify-center shrink-0 transition-all duration-300 ease-out",
-          isInputFocused ? "mt-1 sm:mt-2 scale-[0.85]" : "mt-8 sm:mt-12 scale-100"
-        )}
-      >
+      {/* Mascot Section — Living Oggy (Subject stays visible and centered) */}
+      <div className="relative z-10 flex-1 min-h-0 flex flex-col items-center justify-center w-full py-2">
         <motion.div
           animate={
             isSilly
@@ -201,13 +262,13 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
                   x: [0, -65, 75, -20, 0],
                   y: [0, -18, 12, -6, 0],
                   rotate: [0, -14, 16, -6, 0],
-                  scale: [1, 1.08, 0.94, 1.04, 1],
+                  scale: isKeyboardOpen ? [0.82, 0.88, 0.78, 0.85, 0.82] : [1, 1.08, 0.94, 1.04, 1],
                 }
               : {
                   x: 0,
                   y: [0, -5, 0],
                   rotate: [-1.5, 1.5, -1.5],
-                  scale: 1,
+                  scale: isKeyboardOpen ? 0.82 : 1,
                 }
           }
           transition={
@@ -215,7 +276,7 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
               ? { duration: 2.2, ease: "easeInOut" }
               : { duration: 3.2, repeat: Infinity, ease: "easeInOut" }
           }
-          className="relative flex items-center justify-center cursor-pointer pointer-events-auto"
+          className="relative flex items-center justify-center cursor-pointer pointer-events-auto transition-transform duration-300"
         >
           <AcuityCompanion
             size="large"
@@ -227,12 +288,12 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
         </motion.div>
       </div>
 
-      {/* Conversational Stream: Brought down into the comfortable lower area */}
+      {/* Conversational Stream: Positioned at bottom, elevating smoothly with visual viewport */}
       <div
-        className={cn(
-          "relative z-10 max-w-sm mx-auto w-full transition-transform duration-300 ease-out space-y-4 mb-3 sm:mb-6",
-          isInputFocused ? "-translate-y-[160px] sm:-translate-y-[180px]" : "translate-y-0"
-        )}
+        className="relative z-10 max-w-sm mx-auto w-full shrink-0 space-y-4"
+        style={{
+          paddingBottom: isKeyboardOpen ? "12px" : "max(calc(env(safe-area-inset-bottom) + 8px), 24px)",
+        }}
       >
         <AnimatePresence mode="wait">
           {/* 1. INTRO */}
@@ -286,10 +347,10 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
                   type="text"
                   value={bankName}
                   onChange={(e) => setBankName(e.target.value)}
-                  onFocus={() => setIsInputFocused(true)}
-                  onBlur={() => setIsInputFocused(false)}
+                  onFocus={handleInputFocus}
                   placeholder="Enter bank name (e.g. GTBank, Kuda, Cash)"
-                  className="w-full rounded-2xl bg-white/5 border border-white/15 px-4 py-3 text-[15px] text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30"
+                  className="w-full rounded-2xl bg-white/5 border border-white/15 px-4 py-3 text-[16px] text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30"
+                  style={{ fontSize: "16px" }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && bankName.trim()) setStage("account_name");
                   }}
@@ -329,10 +390,10 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
                   type="text"
                   value={accountName}
                   onChange={(e) => setAccountName(e.target.value)}
-                  onFocus={() => setIsInputFocused(true)}
-                  onBlur={() => setIsInputFocused(false)}
+                  onFocus={handleInputFocus}
                   placeholder="e.g. Main Checking or Daily Spending"
-                  className="w-full rounded-2xl bg-white/5 border border-white/15 px-4 py-3 text-[15px] text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30"
+                  className="w-full rounded-2xl bg-white/5 border border-white/15 px-4 py-3 text-[16px] text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30"
+                  style={{ fontSize: "16px" }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") setStage("account_balance");
                   }}
@@ -374,10 +435,10 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
                     inputMode="numeric"
                     value={accountBalance}
                     onChange={(e) => setAccountBalance(formatAmountWithCommas(e.target.value))}
-                    onFocus={() => setIsInputFocused(true)}
-                    onBlur={() => setIsInputFocused(false)}
+                    onFocus={handleInputFocus}
                     placeholder="0"
                     className="w-full rounded-2xl bg-white/5 border border-white/15 pl-9 pr-4 py-3 text-[16px] font-bold text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30"
+                    style={{ fontSize: "16px" }}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") handleSaveAccount();
                     }}
@@ -424,10 +485,10 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
                     inputMode="numeric"
                     value={incomeAmount}
                     onChange={(e) => setIncomeAmount(formatAmountWithCommas(e.target.value))}
-                    onFocus={() => setIsInputFocused(true)}
-                    onBlur={() => setIsInputFocused(false)}
+                    onFocus={handleInputFocus}
                     placeholder="e.g. 250,000"
                     className="w-full rounded-2xl bg-white/5 border border-white/15 pl-9 pr-4 py-3 text-[16px] font-bold text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30"
+                    style={{ fontSize: "16px" }}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
                         if (parseNumberInput(incomeAmount) > 0) setStage("income_payday");
@@ -481,14 +542,15 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
               <div className="space-y-3">
                 <input
                   type="number"
+                  inputMode="numeric"
                   min="1"
                   max="31"
                   value={incomePayday}
                   onChange={(e) => setIncomePayday(e.target.value)}
-                  onFocus={() => setIsInputFocused(true)}
-                  onBlur={() => setIsInputFocused(false)}
+                  onFocus={handleInputFocus}
                   placeholder="Enter day of month (e.g. 25)"
-                  className="w-full rounded-2xl bg-white/5 border border-white/15 px-4 py-3 text-[15px] text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30"
+                  className="w-full rounded-2xl bg-white/5 border border-white/15 px-4 py-3 text-[16px] text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30"
+                  style={{ fontSize: "16px" }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") handleSaveIncome();
                   }}
@@ -568,10 +630,10 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
                   type="text"
                   value={billName}
                   onChange={(e) => setBillName(e.target.value)}
-                  onFocus={() => setIsInputFocused(true)}
-                  onBlur={() => setIsInputFocused(false)}
+                  onFocus={handleInputFocus}
                   placeholder="e.g. Internet, Rent, Electricity"
-                  className="w-full rounded-2xl bg-white/5 border border-white/15 px-4 py-3 text-[15px] text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30"
+                  className="w-full rounded-2xl bg-white/5 border border-white/15 px-4 py-3 text-[16px] text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30"
+                  style={{ fontSize: "16px" }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && billName.trim()) setStage("bill_amount");
                   }}
@@ -614,10 +676,10 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
                     inputMode="numeric"
                     value={billAmount}
                     onChange={(e) => setBillAmount(formatAmountWithCommas(e.target.value))}
-                    onFocus={() => setIsInputFocused(true)}
-                    onBlur={() => setIsInputFocused(false)}
+                    onFocus={handleInputFocus}
                     placeholder="e.g. 15,000"
                     className="w-full rounded-2xl bg-white/5 border border-white/15 pl-9 pr-4 py-3 text-[16px] font-bold text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30"
+                    style={{ fontSize: "16px" }}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && parseNumberInput(billAmount) > 0) setStage("bill_due_day");
                     }}
@@ -659,14 +721,15 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
               <div className="space-y-3">
                 <input
                   type="number"
+                  inputMode="numeric"
                   min="1"
                   max="31"
                   value={billDueDay}
                   onChange={(e) => setBillDueDay(e.target.value)}
-                  onFocus={() => setIsInputFocused(true)}
-                  onBlur={() => setIsInputFocused(false)}
+                  onFocus={handleInputFocus}
                   placeholder="Enter day of month (e.g. 5)"
-                  className="w-full rounded-2xl bg-white/5 border border-white/15 px-4 py-3 text-[15px] text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30"
+                  className="w-full rounded-2xl bg-white/5 border border-white/15 px-4 py-3 text-[16px] text-white outline-none focus:border-[var(--brand)] placeholder:text-white/30"
+                  style={{ fontSize: "16px" }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") handleSaveBill();
                   }}
