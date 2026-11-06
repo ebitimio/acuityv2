@@ -753,9 +753,9 @@ export default function SandboxPage() {
                   <motion.button
                     whileTap={{ scale: 0.985 }}
                     onClick={() => setActiveScreen("ai")}
-                    className="group relative overflow-hidden w-full flex items-center justify-between rounded-[20px] bg-gradient-to-r from-[var(--surface-2)] to-[var(--surface-3)] border border-[var(--line)] py-2.5 px-3.5 sm:py-3 sm:px-4 text-left shadow-lg cursor-pointer select-none"
+                    className="group relative overflow-hidden w-full flex items-center justify-between rounded-[20px] bg-[#141417] border border-white/10 py-2.5 px-3.5 sm:py-3 sm:px-4 text-left shadow-lg cursor-pointer select-none"
                   >
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-[var(--brand)]/10 blur-[30px] rounded-full -mr-8 -mt-8 pointer-events-none" />
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-[var(--brand)]/15 blur-[30px] rounded-full -mr-8 -mt-8 pointer-events-none" />
 
                     <div className="flex items-center gap-3 relative z-10 min-w-0 flex-1">
                       {/* Living Mascot - Purely cap, eyes & mouth with gentle bobbing motion */}
@@ -773,6 +773,7 @@ export default function SandboxPage() {
                         <AcuityCompanion
                           size="compact"
                           hasCap={true}
+                          forceDark={true}
                           onTap={() => setActiveScreen("ai")}
                         />
                       </motion.div>
@@ -782,13 +783,13 @@ export default function SandboxPage() {
                         <p className="text-[11px] font-semibold text-[var(--brand)] uppercase tracking-wider mb-0.5">
                           Daily Insight
                         </p>
-                        <p className="text-[13px] font-medium text-[var(--text-1)] leading-snug line-clamp-1">
+                        <p className="text-[13px] font-medium text-white/90 leading-snug line-clamp-1">
                           {topCategory ? `You've spent ${fmt(topCategoryAmount)} on ${topCategory} this month.` : "Ask me anything about your finances."}
                         </p>
                       </div>
                     </div>
 
-                    <ChevronRight size={19} className="text-[var(--text-3)] group-hover:text-white group-hover:translate-x-0.5 transition-all shrink-0 relative z-10" />
+                    <ChevronRight size={19} className="text-white/40 group-hover:text-white group-hover:translate-x-0.5 transition-all shrink-0 relative z-10" />
                   </motion.button>
                 )}
 

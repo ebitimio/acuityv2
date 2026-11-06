@@ -65,6 +65,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const r = resolve(choice);
     setResolved(r);
     document.documentElement.dataset.theme = r;
+    document.documentElement.classList.toggle("dark", r === "dark");
+    document.documentElement.classList.toggle("light", r === "light");
 
     const ac = storedAccent ?? "red";
     setAccentState(ac);
@@ -79,6 +81,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       const r: Resolved = mq.matches ? "dark" : "light";
       setResolved(r);
       document.documentElement.dataset.theme = r;
+      document.documentElement.classList.toggle("dark", r === "dark");
+      document.documentElement.classList.toggle("light", r === "light");
     };
     apply();
     mq.addEventListener("change", apply);
@@ -91,6 +95,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const r = resolve(t);
     setResolved(r);
     document.documentElement.dataset.theme = r;
+    document.documentElement.classList.toggle("dark", r === "dark");
+    document.documentElement.classList.toggle("light", r === "light");
   }, []);
 
   const setAccent = useCallback((a: AccentColor) => {

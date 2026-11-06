@@ -12,6 +12,7 @@ export interface AcuityCompanionProps {
   size?: "large" | "compact" | "orb" | "mini";
   onTap?: () => void;
   className?: string;
+  forceDark?: boolean;
 }
 
 /**
@@ -30,6 +31,7 @@ export function AcuityCompanion({
   size = "large",
   onTap,
   className,
+  forceDark = false,
 }: AcuityCompanionProps) {
   const [blinkState, setBlinkState] = useState(false);
   const [gaze, setGaze] = useState({ x: 0, y: 0, rotate: 7, scaleY: 1, scaleX: 1 });
@@ -303,7 +305,8 @@ export function AcuityCompanion({
             }}
             transition={{ duration: 0.09 }}
             className={cn(
-              "bg-white origin-center border border-black/25 dark:border-transparent",
+              "bg-white origin-center border",
+              forceDark ? "border-transparent" : "border-black/25 dark:border-transparent",
               isOrb
                 ? "w-2 h-4.5 rounded-[5px]"
                 : isMini
@@ -325,7 +328,8 @@ export function AcuityCompanion({
             }}
             transition={{ duration: 0.09 }}
             className={cn(
-              "bg-white origin-center border border-black/25 dark:border-transparent",
+              "bg-white origin-center border",
+              forceDark ? "border-transparent" : "border-black/25 dark:border-transparent",
               isOrb
                 ? "w-2 h-4.5 rounded-[5px]"
                 : isMini
@@ -364,7 +368,8 @@ export function AcuityCompanion({
               : { duration: 0.15 }
           }
           className={cn(
-            "bg-white origin-center rounded-full border border-black/20 dark:border-transparent",
+            "bg-white origin-center rounded-full border",
+            forceDark ? "border-transparent" : "border-black/20 dark:border-transparent",
             isOrb
               ? "w-2 h-0.75 mt-0.75"
               : isMini
