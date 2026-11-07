@@ -313,9 +313,13 @@ export function AccountsScreen({
       <div className="px-4 pt-6 space-y-6">
         
         <div className="p-6 rounded-[24px] shadow-xl text-center" style={{ background: "var(--brand)" }}>
-          <p className="text-[13px] text-black/70 mb-1 font-medium">Total Net</p>
-          <div className="text-[36px] font-bold tabular text-black font-hero flex justify-center items-baseline">
-            <MoneyText value={netWorth} className="text-[36px] font-bold text-black font-hero" />
+          <p className="text-[13px] text-black/70 mb-1 font-semibold">Total Net</p>
+          <div className="text-[38px] font-black tabular text-black font-hero flex justify-center items-baseline leading-none tracking-tight">
+            <MoneyText
+              value={netWorth}
+              className="text-[38px] font-black text-black font-hero tracking-tight [&_span]:font-black"
+              symbolClassName="font-black"
+            />
           </div>
         </div>
 

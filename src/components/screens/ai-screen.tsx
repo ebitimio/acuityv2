@@ -651,6 +651,103 @@ export function AIScreen({
     ];
   }, [daysUntilIncome, metrics, topCategory]);
 
+  if (!hasConsent) {
+    return (
+      <div
+        className="fixed inset-0 z-[300] flex flex-col justify-between items-center text-white overflow-hidden select-none px-6"
+        style={{
+          background: "var(--bg)",
+          touchAction: "none",
+          paddingTop: "max(1.5rem, env(safe-area-inset-top))",
+          paddingBottom: "max(calc(env(safe-area-inset-bottom) + 12px), 28px)",
+        }}
+      >
+        {/* Ambient Brand Glow */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] h-[340px] rounded-full bg-[var(--brand)]/15 blur-[90px] pointer-events-none" />
+
+        {/* Top Header Bar with Back Button */}
+        <div className="relative z-10 w-full flex items-center justify-between">
+          <button
+            type="button"
+            onClick={onBack}
+            aria-label="Back to dashboard"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--surface-1)] hover:bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text-1)] transition-all active:scale-95 shadow-xs"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <div className="flex items-baseline">
+            <span className="text-[19px] font-black tracking-tight text-[var(--text-1)]">ACUITY</span>
+            <span className="text-[19px] font-black tracking-tight text-[var(--brand)]">.</span>
+          </div>
+          <div className="w-9" />
+        </div>
+
+        {/* Consent Card */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.24 }}
+          className="relative z-10 w-full max-w-sm rounded-3xl bg-[#141416] border border-white/10 p-6 shadow-2xl flex flex-col gap-4 text-center my-auto"
+        >
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#1c1c1f] border border-white/10 shadow-lg">
+            <AcuityCompanion
+              size="compact"
+              hasCap={true}
+              forceDark={true}
+              financialMood="calm"
+            />
+          </div>
+          <div>
+            <h3 className="text-[18px] font-bold text-white mb-1">AI Insights & Privacy</h3>
+            <p className="text-[13px] text-white/70 leading-relaxed">
+              Oggy uses OpenAI to analyze your spending trends and give personalized answers.
+            </p>
+          </div>
+
+          <div className="rounded-2xl bg-white/5 border border-white/5 p-3.5 text-left text-[12px] text-white/80 space-y-2">
+            <div className="flex items-start gap-2">
+              <Check size={14} className="text-[var(--gain)] shrink-0 mt-0.5" />
+              <span>Only summarized figures and prompts are securely processed.</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <Check size={14} className="text-[var(--gain)] shrink-0 mt-0.5" />
+              <span>Your bank credentials, PINs, and full account numbers are never shared.</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <Check size={14} className="text-[var(--gain)] shrink-0 mt-0.5" />
+              <span>Acuity is a tracking assistant and does not provide regulated advice.</span>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => {
+                localStorage.setItem("acuity:ai_data_consent", "1");
+                setHasConsent(true);
+              }}
+              className="w-full py-3 rounded-full bg-[var(--brand)] text-[var(--brand-ink)] font-bold text-[14px] shadow-lg active:scale-98 transition-transform cursor-pointer"
+            >
+              I Understand & Consent
+            </button>
+            <button
+              type="button"
+              onClick={onBack}
+              className="w-full py-2.5 rounded-full text-[13px] text-white/50 hover:text-white transition-colors cursor-pointer"
+            >
+              Not Now
+            </button>
+          </div>
+        </motion.div>
+
+        {/* Bottom spacing anchor */}
+        <div className="relative z-10 w-full text-center pb-2">
+          <p className="text-[11px] text-white/30 font-medium">Encrypted & Private · Acuity Intelligence</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <motion.div 
       initial={{ opacity: 0, scale: 0.99 }}
@@ -662,66 +759,6 @@ export function AIScreen({
         touchAction: "pan-y",
       }}
     >
-      {/* Apple-compliant AI Data & Privacy Consent Screen */}
-      {!hasConsent && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="w-full max-w-sm rounded-3xl bg-[#141416] border border-white/10 p-6 shadow-2xl flex flex-col gap-4 text-center"
-          >
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#1c1c1f] border border-white/10 shadow-lg">
-              <AcuityCompanion
-                size="compact"
-                hasCap={true}
-                forceDark={true}
-                financialMood="calm"
-              />
-            </div>
-            <div>
-              <h3 className="text-[18px] font-bold text-white mb-1">AI Insights & Privacy</h3>
-              <p className="text-[13px] text-white/70 leading-relaxed">
-                Oggy uses OpenAI to analyze your spending trends and give personalized answers.
-              </p>
-            </div>
-
-            <div className="rounded-2xl bg-white/5 border border-white/5 p-3.5 text-left text-[12px] text-white/80 space-y-2">
-              <div className="flex items-start gap-2">
-                <Check size={14} className="text-[var(--gain)] shrink-0 mt-0.5" />
-                <span>Only summarized figures and prompts are securely processed.</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <Check size={14} className="text-[var(--gain)] shrink-0 mt-0.5" />
-                <span>Your bank credentials, PINs, and full account numbers are never shared.</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <Check size={14} className="text-[var(--gain)] shrink-0 mt-0.5" />
-                <span>Acuity is a tracking assistant and does not provide regulated advice.</span>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => {
-                  localStorage.setItem("acuity:ai_data_consent", "1");
-                  setHasConsent(true);
-                }}
-                className="w-full py-3 rounded-full bg-[var(--brand)] text-[var(--brand-ink)] font-bold text-[14px] shadow-lg active:scale-98 transition-transform"
-              >
-                I Understand & Consent
-              </button>
-              <button
-                type="button"
-                onClick={onBack}
-                className="w-full py-2.5 rounded-full text-[13px] text-white/50 hover:text-white transition-colors"
-              >
-                Not Now
-              </button>
-            </div>
-          </motion.div>
-        </div>
-      )}
       {/* Ambient Radial Gradient Glows */}
       <div aria-hidden className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
         <div
