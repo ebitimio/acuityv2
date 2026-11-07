@@ -30,7 +30,7 @@ function resolve(choice: ThemeChoice): Resolved {
 const ACCENT_COLORS: Record<AccentColor, { hex: string; soft: string; ink: string }> = {
   red: { hex: "#DE3121", soft: "rgba(222, 49, 33, 0.14)", ink: "#000000" },
   lime: { hex: "#D2F824", soft: "rgba(210, 248, 36, 0.14)", ink: "#000000" },
-  grey: { hex: "#4B5563", soft: "rgba(75, 85, 99, 0.14)", ink: "#000000" },
+  grey: { hex: "#4B5563", soft: "rgba(75, 85, 99, 0.14)", ink: "#FFFFFF" },
 };
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {

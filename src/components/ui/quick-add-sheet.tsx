@@ -11,7 +11,7 @@ import { Delete, ArrowRightLeft, CreditCard, ChevronDown, Plus } from "lucide-re
 import { useWorkspace } from "@/lib/workspace";
 import { buildCategoryList } from "@/lib/category-options";
 import { CATEGORIES, getCategory } from "@/lib/categories";
-import { getAccounts } from "@/lib/supabase/database";
+import { getAccounts, getCustomCategories } from "@/lib/supabase/database";
 import type { Account } from "@/lib/types";
 
 interface QuickAddSheetProps {
@@ -25,6 +25,7 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
   const [direction, setDirection] = useState<"debit" | "credit">("debit");
   const [category, setCategory] = useState(CATEGORIES[0].name);
   const [customCategory, setCustomCategory] = useState("");
+  const [merchant, setMerchant] = useState("");
   const [isCustom, setIsCustom] = useState(false);
   const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [isDateOpen, setIsDateOpen] = useState(false);
@@ -33,16 +34,14 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
   
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccount, setSelectedAccount] = useState<string>("");
+  const [customCategories, setCustomCategories] = useState<string[]>([]);
 
   const { active: activeWs } = useWorkspace();
   const supabase = createClient();
 
   const categoryNames = useMemo(() => {
-    const rawStrings = Array.isArray(CATEGORIES)
-      ? CATEGORIES.map((c: any) => (typeof c === "string" ? c : c.name || c.label || c.value))
-      : [];
-    return buildCategoryList(rawStrings);
-  }, []);
+    return buildCategoryList(customCategories);
+  }, [customCategories]);
 
   useEffect(() => {
     if (isOpen && activeWs) {
@@ -52,6 +51,9 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
           setSelectedAccount(accs[0].id);
         }
       });
+      getCustomCategories().then((cats) => {
+        setCustomCategories((cats || []).map((c) => c.name));
+      }).catch(() => {});
     }
   }, [isOpen, activeWs]);
 
@@ -61,6 +63,7 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
       setDirection("debit");
       setCategory(CATEGORIES[0].name);
       setCustomCategory("");
+      setMerchant("");
       setIsCustom(false);
       setDate(new Date().toISOString().split("T")[0]);
       setError(null);
@@ -101,13 +104,15 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
     setError(null);
     
     try {
+      const cleanDesc = merchant.trim() || finalCategory;
       const { error: dbError } = await supabase.from("transactions").insert({
         account_id: selectedAccount,
         amount_minor: Math.round(parsedAmount * 100),
         direction: direction,
         category_name: finalCategory,
-        description_clean: finalCategory,
-        description_raw: finalCategory,
+        description_clean: cleanDesc,
+        description_raw: cleanDesc,
+        notes: merchant.trim() ? merchant.trim() : null,
         date: new Date(date).toISOString(),
         status: "posted",
       });
@@ -266,6 +271,17 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
               autoFocus
             />
           )}
+
+          {/* Merchant / Note (Optional) */}
+          <div className="mt-2.5">
+            <input
+              type="text"
+              value={merchant}
+              onChange={(e) => setMerchant(e.target.value)}
+              placeholder="Merchant or note (e.g. Shoprite, Netflix)"
+              className="w-full rounded-xl bg-[#1c1c1e] border border-white/10 px-3.5 py-2.5 text-[13.5px] text-white placeholder:text-white/30 outline-none focus:border-[var(--brand)] transition-colors"
+            />
+          </div>
         </div>
 
         {/* Numpad & Save */}

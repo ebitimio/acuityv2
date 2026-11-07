@@ -54,14 +54,14 @@ export function OggyDashboardTour({ userName, onClose }: OggyDashboardTourProps)
     {
       id: "nav-ai",
       selector: "nav-ai",
-      title: "The A. Wealth Manager Button",
-      desc: "Tap this A. button from anywhere in the app to open our direct wealth management chat. You can ask for advice, check balances, or audit transactions anytime.",
+      title: "Oggy Assistant Button",
+      desc: "Tap this A. button from anywhere in the app to chat with Oggy. You can ask questions, analyze spending trends, or audit transactions anytime.",
     },
     {
       id: "nav-add",
       selector: "nav-add",
       title: "Quick Add Action",
-      desc: "Whenever you spend or receive money, tap this red (+) button to log your transaction in seconds. You are all set to manage your wealth.",
+      desc: "Whenever you spend or receive money, tap this red (+) button to log your transaction in seconds. You are all set to track your finances.",
     },
   ];
 

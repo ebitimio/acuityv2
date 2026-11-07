@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
   getHomeMetrics, getRecentTransactions, deleteTransaction, clearDataCache,
   getSetupStatus, completeOnboarding, getSafeToSpend,
   getCurrentCycle, getCategorySpend, getPeriodLabel, getAccounts, getTransactionsSince,
+  getBudgets,
   type SetupStatus, type SafeToSpend, type CategorySpendRow,
 } from "@/lib/supabase/database";
 import { startOfMonthISO } from "@/lib/dates";
@@ -110,6 +111,7 @@ export default function SandboxPage() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   
   const [heroSpent, setHeroSpent] = useState(0);
+  const [categoryBudgetsTotal, setCategoryBudgetsTotal] = useState(0);
 
   const [activeCardIndex, setActiveCardIndex] = useState(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -289,17 +291,23 @@ export default function SandboxPage() {
       const total = (accs ?? []).reduce((s, a) => s + (a.current_minor ?? a.balance_minor), 0) / 100;
       setLiquidAssets(total);
 
-      const firstAccountId = accs?.[0]?.id;
-      if (firstAccountId) {
-        const monthTxns = await getTransactionsSince(startOfMonthISO());
-        const validTxns = monthTxns.filter(t => 
-          t.account_id === firstAccountId && 
-          t.direction === "debit" && 
-          t.category_name !== "Transfers" && 
-          t.category_name !== "Adjustment"
-        );
-        const totalSpent = validTxns.reduce((sum, tx) => sum + tx.amount_minor, 0) / 100;
-        setHeroSpent(totalSpent);
+      // Compute total spent this month across ALL workspace accounts
+      const monthTxns = await getTransactionsSince(startOfMonthISO());
+      const validTxns = (monthTxns ?? []).filter(t => 
+        t.direction === "debit" && 
+        t.category_name !== "Transfers" && 
+        t.category_name !== "Adjustment"
+      );
+      const totalSpent = validTxns.reduce((sum, tx) => sum + tx.amount_minor, 0) / 100;
+      setHeroSpent(totalSpent);
+
+      // Load category budgets sum to unify budget ring & budget screen
+      try {
+        const bs = await getBudgets();
+        const catSum = (bs ?? []).reduce((sum, b) => sum + b.limit_minor, 0) / 100;
+        setCategoryBudgetsTotal(catSum);
+      } catch {
+        setCategoryBudgetsTotal(0);
       }
     } catch (e: any) {
       setMetrics(ZERO_METRICS);
@@ -307,6 +315,7 @@ export default function SandboxPage() {
       setAccounts([]);
       setLiquidAssets(0);
       setHeroSpent(0);
+      setCategoryBudgetsTotal(0);
     }
 
     try {
@@ -446,6 +455,19 @@ export default function SandboxPage() {
     window.scrollTo(0, 0);
   }, [activeScreen]);
 
+  // Auto-reload home page whenever navigated back from any other page
+  const prevScreenRef = useRef<ScreenId>(activeScreen);
+  useEffect(() => {
+    if (prevScreenRef.current !== "home" && activeScreen === "home") {
+      setRefreshState("loading");
+      refreshData().then(() => {
+        setRefreshState("success");
+        setTimeout(() => setRefreshState("idle"), 1500);
+      });
+    }
+    prevScreenRef.current = activeScreen;
+  }, [activeScreen, refreshData]);
+
   const handleTabChange = (tabId: TabId) => {
     setIsConnectIntroOpen(false);
     setActiveScreen(tabId);
@@ -454,13 +476,31 @@ export default function SandboxPage() {
   const handleAddClick = () => setIsQuickAddOpen(true);
 
   const handleDeleteTxn = async (t: Txn) => {
-    try {
-      await deleteTransaction(t.id);
-      toast("Transaction deleted");
-      refreshData();
-    } catch {
-      toast("Could not delete", "err");
-    }
+    const previousTxns = [...transactions];
+    setTransactions((prev) => prev.filter((x) => x.id !== t.id));
+
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      if (!cancelled) {
+        try {
+          await deleteTransaction(t.id);
+          refreshData();
+        } catch {}
+      }
+    }, 4500);
+
+    toast("Transaction deleted", {
+      duration: 4500,
+      action: {
+        label: "Undo",
+        onClick: () => {
+          cancelled = true;
+          clearTimeout(timer);
+          setTransactions(previousTxns);
+          toast("Deletion undone");
+        },
+      },
+    });
   };
 
   const handleSignOut = async () => {
@@ -632,7 +672,14 @@ export default function SandboxPage() {
   const m = metrics ?? ZERO_METRICS;
   const netAcrossAccounts = m.net_worth_minor / 100;
   const incomeThisMonth = m.total_income_minor / 100;
-  const budgetLimit = m.budget_limit_minor / 100;
+  const budgetLimit = categoryBudgetsTotal > 0 ? categoryBudgetsTotal : (m.budget_limit_minor / 100);
+
+  const mascotFinancialMood: "celebrating" | "calm" | "concerned" | "neutral" = useMemo(() => {
+    if (safeToSpend && safeToSpend.daily_safe_minor < 0) return "concerned";
+    if (budgetLimit > 0 && heroSpent > budgetLimit * 0.9) return "concerned";
+    if (safeToSpend && safeToSpend.daily_safe_minor > 0 && budgetLimit > 0 && heroSpent < budgetLimit * 0.7) return "celebrating";
+    return "calm";
+  }, [safeToSpend, budgetLimit, heroSpent]);
   const showChecklist = !!setupStatus && !setupStatus.is_complete && !checklistDismissed;
   const periodLabel = getPeriodLabel(cycle);
   const daysUntilIncome = safeToSpend?.days_until_next_income ?? 0;
@@ -829,6 +876,7 @@ export default function SandboxPage() {
                           size="compact"
                           hasCap={true}
                           forceDark={true}
+                          financialMood={mascotFinancialMood}
                           onTap={() => setActiveScreen("ai")}
                         />
                       </motion.div>

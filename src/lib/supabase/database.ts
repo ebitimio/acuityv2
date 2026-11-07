@@ -137,6 +137,18 @@ export async function getTransactionsSince(sinceISO: string): Promise<Txn[]> {
   );
 }
 
+export async function getTransactionsBetween(startISO: string, endISO: string): Promise<Txn[]> {
+  const { sb, workspaceId } = await ctx();
+  const accountIds = await getWorkspaceAccountIds(sb, workspaceId);
+  if (accountIds.length === 0) return [];
+
+  return fetchAll<Txn>((f, t) =>
+    sb.from("transactions").select(TX_FLAT).in("account_id", accountIds).or(NOT_SPLIT).eq("status", "posted")
+      .gte("date", startISO).lte("date", endISO)
+      .order("date", { ascending: false }).range(f, t)
+  );
+}
+
 export async function getAllTransactions(): Promise<Txn[]> {
   const { sb, workspaceId } = await ctx();
   const accountIds = await getWorkspaceAccountIds(sb, workspaceId);

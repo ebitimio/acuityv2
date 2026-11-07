@@ -11,7 +11,7 @@ import { Loader2 } from "lucide-react";
 const COINS = [
   { symbol: "BTC", name: "Bitcoin", color: "bg-orange-500", binance: "BTCUSDT" },
   { symbol: "ETH", name: "Ethereum", color: "bg-blue-500", binance: "ETHUSDT" },
-  { symbol: "USDT", name: "Tether", color: "bg-green-500", binance: "USDCUSDT" },
+  { symbol: "USDT", name: "Tether", color: "bg-green-500", binance: "USDT" },
   { symbol: "SOL", name: "Solana", color: "bg-purple-500", binance: "SOLUSDT" },
   { symbol: "BNB", name: "BNB", color: "bg-yellow-500", binance: "BNBUSDT" },
 ];
@@ -22,12 +22,19 @@ export function CryptoSheet({ isOpen, onClose, onSuccess }: { isOpen: boolean; o
   const [price, setPrice] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const { fmt } = useCurrency();
+  const { fmt, rate } = useCurrency();
   const toast = useToast();
+
+  const effectiveRate = rate > 0 ? rate : 1500;
 
   // Fetch price from Binance (reliable, no rate limits)
   useEffect(() => {
     if (!isOpen) return;
+    if (selectedCoin.symbol === "USDT") {
+      setPrice(1.0);
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${selectedCoin.binance}`)
       .then(r => r.json())
@@ -43,7 +50,7 @@ export function CryptoSheet({ isOpen, onClose, onSuccess }: { isOpen: boolean; o
   }, [selectedCoin, isOpen]);
 
   const usdValue = price ? parseFloat(amount || "0") * price : 0;
-  const ngnValue = usdValue * 1500;
+  const ngnValue = usdValue * effectiveRate;
 
   const handleSave = async () => {
     if (!amount || parseFloat(amount) <= 0) return toast("Enter an amount", "err");
@@ -106,7 +113,10 @@ export function CryptoSheet({ isOpen, onClose, onSuccess }: { isOpen: boolean; o
             <span className="font-semibold text-[var(--text-1)]">${usdValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
           </div>
           <div className="flex justify-between items-center text-[15px] pt-2 border-t border-[var(--line)]">
-            <span className="font-medium text-[var(--text-1)]">Value in Naira</span>
+            <div>
+              <span className="font-medium text-[var(--text-1)] block">Value in Naira</span>
+              <span className="text-[11px] text-[var(--text-3)]">@ ₦{Math.round(effectiveRate).toLocaleString()}/$ live</span>
+            </div>
             <span className="font-bold text-[var(--text-1)]">{fmt(ngnValue)}</span>
           </div>
         </div>

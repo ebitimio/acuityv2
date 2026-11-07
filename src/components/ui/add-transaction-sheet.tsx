@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { useWorkspace } from "@/lib/workspace";
 import { buildCategoryList } from "@/lib/category-options";
 import { CATEGORIES } from "@/lib/categories";
+import { getCustomCategories } from "@/lib/supabase/database";
 
 interface AddTransactionSheetProps {
   isOpen: boolean;
@@ -26,16 +27,24 @@ export function AddTransactionSheet({ isOpen, onClose, onSaved }: AddTransaction
   const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [customCategories, setCustomCategories] = useState<string[]>([]);
 
   const { active: activeWs } = useWorkspace();
   const supabase = createClient();
 
   const categoryNames = useMemo(() => {
-    const rawStrings = Array.isArray(CATEGORIES)
-      ? CATEGORIES.map((c: any) => (typeof c === "string" ? c : c.name || c.label || c.value))
-      : [];
-    return buildCategoryList(rawStrings);
-  }, []);
+    return buildCategoryList(customCategories);
+  }, [customCategories]);
+
+  useEffect(() => {
+    if (isOpen && activeWs) {
+      getCustomCategories()
+        .then((cats) => {
+          setCustomCategories((cats || []).map((c) => c.name));
+        })
+        .catch(() => {});
+    }
+  }, [isOpen, activeWs]);
 
   useEffect(() => {
     if (isOpen) {

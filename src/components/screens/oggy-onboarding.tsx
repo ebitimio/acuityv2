@@ -11,6 +11,7 @@ import { useToast } from "@/components/ui/toast";
 import { formatAmountWithCommas, parseNumberInput } from "@/lib/format";
 import { DayPicker } from "@/components/ui/day-picker";
 import { cn } from "@/lib/utils";
+import { searchInstitutions } from "@/lib/institutions";
 
 interface OggyOnboardingProps {
   userName?: string;
@@ -372,7 +373,7 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
   const getOggySpeechString = () => {
     switch (stage) {
       case "intro":
-        return `Hello ${firstName}! I am Oggy, your personal wealth manager. I will help you take control of your financial runway, safeguard your cash, and grow your wealth. Let us get to know your finances.`;
+        return `Hello ${firstName}! I am Oggy, your personal finance assistant. I will help you track your financial runway, understand your cash flow, and master your spending. Let us get to know your finances.`;
       case "bank_name":
         return "What bank or financial institution would you like to add first?";
       case "account_name":
@@ -387,7 +388,7 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
           : "What is your current balance in this account right now?";
       case "income_amount":
         return accountBalance.trim()
-          ? `₦${accountBalance.trim()} locked and secured! How much estimated monthly income do you receive?`
+          ? `₦${accountBalance.trim()} logged! How much estimated monthly income do you receive?`
           : "How much estimated income do you receive each month?";
       case "income_payday":
         return incomeAmount.trim()
@@ -395,8 +396,8 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
           : "What day of the month do you typically receive your income?";
       case "bill_ask":
         return incomePayday.trim()
-          ? `Payday on the ${incomePayday.trim()}${getOrdinal(Number(incomePayday.trim()))} locked! Do you have any recurring bills or subscriptions to safeguard your cash from?`
-          : "Do you have any recurring bills or subscriptions (like rent, electricity, wifi) to safeguard your cash from?";
+          ? `Payday on the ${incomePayday.trim()}${getOrdinal(Number(incomePayday.trim()))} noted! Do you have any recurring bills or subscriptions to track?`
+          : "Do you have any recurring bills or subscriptions (like rent, electricity, wifi) to track?";
       case "bill_name":
         return "Great! What is the name of this recurring bill or subscription?";
       case "bill_amount":
@@ -552,6 +553,22 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
                 }}
                 autoFocus
               />
+
+              {/* Suggestions chips */}
+              <div className="flex flex-wrap gap-1.5 pt-0.5 max-h-24 overflow-y-auto">
+                {searchInstitutions(bankName, 6).map((inst) => (
+                  <button
+                    key={inst.name}
+                    type="button"
+                    onClick={() => {
+                      setBankName(inst.shortName || inst.name);
+                    }}
+                    className="text-[12px] px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 text-white/90 border border-white/10 active:scale-95 transition-all"
+                  >
+                    {inst.shortName || inst.name}
+                  </button>
+                ))}
+              </div>
 
               <button
                 type="button"

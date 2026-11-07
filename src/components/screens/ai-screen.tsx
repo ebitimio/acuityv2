@@ -6,7 +6,7 @@ import {
   ChevronLeft, ArrowUp, Loader2, CheckCircle2,
   Plus, Wallet, PieChart, Copy, Check,
   AlertCircle, RefreshCw, XCircle, Menu, X, Mic, Trash2,
-  TrendingUp, Zap
+  TrendingUp, Zap, Sparkles
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useWorkspace } from "@/lib/workspace";
@@ -143,6 +143,10 @@ export function AIScreen({
   const [copiedId, setCopiedId] = useState<string | null>(null);
   
   const [greeting, setGreeting] = useState("Good day");
+  const [hasConsent, setHasConsent] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return localStorage.getItem("acuity:ai_data_consent") === "1";
+  });
   const [convToDelete, setConvToDelete] = useState<string | null>(null);
 
   // Viewport tracking to prevent mobile keyboard jumps
@@ -659,6 +663,61 @@ export function AIScreen({
         touchAction: "pan-y",
       }}
     >
+      {/* Apple-compliant AI Data & Privacy Consent Screen */}
+      {!hasConsent && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-sm rounded-3xl bg-[#141416] border border-white/10 p-6 shadow-2xl flex flex-col gap-4 text-center"
+          >
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--brand)]/15 text-[var(--brand)] border border-[var(--brand)]/20">
+              <Sparkles size={28} />
+            </div>
+            <div>
+              <h3 className="text-[18px] font-bold text-white mb-1">AI Insights & Privacy</h3>
+              <p className="text-[13px] text-white/70 leading-relaxed">
+                Oggy uses OpenAI to analyze your spending trends and give personalized answers.
+              </p>
+            </div>
+
+            <div className="rounded-2xl bg-white/5 border border-white/5 p-3.5 text-left text-[12px] text-white/80 space-y-2">
+              <div className="flex items-start gap-2">
+                <Check size={14} className="text-[var(--gain)] shrink-0 mt-0.5" />
+                <span>Only summarized figures and prompts are securely processed.</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <Check size={14} className="text-[var(--gain)] shrink-0 mt-0.5" />
+                <span>Your bank credentials, PINs, and full account numbers are never shared.</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <Check size={14} className="text-[var(--gain)] shrink-0 mt-0.5" />
+                <span>Acuity is a tracking assistant and does not provide regulated advice.</span>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  localStorage.setItem("acuity:ai_data_consent", "1");
+                  setHasConsent(true);
+                }}
+                className="w-full py-3 rounded-full bg-[var(--brand)] text-[var(--brand-ink)] font-bold text-[14px] shadow-lg active:scale-98 transition-transform"
+              >
+                I Understand & Consent
+              </button>
+              <button
+                type="button"
+                onClick={onBack}
+                className="w-full py-2.5 rounded-full text-[13px] text-white/50 hover:text-white transition-colors"
+              >
+                Not Now
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
       {/* Ambient Radial Gradient Glows */}
       <div aria-hidden className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
         <div
@@ -746,9 +805,9 @@ export function AIScreen({
 
               <div className="inline-flex items-center gap-2 pt-1 text-[12px] text-[var(--text-3)] font-mono">
                 <span className="h-1.5 w-1.5 rounded-full bg-[var(--brand)] animate-pulse shadow-[0_0_8px_var(--brand)]" />
-                <span className="font-bold text-[var(--text-1)] tracking-wide">Acuity Intelligence</span>
+                <span className="font-bold text-[var(--text-1)] tracking-wide">Oggy</span>
                 <span className="text-[var(--text-3)]">•</span>
-                <span className="text-[var(--text-2)]">Personal CFO</span>
+                <span className="text-[var(--text-2)]">AI Finance Assistant</span>
               </div>
             </div>
 
@@ -808,7 +867,7 @@ export function AIScreen({
                   <div className="w-full flex items-start gap-3">
                     {/* Orb Mascot PFP for AI Response */}
                     <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#141416] border border-white/10 shadow-[0_2px_12px_rgba(0,0,0,0.3)] mt-0.5 overflow-visible">
-                      <AcuityCompanion size="orb" />
+                      <AcuityCompanion size="orb" isStatic={true} />
                     </div>
 
                     <div className="flex-1 min-w-0 pt-0.5">

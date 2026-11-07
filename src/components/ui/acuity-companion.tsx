@@ -11,18 +11,23 @@ export interface AcuityCompanionProps {
   isSmiling?: boolean;
   hasCap?: boolean;
   size?: "large" | "compact" | "orb" | "mini";
+  financialMood?: "celebrating" | "calm" | "concerned" | "neutral";
+  isStatic?: boolean;
   onTap?: () => void;
   className?: string;
   forceDark?: boolean;
 }
 
 /**
- * Living Acuity AI Companion & Mascot
+ * Living Acuity AI Companion & Mascot (Oggy)
  * Features:
  * - Expressive white pill eyes with organic blinking & reading gaze scan
  * - Animated mouth with matching glowing highlight that talks when speaking/typing
+ * - Financial mood integration (concerned when budget > 90% or negative cashflow, celebrating when healthy)
  * - Stylish cap with signature "A." Acuity embroidery
  * - Warm radiant breathing Acuity Ember aura
+ * - Battery-friendly static mode for past chat bubbles
+ * - Accessible with keyboard support and respects reduced motion
  */
 export function AcuityCompanion({
   isThinking = false,
@@ -31,16 +36,47 @@ export function AcuityCompanion({
   isSmiling = false,
   hasCap = true,
   size = "large",
+  financialMood = "calm",
+  isStatic = false,
   onTap,
   className,
   forceDark = false,
 }: AcuityCompanionProps) {
   const [blinkState, setBlinkState] = useState(false);
-  const [gaze, setGaze] = useState({ x: 0, y: 0, rotate: 7, scaleY: 1, scaleX: 1 });
   const [isWinking, setIsWinking] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
 
-  // Natural organic blinking with single and double flutter blinks
+  // Check prefers-reduced-motion
   useEffect(() => {
+    if (typeof window !== "undefined" && window.matchMedia) {
+      const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+      setReducedMotion(mq.matches);
+      const handler = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
+      mq.addEventListener?.("change", handler);
+      return () => mq.removeEventListener?.("change", handler);
+    }
+  }, []);
+
+  // Baseline gaze posture influenced by financial mood
+  const defaultGaze =
+    financialMood === "concerned"
+      ? { x: 0, y: 1.5, rotate: -2, scaleY: 0.9, scaleX: 1.04 }
+      : financialMood === "celebrating"
+      ? { x: 0, y: -1, rotate: 6, scaleY: 0.92, scaleX: 1.1 }
+      : { x: 0, y: 0, rotate: 7, scaleY: 1, scaleX: 1 };
+
+  const [gaze, setGaze] = useState(defaultGaze);
+
+  useEffect(() => {
+    if (isStatic || reducedMotion) {
+      setGaze(defaultGaze);
+    }
+  }, [financialMood, isStatic, reducedMotion]);
+
+  // Natural organic blinking with single and double flutter blinks (disabled if static or reduced motion)
+  useEffect(() => {
+    if (isStatic || reducedMotion) return;
+
     let timeout: NodeJS.Timeout;
 
     const triggerBlink = () => {
@@ -68,10 +104,12 @@ export function AcuityCompanion({
 
     triggerBlink();
     return () => clearTimeout(timeout);
-  }, []);
+  }, [isStatic, reducedMotion]);
 
-  // Highly expressive eye movements: reading scan, thoughtful glances, lively micro-saccades
+  // Expressive eye movements (disabled if static or reduced motion)
   useEffect(() => {
+    if (isStatic || reducedMotion) return;
+
     if (isThinking) {
       // Thinking: Eyes glance up-left and up-right thoughtfully with soft squints
       let thinkStep = 0;
@@ -128,16 +166,23 @@ export function AcuityCompanion({
       // Moves every 1.2s to 2.6s so the mascot feels genuinely alive
       const delay = Math.random() * 1400 + 1200;
       saccadeTimeout = setTimeout(() => {
-        const gazePatterns = [
-          { x: 0, y: 0, rotate: 7, scaleY: 1, scaleX: 1 }, // relaxed center
-          { x: -5, y: -1, rotate: -3, scaleY: 1.04, scaleX: 0.96 }, // curious left
-          { x: 5, y: -1, rotate: 10, scaleY: 1.04, scaleX: 0.96 }, // curious right
-          { x: 0, y: -4, rotate: 4, scaleY: 1.12, scaleX: 0.94 }, // wide inquisitive up
-          { x: -3, y: 3, rotate: 3, scaleY: 0.96, scaleX: 1.02 }, // glance down-left
-          { x: 3, y: 2, rotate: 9, scaleY: 0.96, scaleX: 1.02 }, // glance down-right
-          { x: 0, y: 0, rotate: 13, scaleY: 1.03, scaleX: 0.97 }, // cute head tilt
-          { x: -4, y: 2, rotate: -2, scaleY: 1, scaleX: 1 }, // attentive look
-        ];
+        const gazePatterns =
+          financialMood === "concerned"
+            ? [
+                { x: 0, y: 1.5, rotate: -2, scaleY: 0.9, scaleX: 1.04 },
+                { x: -2, y: 1, rotate: -4, scaleY: 0.88, scaleX: 1.02 },
+                { x: 2, y: 1, rotate: 0, scaleY: 0.88, scaleX: 1.02 },
+              ]
+            : [
+                { x: 0, y: 0, rotate: 7, scaleY: 1, scaleX: 1 }, // relaxed center
+                { x: -5, y: -1, rotate: -3, scaleY: 1.04, scaleX: 0.96 }, // curious left
+                { x: 5, y: -1, rotate: 10, scaleY: 1.04, scaleX: 0.96 }, // curious right
+                { x: 0, y: -4, rotate: 4, scaleY: 1.12, scaleX: 0.94 }, // wide inquisitive up
+                { x: -3, y: 3, rotate: 3, scaleY: 0.96, scaleX: 1.02 }, // glance down-left
+                { x: 3, y: 2, rotate: 9, scaleY: 0.96, scaleX: 1.02 }, // glance down-right
+                { x: 0, y: 0, rotate: 13, scaleY: 1.03, scaleX: 0.97 }, // cute head tilt
+                { x: -4, y: 2, rotate: -2, scaleY: 1, scaleX: 1 }, // attentive look
+              ];
         const nextGaze = gazePatterns[Math.floor(Math.random() * gazePatterns.length)];
         setGaze(nextGaze);
         scheduleSaccade();
@@ -146,7 +191,7 @@ export function AcuityCompanion({
 
     scheduleSaccade();
     return () => clearTimeout(saccadeTimeout);
-  }, [isThinking, hasInput, isSpeaking]);
+  }, [isThinking, hasInput, isSpeaking, isStatic, reducedMotion, financialMood]);
 
   const handleTap = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -158,13 +203,25 @@ export function AcuityCompanion({
   const isOrb = size === "orb";
   const isCompact = size === "compact";
   const isMini = size === "mini";
-  const isLarge = !isOrb && !isCompact && !isMini;
+
+  // Suppress smile if in concerned financial mood unless explicitly forced
+  const effectiveSmiling = isSmiling && financialMood !== "concerned";
 
   return (
     <div
+      role={onTap ? "button" : "img"}
+      tabIndex={onTap ? 0 : undefined}
+      aria-label="Oggy AI Assistant Mascot"
+      onKeyDown={(e) => {
+        if (onTap && (e.key === "Enter" || e.key === " ")) {
+          e.preventDefault();
+          onTap();
+        }
+      }}
       onClick={handleTap}
       className={cn(
-        "relative flex items-center justify-center cursor-pointer select-none transition-transform active:scale-95",
+        "relative flex items-center justify-center select-none outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand)] rounded-2xl",
+        onTap ? "cursor-pointer transition-transform active:scale-95" : "cursor-default",
         isOrb
           ? "h-full w-full"
           : isMini
@@ -174,19 +231,27 @@ export function AcuityCompanion({
           : "h-36 sm:h-40 w-full my-1",
         className
       )}
-      title="Acuity Personal AI • Tap to say hi!"
+      title="Oggy AI • Tap to say hi!"
     >
-      {/* Radiant Brand Ember Aura (Breathing Glow) */}
+      {/* Radiant Brand Ember Aura (Breathing Glow - static when isStatic is true) */}
       <motion.div
-        animate={{
-          scale: isThinking ? [1, 1.25, 1] : isSpeaking ? [1, 1.2, 1] : [1, 1.08, 1],
-          opacity: isThinking ? [0.65, 0.95, 0.65] : isSpeaking ? [0.55, 0.9, 0.55] : isOrb || isMini ? [0.45, 0.75, 0.45] : isCompact ? [0.4, 0.65, 0.4] : [0.38, 0.58, 0.38],
-        }}
-        transition={{
-          duration: isSpeaking ? 0.8 : isThinking ? 1.4 : 4.2,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
+        animate={
+          isStatic || reducedMotion
+            ? { scale: 1, opacity: 0.4 }
+            : {
+                scale: isThinking ? [1, 1.25, 1] : isSpeaking ? [1, 1.2, 1] : [1, 1.08, 1],
+                opacity: isThinking ? [0.65, 0.95, 0.65] : isSpeaking ? [0.55, 0.9, 0.55] : isOrb || isMini ? [0.45, 0.75, 0.45] : isCompact ? [0.4, 0.65, 0.4] : [0.38, 0.58, 0.38],
+              }
+        }
+        transition={
+          isStatic || reducedMotion
+            ? { duration: 0 }
+            : {
+                duration: isSpeaking ? 0.8 : isThinking ? 1.4 : 4.2,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }
+        }
         className={cn(
           "absolute rounded-full pointer-events-none",
           isOrb || isMini
@@ -197,7 +262,9 @@ export function AcuityCompanion({
         )}
         style={{
           background:
-            "radial-gradient(circle, color-mix(in srgb, var(--brand) 45%, transparent) 0%, color-mix(in srgb, var(--brand) 16%, transparent) 46%, transparent 72%)",
+            financialMood === "concerned"
+              ? "radial-gradient(circle, color-mix(in srgb, #f59e0b 40%, transparent) 0%, color-mix(in srgb, #ef4444 14%, transparent) 50%, transparent 72%)"
+              : "radial-gradient(circle, color-mix(in srgb, var(--brand) 45%, transparent) 0%, color-mix(in srgb, var(--brand) 16%, transparent) 46%, transparent 72%)",
         }}
       />
 
@@ -302,9 +369,9 @@ export function AcuityCompanion({
           {/* Left Eye */}
           <motion.div
             animate={{
-              scaleY: isWinking || blinkState ? 0.08 : isSmiling ? 0.75 : gaze.scaleY,
-              scaleX: isSmiling ? 1.08 : gaze.scaleX,
-              y: isSmiling ? 1 : 0,
+              scaleY: isWinking || blinkState ? 0.08 : effectiveSmiling ? 0.75 : financialMood === "concerned" ? 0.88 : gaze.scaleY,
+              scaleX: effectiveSmiling ? 1.08 : financialMood === "concerned" ? 1.04 : gaze.scaleX,
+              y: effectiveSmiling ? 1 : 0,
             }}
             transition={{ duration: 0.12 }}
             className={cn(
@@ -326,9 +393,9 @@ export function AcuityCompanion({
           {/* Right Eye */}
           <motion.div
             animate={{
-              scaleY: blinkState ? 0.08 : isSmiling ? 0.75 : gaze.scaleY,
-              scaleX: isSmiling ? 1.08 : gaze.scaleX,
-              y: isSmiling ? 1 : 0,
+              scaleY: blinkState ? 0.08 : effectiveSmiling ? 0.75 : financialMood === "concerned" ? 0.88 : gaze.scaleY,
+              scaleX: effectiveSmiling ? 1.08 : financialMood === "concerned" ? 1.04 : gaze.scaleX,
+              y: effectiveSmiling ? 1 : 0,
             }}
             transition={{ duration: 0.12 }}
             className={cn(
@@ -357,7 +424,7 @@ export function AcuityCompanion({
                   scaleX: [1.0, 1.25, 0.85, 1.2, 0.95, 1.15],
                   y: 0,
                 }
-              : isSmiling
+              : effectiveSmiling
               ? {
                   scaleY: 0.6,
                   scaleX: 1.55,
@@ -367,6 +434,8 @@ export function AcuityCompanion({
               ? { scaleY: 1.8, scaleX: 1.4, y: 0 }
               : isThinking
               ? { scaleY: 0.6, scaleX: 0.7, y: 0 }
+              : financialMood === "concerned"
+              ? { scaleY: 0.65, scaleX: 0.85, y: 1 }
               : { scaleY: 1, scaleX: 1, y: 0 }
           }
           transition={

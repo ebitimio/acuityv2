@@ -2,34 +2,54 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { ScreenHeader } from "@/components/ui/screen-header";
-import { getTransactionsSince, getAccounts, getAssets } from "@/lib/supabase/database";
-import { startOfMonthISO } from "@/lib/dates";
+import { getTransactionsBetween, getAccounts, getAssets } from "@/lib/supabase/database";
 import { useCurrency } from "@/lib/currency";
 import { useToast } from "@/components/ui/toast";
 import { useWorkspace } from "@/lib/workspace";
 import type { Txn, Account, Asset, Budget } from "@/lib/types";
-import { TrendingDown, Wallet, Landmark, Scale, ChevronRight, Lightbulb, DollarSign, Info } from "lucide-react";
+import { TrendingDown, TrendingUp, Wallet, Landmark, Scale, ChevronRight, ChevronLeft, Lightbulb, DollarSign, Info } from "lucide-react";
 import { PullToRefresh } from "@/components/ui/pull-to-refresh";
 import { GaugeArc } from "@/components/ui/gauge-arc";
 import { cn } from "@/lib/utils";
 
 export function AnalyticsScreen({ onBack, onNavigateTransactions }: { onBack: () => void; onNavigateTransactions: () => void }) {
   const [txns, setTxns] = useState<Txn[]>([]);
+  const [prevMonthSpent, setPrevMonthSpent] = useState<number>(0);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"spending" | "networth">("spending");
+  const [monthOffset, setMonthOffset] = useState<number>(0); // 0 = current, -1 = last month...
   
   const [selectedAccountId, setSelectedAccountId] = useState<string>("all");
   
-  const { fmt } = useCurrency();
+  const { fmt, rate } = useCurrency();
   const toast = useToast();
   const { active: activeWs } = useWorkspace();
-  const exchangeRate = 1500;
+  const exchangeRate = rate > 0 ? rate : 1500;
+
+  const targetDate = useMemo(() => {
+    const d = new Date();
+    d.setDate(1);
+    d.setMonth(d.getMonth() + monthOffset);
+    return d;
+  }, [monthOffset]);
+
+  const displayMonthName = targetDate.toLocaleDateString("en-NG", { month: "long", year: "numeric" });
 
   const load = async () => {
     if (!activeWs?.id) return;
+
+    const y = targetDate.getFullYear();
+    const m = targetDate.getMonth();
+    const startOfMonth = new Date(y, m, 1, 0, 0, 0, 0).toISOString();
+    const endOfMonth = new Date(y, m + 1, 0, 23, 59, 59, 999).toISOString();
+
+    const prevY = m === 0 ? y - 1 : y;
+    const prevM = m === 0 ? 11 : m - 1;
+    const prevStart = new Date(prevY, prevM, 1, 0, 0, 0, 0).toISOString();
+    const prevEnd = new Date(prevY, prevM + 1, 0, 23, 59, 59, 999).toISOString();
 
     const { data: allBudgets } = await (await import("@/lib/supabase/client")).createClient()
       .from("budgets")
@@ -37,12 +57,17 @@ export function AnalyticsScreen({ onBack, onNavigateTransactions }: { onBack: ()
       .eq("workspace_id", activeWs.id)
       .order("created_at", { ascending: false });
 
-    const [t, a, s] = await Promise.all([
-      getTransactionsSince(startOfMonthISO()),
+    const [t, prevT, a, s] = await Promise.all([
+      getTransactionsBetween(startOfMonth, endOfMonth),
+      getTransactionsBetween(prevStart, prevEnd),
       getAccounts(),
       getAssets(),
     ]);
     setTxns(t || []);
+    const prevDebits = (prevT || [])
+      .filter((tx) => tx.direction === "debit" && tx.category_name !== "Transfers" && tx.category_name !== "Adjustment")
+      .reduce((sum, tx) => sum + tx.amount_minor, 0) / 100;
+    setPrevMonthSpent(prevDebits);
     setAccounts(a || []);
     setAssets(s || []);
     setBudgets((allBudgets as Budget[]) || []);
@@ -56,7 +81,7 @@ export function AnalyticsScreen({ onBack, onNavigateTransactions }: { onBack: ()
     setSelectedCategory(null);
     setSelectedAccountId("all");
     load(); 
-  }, [activeWs?.id]);
+  }, [activeWs?.id, monthOffset]);
 
   const filteredTxns = useMemo(() => {
     let base = txns;
@@ -81,19 +106,18 @@ export function AnalyticsScreen({ onBack, onNavigateTransactions }: { onBack: ()
   });
   const sortedCats = [...byCat.entries()].sort((a, b) => b[1] - a[1]);
 
-  // Heatmap - uses local date strings to avoid timezone issues
+  // Heatmap for the selected target month
   const heatmap = useMemo(() => {
     const days = [];
-    for (let i = 29; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      // Build local YYYY-MM-DD string (not UTC)
-      const yyyy = d.getFullYear();
-      const mm = String(d.getMonth() + 1).padStart(2, "0");
-      const dd = String(d.getDate()).padStart(2, "0");
+    const yyyy = targetDate.getFullYear();
+    const mm = String(targetDate.getMonth() + 1).padStart(2, "0");
+    const daysCount = new Date(yyyy, targetDate.getMonth() + 1, 0).getDate();
+
+    for (let day = 1; day <= daysCount; day++) {
+      const d = new Date(yyyy, targetDate.getMonth(), day);
+      const dd = String(day).padStart(2, "0");
       const localDateStr = `${yyyy}-${mm}-${dd}`;
-      
-      // Sum all debits that happened on this local date
+
       const spent = filteredTxns
         .filter(t => t.direction === "debit")
         .filter(t => {
@@ -104,17 +128,21 @@ export function AnalyticsScreen({ onBack, onNavigateTransactions }: { onBack: ()
           return `${txnY}-${txnM}-${txnD}` === localDateStr;
         })
         .reduce((s, t) => s + t.amount_minor, 0) / 100;
-      
-      days.push({ date: d, spent, localDateStr });
+
+      days.push({ date: d, spent, localDateStr, day });
     }
     const max = Math.max(...days.map(d => d.spent), 1);
     return { days, max };
-  }, [filteredTxns]);
+  }, [filteredTxns, targetDate]);
 
   const handleSquareTap = (day: { date: Date; spent: number }) => {
     const label = day.date.toLocaleDateString("en-NG", { weekday: "short", day: "numeric", month: "short" });
     toast(`${label}: ${fmt(day.spent)} spent`);
   };
+
+  const diff = totalExpense - prevMonthSpent;
+  const pctChange = prevMonthSpent > 0 ? Math.round((Math.abs(diff) / prevMonthSpent) * 100) : 0;
+  const isReduction = diff <= 0;
 
   if (selectedCategory) {
     const catTxns = filteredTxns.filter(t => (t.category_name || "Uncategorized") === selectedCategory && t.direction === "debit");
@@ -125,19 +153,23 @@ export function AnalyticsScreen({ onBack, onNavigateTransactions }: { onBack: ()
     
     const pct = totalCatBudget > 0 ? Math.min((total / totalCatBudget) * 100, 100) : 0;
 
+    const selectedYear = targetDate.getFullYear();
+    const selectedMonth = targetDate.getMonth();
+    const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+    const firstDayOfMonth = new Date(selectedYear, selectedMonth, 1).getDay();
+    const calendarDays = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+
     const daysWithSpending = new Set(
       catTxns
         .filter(t => {
           const d = new Date(t.date);
-          return d.getMonth() === new Date().getMonth() && d.getFullYear() === new Date().getFullYear();
+          return d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
         })
         .map(t => new Date(t.date).getDate())
     );
 
-    const today = new Date();
-    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).getDay();
-    const calendarDays = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+    const isCurrentMonthView = selectedMonth === new Date().getMonth() && selectedYear === new Date().getFullYear();
+    const todayDate = new Date().getDate();
 
     return (
       <div className="min-h-[100dvh] pb-32">
@@ -165,7 +197,7 @@ export function AnalyticsScreen({ onBack, onNavigateTransactions }: { onBack: ()
 
           <div className="p-6 rounded-[24px] bg-[#1c1c1e] border border-white/5 shadow-xl">
             <p className="mb-4 text-[15px] font-semibold text-white">
-              {today.toLocaleDateString("en-NG", { month: "long", year: "numeric" })}
+              {displayMonthName}
             </p>
             
             <div className="grid grid-cols-7 gap-1 mb-2 text-center">
@@ -181,13 +213,13 @@ export function AnalyticsScreen({ onBack, onNavigateTransactions }: { onBack: ()
               
               {calendarDays.map(day => {
                 const hasSpend = daysWithSpending.has(day);
-                const isToday = day === today.getDate();
+                const isToday = isCurrentMonthView && day === todayDate;
                 return (
                   <div 
                     key={day}
                     className={cn(
                       "flex items-center justify-center aspect-square rounded-full text-[13px] font-medium transition-colors",
-                      hasSpend ? "bg-[var(--brand)] text-[var(--brand-ink)]" : "bg-white/5 text-white/60",
+                      hasSpend ? "bg-[var(--brand)] text-[var(--brand-ink)] font-bold" : "bg-white/5 text-white/60",
                       isToday && "ring-2 ring-[var(--brand)] ring-offset-2 ring-offset-[#1c1c1e]"
                     )}
                   >
@@ -277,6 +309,41 @@ export function AnalyticsScreen({ onBack, onNavigateTransactions }: { onBack: ()
 
           {activeTab === "spending" ? (
             <>
+              {/* Month Navigator */}
+              <div className="flex items-center justify-between px-1">
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setMonthOffset((o) => o - 1)}
+                    className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 active:scale-95 transition-all"
+                    aria-label="Previous month"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  <span className="text-[14.5px] font-bold text-white px-1">
+                    {displayMonthName}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={monthOffset >= 0}
+                    onClick={() => setMonthOffset((o) => o + 1)}
+                    className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 active:scale-95 transition-all disabled:opacity-30 disabled:pointer-events-none"
+                    aria-label="Next month"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+                {monthOffset !== 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setMonthOffset(0)}
+                    className="text-[11.5px] font-bold text-[var(--brand)] px-2.5 py-1 rounded-full bg-[var(--brand-soft)] hover:bg-[var(--brand)] hover:text-[var(--brand-ink)] transition-all"
+                  >
+                    Current Month
+                  </button>
+                )}
+              </div>
+
               <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
                 <button
                   onClick={() => setSelectedAccountId("all")}
@@ -332,17 +399,23 @@ export function AnalyticsScreen({ onBack, onNavigateTransactions }: { onBack: ()
                 <div className="grid grid-cols-3 gap-2 border-t border-white/10 pt-4">
                   <div>
                     <p className="text-[11px] text-white/40">Today</p>
-                    <p className="text-[14px] font-semibold text-white">{fmt(heatmap.days[29]?.spent || 0)}</p>
+                    <p className="text-[14px] font-semibold text-white">
+                      {fmt(heatmap.days.find(d => d.localDateStr === new Date().toISOString().split("T")[0])?.spent || 0)}
+                    </p>
                   </div>
                   <div>
                     <p className="text-[11px] text-white/40">Average</p>
-                    <p className="text-[14px] font-semibold text-white">{fmt(totalExpense / 30)}</p>
+                    <p className="text-[14px] font-semibold text-white">{fmt(totalExpense / Math.max(heatmap.days.length, 1))}</p>
                   </div>
                   <div>
                     <p className="text-[11px] text-white/40">Vs Last Month</p>
-                    <p className="text-[14px] font-semibold text-[var(--gain)] flex items-center gap-1">
-                      <TrendingDown size={14} /> 12%
-                    </p>
+                    {prevMonthSpent > 0 ? (
+                      <p className={cn("text-[14px] font-semibold flex items-center gap-1", isReduction ? "text-[var(--gain)]" : "text-[var(--danger)]")}>
+                        {isReduction ? <TrendingDown size={14} /> : <TrendingUp size={14} />} {pctChange}%
+                      </p>
+                    ) : (
+                      <p className="text-[14px] font-semibold text-white/60">—</p>
+                    )}
                   </div>
                 </div>
               </div>

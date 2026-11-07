@@ -378,7 +378,9 @@ export function JarvisOrb({
 
           {/* Activity Dot */}
           <span className="absolute top-0.5 right-0.5 flex h-2.5 w-2.5 pointer-events-none">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--brand)] opacity-75" />
+            {(isSpeaking || showSpeechBubble) && (
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--brand)] opacity-75" />
+            )}
             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[var(--brand)] border-2 border-[#121214]" />
           </span>
         </motion.button>

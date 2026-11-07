@@ -11,6 +11,7 @@ import { TransactionRow } from "@/components/ui/transaction-row";
 import { TransactionDetailSheet } from "@/components/ui/transaction-detail-sheet";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Receipt } from "lucide-react";
+import { useToast } from "@/components/ui/toast";
 
 export function TransactionsScreen({ onBack, onDataChanged }: { onBack: () => void; onDataChanged: () => void }) {
   const [txns, setTxns] = useState<Txn[]>([]);
@@ -18,6 +19,7 @@ export function TransactionsScreen({ onBack, onDataChanged }: { onBack: () => vo
   const [selectedTxn, setSelectedTxn] = useState<Txn | null>(null);
   const { fmt } = useCurrency();
   const { active: activeWs } = useWorkspace();
+  const toast = useToast();
 
   const load = async () => {
     if (!activeWs?.id) return;
@@ -37,11 +39,31 @@ export function TransactionsScreen({ onBack, onDataChanged }: { onBack: () => vo
   }, [activeWs?.id]);
 
   const handleDelete = async (t: Txn) => {
-    try {
-      await deleteTransaction(t.id);
-      load();
-      onDataChanged();
-    } catch {}
+    const previousTxns = [...txns];
+    setTxns((prev) => prev.filter((x) => x.id !== t.id));
+
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      if (!cancelled) {
+        try {
+          await deleteTransaction(t.id);
+          onDataChanged();
+        } catch {}
+      }
+    }, 4500);
+
+    toast("Transaction deleted", {
+      duration: 4500,
+      action: {
+        label: "Undo",
+        onClick: () => {
+          cancelled = true;
+          clearTimeout(timer);
+          setTxns(previousTxns);
+          toast("Deletion undone");
+        },
+      },
+    });
   };
 
   // Filter by search term

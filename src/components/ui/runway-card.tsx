@@ -37,7 +37,7 @@ export function RunwayCards({ safe, metrics, onOpenUpcoming, onOpenBudget }: Pro
           {nextBill ? nextBill.name : "None"}
         </p>
         <p className="text-[11px] text-[var(--text-2)] mt-0.5">
-          {nextBill ? `Day ${nextBill.day} ₦· ₦¦${(nextBill.amount_minor / 100).toLocaleString()}` : "Add bills in Commitments"}
+          {nextBill ? `Day ${nextBill.day} · ₦${(nextBill.amount_minor / 100).toLocaleString()}` : "Add bills in Commitments"}
         </p>
       </button>
 

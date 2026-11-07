@@ -30,7 +30,8 @@ export function NotificationsSheet({ isOpen, onClose, onDataChanged }: Notificat
         toast("Please add an account first", "err");
         return;
       }
-      const accountId = accounts[0].id;
+      const matchedAccount = accounts.find((a) => a.id === item.account_id);
+      const accountId = matchedAccount ? matchedAccount.id : accounts[0].id;
 
       await createTransaction({
         account_id: accountId,
@@ -71,12 +72,27 @@ export function NotificationsSheet({ isOpen, onClose, onDataChanged }: Notificat
 
       // 1. DUE BILLS & INCOME (The Actionable Engine)
       try {
-        const today = new Date().getDate();
+        const now = new Date();
+        const todayDate = now.getDate();
+        const todayDayOfWeek = now.getDay();
+        const currentMonth = now.getMonth();
+
         const items = await getRecurringItems();
         const txs = await getTransactionsSince(new Date(new Date().setHours(0,0,0,0)).toISOString());
 
+        const isItemDueToday = (item: any) => {
+          if (item.frequency === "weekly") {
+            return item.day === todayDayOfWeek || item.day === ((todayDayOfWeek + 6) % 7 + 1);
+          }
+          if (item.frequency === "annually" || item.kind === "rent") {
+            const targetMonth = item.month ?? 0;
+            return targetMonth === currentMonth && item.day === todayDate;
+          }
+          return item.day === todayDate;
+        };
+
         items.forEach(item => {
-          if (item.day === today) {
+          if (isItemDueToday(item)) {
             // Check if already logged
             const alreadyLogged = txs.some(t => 
               (t.description_clean?.includes(item.name) || t.description_raw?.includes(item.name)) &&
@@ -88,6 +104,7 @@ export function NotificationsSheet({ isOpen, onClose, onDataChanged }: Notificat
                 id: `rec-${item.id}`,
                 type: "action",
                 name: item.name,
+                account_id: item.account_id,
                 amount: item.amount_minor / 100,
                 direction: item.kind === "income" ? "credit" : "debit",
                 category: item.kind === "income" ? "Income" : "Bills & Utilities",
@@ -166,19 +183,36 @@ export function NotificationsSheet({ isOpen, onClose, onDataChanged }: Notificat
       if (billReminders) {
         try {
           const items = await getRecurringItems();
-          const today = new Date().getDate();
-          items.filter(i => {
-            const daysUntil = i.day - today;
-            return daysUntil > 0 && daysUntil <= 3;
-          }).forEach(i => {
-            list.push({
-              id: `bill-${i.id}`,
-              type: "reminder",
-              title: `${i.name} due in ${i.day - today} days`,
-              body: `${i.kind === "bill" ? "Bill" : "Income"} of ${fmt(i.amount_minor / 100)}.`,
-              time: "Upcoming",
+          const now = new Date();
+          const todayDate = now.getDate();
+          const todayDayOfWeek = now.getDay();
+          const currentMonth = now.getMonth();
+
+          const getDaysUntil = (item: any) => {
+            if (item.frequency === "weekly") {
+              const diff = (item.day - todayDayOfWeek + 7) % 7;
+              return diff === 0 ? 7 : diff;
+            }
+            if (item.frequency === "annually" || item.kind === "rent") {
+              const targetMonth = item.month ?? 0;
+              if (targetMonth !== currentMonth) return -1;
+              return item.day - todayDate;
+            }
+            return item.day - todayDate;
+          };
+
+          items
+            .map((i) => ({ ...i, daysUntil: getDaysUntil(i) }))
+            .filter((i) => i.daysUntil > 0 && i.daysUntil <= 3)
+            .forEach((i) => {
+              list.push({
+                id: `bill-${i.id}`,
+                type: "reminder",
+                title: `${i.name} due in ${i.daysUntil} day${i.daysUntil > 1 ? "s" : ""}`,
+                body: `${i.kind === "bill" ? "Bill" : "Income"} of ${fmt(i.amount_minor / 100)}.`,
+                time: "Upcoming",
+              });
             });
-          });
         } catch (e) {}
       }
 

@@ -22,6 +22,7 @@ import { useToast } from "@/components/ui/toast";
 import { useWorkspace } from "@/lib/workspace";
 import type { Account, Asset } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { searchInstitutions } from "@/lib/institutions";
 
 import Connect from '@mono.co/connect.js';
 
@@ -455,7 +456,21 @@ export function AccountsScreen({
           </div>
 
           <Field label="Account name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Main Checking" />
-          <Field label="Bank / institution" value={institution} onChange={(e) => setInstitution(e.target.value)} placeholder="e.g. GTBank" />
+          <div className="space-y-1.5">
+            <Field label="Bank / institution" value={institution} onChange={(e) => setInstitution(e.target.value)} placeholder="e.g. GTBank" />
+            <div className="flex flex-wrap gap-1 px-1 max-h-20 overflow-y-auto">
+              {searchInstitutions(institution, 5).map((inst) => (
+                <button
+                  key={inst.name}
+                  type="button"
+                  onClick={() => setInstitution(inst.shortName || inst.name)}
+                  className="text-[11px] px-2 py-0.5 rounded-full bg-[var(--fill-1)] hover:bg-[var(--fill-2)] text-[var(--text-2)] border border-[var(--line)] transition-colors active:scale-95"
+                >
+                  {inst.shortName || inst.name}
+                </button>
+              ))}
+            </div>
+          </div>
           <SelectField label="Type" value={type} onChange={(e) => setType(e.target.value)}>
             <option value="checking">Current</option>
             <option value="savings">Savings</option>
