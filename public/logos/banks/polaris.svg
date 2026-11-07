@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect width="100" height="100" rx="22" fill="#3D1152"/>
+  <circle cx="50" cy="46" r="22" fill="none" stroke="#B82685" stroke-width="8"/>
+  <circle cx="50" cy="46" r="10" fill="#FFFFFF"/>
+  <text x="50" y="88" font-family="-apple-system, sans-serif" font-weight="800" font-size="11" fill="#FFFFFF" text-anchor="middle" letter-spacing="0.5">polaris</text>
+</svg>

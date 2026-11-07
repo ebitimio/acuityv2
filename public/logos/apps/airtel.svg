@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect width="100" height="100" rx="22" fill="#ED1C24"/>
+  <path d="M50 28c-12 0-20 9-20 22 0 11 6 18 16 20v-8c-5-2-8-6-8-12 0-8 5-14 12-14s12 6 12 14v18h8V50c0-13-8-22-20-22z" fill="#FFFFFF"/>
+  <text x="50" y="86" font-family="-apple-system, sans-serif" font-weight="800" font-size="11" fill="#FFFFFF" text-anchor="middle">airtel</text>
+</svg>

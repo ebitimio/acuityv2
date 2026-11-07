@@ -20,21 +20,46 @@ import type { Account, RecurringItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
-// Native SVG Brand Icons
-const BRANDS = [
-  { key: "netflix", name: "Netflix", bg: "bg-[#E50914]", icon: () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6"><path d="M5.398 0v.006c3.028 8.556 5.37 15.175 8.348 23.596 2.344.058 4.85.398 4.854.398-2.8-7.924-5.923-16.747-8.487-24h-4.715zm8.489 0v9.63l-3.554-3.554v-6.076h3.554zm-9.594 16.485c2.69 8.144 4.322 15.134 4.322 15.134 1.37-.122 3.997-.4 3.997-.4-1.524-4.734-3.278-11.51-4.82-14.734h-3.5z" /></svg> },
-  { key: "spotify", name: "Spotify", bg: "bg-[#1DB954]", icon: () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.6.18-1.2.72-1.38 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" /></svg> },
-  { key: "disney", name: "Disney+", bg: "bg-[#113CCF]", icon: () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm-1.2 17.2c-3.6 0-6.6-2.4-7.8-5.4 1.2.6 2.4.9 3.6.9 1.8 0 3.6-.6 5.4-1.8 2.4-1.8 4.2-4.2 5.4-6.6 1.8 2.4 3 5.4 3 8.4 0 4.2-3.6 7.8-7.8 7.8z" /></svg> },
-  { key: "chatgpt", name: "ChatGPT", bg: "bg-[#10A37F]", icon: () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6"><path d="M22.28 12.35c0-1.1-.2-2.15-.55-3.15a6.16 6.16 0 0 0-1.1-2.35 6.1 6.1 0 0 0-2.1-1.6c-.5-.25-1.05-.4-1.6-.45a6.16 6.16 0 0 0-1.75.05 6.2 6.2 0 0 0-2.15.9c-.65.4-1.2.9-1.65 1.5-.45.6-.8 1.3-1 2.05a6.2 6.2 0 0 0-.2 2.15c.05.7.25 1.4.6 2.05.35.65.8 1.25 1.35 1.75.55.5 1.2.9 1.9 1.15.7.25 1.45.35 2.2.3.75-.05 1.5-.25 2.2-.6.7-.35 1.3-.8 1.8-1.35.5-.55.9-1.2 1.15-1.9.25-.7.35-1.45.3-2.2a6.2 6.2 0 0 0-.6-2.2zM12 15.5c-1.95 0-3.5-1.55-3.5-3.5S10.05 8.5 12 8.5s3.5 1.55 3.5 3.5-1.55 3.5-3.5 3.5z" /></svg> },
-  { key: "internet", name: "Internet", bg: "bg-[#0070F3]", icon: () => <Wifi className="w-6 h-6" /> },
-  { key: "power", name: "Power", bg: "bg-[#F59E0B]", icon: () => <Zap className="w-6 h-6" /> },
-  { key: "rent", name: "Rent", bg: "bg-[#8B5CF6]", icon: () => <Home className="w-6 h-6" /> },
-  { key: "insurance", name: "Insurance", bg: "bg-[#3B82F6]", icon: () => <ShieldCheck className="w-6 h-6" /> },
-];
+import { findBrand } from "@/lib/brands";
+import { BrandLogo } from "@/components/ui/brand-logo";
 
-const getBrand = (name: string) => {
+const BRAND_CARD_COLORS: Record<string, string> = {
+  netflix: "bg-[#E50914]",
+  spotify: "bg-[#1DB954]",
+  disney: "bg-[#113CCF]",
+  chatgpt: "bg-[#10A37F]",
+  apple: "bg-[#1C1C1E]",
+  youtube: "bg-[#CC0000]",
+  prime: "bg-[#00A8E1]",
+  canva: "bg-[#00C4CC]",
+  mtn: "bg-[#D9A000]",
+  airtel: "bg-[#ED1C24]",
+  glo: "bg-[#006837]",
+  "9mobile": "bg-[#006738]",
+  dstv: "bg-[#0054A6]",
+  gotv: "bg-[#5D9900]",
+  startimes: "bg-[#E65100]",
+  ikedc: "bg-[#E84E1B]",
+  ekedc: "bg-[#005BAA]",
+  aedc: "bg-[#00843D]",
+  bolt: "bg-[#34D186]",
+  uber: "bg-[#1A1A1A]",
+  chowdeck: "bg-[#0C513F]",
+  glovo: "bg-[#FFC244]",
+};
+
+const getCommitmentCardBg = (name: string, isRent?: boolean) => {
+  if (isRent) return "bg-[#8B5CF6]";
+  const brand = findBrand(name);
+  if (brand && BRAND_CARD_COLORS[brand.id]) {
+    return BRAND_CARD_COLORS[brand.id];
+  }
   const lower = name.toLowerCase();
-  return BRANDS.find((b) => lower.includes(b.key)) || { name: "Bill", bg: "bg-gray-600", icon: () => <Wallet className="w-6 h-6" /> };
+  if (lower.includes("rent")) return "bg-[#8B5CF6]";
+  if (lower.includes("power") || lower.includes("electric") || lower.includes("nepa")) return "bg-[#F59E0B]";
+  if (lower.includes("internet") || lower.includes("wifi") || lower.includes("data")) return "bg-[#0070F3]";
+  if (lower.includes("insurance")) return "bg-[#3B82F6]";
+  return "bg-[#1f2937]";
 };
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -237,22 +262,19 @@ export function CommitmentsScreen({
           
           <div className="flex flex-col relative w-full pb-4">
             {rents.map((i, index) => {
-              const brand = getBrand(i.name);
-              const Icon = brand.icon;
+              const bg = getCommitmentCardBg(i.name, true);
               return (
                 <div 
                   key={i.id} 
                   className={cn(
                     "w-full flex items-center justify-between rounded-[24px] p-5 text-white shadow-2xl relative border border-white/10 transition-transform hover:-translate-y-1",
                     index > 0 && "-mt-8",
-                    brand.bg
+                    bg
                   )}
                   style={{ zIndex: rents.length - index }}
                 >
                   <div className="flex items-center gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
-                      <Icon />
-                    </div>
+                    <BrandLogo name={i.name} size={44} className="shadow-md" />
                     <div>
                       <p className="text-[16px] font-bold">{i.name}</p>
                       <p className="text-[12px] opacity-80 mt-0.5">Annually, {MONTHS[i.month || 0]} {i.day}</p>
@@ -282,22 +304,19 @@ export function CommitmentsScreen({
           
           <div className="flex flex-col relative w-full pb-4">
             {bills.map((i, index) => {
-              const brand = getBrand(i.name);
-              const Icon = brand.icon;
+              const bg = getCommitmentCardBg(i.name);
               return (
                 <div 
                   key={i.id} 
                   className={cn(
                     "w-full flex items-center justify-between rounded-[24px] p-5 text-white shadow-2xl relative border border-white/10 transition-transform hover:-translate-y-1",
                     index > 0 && "-mt-8",
-                    brand.bg
+                    bg
                   )}
                   style={{ zIndex: bills.length - index }}
                 >
                   <div className="flex items-center gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
-                      <Icon />
-                    </div>
+                    <BrandLogo name={i.name} size={44} className="shadow-md" />
                     <div>
                       <p className="text-[16px] font-bold">{i.name}</p>
                       <p className="text-[12px] opacity-80 mt-0.5">{i.frequency}, day {i.day}</p>
@@ -481,17 +500,15 @@ export function CommitmentsScreen({
             />
 
             {name.length > 2 && (() => {
-              const brand = getBrand(name);
-              const Icon = brand.icon;
+              const brand = findBrand(name);
+              if (!brand) return null;
               return (
                 <div className="flex w-full mt-4 items-center justify-between p-3 rounded-xl bg-[var(--surface-2)] border border-[var(--line)]">
                   <div className="flex items-center gap-3">
-                    <div className={cn("flex h-10 w-10 items-center justify-center rounded-lg text-white", brand.bg)}>
-                      <Icon />
-                    </div>
+                    <BrandLogo name={brand.name} size={36} className="shadow-xs" />
                     <div>
                       <p className="text-[13px] font-semibold text-white">{brand.name} recognized</p>
-                      <p className="text-[11px] text-[var(--text-3)]">Icon and color set from the name</p>
+                      <p className="text-[11px] text-[var(--text-3)]">Official brand icon and colors matched</p>
                     </div>
                   </div>
                   <button onClick={() => setName("")} className="text-[12px] font-semibold text-[var(--brand)]">Undo</button>

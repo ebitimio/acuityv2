@@ -20,6 +20,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/toast";
 import { MetallicGyroscope } from "@/components/ui/metallic-gyroscope";
 import { AcuityCompanion } from "@/components/ui/acuity-companion";
+import { BrandLogo } from "@/components/ui/brand-logo";
 
 interface ConnectBankScreenProps {
   onBack: () => void;
@@ -212,8 +213,14 @@ export function ConnectBankScreen({
                   Direct Institutional Link
                 </p>
                 <p className="text-[11.5px] text-white/55 leading-snug">
-                  Authenticate with GTBank, Zenith, Access, Kuda, OPay & 20+ institutions via Mono.
+                  Authenticate securely via Mono with 20+ Nigerian institutions.
                 </p>
+                <div className="flex items-center gap-1.5 pt-2">
+                  {["GTBank", "Zenith Bank", "Access Bank", "Kuda", "OPay", "First Bank"].map((bankName) => (
+                    <BrandLogo key={bankName} name={bankName} kind="bank" size={24} className="shadow-xs" />
+                  ))}
+                  <span className="text-[11px] font-bold text-white/50 pl-1">+20 more</span>
+                </div>
               </div>
             </div>
 

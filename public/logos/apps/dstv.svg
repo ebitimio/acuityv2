@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect width="100" height="100" rx="22" fill="#0054A6"/>
+  <text x="50" y="58" font-family="-apple-system, sans-serif" font-weight="900" font-size="24" fill="#FFFFFF" text-anchor="middle" font-style="italic">DStv</text>
+  <rect x="25" y="66" width="50" height="4" fill="#00A3E0"/>
+</svg>

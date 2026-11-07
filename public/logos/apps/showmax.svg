@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect width="100" height="100" rx="22" fill="#000000"/>
+  <path d="M25 35h16l8 15 8-15h16L60 55l14 20H58l-8-15-8 15H26l14-20z" fill="#FF0055"/>
+  <text x="50" y="88" font-family="-apple-system, sans-serif" font-weight="900" font-size="9" fill="#00D2FF" text-anchor="middle" letter-spacing="1">SHOWMAX</text>
+</svg>

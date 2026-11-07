@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect width="100" height="100" rx="22" fill="#FFFFFF"/>
+  <path d="M30 25h40v25c0 16-16 26-20 28-4-2-20-12-20-28V25z" fill="#00843D"/>
+  <path d="M50 25h20v25c0 16-16 26-20 28V25z" fill="#002D72"/>
+  <path d="M34 48c8-4 24-4 32 0" stroke="#FFFFFF" stroke-width="4" fill="none"/>
+  <text x="50" y="90" font-family="-apple-system, sans-serif" font-weight="800" font-size="10" fill="#002D72" text-anchor="middle">FIDELITY</text>
+</svg>

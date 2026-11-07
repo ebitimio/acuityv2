@@ -2,6 +2,7 @@
 
 import { ChevronRight, Landmark, PiggyBank, Smartphone, Globe2 } from "lucide-react";
 import { useCurrency } from "@/lib/currency";
+import { BrandLogo } from "@/components/ui/brand-logo";
 import type { Account } from "@/lib/types";
 
 const TYPES = {
@@ -34,12 +35,12 @@ export function AccountCard({
       onClick={onClick}
       className={`press flex flex-1 min-w-0 items-center gap-3 text-left ${compact ? "py-0" : "px-4 py-4 hover:bg-[var(--fill-1)]"}`}
     >
-      <div
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
-        style={{ background: `${t.color}22`, color: t.color }}
-      >
-        <Icon size={20} />
-      </div>
+      <BrandLogo
+        name={account.institution || account.name}
+        kind="bank"
+        size={44}
+        className="shadow-xs"
+      />
       <div className="min-w-0 flex-1">
         <p className="truncate text-[15px] font-semibold text-[var(--text-1)]">{account.name}</p>
         <p className="truncate text-[12px] text-[var(--text-2)]">

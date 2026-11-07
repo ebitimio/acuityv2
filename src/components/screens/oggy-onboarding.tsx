@@ -12,6 +12,7 @@ import { formatAmountWithCommas, parseNumberInput } from "@/lib/format";
 import { DayPicker } from "@/components/ui/day-picker";
 import { cn } from "@/lib/utils";
 import { searchInstitutions } from "@/lib/institutions";
+import { BrandLogo } from "@/components/ui/brand-logo";
 
 interface OggyOnboardingProps {
   userName?: string;
@@ -551,20 +552,24 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
                 autoFocus
               />
 
-              {/* Suggestions chips */}
+              {/* Suggestions chips with BrandLogo */}
               <div className="flex flex-wrap gap-1.5 pt-0.5 max-h-24 overflow-y-auto">
-                {searchInstitutions(bankName, 6).map((inst) => (
-                  <button
-                    key={inst.name}
-                    type="button"
-                    onClick={() => {
-                      setBankName(inst.shortName || inst.name);
-                    }}
-                    className="text-[12px] px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 text-white/90 border border-white/10 active:scale-95 transition-all"
-                  >
-                    {inst.shortName || inst.name}
-                  </button>
-                ))}
+                {searchInstitutions(bankName, 6).map((inst) => {
+                  const bName = inst.shortName || inst.name;
+                  return (
+                    <button
+                      key={inst.name}
+                      type="button"
+                      onClick={() => {
+                        setBankName(bName);
+                      }}
+                      className="text-[12px] px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/20 text-white/90 border border-white/10 active:scale-95 transition-all flex items-center gap-1.5"
+                    >
+                      <BrandLogo name={bName} kind="bank" size={16} />
+                      <span>{bName}</span>
+                    </button>
+                  );
+                })}
               </div>
 
               <button

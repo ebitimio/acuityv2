@@ -5,6 +5,8 @@ import { Pencil, Trash2 } from "lucide-react";
 import { getCategory } from "@/lib/categories";
 import { useCurrency } from "@/lib/currency";
 import { shortDate } from "@/lib/dates";
+import { findBrand } from "@/lib/brands";
+import { BrandLogo } from "@/components/ui/brand-logo";
 import type { Txn } from "@/lib/types";
 
 export function TransactionRow({
@@ -58,12 +60,20 @@ export function TransactionRow({
         style={{ touchAction: "pan-y" }}
         className="relative flex cursor-pointer select-none items-center gap-3 bg-[var(--surface-2)] px-4 py-3.5"
       >
-        <div
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
-          style={{ background: `${cat.color}22`, color: cat.color }}
-        >
-          <Icon size={20} />
-        </div>
+        {findBrand(txn.description_clean || txn.description_raw) ? (
+          <BrandLogo
+            name={txn.description_clean || txn.description_raw}
+            size={42}
+            className="shadow-xs"
+          />
+        ) : (
+          <div
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
+            style={{ background: `${cat.color}22`, color: cat.color }}
+          >
+            <Icon size={20} />
+          </div>
+        )}
         <div className="min-w-0 flex-1">
           <p className="truncate text-[15px] font-semibold text-[var(--text-1)]">
             {txn.description_clean || txn.description_raw}

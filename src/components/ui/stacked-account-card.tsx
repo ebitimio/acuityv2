@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { RefreshCw, Trash2 } from "lucide-react";
 import type { Account } from "@/lib/types";
 import { MoneyText } from "@/lib/currency";
+import { BrandLogo } from "@/components/ui/brand-logo";
 
 interface StackedAccountCardProps {
   account: Account;
@@ -104,9 +105,12 @@ export function StackedAccountCard({
         {/* Top Row: Account Info & Cardholder */}
         <div className="relative z-10 flex items-start justify-between gap-4 mt-1">
           <div className="flex items-center gap-3 min-w-0 flex-1">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--brand)]/20 shadow-inner backdrop-blur-sm">
-              <span className="text-[16px] font-bold text-[var(--brand)] drop-shadow-sm">{account.name.charAt(0)}</span>
-            </div>
+            <BrandLogo
+              name={account.institution || account.name}
+              kind="bank"
+              size={40}
+              className="shadow-md"
+            />
             <div className="min-w-0">
               <p className="text-[15px] font-bold text-white truncate drop-shadow-sm">{account.name}</p>
               <p className="text-[11px] text-white/60 uppercase tracking-wider">{account.type}</p>

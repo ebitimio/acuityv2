@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect width="100" height="100" rx="22" fill="#5829BB"/>
+  <path d="M32 68V32l24 16-14 8 26 12z" fill="#00E5FF"/>
+  <circle cx="66" cy="36" r="10" fill="#FFB703"/>
+  <text x="50" y="90" font-family="-apple-system, sans-serif" font-weight="800" font-size="11" fill="#FFFFFF" text-anchor="middle">PalmPay</text>
+</svg>

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect width="100" height="100" rx="22" fill="#00843D"/>
+  <path d="M52 22L36 48h14l-4 28 22-34H52l8-20z" fill="#FFC72C"/>
+  <text x="50" y="88" font-family="-apple-system, sans-serif" font-weight="900" font-size="11" fill="#FFFFFF" text-anchor="middle">AEDC</text>
+</svg>
