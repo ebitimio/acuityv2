@@ -50,7 +50,7 @@ export function RunwayCards({ safe, metrics, onOpenUpcoming, onOpenBudget }: Pro
           <span className="text-[11px] text-[var(--text-2)]">Runway</span>
         </div>
         <p className="text-[17px] font-semibold text-[var(--text-1)]">
-          {runwayRounded > 0 ? `${runwayRounded} mo` : "₦"}
+          {runwayRounded > 0 ? `${runwayRounded} mo` : "—"}
         </p>
         <p className="text-[11px] text-[var(--text-2)] mt-0.5">
           {liquid > 0 ? "Of current lifestyle" : "Add accounts to estimate"}

@@ -131,7 +131,7 @@ export function MoneyText({
       <span
         className={cn(
           "font-sans select-none inline-block",
-          currency === "NGN" ? "text-[0.76em] font-bold" : "text-[0.9em]",
+          currency === "NGN" ? "text-[0.88em] font-bold" : "text-[0.92em]",
           symbolClassName
         )}
       >

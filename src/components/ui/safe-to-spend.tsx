@@ -83,7 +83,7 @@ export function SafeToSpendHero({
   const actualIncome = expectedIncome - totalObligations;
 
   const heroBg = "var(--brand)";
-  const displayValue = hidden ? "₦••••••" : fmt(netAcross);
+  const displayValue = hidden ? (currency === "USD" ? "$••••••" : "₦••••••") : fmt(netAcross);
 
   return (
     <div className="p-5 rounded-[24px]" style={{ background: heroBg }}>

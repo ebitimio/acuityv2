@@ -32,7 +32,7 @@ export function NumberRoll({ value, className, duration = 0.8, showDecimals = tr
   return (
     <span className={cn("inline-flex items-baseline tabular font-hero font-black", className)} aria-label={hidden ? "Balance hidden" : undefined}>
       {display < 0 && !hidden && <span className="mr-1">-</span>}
-      <span className={cn("mr-1 font-sans font-bold", currency === "NGN" ? "text-[0.68em]" : "text-[0.8em]")}>{symbol}</span>
+      <span className={cn("mr-1 font-sans font-bold", currency === "NGN" ? "text-[0.90em]" : "text-[0.90em]")}>{symbol}</span>
       {hidden ? (
         <span>••••••</span>
       ) : (
