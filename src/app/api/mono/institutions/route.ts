@@ -2,8 +2,10 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    // HARDCODED KEY FOR TESTING
-    const key = "test_sk_c1xb0h4xgnft3u0ouvy9"; 
+    const key = process.env.MONO_SECRET_KEY;
+    if (!key) {
+      return NextResponse.json({ error: "Mono secret key not configured" }, { status: 500 });
+    }
 
     const res = await fetch("https://api.withmono.com/v2/institutions", {
       headers: {

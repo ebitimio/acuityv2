@@ -13,6 +13,7 @@ import { buildCategoryList } from "@/lib/category-options";
 import { CATEGORIES, getCategory } from "@/lib/categories";
 import { getAccounts, getCustomCategories } from "@/lib/supabase/database";
 import type { Account } from "@/lib/types";
+import { formatLocalDate, parseLocalDate, localDateToISO } from "@/lib/dates";
 
 interface QuickAddSheetProps {
   isOpen: boolean;
@@ -27,7 +28,7 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
   const [customCategory, setCustomCategory] = useState("");
   const [merchant, setMerchant] = useState("");
   const [isCustom, setIsCustom] = useState(false);
-  const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [date, setDate] = useState(() => formatLocalDate());
   const [isDateOpen, setIsDateOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,7 +66,7 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
       setCustomCategory("");
       setMerchant("");
       setIsCustom(false);
-      setDate(new Date().toISOString().split("T")[0]);
+      setDate(formatLocalDate());
       setError(null);
       setIsSaving(false);
     }
@@ -113,7 +114,7 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
         description_clean: cleanDesc,
         description_raw: cleanDesc,
         notes: merchant.trim() ? merchant.trim() : null,
-        date: new Date(date).toISOString(),
+        date: localDateToISO(date),
         status: "posted",
       });
       
@@ -204,7 +205,7 @@ export function QuickAddSheet({ isOpen, onClose, onSaved }: QuickAddSheetProps) 
             className="flex items-center gap-2 rounded-full bg-[#1c1c1e] px-4 py-2 border border-white/5 active:scale-95 transition-all cursor-pointer"
           >
             <span className="text-[14px] font-semibold text-white">
-              {new Date(date).toLocaleDateString("en-NG", { day: "numeric", month: "short" })}
+              {parseLocalDate(date).toLocaleDateString("en-NG", { day: "numeric", month: "short" })}
             </span>
           </button>
         </div>

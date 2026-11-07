@@ -10,6 +10,7 @@ import type { AjoGroup } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { DatePickerField } from "@/components/ui/date-picker";
+import { formatLocalDate } from "@/lib/dates";
 
 export function AjoScreen({ onBack }: { onBack: () => void }) {
   const [groups, setGroups] = useState<AjoGroup[]>([]);
@@ -23,7 +24,7 @@ export function AjoScreen({ onBack }: { onBack: () => void }) {
   const [frequency, setFrequency] = useState<"weekly" | "monthly">("monthly");
   const [members, setMembers] = useState(3);
   const [myPosition, setMyPosition] = useState(1);
-  const [startDate, setStartDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [startDate, setStartDate] = useState(() => formatLocalDate());
   
   // Member list state
   const [memberNames, setMemberNames] = useState<string[]>([]);
@@ -51,7 +52,7 @@ export function AjoScreen({ onBack }: { onBack: () => void }) {
     setFrequency("monthly");
     setMembers(3);
     setMyPosition(1);
-    setStartDate(new Date().toISOString().split("T")[0]);
+    setStartDate(formatLocalDate());
     setMemberNames([]);
     setNewMemberName("");
     setStep(1);

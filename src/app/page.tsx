@@ -49,7 +49,7 @@ import { Field, Button } from "@/components/ui/form";
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
 import {
   ChevronRight, Receipt, ChevronDown, Plus, Trash2,
-  PiggyBank, PieChart, ArrowLeftRight, Bell, Crown, Award, Lightbulb, Loader2, ArrowRight
+  PiggyBank, PieChart, ArrowLeftRight, Bell, Crown, Award, Lightbulb, Loader2, ArrowRight, AlertTriangle
 } from "lucide-react";
 import { TransactionsScreen } from "@/components/screens/transactions-screen";
 import { OnboardingCarousel } from "@/components/screens/onboarding-carousel";
@@ -78,6 +78,7 @@ export default function SandboxPage() {
   const [profileName, setProfileName] = useState<string>("there");
   const [liquidAssets, setLiquidAssets] = useState(0);
   const [refreshState, setRefreshState] = useState<"idle" | "loading" | "success">("idle");
+  const [syncError, setSyncError] = useState<string | null>(null);
   const supabase = createClient();
   const toast = useToast();
   const { fmt, rate } = useCurrency();
@@ -309,13 +310,11 @@ export default function SandboxPage() {
       } catch {
         setCategoryBudgetsTotal(0);
       }
+      setSyncError(null);
     } catch (e: any) {
-      setMetrics(ZERO_METRICS);
-      setTransactions([]);
-      setAccounts([]);
-      setLiquidAssets(0);
-      setHeroSpent(0);
-      setCategoryBudgetsTotal(0);
+      console.warn("refreshData error:", e);
+      setSyncError(e?.message || "Failed to sync latest financial data");
+      setMetrics((prev) => prev ?? ZERO_METRICS);
     }
 
     try {
@@ -692,7 +691,6 @@ export default function SandboxPage() {
 
   const visibleTransactions = transactions.filter((t) => {
     if (t.category_name === "Adjustment") return false;
-    if (t.category_name === "Transfers") return false;
     
     if (txnFilter === "all") return true;
     if (txnFilter === "credit") return t.direction === "credit";
@@ -742,7 +740,7 @@ export default function SandboxPage() {
           ) : activeScreen === "transactions" ? (
             <TransactionsScreen key={activeWs?.id} onBack={handleBackToHome} onDataChanged={refreshData} />
           ) : activeScreen === "budget" ? (
-            <BudgetScreen key={activeWs?.id} onBack={handleBackToHome} />
+            <BudgetScreen key={activeWs?.id} onBack={handleBackToHome} onDataChanged={refreshData} />
           ) : activeScreen === "accounts" ? (
             <AccountsScreen
               key={activeWs?.id}
@@ -837,6 +835,24 @@ export default function SandboxPage() {
                   </div>
                 )}
 
+                {syncError && (
+                  <div className="flex items-center justify-between rounded-xl border border-[var(--danger)]/30 bg-[var(--danger)]/10 px-4 py-2.5 text-[12px] text-white">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle size={15} className="text-[var(--danger)] shrink-0" />
+                      <span>{syncError}</span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setSyncError(null);
+                        refreshData();
+                      }}
+                      className="ml-2 font-bold text-[var(--brand)] underline shrink-0 active:opacity-70"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                )}
+
                 {/* CHANGED: Pass heroSpent instead of spentThisMonth to match the Budget screen math */}
                 <div data-tour="hero" className="w-full">
                   <SafeToSpendHero 
@@ -849,6 +865,7 @@ export default function SandboxPage() {
                     periodLabel={periodLabel} 
                     daysUntilIncome={daysUntilIncome}
                     nextIncomeDate={nextIncomeDate} 
+                    cycleBounds={cycle}
                   />
                 </div>
 
@@ -919,15 +936,18 @@ export default function SandboxPage() {
                   </motion.button>
                 )}
 
-                <div data-tour="tools" className="grid grid-cols-3 gap-3">
-                  <button onClick={() => setActiveScreen("budget")} className="press flex h-14 items-center justify-center rounded-[18px] border border-white/5 bg-[#1c1c1e]">
+                <div data-tour="tools" className="grid grid-cols-3 gap-2.5">
+                  <button onClick={() => setActiveScreen("budget")} className="press flex flex-col items-center justify-center gap-1.5 py-3 rounded-[18px] border border-white/5 bg-[#1c1c1e] hover:bg-[#252528] active:scale-95 transition-all">
                     <PiggyBank size={20} color="var(--brand)" />
+                    <span className="text-[12px] font-medium text-[var(--text-2)]">Budget</span>
                   </button>
-                  <button onClick={() => setActiveScreen("analytics")} className="press flex h-14 items-center justify-center rounded-[18px] border border-white/5 bg-[#1c1c1e]">
+                  <button onClick={() => setActiveScreen("analytics")} className="press flex flex-col items-center justify-center gap-1.5 py-3 rounded-[18px] border border-white/5 bg-[#1c1c1e] hover:bg-[#252528] active:scale-95 transition-all">
                     <PieChart size={20} color="var(--brand)" />
+                    <span className="text-[12px] font-medium text-[var(--text-2)]">Analytics</span>
                   </button>
-                  <button onClick={() => setIsImportOpen(true)} className="press flex h-14 items-center justify-center rounded-[18px] border border-white/5 bg-[#1c1c1e]">
+                  <button onClick={() => setIsImportOpen(true)} className="press flex flex-col items-center justify-center gap-1.5 py-3 rounded-[18px] border border-white/5 bg-[#1c1c1e] hover:bg-[#252528] active:scale-95 transition-all">
                     <ArrowLeftRight size={20} color="var(--brand)" />
+                    <span className="text-[12px] font-medium text-[var(--text-2)]">Statement</span>
                   </button>
                 </div>
 

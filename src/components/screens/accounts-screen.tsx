@@ -23,10 +23,11 @@ import { useWorkspace } from "@/lib/workspace";
 import type { Account, Asset } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { searchInstitutions } from "@/lib/institutions";
+import { formatLocalDate } from "@/lib/dates";
 
 import Connect from '@mono.co/connect.js';
 
-const todayISO = () => new Date().toISOString().slice(0, 10);
+const todayISO = () => formatLocalDate();
 
 export function AccountsScreen({ 
   onBack, 

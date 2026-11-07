@@ -28,8 +28,8 @@ export function TransactionsScreen({ onBack, onDataChanged }: { onBack: () => vo
     d.setMonth(d.getMonth() - 6);
     const data = await getTransactionsSince(d.toISOString());
     
-    // CHANGED: Filter out internal transfers right when they are fetched
-    const filtered = (data || []).filter(t => t.category_name !== "Transfers" && t.category_name !== "Adjustment");
+    // Internal transfers are kept visible in muted style; only exclude system adjustments
+    const filtered = (data || []).filter(t => t.category_name !== "Adjustment");
     setTxns(filtered);
   };
 

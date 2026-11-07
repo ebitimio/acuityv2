@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { ConnectBankScreen } from "@/components/screens/connect-bank-screen";
 import { Button } from "@/components/ui/form";
 import { useToast } from "@/components/ui/toast";
+import Connect from "@mono.co/connect.js";
 
 export default function MonoConnectPage() {
   const [status, setStatus] = useState<"loading" | "ready">("loading");
@@ -51,13 +52,51 @@ export default function MonoConnectPage() {
   const handleProceed = async () => {
     setIsConnecting(true);
     try {
-      const res = await fetch("/api/mono/create-link", { method: "POST" });
-      const data = await res.json();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Please log in first");
 
-      if (!res.ok) throw new Error(data.error || "Failed to generate Mono link");
+      const publicKey = process.env.NEXT_PUBLIC_MONO_PUBLIC_KEY;
+      if (!publicKey) throw new Error("Mono is not configured");
 
-      // Redirect to the Mono Connect account page
-      window.location.href = data.url;
+      const connect = new Connect({
+        key: publicKey,
+        scope: "auth",
+        data: {
+          customer: {
+            name: user.user_metadata?.full_name || user.email?.split("@")[0] || "User",
+            email: user.email,
+          },
+        },
+        onSuccess: async (data: any) => {
+          try {
+            const { data: ws } = await supabase.from("workspaces").select("id").limit(1).single();
+            if (ws?.id) {
+              await fetch("/api/mono/exchange", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  code: data.code,
+                  customName: "Linked Bank Account",
+                  workspaceId: ws.id,
+                  accountType: "checking",
+                }),
+              });
+            }
+            toast("Bank connected successfully!");
+            router.push("/");
+          } catch (e: any) {
+            toast(e.message || "Failed to link bank", "err");
+          } finally {
+            setIsConnecting(false);
+          }
+        },
+        onClose: () => {
+          setIsConnecting(false);
+        },
+      });
+
+      connect.setup();
+      connect.open();
     } catch (e: unknown) {
       setIsConnecting(false);
       const msg = e instanceof Error ? e.message : "Failed to connect to Mono";

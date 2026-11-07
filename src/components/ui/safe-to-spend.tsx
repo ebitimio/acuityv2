@@ -18,6 +18,7 @@ interface Props {
   periodLabel: string;
   daysUntilIncome: number;
   nextIncomeDate: string;
+  cycleBounds?: { cycle_start: string; cycle_end: string } | null;
 }
 
 export function SafeToSpendHero({
@@ -30,12 +31,29 @@ export function SafeToSpendHero({
   periodLabel,
   daysUntilIncome,
   nextIncomeDate,
+  cycleBounds,
 }: Props) {
   const { fmt, hidden, toggleHidden } = useCurrency();
   const hasBudget = budgetLimit > 0;
   const budgetUsedPct = hasBudget ? Math.min((spentThisMonth / budgetLimit) * 100, 100) : 0;
   const budgetRemaining = hasBudget ? Math.max(budgetLimit - spentThisMonth, 0) : 0;
-  const cycleProgressPct = Math.min(((30 - daysUntilIncome) / 30) * 100, 100);
+
+  let totalCycleDays = 30;
+  let elapsedDays = Math.max(0, 30 - daysUntilIncome);
+
+  if (cycleBounds?.cycle_start && cycleBounds?.cycle_end) {
+    const start = new Date(cycleBounds.cycle_start).getTime();
+    const end = new Date(cycleBounds.cycle_end).getTime();
+    const diffDays = Math.round((end - start) / (1000 * 60 * 60 * 24));
+    if (diffDays > 0) {
+      totalCycleDays = diffDays;
+      const now = Date.now();
+      const elapsed = Math.round((now - start) / (1000 * 60 * 60 * 24));
+      elapsedDays = Math.max(0, Math.min(elapsed, totalCycleDays));
+    }
+  }
+
+  const cycleProgressPct = totalCycleDays > 0 ? Math.min(Math.max((elapsedDays / totalCycleDays) * 100, 0), 100) : 0;
 
   const dailySafe = data?.daily_safe_minor ? data.daily_safe_minor / 100 : 0;
   const hasIncome = data?.has_income ?? false;

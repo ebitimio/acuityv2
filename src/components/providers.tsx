@@ -10,13 +10,18 @@ import { AmbientBackground } from "@/components/ui/ambient-background";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
-    // FORCE UNREGISTER ANY BROKEN SERVICE WORKER
     if (typeof window !== "undefined" && "serviceWorker" in navigator) {
-      navigator.serviceWorker.getRegistrations().then((registrations) => {
-        for (const registration of registrations) {
-          registration.unregister();
-        }
-      });
+      if (process.env.NODE_ENV === "production") {
+        navigator.serviceWorker.register("/sw.js").catch((err) => {
+          console.warn("ServiceWorker registration failed:", err);
+        });
+      } else {
+        navigator.serviceWorker.getRegistrations().then((registrations) => {
+          for (const registration of registrations) {
+            registration.unregister();
+          }
+        });
+      }
     }
   }, []);
 

@@ -63,7 +63,7 @@ export function PinLockScreen({ mode, onComplete, errorText, onForgot }: PinLock
         <h2 className="text-[24px] font-bold mb-2">{title}</h2>
         <p className="text-[14px] text-white/50 mb-10 text-center">
           {mode === "setup" 
-            ? "This code keeps your data safe when your session times out." 
+            ? "A convenience passcode for quick unlock when your session is idle." 
             : "Your session timed out. Enter your PIN to continue."}
         </p>
 

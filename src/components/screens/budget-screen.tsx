@@ -31,14 +31,14 @@ const ZERO_METRICS: HomeMetrics = {
   uncategorized_count: 0,
 };
 
-export function BudgetScreen({ onBack }: { onBack: () => void }) {
+export function BudgetScreen({ onBack, onDataChanged }: { onBack: () => void; onDataChanged?: () => void }) {
   const [metrics, setMetrics] = useState<HomeMetrics>(ZERO_METRICS);
   const [txns, setTxns] = useState<Txn[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<CustomCategory[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [cycle, setCycle] = useState<{ cycle_start: string; cycle_end: string } | null>(null);
-  const [selectedAccount, setSelectedAccount] = useState<string>("");
+  const [selectedAccount, setSelectedAccount] = useState<string>("all");
   const [isCycleOpen, setIsCycleOpen] = useState(false);
   const [cycleDay, setCycleDay] = useState("1");
   const [isCatsOpen, setIsCatsOpen] = useState(false);
@@ -54,10 +54,12 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
   const loadBudgetsForAccount = async (accountKey: string) => {
     if (!accountKey) { setBudgets([]); setCategoryLimits({}); return; }
     try {
-      const bs = await getBudgets(accountKey);
+      const bs = await getBudgets(accountKey === "all" ? undefined : accountKey);
       setBudgets(bs ?? []);
       const map: Record<string, number> = {};
-      for (const b of bs ?? []) map[b.category] = b.limit_minor / 100;
+      for (const b of bs ?? []) {
+        map[b.category] = (map[b.category] ?? 0) + b.limit_minor / 100;
+      }
       setCategoryLimits(map);
     } catch (e: any) {
       console.error("getBudgets failed:", e);
@@ -73,12 +75,8 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
     try {
       const accs = await getAccounts();
       setAccounts(accs ?? []);
-      if (accs && accs.length > 0) {
-        if (!selectedAccount || !accs.some(a => a.id === selectedAccount)) {
-          setSelectedAccount(accs[0].id);
-        }
-      } else {
-        setSelectedAccount("");
+      if (!selectedAccount) {
+        setSelectedAccount("all");
       }
     } catch {}
     try { setCategories((await getCustomCategories()) ?? []); } catch {}
@@ -101,7 +99,7 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
     setCategories([]);
     setBudgets([]);
     setCategoryLimits({});
-    setSelectedAccount("");
+    setSelectedAccount("all");
     loadStatic(); 
   }, [activeWs?.id]);
 
@@ -112,7 +110,8 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
       await updateCycleStartDay(parseInt(cycleDay));
       toast("Payday cycle saved");
       setIsCycleOpen(false);
-      loadStatic();
+      await loadStatic();
+      onDataChanged?.();
     } catch (e: any) { toast(e.message ?? "Could not save", "err"); }
   };
 
@@ -143,13 +142,16 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
           setBudgets((prev) => prev.filter((b) => b.id !== existing.id));
         }
       } else {
-        await setBudget(selectedAccount, category, Math.round(amount * 100));
+        await setBudget(selectedAccount === "all" ? null : selectedAccount, category, Math.round(amount * 100));
         await loadBudgetsForAccount(selectedAccount);
       }
+      onDataChanged?.();
     } catch (e: any) { toast(e.message ?? "Could not save category budget", "err"); }
   };
 
-  const filteredTxns = selectedAccount
+  const filteredTxns = selectedAccount === "all"
+    ? txns.filter((t) => t.category_name !== "Transfers" && t.category_name !== "Adjustment")
+    : selectedAccount
     ? txns.filter((t) => t.account_id === selectedAccount && t.category_name !== "Transfers" && t.category_name !== "Adjustment")
     : [];
   
@@ -185,7 +187,7 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
     ? `${new Date(cycle.cycle_start).toLocaleDateString("en-NG", { day: "numeric", month: "short" })} — ${new Date(cycle.cycle_end).toLocaleDateString("en-NG", { day: "numeric", month: "short" })}`
     : "";
 
-  const selectedAccountName = accounts.find((a) => a.id === selectedAccount)?.name ?? "";
+  const selectedAccountName = selectedAccount === "all" ? "All Accounts" : (accounts.find((a) => a.id === selectedAccount)?.name ?? "");
 
   return (
     <PullToRefresh onRefresh={loadStatic}>
@@ -203,12 +205,19 @@ export function BudgetScreen({ onBack }: { onBack: () => void }) {
 
         <div className="px-4 pt-6 space-y-5">
           <div className="flex gap-2 overflow-x-auto pb-1">
+            <button
+              onClick={() => setSelectedAccount("all")}
+              className={`px-3 py-1.5 rounded-full text-[12px] font-semibold whitespace-nowrap shrink-0 ${
+                selectedAccount === "all" ? "bg-[var(--brand)] text-black" : "bg-[var(--fill-2)] text-[var(--text-2)]"
+              }`}
+            >
+              All Accounts
+            </button>
             {accounts.map((a) => (
               <button
                 key={a.id}
                 onClick={() => setSelectedAccount(a.id)}
                 className={`px-3 py-1.5 rounded-full text-[12px] font-semibold whitespace-nowrap shrink-0 ${
-                  // CHANGED: Forced active pill text to black for contrast on lime
                   selectedAccount === a.id ? "bg-[var(--brand)] text-black" : "bg-[var(--fill-2)] text-[var(--text-2)]"
                 }`}
               >

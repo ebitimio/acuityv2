@@ -11,6 +11,7 @@ import { TrendingDown, TrendingUp, Wallet, Landmark, Scale, ChevronRight, Chevro
 import { PullToRefresh } from "@/components/ui/pull-to-refresh";
 import { GaugeArc } from "@/components/ui/gauge-arc";
 import { cn } from "@/lib/utils";
+import { formatLocalDate } from "@/lib/dates";
 
 export function AnalyticsScreen({ onBack, onNavigateTransactions }: { onBack: () => void; onNavigateTransactions: () => void }) {
   const [txns, setTxns] = useState<Txn[]>([]);
@@ -400,7 +401,7 @@ export function AnalyticsScreen({ onBack, onNavigateTransactions }: { onBack: ()
                   <div>
                     <p className="text-[11px] text-white/40">Today</p>
                     <p className="text-[14px] font-semibold text-white">
-                      {fmt(heatmap.days.find(d => d.localDateStr === new Date().toISOString().split("T")[0])?.spent || 0)}
+                      {fmt(heatmap.days.find(d => d.localDateStr === formatLocalDate())?.spent || 0)}
                     </p>
                   </div>
                   <div>

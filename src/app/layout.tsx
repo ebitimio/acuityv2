@@ -48,7 +48,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark bg-[#0a0a0a]" suppressHydrationWarning>
+    <html lang="en" dir="ltr" className="dark bg-[#0a0a0a]" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

@@ -11,6 +11,7 @@ import { useWorkspace } from "@/lib/workspace";
 import { buildCategoryList } from "@/lib/category-options";
 import { CATEGORIES } from "@/lib/categories";
 import { getCustomCategories } from "@/lib/supabase/database";
+import { formatLocalDate, localDateToISO } from "@/lib/dates";
 
 interface AddTransactionSheetProps {
   isOpen: boolean;
@@ -24,7 +25,7 @@ export function AddTransactionSheet({ isOpen, onClose, onSaved }: AddTransaction
   const [category, setCategory] = useState("Groceries");
   const [customCategory, setCustomCategory] = useState("");
   const [isCustom, setIsCustom] = useState(false);
-  const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [date, setDate] = useState(() => formatLocalDate());
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [customCategories, setCustomCategories] = useState<string[]>([]);
@@ -53,7 +54,7 @@ export function AddTransactionSheet({ isOpen, onClose, onSaved }: AddTransaction
       setCategory(categoryNames[0] || "Groceries");
       setCustomCategory("");
       setIsCustom(false);
-      setDate(new Date().toISOString().split("T")[0]);
+      setDate(formatLocalDate());
       setError(null);
       setIsSaving(false);
     }
@@ -98,7 +99,7 @@ export function AddTransactionSheet({ isOpen, onClose, onSaved }: AddTransaction
         amount_minor: Math.round(parsedAmount * 100),
         direction: direction,
         category_name: finalCategory,
-        date: new Date(date).toISOString(),
+        date: localDateToISO(date),
         status: "posted",
       });
       

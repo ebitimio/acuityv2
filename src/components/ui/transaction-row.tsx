@@ -20,7 +20,14 @@ export function TransactionRow({
   const { fmt } = useCurrency();
   const cat = getCategory(txn.category_name);
   const Icon = cat.icon;
-  const income = txn.direction === "credit";
+  const isTransfer = txn.category_name === "Transfers";
+  const income = !isTransfer && txn.direction === "credit";
+  const amountColor = isTransfer
+    ? "text-[var(--text-3)]"
+    : income
+    ? "text-[var(--gain)]"
+    : "text-[var(--danger)]";
+  const amountPrefix = isTransfer ? "⇄ " : income ? "+" : "-";
 
   const onDragEnd = async (_: unknown, info: PanInfo) => {
     const dx = info.offset.x;
@@ -66,12 +73,8 @@ export function TransactionRow({
           </p>
         </div>
         <div className="shrink-0 text-right">
-          <p
-            className={`tabular text-[15px] font-bold ${
-              income ? "text-[var(--gain)]" : "text-[var(--danger)]"
-            }`}
-          >
-            {income ? "+" : "-"}
+          <p className={`tabular text-[15px] font-bold ${amountColor}`}>
+            {amountPrefix}
             {fmt(txn.amount_minor / 100)}
           </p>
           <p className="text-[11px] text-[var(--text-3)]">{shortDate(txn.date)}</p>

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { Modal } from "./modal";
 import { cn } from "@/lib/utils";
+import { parseLocalDate } from "@/lib/dates";
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
@@ -22,8 +23,7 @@ export function DatePickerModal({
   value: string;
   onChange: (dateStr: string) => void;
 }) {
-  const parsedDate = value ? new Date(value) : new Date();
-  const validDate = isNaN(parsedDate.getTime()) ? new Date() : parsedDate;
+  const validDate = parseLocalDate(value);
 
   const [viewYear, setViewYear] = useState(validDate.getFullYear());
   const [viewMonth, setViewMonth] = useState(validDate.getMonth());
