@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronLeft, ArrowUp, Loader2, CheckCircle2,
@@ -160,8 +160,18 @@ export function AIScreen({
   // Ref to flag that a conversation was created locally to prevent loadHistory race condition
   const isNewConvRef = useRef<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const bufferRef = useRef("");
+
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
+    if (mainRef.current) {
+      mainRef.current.scrollTo({
+        top: mainRef.current.scrollHeight,
+        behavior,
+      });
+    }
+  }, []);
 
   const { active: activeWs } = useWorkspace();
   const { fmt } = useCurrency();
@@ -193,6 +203,15 @@ export function AIScreen({
         setVvHeight(vv.height);
         setVvTop(vv.offsetTop);
       }
+      if (typeof window !== "undefined" && window.scrollY !== 0) {
+        window.scrollTo(0, 0);
+      }
+    };
+
+    const handleWindowScroll = () => {
+      if (window.scrollY !== 0) {
+        window.scrollTo(0, 0);
+      }
     };
 
     if (vv) {
@@ -200,6 +219,7 @@ export function AIScreen({
       vv.addEventListener("resize", updateViewport);
       vv.addEventListener("scroll", updateViewport);
     }
+    window.addEventListener("scroll", handleWindowScroll, { passive: true });
 
     return () => {
       document.body.style.overflow = origOverflow;
@@ -211,6 +231,7 @@ export function AIScreen({
         vv.removeEventListener("resize", updateViewport);
         vv.removeEventListener("scroll", updateViewport);
       }
+      window.removeEventListener("scroll", handleWindowScroll);
     };
   }, []);
 
@@ -295,8 +316,8 @@ export function AIScreen({
 
   // Scroll to bottom when new messages arrive or when streaming
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: streamingContent ? "auto" : "smooth" });
-  }, [messages, isThinking, streamingContent]);
+    scrollToBottom(streamingContent ? "auto" : "smooth");
+  }, [messages, isThinking, streamingContent, scrollToBottom]);
 
   const saveMessageToDb = async (msg: Message, convId: string) => {
     if (!activeWs?.id || !convId) return;
@@ -356,8 +377,11 @@ export function AIScreen({
       document.body.scrollTop = 0;
     }
     setTimeout(() => {
-      endRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, 120);
+      if (typeof window !== "undefined" && window.scrollY !== 0) {
+        window.scrollTo(0, 0);
+      }
+      scrollToBottom("smooth");
+    }, 100);
   };
 
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -748,17 +772,33 @@ export function AIScreen({
     );
   }
 
+  const isKeyboardOpen = vvHeight !== null && typeof window !== "undefined" && vvHeight < window.innerHeight - 80;
+
   return (
-    <motion.div 
-      initial={{ opacity: 0, scale: 0.99 }}
-      animate={{ opacity: 1, scale: 1, transition: { duration: 0.24 } }}
-      exit={{ opacity: 0, scale: 0.99, transition: { duration: 0.16 } }}
-      className="fixed inset-0 z-50 flex flex-col overflow-hidden select-none"
-      style={{
-        background: "var(--bg)",
-        touchAction: "pan-y",
-      }}
-    >
+    <>
+      {/* Full-screen base layer to prevent any gaps behind the visual viewport */}
+      <div 
+        className="fixed inset-0 pointer-events-none" 
+        style={{ background: "var(--bg)", zIndex: 45 }} 
+        aria-hidden 
+      />
+
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.99 }}
+        animate={{ opacity: 1, scale: 1, transition: { duration: 0.24 } }}
+        exit={{ opacity: 0, scale: 0.99, transition: { duration: 0.16 } }}
+        className="fixed inset-x-0 z-50 flex flex-col overflow-hidden select-none"
+        style={{
+          position: "fixed",
+          top: vvTop,
+          left: 0,
+          right: 0,
+          height: vvHeight ? `${vvHeight}px` : "100dvh",
+          maxHeight: vvHeight ? `${vvHeight}px` : "100dvh",
+          background: "var(--bg)",
+          touchAction: "pan-y",
+        }}
+      >
       {/* Ambient Radial Gradient Glows */}
       <div aria-hidden className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
         <div
@@ -825,6 +865,7 @@ export function AIScreen({
 
       {/* Main Conversation Stream */}
       <main
+        ref={mainRef}
         className="relative z-10 flex-1 overflow-y-auto overscroll-contain px-4 pt-1 pb-2"
         role="log"
         aria-live="polite"
@@ -1050,7 +1091,9 @@ export function AIScreen({
       <footer
         className="relative z-20 shrink-0 px-3.5 pt-1 bg-transparent"
         style={{
-          paddingBottom: "max(calc(env(safe-area-inset-bottom) - 18px), 8px)",
+          paddingBottom: isKeyboardOpen
+            ? "8px"
+            : "max(calc(env(safe-area-inset-bottom) - 18px), 8px)",
         }}
       >
         <div className="max-w-2xl mx-auto">
@@ -1237,5 +1280,6 @@ export function AIScreen({
         )}
       </AnimatePresence>
     </motion.div>
+    </>
   );
 }
