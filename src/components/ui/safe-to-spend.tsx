@@ -2,7 +2,7 @@
 
 import { NumberRoll } from "./number-roll";
 import { RingProgress } from "./ring-progress";
-import { useCurrency } from "@/lib/currency";
+import { useCurrency, MoneyText } from "@/lib/currency";
 import type { SafeToSpend as SafeToSpendData } from "@/lib/supabase/database";
 import { useEffect, useState } from "react";
 import { getRecurringItems, getFamilySupport } from "@/lib/supabase/database";
@@ -33,7 +33,7 @@ export function SafeToSpendHero({
   nextIncomeDate,
   cycleBounds,
 }: Props) {
-  const { fmt, hidden, toggleHidden } = useCurrency();
+  const { fmt, hidden, toggleHidden, currency } = useCurrency();
   const hasBudget = budgetLimit > 0;
   const budgetUsedPct = hasBudget ? Math.min((spentThisMonth / budgetLimit) * 100, 100) : 0;
   const budgetRemaining = hasBudget ? Math.max(budgetLimit - spentThisMonth, 0) : 0;
@@ -113,16 +113,26 @@ export function SafeToSpendHero({
           </button>
         </div>
 
-        <p className="mt-1 text-[12.5px] font-semibold text-black">
-          {hidden ? "₦•••• spent this month" : <><span className="font-hero font-bold">{fmt(spentThisMonth)}</span> spent this month</>}
-        </p>
+        <div className="mt-1 text-[12.5px] font-semibold text-black">
+          {hidden ? (
+            `${currency === "USD" ? "$" : "₦"}•••• spent this month`
+          ) : (
+            <>
+              <MoneyText value={spentThisMonth} className="font-hero font-bold text-black" /> spent this month
+            </>
+          )}
+        </div>
       </div>
 
       {hasIncome && (
         <div className="mt-3 flex items-center justify-between rounded-xl bg-black px-3 py-2">
           <span className="text-[11.5px] font-semibold text-white">Safe to spend today</span>
           <span className="tabular text-[15px] font-bold text-white font-hero">
-            {hidden ? "₦••••" : fmt(dailySafe)}
+            {hidden ? (
+              `${currency === "USD" ? "$" : "₦"}••••`
+            ) : (
+              <MoneyText value={dailySafe} className="text-[15px] font-bold text-white font-hero" />
+            )}
           </span>
         </div>
       )}
@@ -130,15 +140,23 @@ export function SafeToSpendHero({
       <div className="mt-4 grid grid-cols-2 gap-3">
         <div>
           <p className="text-[11.5px] font-semibold text-black">Income</p>
-          <p className="mt-0.5 text-[16px] font-bold text-black font-hero">
-            {hidden ? "₦••••" : fmt(actualIncome > 0 ? actualIncome : 0)}
-          </p>
+          <div className="mt-0.5 text-[16px] font-bold text-black font-hero">
+            {hidden ? (
+              `${currency === "USD" ? "$" : "₦"}••••`
+            ) : (
+              <MoneyText value={actualIncome > 0 ? actualIncome : 0} className="text-[16px] font-bold text-black font-hero" />
+            )}
+          </div>
         </div>
         <div>
           <p className="text-[11.5px] font-semibold text-black">Net liquid assets</p>
-          <p className="mt-0.5 text-[16px] font-bold text-black font-hero">
-            {hidden ? "₦••••" : fmt(liquidAssets)}
-          </p>
+          <div className="mt-0.5 text-[16px] font-bold text-black font-hero">
+            {hidden ? (
+              `${currency === "USD" ? "$" : "₦"}••••`
+            ) : (
+              <MoneyText value={liquidAssets} className="text-[16px] font-bold text-black font-hero" />
+            )}
+          </div>
         </div>
       </div>
 
@@ -150,9 +168,19 @@ export function SafeToSpendHero({
         <div className="min-w-0">
           <div className="flex items-baseline justify-between gap-2">
             <p className="truncate text-[11.5px] font-semibold text-black">Monthly budget</p>
-            <p className="tabular shrink-0 text-[11.5px] font-bold text-black font-hero">
-              {hasBudget ? (hidden ? "₦•••• left" : `${fmt(budgetRemaining)} left`) : "Not set"}
-            </p>
+            <div className="tabular shrink-0 text-[11.5px] font-bold text-black font-hero">
+              {hasBudget ? (
+                hidden ? (
+                  `${currency === "USD" ? "$" : "₦"}•••• left`
+                ) : (
+                  <>
+                    <MoneyText value={budgetRemaining} className="text-[11.5px] font-bold text-black font-hero" /> left
+                  </>
+                )
+              ) : (
+                "Not set"
+              )}
+            </div>
           </div>
           <div className="mt-1 h-[3.5px] w-full overflow-hidden rounded-full bg-black/25">
             <div

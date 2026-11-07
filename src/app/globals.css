@@ -1,6 +1,14 @@
 @import "tailwindcss";
 @import "../lib/glass.css";
 
+@font-face {
+  font-family: 'AcuityNaira';
+  src: local('Plus Jakarta Sans'), local('Geist Sans'), local('Inter'), local('-apple-system'), local('BlinkMacSystemFont'), local('sans-serif');
+  unicode-range: U+20A6;
+  size-adjust: 80%;
+  ascent-override: 88%;
+}
+
 @source "../../";
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *, .dark, .dark *));
@@ -323,10 +331,12 @@ body::-webkit-scrollbar,
   .press:active {
     transform: scale(0.97);
   }
+}
 
+@layer utilities {
   .font-hero,
   .font-hero * {
-    font-family: var(--font-geist-mono), 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace !important;
+    font-family: 'AcuityNaira', var(--font-geist-mono), 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace !important;
     font-feature-settings: "zero" 1, "tnum" 1 !important;
     font-variant-numeric: tabular-nums !important;
     letter-spacing: -0.03em;

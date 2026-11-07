@@ -417,14 +417,9 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
 
   return (
     <div
-      className="fixed inset-x-0 z-[250] flex flex-col justify-between items-center bg-[#070709] text-white overflow-hidden select-none px-6"
+      className="fixed inset-0 z-[250] flex flex-col justify-between items-center text-white overflow-hidden select-none px-6"
       style={{
-        position: "fixed",
-        top: vvTop,
-        left: 0,
-        right: 0,
-        height: vvHeight ? `${vvHeight}px` : "100dvh",
-        maxHeight: vvHeight ? `${vvHeight}px` : "100dvh",
+        background: "var(--bg)",
         touchAction: "none",
         paddingTop: isKeyboardOpen ? "8px" : "max(1.5rem, env(safe-area-inset-top))",
       }}
@@ -506,7 +501,9 @@ export function OggyOnboarding({ userName, onComplete }: OggyOnboardingProps) {
       <div
         className="relative z-10 max-w-sm mx-auto w-full shrink-0 space-y-4"
         style={{
-          paddingBottom: isKeyboardOpen ? "12px" : "max(calc(env(safe-area-inset-bottom) + 8px), 24px)",
+          paddingBottom: isKeyboardOpen
+            ? `${Math.max(16, (typeof window !== "undefined" ? window.innerHeight : 0) - (vvHeight ?? 0) + 16)}px`
+            : "max(calc(env(safe-area-inset-bottom) + 12px), 28px)",
         }}
       >
         <AnimatePresence mode="wait">

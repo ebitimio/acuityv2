@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { ScreenHeader } from "@/components/ui/screen-header";
 import { getTransactionsBetween, getAccounts, getAssets } from "@/lib/supabase/database";
-import { useCurrency } from "@/lib/currency";
+import { useCurrency, MoneyText } from "@/lib/currency";
 import { useToast } from "@/components/ui/toast";
 import { useWorkspace } from "@/lib/workspace";
 import type { Txn, Account, Asset, Budget } from "@/lib/types";
@@ -452,14 +452,16 @@ export function AnalyticsScreen({ onBack, onNavigateTransactions }: { onBack: ()
             <>
               <div className="p-6 rounded-[24px] bg-[#1c1c1e] border border-white/5 shadow-xl">
                 <p className="text-[14px] text-white/60 mb-1">Net Worth</p>
-                <p className="text-[32px] font-bold tabular text-white mb-2">{fmt(netWorth)}</p>
+                <div className="text-[32px] font-bold tabular text-white mb-2 font-hero">
+                  <MoneyText value={netWorth} className="text-[32px] font-bold text-white font-hero" />
+                </div>
                 
                 <div className="flex items-center gap-2 mb-4 rounded-xl bg-white/5 p-3">
                   <DollarSign size={16} className="text-[var(--gain)]" />
                   <p className="text-[13px] text-white">
-                    ≈ <span className="font-bold">${(netWorth / exchangeRate).toLocaleString("en-US", { maximumFractionDigits: 0 })}</span> USD
+                    ≈ <span className="font-bold font-hero">${(netWorth / exchangeRate).toLocaleString("en-US", { maximumFractionDigits: 0 })}</span> USD
                   </p>
-                  <span className="ml-auto text-[11px] text-white/40">@ ₦{exchangeRate}/$</span>
+                  <span className="ml-auto text-[11px] text-white/40 font-hero">@ <span className="font-sans text-[0.85em]">₦</span>{exchangeRate}/$</span>
                 </div>
 
                 <div className="space-y-3">
@@ -468,21 +470,24 @@ export function AnalyticsScreen({ onBack, onNavigateTransactions }: { onBack: ()
                       <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--gain)]/10 text-[var(--gain)]"><Wallet size={14} /></div>
                       <span className="text-[14px] text-white">Liquid Assets</span>
                     </div>
-                    <span className="text-[14px] font-semibold text-white">{fmt(liquid)}</span>
+                    <MoneyText value={liquid} className="text-[14px] font-semibold text-white font-hero" />
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--brand)]/10 text-[var(--brand)]"><Landmark size={14} /></div>
                       <span className="text-[14px] text-white">Non-Liquid Assets</span>
                     </div>
-                    <span className="text-[14px] font-semibold text-white">{fmt(nonLiquid)}</span>
+                    <MoneyText value={nonLiquid} className="text-[14px] font-semibold text-white font-hero" />
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--danger)]/10 text-[var(--danger)]"><Scale size={14} /></div>
                       <span className="text-[14px] text-white">Liabilities</span>
                     </div>
-                    <span className="text-[14px] font-semibold text-[var(--danger)]">-{fmt(liabilities)}</span>
+                    <div className="text-[14px] font-semibold text-[var(--danger)] font-hero flex items-center">
+                      <span className="mr-0.5">-</span>
+                      <MoneyText value={liabilities} className="text-[14px] font-semibold text-[var(--danger)] font-hero" />
+                    </div>
                   </div>
                 </div>
               </div>

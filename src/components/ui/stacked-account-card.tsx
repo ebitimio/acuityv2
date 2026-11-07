@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { RefreshCw, Trash2 } from "lucide-react";
 import type { Account } from "@/lib/types";
+import { MoneyText } from "@/lib/currency";
 
 interface StackedAccountCardProps {
   account: Account;
@@ -128,7 +129,9 @@ export function StackedAccountCard({
         <div className="relative z-10 flex items-end justify-between gap-4 mt-6">
           <div className="min-w-0">
             <p className="text-[11px] text-white/60 mb-1">Balance</p>
-            <p className="text-[24px] font-bold tabular text-white truncate leading-none drop-shadow-md">{fmt(balance)}</p>
+            <div className="text-[24px] font-bold tabular text-white truncate leading-none drop-shadow-md font-hero">
+              <MoneyText value={balance} className="text-[24px] font-bold text-white font-hero" />
+            </div>
           </div>
           
           <p className="text-[12px] font-medium text-white/80 text-right truncate max-w-[110px] drop-shadow-sm">

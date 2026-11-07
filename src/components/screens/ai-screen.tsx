@@ -6,7 +6,7 @@ import {
   ChevronLeft, ArrowUp, Loader2, CheckCircle2,
   Plus, Wallet, PieChart, Copy, Check,
   AlertCircle, RefreshCw, XCircle, Menu, X, Mic, Trash2,
-  TrendingUp, Zap, Sparkles
+  TrendingUp, Zap
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useWorkspace } from "@/lib/workspace";
@@ -656,27 +656,27 @@ export function AIScreen({
       initial={{ opacity: 0, scale: 0.99 }}
       animate={{ opacity: 1, scale: 1, transition: { duration: 0.24 } }}
       exit={{ opacity: 0, scale: 0.99, transition: { duration: 0.16 } }}
-      className="fixed inset-x-0 z-50 flex flex-col bg-[var(--bg)] overflow-hidden select-none"
+      className="fixed inset-0 z-50 flex flex-col overflow-hidden select-none"
       style={{
-        position: "fixed",
-        top: vvTop,
-        left: 0,
-        right: 0,
-        height: vvHeight ? `${vvHeight}px` : "100dvh",
-        maxHeight: vvHeight ? `${vvHeight}px` : "100dvh",
+        background: "var(--bg)",
         touchAction: "pan-y",
       }}
     >
       {/* Apple-compliant AI Data & Privacy Consent Screen */}
       {!hasConsent && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             className="w-full max-w-sm rounded-3xl bg-[#141416] border border-white/10 p-6 shadow-2xl flex flex-col gap-4 text-center"
           >
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--brand)]/15 text-[var(--brand)] border border-[var(--brand)]/20">
-              <Sparkles size={28} />
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#1c1c1f] border border-white/10 shadow-lg">
+              <AcuityCompanion
+                size="compact"
+                hasCap={true}
+                forceDark={true}
+                financialMood="calm"
+              />
             </div>
             <div>
               <h3 className="text-[18px] font-bold text-white mb-1">AI Insights & Privacy</h3>

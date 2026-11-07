@@ -1,9 +1,17 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { cn } from "@/lib/utils";
 
-type Cur = "NGN" | "USD";
-interface FmtOpts { decimals?: boolean; sign?: boolean; force?: boolean; }
+export type Cur = "NGN" | "USD";
+export interface FmtOpts { decimals?: boolean; sign?: boolean; force?: boolean; }
+export interface FormattedParts {
+  prefix: string;
+  symbol: string;
+  value: string;
+  raw: number;
+}
+
 interface Ctx {
   currency: Cur;
   setCurrency: (c: Cur) => void;
@@ -13,6 +21,7 @@ interface Ctx {
   toggleHidden: () => void;
   convert: (ngn: number) => number;
   fmt: (ngn: number, o?: FmtOpts) => string;
+  fmtParts: (ngn: number, o?: FmtOpts) => FormattedParts;
 }
 
 const C = createContext<Ctx | null>(null);
@@ -60,9 +69,9 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
     const symbol = currency === "USD" ? "$" : "₦";
     const convert = (n: number) => (currency === "USD" ? n / rate : n);
     
-    const fmt = (n: number, o?: FmtOpts) => {
-      if (hidden && !o?.force) return "₦••••";
+    const fmtParts = (n: number, o?: FmtOpts): FormattedParts => {
       const v = convert(n);
+      if (hidden && !o?.force) return { prefix: "", symbol, value: "••••", raw: v };
       const d = o?.decimals ?? currency === "USD";
       const s = new Intl.NumberFormat("en-NG", {
         minimumFractionDigits: d ? 2 : 0,
@@ -74,10 +83,15 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
       if (isNegative) prefix = "-";
       else if (o?.sign && v > 0) prefix = "+";
       
-      return `${prefix}${symbol}${s}`;
+      return { prefix, symbol, value: s, raw: v };
+    };
+
+    const fmt = (n: number, o?: FmtOpts) => {
+      const { prefix, symbol: sym, value: formatted } = fmtParts(n, o);
+      return `${prefix}${sym}${formatted}`;
     };
     
-    return { currency, setCurrency, rate, symbol, hidden, toggleHidden, convert, fmt };
+    return { currency, setCurrency, rate, symbol, hidden, toggleHidden, convert, fmt, fmtParts };
   }, [currency, rate, hidden, setCurrency, toggleHidden]);
 
   return <C.Provider value={value}>{children}</C.Provider>;
@@ -87,4 +101,43 @@ export function useCurrency() {
   const v = useContext(C);
   if (!v) throw new Error("useCurrency must be used inside CurrencyProvider");
   return v;
+}
+
+/**
+ * Renders currency values with calibrated optical scaling for the Naira sign
+ * so it never overpowers the numbers or looks bigger than the dollar sign.
+ */
+export function MoneyText({
+  value,
+  className,
+  symbolClassName,
+  decimals,
+  sign,
+  force,
+}: {
+  value: number;
+  className?: string;
+  symbolClassName?: string;
+  decimals?: boolean;
+  sign?: boolean;
+  force?: boolean;
+}) {
+  const { fmtParts, currency } = useCurrency();
+  const { prefix, symbol, value: formatted } = fmtParts(value, { decimals, sign, force });
+
+  return (
+    <span className={cn("inline-flex items-baseline tabular font-hero", className)}>
+      {prefix && <span className="mr-0.5">{prefix}</span>}
+      <span
+        className={cn(
+          "font-sans select-none inline-block",
+          currency === "NGN" ? "text-[0.76em] font-bold" : "text-[0.9em]",
+          symbolClassName
+        )}
+      >
+        {symbol}
+      </span>
+      <span>{formatted}</span>
+    </span>
+  );
 }

@@ -17,7 +17,7 @@ import { TransferSheet } from "@/components/ui/transfer-sheet";
 import { CryptoSheet } from "@/components/ui/crypto-sheet";
 import { StackedAccountCard } from "@/components/ui/stacked-account-card";
 import { ConnectBankScreen } from "@/components/screens/connect-bank-screen";
-import { useCurrency } from "@/lib/currency";
+import { useCurrency, MoneyText } from "@/lib/currency";
 import { useToast } from "@/components/ui/toast";
 import { useWorkspace } from "@/lib/workspace";
 import type { Account, Asset } from "@/lib/types";
@@ -314,7 +314,9 @@ export function AccountsScreen({
         
         <div className="p-6 rounded-[24px] shadow-xl text-center" style={{ background: "var(--brand)" }}>
           <p className="text-[13px] text-black/70 mb-1 font-medium">Total Net</p>
-          <p className="text-[36px] font-bold tabular text-black">{fmt(netWorth)}</p>
+          <div className="text-[36px] font-bold tabular text-black font-hero flex justify-center items-baseline">
+            <MoneyText value={netWorth} className="text-[36px] font-bold text-black font-hero" />
+          </div>
         </div>
 
         <div>
@@ -363,14 +365,18 @@ export function AccountsScreen({
                 <TrendingUp size={14} className="text-[var(--gain)]" />
                 <p className="text-[11px] text-white/60">Assets</p>
               </div>
-              <p className="text-[16px] font-bold tabular text-white">{fmt(totalAssets)}</p>
+              <div className="text-[16px] font-bold tabular text-white font-hero">
+                <MoneyText value={totalAssets} className="text-[16px] font-bold text-white font-hero" />
+              </div>
             </div>
             <div className="p-4 rounded-2xl bg-[#1c1c1e] border border-white/5">
               <div className="flex items-center gap-2 mb-1">
                 <Scale size={14} className="text-[var(--danger)]" />
                 <p className="text-[11px] text-white/60">Liabilities</p>
               </div>
-              <p className="text-[16px] font-bold tabular text-[var(--danger)]">{fmt(totalLiab)}</p>
+              <div className="text-[16px] font-bold tabular text-[var(--danger)] font-hero">
+                <MoneyText value={totalLiab} className="text-[16px] font-bold text-[var(--danger)] font-hero" />
+              </div>
             </div>
           </div>
 
@@ -387,7 +393,7 @@ export function AccountsScreen({
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-[14px] font-semibold tabular text-[var(--text-1)]">{fmt(a.value_minor / 100)}</span>
+                  <MoneyText value={a.value_minor / 100} className="text-[14px] font-semibold text-[var(--text-1)] font-hero" />
                   <button onClick={() => openEditAsset(a)} className="text-[var(--brand)]"><Pencil size={14} /></button>
                   <button onClick={() => delA(a)} className="text-[var(--danger)]"><Trash2 size={14} /></button>
                 </div>
