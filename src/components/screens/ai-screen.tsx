@@ -144,8 +144,12 @@ export function AIScreen({
   
   const [greeting, setGreeting] = useState("Good day");
   const [hasConsent, setHasConsent] = useState(() => {
-    if (typeof window === "undefined") return true;
-    return localStorage.getItem("acuity:ai_data_consent") === "1";
+    try {
+      if (typeof window === "undefined") return true;
+      return localStorage.getItem("acuity:ai_data_consent") === "1";
+    } catch {
+      return true;
+    }
   });
   const [convToDelete, setConvToDelete] = useState<string | null>(null);
 

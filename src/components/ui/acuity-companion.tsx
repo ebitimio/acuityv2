@@ -46,15 +46,22 @@ export function AcuityCompanion({
   const [isWinking, setIsWinking] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
 
-  // Check prefers-reduced-motion
+  // Check prefers-reduced-motion safely
   useEffect(() => {
-    if (typeof window !== "undefined" && window.matchMedia) {
-      const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-      setReducedMotion(mq.matches);
-      const handler = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
-      mq.addEventListener?.("change", handler);
-      return () => mq.removeEventListener?.("change", handler);
-    }
+    try {
+      if (typeof window !== "undefined" && window.matchMedia) {
+        const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+        setReducedMotion(mq.matches);
+        const handler = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
+        if (mq.addEventListener) {
+          mq.addEventListener("change", handler);
+          return () => mq.removeEventListener("change", handler);
+        } else if ((mq as any).addListener) {
+          (mq as any).addListener(handler);
+          return () => (mq as any).removeListener(handler);
+        }
+      }
+    } catch {}
   }, []);
 
   // Baseline gaze posture influenced by financial mood

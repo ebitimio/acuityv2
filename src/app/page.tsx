@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
   getHomeMetrics, getRecentTransactions, deleteTransaction, clearDataCache,
@@ -674,12 +674,14 @@ export default function SandboxPage() {
   const incomeThisMonth = m.total_income_minor / 100;
   const budgetLimit = categoryBudgetsTotal > 0 ? categoryBudgetsTotal : (m.budget_limit_minor / 100);
 
-  const mascotFinancialMood: "celebrating" | "calm" | "concerned" | "neutral" = useMemo(() => {
-    if (safeToSpend && safeToSpend.daily_safe_minor < 0) return "concerned";
-    if (budgetLimit > 0 && heroSpent > budgetLimit * 0.9) return "concerned";
-    if (safeToSpend && safeToSpend.daily_safe_minor > 0 && budgetLimit > 0 && heroSpent < budgetLimit * 0.7) return "celebrating";
-    return "calm";
-  }, [safeToSpend, budgetLimit, heroSpent]);
+  let mascotFinancialMood: "celebrating" | "calm" | "concerned" | "neutral" = "calm";
+  if (safeToSpend && safeToSpend.daily_safe_minor < 0) {
+    mascotFinancialMood = "concerned";
+  } else if (budgetLimit > 0 && heroSpent > budgetLimit * 0.9) {
+    mascotFinancialMood = "concerned";
+  } else if (safeToSpend && safeToSpend.daily_safe_minor > 0 && budgetLimit > 0 && heroSpent < budgetLimit * 0.7) {
+    mascotFinancialMood = "celebrating";
+  }
   const showChecklist = !!setupStatus && !setupStatus.is_complete && !checklistDismissed;
   const periodLabel = getPeriodLabel(cycle);
   const daysUntilIncome = safeToSpend?.days_until_next_income ?? 0;
